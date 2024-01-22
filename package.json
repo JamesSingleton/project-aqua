@@ -27,6 +27,6 @@
     "packages/*"
   ],
   "lint-staged": {
-    "*.{ts,tsx,md}": "prettier --write"
+    "**/*.{ts,tsx,md}": "prettier --write"
   }
 }
