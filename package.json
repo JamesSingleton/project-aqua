@@ -9,14 +9,14 @@
     "prepare": "husky install"
   },
   "devDependencies": {
-    "@commitlint/cli": "^18.5.0",
-    "@commitlint/config-conventional": "^18.5.0",
+    "@commitlint/cli": "^18.6.0",
+    "@commitlint/config-conventional": "^18.6.0",
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
     "husky": "^8.0.3",
-    "lint-staged": "^15.2.0",
+    "lint-staged": "^15.2.1",
     "prettier": "^3.1.1",
-    "turbo": "latest"
+    "turbo": "^1.12.2"
   },
   "engines": {
     "node": ">=18"
