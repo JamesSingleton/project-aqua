@@ -1,7 +1,9 @@
 export default function DashboardPage() {
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-      <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
+    <div>
+      <h1 className="text-lg font-semibold sm:text-xl md:text-2xl lg:text-4xl">
+        Dashboard
+      </h1>
     </div>
   );
 }
