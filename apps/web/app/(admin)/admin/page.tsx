@@ -211,7 +211,7 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="xl:col-span-2">
+        {/* <Card className="xl:col-span-2">
           <CardHeader className="flex flex-row items-center">
             <div className="grid gap-2">
               <CardTitle>Upcoming Swim Meets</CardTitle>
@@ -261,7 +261,7 @@ export default function DashboardPage() {
               </TableBody>
             </Table>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </>
   );
