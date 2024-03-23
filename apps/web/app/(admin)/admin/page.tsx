@@ -17,7 +17,6 @@ import {
   Table,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
