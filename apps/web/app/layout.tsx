@@ -14,10 +14,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-  modal,
 }: {
   children: React.ReactNode;
-  modal?: React.ReactNode;
 }): JSX.Element {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -35,8 +33,6 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
-          {modal}
-          <div id="modal-root" />
         </ThemeProvider>
       </body>
     </html>
