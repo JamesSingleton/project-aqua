@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, Waves } from "lucide-react";
+import { Menu } from "lucide-react";
 
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { buttonVariants, Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { NavItems } from "@/app/(admin)/LeftNav";
+import { Icons } from "./icons";
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
@@ -38,8 +39,7 @@ export function MobileNav() {
             className="flex items-center gap-2 text-lg font-semibold"
             onClick={() => setOpen(false)}
           >
-            <Waves className="h-6 w-6" />
-            <span className="sr-only">Project Aqua</span>
+            <Icons.logo className="h-8 w-auto" />
           </Link>
           {NavItems.map(({ href, icon: Icon, label }) => {
             const hrefParts = href.split("/");

@@ -12,6 +12,7 @@ export const NavItems = [
   { href: "/admin/teams", icon: Users, label: "Teams" },
   { href: "/admin/achievements", icon: Medal, label: "Achievements" },
   { href: "/admin/analytics", icon: LineChart, label: "Analytics" },
+  { href: "/admin/workouts", icon: Waves, label: "Workouts" },
 ];
 
 export default function LeftNav() {

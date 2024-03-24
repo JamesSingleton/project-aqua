@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, CircleUser, Waves } from "lucide-react";
+import { Bell, CircleUser } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import LeftNav from "./LeftNav";
 import { MobileNav } from "@/components/mobile-nav";
+import { Icons } from "@/components/icons";
 
 export default function AdminLayout({
   children,
@@ -34,8 +35,7 @@ export default function AdminLayout({
             href="/admin"
             className="flex items-center gap-2 font-semibold h-14 border-b px-4 lg:h-[60px] lg:px-6"
           >
-            <Waves className="h-6 w-6" />
-            <span>Project Aqua</span>
+            <Icons.logo className="h-8 w-auto" />
           </Link>
           <LeftNav />
           <div className="mt-auto p-4">
