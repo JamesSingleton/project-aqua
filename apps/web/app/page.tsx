@@ -1,16 +1,14 @@
 import Link from "next/link";
-import { FishIcon } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Icons } from "@/components/icons";
 
 export default async function Home() {
   return (
     <div className="flex flex-col min-h-[100vh]">
       <header className="px-4 lg:px-6 h-14 flex items-center">
         <Link className="flex items-center justify-center" href="#">
-          <FishIcon className="h-6 w-6" />
-          <span className="sr-only">SwimMaster Pro</span>
+          <Icons.logo className="h-8 w-auto" />
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
           <Link
