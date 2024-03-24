@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function IndividualEventPage() {
   return (
@@ -14,10 +15,11 @@ export default function IndividualEventPage() {
           <h1 className="text-lg font-semibold md:text-2xl">
             Casteel & Desert Sunrise
           </h1>
-          {/* add a paragraph with the date and the address of the location */}
           <p className="text-sm text-gray-500">September 28, 2023</p>
           <p className="text-sm text-gray-500">Copper Sky Aquatic Center</p>
         </div>
+        {/* TODO: Figure out registering for a particular event */}
+        <Button>Register</Button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>

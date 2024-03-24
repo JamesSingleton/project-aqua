@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PlusIcon } from "lucide-react";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,9 +9,16 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardContent,
   CardFooter,
 } from "@/components/ui/card";
+
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "View, Search, and Add Swim Meets",
+  description:
+    "Explore all swim events registered by your team. Stay updated on upcoming competitions, track progress, and manage participation effortlessly.",
+};
 
 async function getEvents() {
   return [

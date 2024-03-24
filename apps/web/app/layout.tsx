@@ -7,7 +7,10 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/providers";
 
 export const metadata: Metadata = {
-  title: "Project Aqua",
+  title: {
+    template: "%s | Project Aqua",
+    default: "Project Aqua",
+  },
   description:
     "Project Aqua is the all-in-one solution for managing swim teams, tracking stats, registering for events, and setting up meets.",
 };
