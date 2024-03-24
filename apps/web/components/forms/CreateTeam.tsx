@@ -100,7 +100,7 @@ export default function CreateTeam() {
           name="teamRegistrationCode"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Team Registration Code</FormLabel>
+              <FormLabel>Team Registration</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
@@ -108,7 +108,7 @@ export default function CreateTeam() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="uss">USS</SelectItem>
+                  <SelectItem value="uss">United States Swimming</SelectItem>
                 </SelectContent>
               </Select>
               <FormDescription>
@@ -124,9 +124,20 @@ export default function CreateTeam() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Team Type</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a team type" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="AGE">Age Group</SelectItem>
+                  <SelectItem value="COL">College</SelectItem>
+                  <SelectItem value="HS">High School</SelectItem>
+                  <SelectItem value="MAS">Masters</SelectItem>
+                  <SelectItem value="REC">Recreation</SelectItem>
+                </SelectContent>
+              </Select>
               <FormDescription>The type of your team.</FormDescription>
               <FormMessage />
             </FormItem>
