@@ -1,17 +1,6 @@
 import Link from "next/link";
-import {
-  Bell,
-  CircleUser,
-  Home,
-  LineChart,
-  Menu,
-  Waves,
-  Users,
-  Calendar,
-  Medal,
-} from "lucide-react";
+import { Bell, CircleUser, Waves } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
