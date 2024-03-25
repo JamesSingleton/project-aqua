@@ -1,5 +1,4 @@
 "use client";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -135,6 +134,7 @@ export default function CreateTeam() {
                   <SelectItem value="COL">College</SelectItem>
                   <SelectItem value="HS">High School</SelectItem>
                   <SelectItem value="MAS">Masters</SelectItem>
+                  <SelectItem value="OTH">Other</SelectItem>
                   <SelectItem value="REC">Recreation</SelectItem>
                 </SelectContent>
               </Select>
@@ -164,6 +164,7 @@ export default function CreateTeam() {
             </FormItem>
           )}
         />
+        {/* TODO: Add mailing and contact info */}
         <Button type="submit">Submit</Button>
       </form>
     </Form>
