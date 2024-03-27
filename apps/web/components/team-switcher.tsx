@@ -42,7 +42,7 @@ export function TeamSwitcher({ isCollapsed, teams }: TeamSwitcherProps) {
       </SelectTrigger>
       <SelectContent>
         {teams.map((team) => (
-          <SelectItem key={team.id} value={team.name}>
+          <SelectItem key={team.id} value={team.id}>
             <div className="flex items-center gap-3 [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0 [&_svg]:text-foreground">
               {team.logo}
               {team.name}
