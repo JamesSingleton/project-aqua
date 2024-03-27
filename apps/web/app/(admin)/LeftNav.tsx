@@ -1,22 +1,30 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Home, LineChart, Users, Calendar, Medal, Waves } from "lucide-react";
+import { usePathname, useParams } from "next/navigation";
+import {
+  LineChart,
+  LayoutDashboard,
+  Calendar,
+  Medal,
+  Waves,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
 export const NavItems = [
-  { href: "/admin", icon: Home, label: "Dashboard" },
-  { href: "/admin/events", icon: Calendar, label: "Events" },
-  { href: "/admin/teams", icon: Users, label: "Teams" },
-  { href: "/admin/achievements", icon: Medal, label: "Achievements" },
-  { href: "/admin/analytics", icon: LineChart, label: "Analytics" },
-  { href: "/admin/workouts", icon: Waves, label: "Workouts" },
+  { href: "", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/events", icon: Calendar, label: "Events" },
+  // { href: "/teams", icon: Users, label: "Teams" },
+  { href: "/achievements", icon: Medal, label: "Achievements" },
+  { href: "/analytics", icon: LineChart, label: "Analytics" },
+  { href: "/workouts", icon: Waves, label: "Workouts" },
 ];
 
 export default function LeftNav() {
   const pathname = usePathname();
+  const params = useParams();
+  const { teamId } = params;
   const pathParts = pathname.split("/");
 
   return (
@@ -25,12 +33,14 @@ export default function LeftNav() {
         {NavItems.map(({ href, icon: Icon, label }) => {
           const hrefParts = href.split("/");
           const isActive =
-            pathParts[1] === hrefParts[1] && pathParts[2] === hrefParts[2];
+            pathParts[1] === "admin" &&
+            pathParts[2] === teamId &&
+            pathParts[3] === hrefParts[1];
 
           return (
             <Link
               key={href}
-              href={href}
+              href={`/admin/${teamId}${href}`}
               className={cn(
                 "flex items-center gap-4 rounded-xl px-3 py-2",
                 isActive

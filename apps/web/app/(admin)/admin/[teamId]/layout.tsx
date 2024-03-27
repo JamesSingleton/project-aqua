@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import LeftNav from "./LeftNav";
+import LeftNav from "../../LeftNav";
 import { MobileNav } from "@/components/mobile-nav";
 import { Icons } from "@/components/icons";
 
