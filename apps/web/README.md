@@ -1,28 +1,55 @@
-## Getting Started
+# Project Aqua - Swimming Software for Coaches
 
-First, run the development server:
+Project Aqua is a comprehensive swimming software designed to streamline the management of swim teams by providing coaches with tools for workout planning, athlete tracking, performance analysis, and communication. With SwimCoaches, coaches can effectively manage multiple teams, track progress, analyze performance, and communicate with athletes, all in one platform.
 
-```bash
-yarn dev
-```
+## Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Team Management**: Manage multiple teams, including high school teams, club teams, and more, within a single application.
+- **Workout Planning**: Create, schedule, and track workouts tailored to the needs of each team and individual athlete.
+- **Athlete Tracking**: Maintain athlete profiles, monitor attendance, track performance metrics, and manage athlete progress.
+- **Performance Analysis**: Access analytics and performance insights to evaluate training effectiveness, identify trends, and set goals.
+- **Communication**: Communicate with athletes and team members through messaging features, announcements, and reminders.
+- **Customization**: Customize application settings, preferences, and configurations to suit the specific requirements of each team.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Routing Structure
 
-To create [API routes](https://nextjs.org/docs/app/building-your-application/routing/router-handlers) add an `api/` directory to the `app/` directory with a `route.ts` file. For individual endpoints, create a subfolder in the `api` directory, like `api/hello/route.ts` would map to [http://localhost:3000/api/hello](http://localhost:3000/api/hello).
+### Overview
 
-## Learn More
+The routing structure of our swimming software is designed to provide intuitive navigation and organization for coaches managing multiple teams. Each route is structured hierarchically to reflect the team context, allowing coaches to seamlessly toggle between teams and access team-specific functionalities.
 
-To learn more about Next.js, take a look at the following resources:
+These are just some of the base routes and will advance over time.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn/foundations/about-nextjs) - an interactive Next.js tutorial.
+### Base URL
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+- `/admin/${teamId}`: Base URL for team-specific pages, where `${teamId}` represents the unique identifier of the selected team.
 
-## Deploy on Vercel
+### Routes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_source=github.com&utm_medium=referral&utm_campaign=turborepo-readme) from the creators of Next.js.
+1. **Dashboard**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+   - `/admin/${teamId}`: Route for the admin dashboard of the selected team, providing an overview of key metrics and recent activities.
+
+2. **Workouts**
+
+   - `/admin/${teamId}/workouts`: Route for managing workouts specific to the selected team, enabling coaches to create, edit, and schedule training sessions.
+
+3. **Athletes**
+
+   - `/admin/${teamId}/athletes`: Route for managing athlete profiles and performance metrics for the selected team, facilitating athlete tracking and attendance monitoring.
+
+4. **Events**
+
+   - `/admin/${teamId}/events`: Route for managing events (e.g., competitions, meets) for the selected team, allowing coaches to create, view, and manage event details.
+
+5. **Analytics**
+
+   - `/admin/${teamId}/analytics`: Route for accessing analytics and performance insights related to the selected team, offering trend analysis and training effectiveness evaluation.
+
+6. **Settings**
+   - `/admin/${teamId}/settings`: Route for configuring team-specific settings and application preferences, allowing coaches to customize the software to suit their needs.
+
+### Benefits
+
+- Provides clear organization and navigation tailored to the team context.
+- Ensures data isolation and security by associating each route with a specific team.
+- Facilitates seamless toggling between teams, enhancing usability and productivity for coaches managing multiple teams.
