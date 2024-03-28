@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
+import { Testimonials } from "@/components/testimonials";
 
 export default async function Home() {
   return (
@@ -141,6 +142,7 @@ export default async function Home() {
             </div>
           </div>
         </section>
+        <Testimonials />
         <section className="w-full py-12 md:py-24 lg:py-32">
           <div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6">
             <div className="space-y-3">
