@@ -1,7 +1,7 @@
 import "./globals.css";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 
 import { ThemeProvider } from "@/components/providers";
@@ -23,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={clsx(
+        className={cn(
           "min-h-screen font-sans antialiased",
           GeistSans.variable,
           GeistMono.variable,
