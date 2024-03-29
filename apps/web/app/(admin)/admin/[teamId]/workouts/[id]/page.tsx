@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { PencilIcon } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@repo/ui/button";
 
 export default async function IndividualWorkoutPage({
   params,

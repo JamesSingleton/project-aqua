@@ -6,14 +6,14 @@ import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { buttonVariants, Button } from "@/components/ui/button";
+import { buttonVariants, Button } from "@repo/ui/button";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from "@/components/ui/card";
+} from "@repo/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { NavItems } from "@/app/(admin)/LeftNav";

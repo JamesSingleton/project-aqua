@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { Bell, CircleUser } from "lucide-react";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@repo/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@repo/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,

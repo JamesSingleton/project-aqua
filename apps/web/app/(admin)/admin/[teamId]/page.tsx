@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { Users, ArrowUpRight, Calendar, Trophy, Waves } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@repo/ui/button";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardContent,
   CardDescription,
-} from "@/components/ui/card";
+} from "@repo/ui/card";
 import {
   TableHeader,
   TableRow,

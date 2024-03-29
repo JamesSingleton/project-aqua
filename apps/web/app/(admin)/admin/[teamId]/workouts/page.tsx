@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { MoreHorizontalIcon, PlusIcon } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@repo/ui/button";
 import { cn } from "@/lib/utils";
 import {
   Table,
