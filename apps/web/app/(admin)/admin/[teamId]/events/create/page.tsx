@@ -1,7 +1,7 @@
 import { Button } from "@repo/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Select, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@repo/ui/checkbox";
+import { Input } from "@repo/ui/input";
+import { Select, SelectTrigger, SelectValue } from "@repo/ui/select";
 import MeetSetup from "@/components/forms/MeetSetup";
 
 export default function CreateEventPage() {

@@ -15,15 +15,11 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from "@repo/ui/form";
+import { Input } from "@repo/ui/input";
 import { cn } from "@/lib/utils";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Calendar } from "@repo/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@repo/ui/popover";
 
 const CreateAthleteSchema = z.object({
   firstName: z.string().min(2).max(50),

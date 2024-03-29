@@ -3,7 +3,7 @@ import { PlusIcon } from "lucide-react";
 
 import { buttonVariants } from "@repo/ui/button";
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
+import { Input } from "@repo/ui/input";
 import {
   Card,
   CardHeader,

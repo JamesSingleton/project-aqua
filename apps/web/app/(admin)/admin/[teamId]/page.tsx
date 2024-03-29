@@ -15,8 +15,8 @@ import {
   TableBody,
   TableCell,
   Table,
-} from "@/components/ui/table";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+} from "@repo/ui/table";
+import { Avatar, AvatarFallback } from "@repo/ui/avatar";
 import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {

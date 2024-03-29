@@ -16,25 +16,21 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+} from "@repo/ui/form";
+import { Input } from "@repo/ui/input";
+import { Checkbox } from "@repo/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@repo/ui/select";
 import { states } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@repo/ui/popover";
 
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar } from "@repo/ui/calendar";
 
 const formSchema = z.object({
   meetName: z.string().min(2, {

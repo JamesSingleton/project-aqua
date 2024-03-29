@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "@repo/ui/sheet";
 import { buttonVariants, Button } from "@repo/ui/button";
 import {
   Card,
@@ -14,7 +14,7 @@ import {
   CardDescription,
   CardContent,
 } from "@repo/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@repo/ui/badge";
 import { cn } from "@/lib/utils";
 import { NavItems } from "@/app/(admin)/LeftNav";
 import { Icons } from "./icons";
