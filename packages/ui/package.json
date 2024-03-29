@@ -5,6 +5,7 @@
   "exports": {
     "./avatar": "./src/components/ui/avatar.tsx",
     "./badge": "./src/components/ui/badge.tsx",
+    "./breadcrumb": "./src/components/ui/breadcrumb.tsx",
     "./button": "./src/components/ui/button.tsx",
     "./calendar": "./src/components/ui/calendar.tsx",
     "./card": "./src/components/ui/card.tsx",
