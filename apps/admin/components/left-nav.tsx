@@ -15,9 +15,9 @@ import { Badge } from "@repo/ui/badge";
 
 export const NavItems = [
   { href: "", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/events", icon: Calendar, label: "Events" },
+  { href: "/meets", icon: Calendar, label: "Meets" },
   { href: "/roster", icon: Users, label: "Roster" },
-  { href: "/achievements", icon: Medal, label: "Achievements" },
+  // { href: "/achievements", icon: Medal, label: "Achievements" },
   { href: "/analytics", icon: LineChart, label: "Analytics" },
   { href: "/workouts", icon: Waves, label: "Workouts" },
 ];

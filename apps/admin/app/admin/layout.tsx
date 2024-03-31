@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuItem,
 } from "@repo/ui/dropdown-menu";
+import MobileNav from "@/components/mobile-nav";
 
 export default function AdminLayout({
   children,
@@ -34,7 +35,7 @@ export default function AdminLayout({
       </aside>
       <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 bg-background border-b px-4 lg:h-[60px] lg:px-6">
-          {/* <MobileNav /> */}
+          <MobileNav />
           <div className="ml-auto flex gap-4 items-center">
             <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
               <Bell className="h-4 w-4" />
