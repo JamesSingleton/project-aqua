@@ -2,25 +2,21 @@
 import Link from "next/link";
 import { usePathname, useParams } from "next/navigation";
 import {
-  Calendar,
-  LayoutDashboard,
   LineChart,
+  LayoutDashboard,
+  Calendar,
   Medal,
-  Package,
-  Package2,
-  Settings,
-  ShoppingCart,
-  Users2,
   Waves,
+  Users,
 } from "lucide-react";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@repo/ui/tooltip";
 
 import { cn } from "@/lib/utils";
+import { Badge } from "@repo/ui/badge";
 
 export const NavItems = [
   { href: "", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/events", icon: Calendar, label: "Events" },
-  // { href: "/teams", icon: Users, label: "Teams" },
+  { href: "/roster", icon: Users, label: "Roster" },
   { href: "/achievements", icon: Medal, label: "Achievements" },
   { href: "/analytics", icon: LineChart, label: "Analytics" },
   { href: "/workouts", icon: Waves, label: "Workouts" },
@@ -31,16 +27,10 @@ export default function LeftNav() {
   const params = useParams();
   const { teamId } = params;
   const pathParts = pathname.split("/");
+
   return (
-    <>
-      <nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
-        <Link
-          href={`/admin/${teamId}`}
-          className="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
-        >
-          <Package2 className="h-4 w-4 transition-all group-hover:scale-110" />
-          <span className="sr-only">Acme Inc</span>
-        </Link>
+    <div className="flex-1">
+      <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
         {NavItems.map(({ href, icon: Icon, label }) => {
           const hrefParts = href.split("/");
           const isActive =
@@ -49,38 +39,27 @@ export default function LeftNav() {
             pathParts[3] === hrefParts[1];
 
           return (
-            <Tooltip key={href}>
-              <TooltipTrigger asChild>
-                <Link
-                  href={`/admin/${teamId}${href}`}
-                  className={cn(
-                    "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
-                    isActive && "bg-accent",
-                  )}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span className="sr-only">{label}</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">{label}</TooltipContent>
-            </Tooltip>
+            <Link
+              key={href}
+              href={`/admin/${teamId}${href}`}
+              className={cn(
+                "flex items-center gap-4 rounded-xl px-3 py-2",
+                isActive
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Icon className="h-5 w-5" />
+              {label}
+              {label === "Events" && (
+                <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+                  6
+                </Badge>
+              )}
+            </Link>
           );
         })}
       </nav>
-      <nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Link
-              href="#"
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-            >
-              <Settings className="h-5 w-5" />
-              <span className="sr-only">Settings</span>
-            </Link>
-          </TooltipTrigger>
-          <TooltipContent side="right">Settings</TooltipContent>
-        </Tooltip>
-      </nav>
-    </>
+    </div>
   );
 }

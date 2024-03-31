@@ -4,7 +4,8 @@
     "outDir": "dist",
     "baseUrl": "src",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@/components/*": ["components/*"]
     }
   },
   "include": ["src"],
