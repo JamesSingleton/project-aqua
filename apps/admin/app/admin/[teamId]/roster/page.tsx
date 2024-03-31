@@ -34,7 +34,8 @@ import {
 } from "@repo/ui/table";
 import AthleteInfo from "@/components/roster/athlete-info";
 import { mockAthleteData } from "@/lib/mock-data";
-import { cn } from "@/lib/utils";
+import { columns } from "@/components/roster/columns";
+import { DataTable } from "@/components/roster/data-table";
 
 export default function RosterPage({
   params,
@@ -49,11 +50,11 @@ export default function RosterPage({
     (athlete) => athlete.id === athleteId,
   );
   const maleAthletes = mockAthleteData.filter(
-    (athlete) => athlete.gender === "male",
+    (athlete) => athlete.gender === "Male",
   );
 
   const femaleAthletes = mockAthleteData.filter(
-    (athlete) => athlete.gender === "female",
+    (athlete) => athlete.gender === "Female",
   );
 
   return (
@@ -153,79 +154,7 @@ export default function RosterPage({
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead className="hidden sm:table-cell">
-                          Gender
-                        </TableHead>
-                        <TableHead className="hidden sm:table-cell">
-                          Birthday
-                        </TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Age
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {mockAthleteData.map((athlete) => {
-                        return (
-                          <TableRow
-                            key={athlete.id}
-                            className={cn(
-                              selectedAthlete?.id === athlete.id &&
-                                "bg-muted/50",
-                            )}
-                          >
-                            <TableCell>
-                              <div className="font-medium">{athlete.name}</div>
-                            </TableCell>
-                            <TableCell className="hidden sm:table-cell">
-                              {athlete.gender}
-                            </TableCell>
-                            <TableCell className="hidden sm:table-cell">
-                              {new Date(
-                                athlete.date_of_birth,
-                              ).toLocaleDateString("en-US", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              })}
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              {athlete.age}
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button size="icon" variant="ghost">
-                                    <MoreVerticalIcon className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem asChild>
-                                    <Link
-                                      href={`/admin/${params.teamId}/roster?athleteId=${athlete.id}`}
-                                    >
-                                      Quick View
-                                    </Link>
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem asChild>
-                                    <Link
-                                      href={`/admin/${params.teamId}/athletes/${athlete.id}/edit`}
-                                    >
-                                      Edit
-                                    </Link>
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                  <DataTable columns={columns} data={mockAthleteData} />
                 </CardContent>
               </Card>
             </TabsContent>

@@ -19,12 +19,12 @@ interface EmergencyContact extends BaseContact {
 export interface Athlete {
   id: string;
   name: string;
-  gender: string;
+  gender: "Male" | "Female";
   age: number;
-  date_of_birth: string;
-  training_groups: string[];
-  practice_group: string;
-  personal_records: PersonalRecord[];
+  dateOfBirth: string;
+  trainingGroups: string[];
+  practiceGroup: string;
+  personalRecords: PersonalRecord[];
   parents: Parent[];
-  emergency_contacts: EmergencyContact[];
+  emergencyContacts: EmergencyContact[];
 }

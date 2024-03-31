@@ -59,7 +59,7 @@ export default function AthleteInfo({ athlete }: AthleteInfoProps) {
           </CardTitle>
           <CardDescription>
             Date of Birth:{" "}
-            {new Date(athlete.date_of_birth).toLocaleDateString("en-US", {
+            {new Date(athlete.dateOfBirth).toLocaleDateString("en-US", {
               year: "numeric",
               month: "long",
               day: "numeric",
@@ -106,13 +106,13 @@ export default function AthleteInfo({ athlete }: AthleteInfoProps) {
             </li>
             <li className="flex items-center justify-between">
               <span className="text-muted-foreground">Practice Group</span>
-              <span>{athlete.practice_group}</span>
+              <span>{athlete.practiceGroup}</span>
             </li>
           </ul>
           <Separator className="my-2" />
           <div className="font-semibold">Personal Records</div>
           <ul className="grid gap-3">
-            {athlete.personal_records.map((record) => (
+            {athlete.personalRecords.map((record) => (
               <li
                 key={record.event}
                 className="flex items-center justify-between"
@@ -161,13 +161,13 @@ export default function AthleteInfo({ athlete }: AthleteInfoProps) {
             </div>
           </>
         )}
-        {athlete.emergency_contacts.length > 0 && (
+        {athlete.emergencyContacts.length > 0 && (
           <>
             <Separator className="my-4" />
             <div className="grid gap-3">
               <div className="font-semibold">Emergency Contact Information</div>
               <dl className="grid gap-3">
-                {athlete.emergency_contacts.map((contact) => (
+                {athlete.emergencyContacts.map((contact) => (
                   <div
                     className="grid gap-3"
                     key={`${contact.name}_${contact.phone_number}`}

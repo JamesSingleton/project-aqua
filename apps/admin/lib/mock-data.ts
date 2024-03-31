@@ -4,16 +4,12 @@ export const mockAthleteData: Athlete[] = [
   {
     id: "a1b2c3",
     name: "Emily Johnson",
-    gender: "female",
+    gender: "Female",
     age: 16,
-    date_of_birth: "2008-05-12",
-    training_groups: [
-      "Junior Squad",
-      "Freestyle Masters",
-      "Butterfly Training",
-    ],
-    practice_group: "Group A",
-    personal_records: [
+    dateOfBirth: "2008-05-12",
+    trainingGroups: ["Junior Squad", "Freestyle Masters", "Butterfly Training"],
+    practiceGroup: "Group A",
+    personalRecords: [
       { event: "50 Free", time: "26.45" },
       { event: "100 Breaststroke", time: "1:15.78" },
       { event: "200 Butterfly", time: "2:15.76" },
@@ -32,7 +28,7 @@ export const mockAthleteData: Athlete[] = [
         phone_number: "987-654-3210",
       },
     ],
-    emergency_contacts: [
+    emergencyContacts: [
       {
         name: "Sarah Smith",
         relationship: "Aunt",
@@ -48,12 +44,12 @@ export const mockAthleteData: Athlete[] = [
   {
     id: "d4e5f6",
     name: "Michael Smith",
-    gender: "male",
+    gender: "Male",
     age: 18,
-    date_of_birth: "2006-09-23",
-    training_groups: ["Senior Squad", "Backstroke Champions"],
-    practice_group: "Group B",
-    personal_records: [
+    dateOfBirth: "2006-09-23",
+    trainingGroups: ["Senior Squad", "Backstroke Champions"],
+    practiceGroup: "Group B",
+    personalRecords: [
       { event: "200 Backstroke", time: "2:20.34" },
       { event: "50 Backstroke", time: "30.21" },
       { event: "100 Backstroke", time: "1:05.76" },
@@ -72,7 +68,7 @@ export const mockAthleteData: Athlete[] = [
         phone_number: "444-555-6666",
       },
     ],
-    emergency_contacts: [
+    emergencyContacts: [
       {
         name: "Alice Jones",
         relationship: "Grandmother",
@@ -88,12 +84,12 @@ export const mockAthleteData: Athlete[] = [
   {
     id: "g7h8i9",
     name: "Sophia Nguyen",
-    gender: "female",
+    gender: "Female",
     age: 14,
-    date_of_birth: "2010-03-08",
-    training_groups: ["Development Squad", "Breaststroke Prospects"],
-    practice_group: "Group C",
-    personal_records: [
+    dateOfBirth: "2010-03-08",
+    trainingGroups: ["Development Squad", "Breaststroke Prospects"],
+    practiceGroup: "Group C",
+    personalRecords: [
       { event: "200 Breaststroke", time: "2:45.78" },
       { event: "100 Breaststroke", time: "1:16.45" },
       { event: "50 Breaststroke", time: "34.89" },
@@ -112,7 +108,7 @@ export const mockAthleteData: Athlete[] = [
         phone_number: "888-999-0000",
       },
     ],
-    emergency_contacts: [
+    emergencyContacts: [
       {
         name: "Mark Nguyen",
         relationship: "Uncle",
@@ -128,12 +124,12 @@ export const mockAthleteData: Athlete[] = [
   {
     id: "j0k1l2",
     name: "James Wilson",
-    gender: "male",
+    gender: "Male",
     age: 15,
-    date_of_birth: "2009-11-15",
-    training_groups: ["Junior Squad", "Freestyle Masters"],
-    practice_group: "Group A",
-    personal_records: [
+    dateOfBirth: "2009-11-15",
+    trainingGroups: ["Junior Squad", "Freestyle Masters"],
+    practiceGroup: "Group A",
+    personalRecords: [
       { event: "50 Free", time: "25.98" },
       { event: "100 Free", time: "56.34" },
       { event: "200 Free", time: "2:03.21" },
@@ -152,7 +148,7 @@ export const mockAthleteData: Athlete[] = [
         phone_number: "555-666-7777",
       },
     ],
-    emergency_contacts: [
+    emergencyContacts: [
       {
         name: "Emily Wilson",
         relationship: "Sister",
@@ -168,12 +164,12 @@ export const mockAthleteData: Athlete[] = [
   {
     id: "m3n4o5",
     name: "Emma Thompson",
-    gender: "female",
+    gender: "Female",
     age: 17,
-    date_of_birth: "2007-07-19",
-    training_groups: ["Senior Squad", "Butterfly Training"],
-    practice_group: "Group B",
-    personal_records: [
+    dateOfBirth: "2007-07-19",
+    trainingGroups: ["Senior Squad", "Butterfly Training"],
+    practiceGroup: "Group B",
+    personalRecords: [
       { event: "50 Butterfly", time: "27.45" },
       { event: "100 Butterfly", time: "1:00.12" },
       { event: "200 Butterfly", time: "2:15.76" },
@@ -192,7 +188,7 @@ export const mockAthleteData: Athlete[] = [
         phone_number: "444-555-6666",
       },
     ],
-    emergency_contacts: [
+    emergencyContacts: [
       {
         name: "Anna Thompson",
         relationship: "Sister",
@@ -208,12 +204,12 @@ export const mockAthleteData: Athlete[] = [
   {
     id: "p6q7r8",
     name: "Daniel Brown",
-    gender: "male",
+    gender: "Male",
     age: 13,
-    date_of_birth: "2011-02-28",
-    training_groups: ["Development Squad", "Backstroke Champions"],
-    practice_group: "Group C",
-    personal_records: [
+    dateOfBirth: "2011-02-28",
+    trainingGroups: ["Development Squad", "Backstroke Champions"],
+    practiceGroup: "Group C",
+    personalRecords: [
       { event: "50 Backstroke", time: "32.87" },
       { event: "100 Backstroke", time: "1:10.45" },
       { event: "200 Backstroke", time: "2:35.21" },
@@ -232,7 +228,7 @@ export const mockAthleteData: Athlete[] = [
         phone_number: "666-777-8888",
       },
     ],
-    emergency_contacts: [
+    emergencyContacts: [
       {
         name: "Jessica Brown",
         relationship: "Sister",
@@ -248,12 +244,12 @@ export const mockAthleteData: Athlete[] = [
   {
     id: "s9t0u1",
     name: "Olivia Davis",
-    gender: "female",
+    gender: "Female",
     age: 19,
-    date_of_birth: "2005-12-03",
-    training_groups: ["Senior Squad", "Breaststroke Prospects"],
-    practice_group: "Group A",
-    personal_records: [
+    dateOfBirth: "2005-12-03",
+    trainingGroups: ["Senior Squad", "Breaststroke Prospects"],
+    practiceGroup: "Group A",
+    personalRecords: [
       { event: "50 Breaststroke", time: "33.56" },
       { event: "100 Breaststroke", time: "1:15.78" },
       { event: "200 Breaststroke", time: "2:40.12" },
@@ -272,7 +268,7 @@ export const mockAthleteData: Athlete[] = [
         phone_number: "111-222-3333",
       },
     ],
-    emergency_contacts: [
+    emergencyContacts: [
       {
         name: "Peter Davis",
         relationship: "Brother",
@@ -288,12 +284,12 @@ export const mockAthleteData: Athlete[] = [
   {
     id: "v2w3x4",
     name: "Ethan Miller",
-    gender: "male",
+    gender: "Male",
     age: 16,
-    date_of_birth: "2008-04-27",
-    training_groups: ["Junior Squad", "Freestyle Masters"],
-    practice_group: "Group B",
-    personal_records: [
+    dateOfBirth: "2008-04-27",
+    trainingGroups: ["Junior Squad", "Freestyle Masters"],
+    practiceGroup: "Group B",
+    personalRecords: [
       { event: "50 Free", time: "24.76" },
       { event: "100 Free", time: "53.21" },
       { event: "200 Free", time: "1:57.89" },
@@ -312,7 +308,7 @@ export const mockAthleteData: Athlete[] = [
         phone_number: "222-333-4444",
       },
     ],
-    emergency_contacts: [
+    emergencyContacts: [
       {
         name: "Steven Miller",
         relationship: "Brother",
@@ -328,12 +324,12 @@ export const mockAthleteData: Athlete[] = [
   {
     id: "y5z6a7",
     name: "Lily Martinez",
-    gender: "female",
+    gender: "Female",
     age: 12,
-    date_of_birth: "2012-08-14",
-    training_groups: ["Development Squad", "Breaststroke Prospects"],
-    practice_group: "Group C",
-    personal_records: [
+    dateOfBirth: "2012-08-14",
+    trainingGroups: ["Development Squad", "Breaststroke Prospects"],
+    practiceGroup: "Group C",
+    personalRecords: [
       { event: "50 Breaststroke", time: "36.12" },
       { event: "100 Breaststroke", time: "1:19.34" },
       { event: "200 Breaststroke", time: "2:52.45" },
@@ -352,7 +348,7 @@ export const mockAthleteData: Athlete[] = [
         phone_number: "999-000-1111",
       },
     ],
-    emergency_contacts: [
+    emergencyContacts: [
       {
         name: "Jose Martinez",
         relationship: "Brother",
@@ -368,12 +364,12 @@ export const mockAthleteData: Athlete[] = [
   {
     id: "b8c9d0",
     name: "Noah White",
-    gender: "male",
+    gender: "Male",
     age: 14,
-    date_of_birth: "2010-06-20",
-    training_groups: ["Junior Squad", "Backstroke Champions"],
-    practice_group: "Group A",
-    personal_records: [
+    dateOfBirth: "2010-06-20",
+    trainingGroups: ["Junior Squad", "Backstroke Champions"],
+    practiceGroup: "Group A",
+    personalRecords: [
       { event: "50 Backstroke", time: "29.45" },
       { event: "100 Backstroke", time: "1:03.89" },
       { event: "200 Backstroke", time: "2:25.67" },
@@ -392,7 +388,7 @@ export const mockAthleteData: Athlete[] = [
         phone_number: "777-888-9999",
       },
     ],
-    emergency_contacts: [
+    emergencyContacts: [
       {
         name: "Christopher White",
         relationship: "Brother",
