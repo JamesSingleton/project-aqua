@@ -1,10 +1,5 @@
 import Link from "next/link";
-import {
-  ListFilterIcon,
-  FileIcon,
-  UserPlusIcon,
-  MoreVerticalIcon,
-} from "lucide-react";
+import { FileIcon, UserPlusIcon } from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -15,15 +10,6 @@ import {
 } from "@repo/ui/card";
 import { Button, buttonVariants } from "@repo/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@repo/ui/tabs";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuCheckboxItem,
-  DropdownMenuItem,
-} from "@repo/ui/dropdown-menu";
 import {
   Table,
   TableHeader,
@@ -36,8 +22,13 @@ import AthleteInfo from "@/components/roster/athlete-info";
 import { mockAthleteData } from "@/lib/mock-data";
 import { columns } from "@/components/roster/columns";
 import { DataTable } from "@/components/roster/data-table";
+import { Athlete } from "@/types";
 
-export default function RosterPage({
+async function getData({ teamId }: { teamId: string }): Promise<Athlete[]> {
+  return mockAthleteData;
+}
+
+export default async function RosterPage({
   params,
   searchParams,
 }: {
@@ -45,15 +36,16 @@ export default function RosterPage({
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
   const { teamId } = params;
+  const rosterData = await getData({ teamId });
   const { athleteId } = searchParams;
-  const selectedAthlete = mockAthleteData.find(
+  const selectedAthlete = rosterData.find(
     (athlete) => athlete.id === athleteId,
   );
-  const maleAthletes = mockAthleteData.filter(
+  const maleAthletes = rosterData.filter(
     (athlete) => athlete.gender === "Male",
   );
 
-  const femaleAthletes = mockAthleteData.filter(
+  const femaleAthletes = rosterData.filter(
     (athlete) => athlete.gender === "Female",
   );
 
@@ -62,9 +54,9 @@ export default function RosterPage({
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold md:text-2xl">Roster</h1>
       </div>
-      <div className="grid flex-1 items-start gap-4 md:gap-8 lg:grid-cols-3 xl:grid-cols-3">
+      <div className="overflow-auto max-w-full">
         <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <Card className="sm:col-span-2">
               <CardHeader className="pb-3">
                 <CardTitle>Your Swim Team</CardTitle>
@@ -85,9 +77,7 @@ export default function RosterPage({
             <Card>
               <CardHeader className="pb-2">
                 <CardDescription>Swimmers</CardDescription>
-                <CardTitle className="text-3xl">
-                  {mockAthleteData.length}
-                </CardTitle>
+                <CardTitle className="text-3xl">{rosterData.length}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4">
@@ -107,34 +97,13 @@ export default function RosterPage({
               </CardHeader>
             </Card>
           </div>
-          <Tabs defaultValue="swimmers">
+          <Tabs defaultValue="swimmers" className="overflow-auto max-w-full">
             <div className="flex items-center">
               <TabsList>
                 <TabsTrigger value="swimmers">Swimmers</TabsTrigger>
                 <TabsTrigger value="staff">Staff</TabsTrigger>
               </TabsList>
               <div className="ml-auto flex items-center gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      className="h-7 gap-1 text-sm"
-                      size="sm"
-                      variant="outline"
-                    >
-                      <ListFilterIcon className="h-3.5 w-3.5" />
-                      <span className="sr-only sm:not-sr-only">Filter</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Filter by</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuCheckboxItem checked>
-                      Attended
-                    </DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem>Missed</DropdownMenuCheckboxItem>
-                    <DropdownMenuCheckboxItem>Excused</DropdownMenuCheckboxItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
                 <Button
                   className="h-7 gap-1 text-sm"
                   size="sm"
@@ -207,7 +176,7 @@ export default function RosterPage({
           </Tabs>
         </div>
         <div>
-          {selectedAthlete && <AthleteInfo athlete={selectedAthlete} />}
+          {/* {selectedAthlete && <AthleteInfo athlete={selectedAthlete} />} */}
         </div>
       </div>
     </>
