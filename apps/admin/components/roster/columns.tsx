@@ -156,7 +156,7 @@ export const columns: ColumnDef<Athlete>[] = [
                 </SheetDescription>
               </SheetHeader>
               <Separator className="my-4" />
-              <ScrollArea className="h-[calc(100vh-8rem)]">
+              <ScrollArea className="h-[calc(100vh-8rem)] pr-3 pb-10">
                 <div className="grid gap-3">
                   <div className="font-semibold">Swimmer Details</div>
                   <ul className="grid gap-3">
