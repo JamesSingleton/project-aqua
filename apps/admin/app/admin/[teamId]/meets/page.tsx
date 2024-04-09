@@ -5,7 +5,7 @@ export default async function MeetsPage({
 }) {
   return (
     <>
-      <h1>Meets</h1>
+      <h1 className="text-lg font-semibold md:text-2xl">Meets</h1>
     </>
   );
 }

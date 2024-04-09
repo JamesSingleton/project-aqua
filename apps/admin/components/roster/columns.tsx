@@ -109,6 +109,7 @@ export const columns: ColumnDef<Athlete>[] = [
               >
                 Copy Swimmer's ID
               </DropdownMenuItem>
+              <DropdownMenuItem>Mark as Inactive</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link

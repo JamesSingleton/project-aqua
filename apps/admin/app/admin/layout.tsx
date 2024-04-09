@@ -3,7 +3,6 @@ import { CircleUser, Bell } from "lucide-react";
 import LeftNav from "@/components/left-nav";
 import { Button } from "@repo/ui/button";
 import { Icons } from "@repo/ui/icons";
-import { Sheet, SheetContent, SheetTrigger } from "@repo/ui/sheet";
 
 import {
   DropdownMenu,
@@ -22,7 +21,7 @@ export default function AdminLayout({
 }) {
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] bg-muted/40">
-      <aside className="hidden border-r bg-background md:block">
+      <aside className="hidden border-r bg-background md:block sticky top-0 h-screen overflow-auto">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <Link
             href="/admin"
@@ -34,7 +33,7 @@ export default function AdminLayout({
         </div>
       </aside>
       <div className="flex flex-col">
-        <header className="flex h-14 items-center gap-4 bg-background border-b px-4 lg:h-[60px] lg:px-6">
+        <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 sticky top-0 z-50 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <MobileNav />
           <div className="ml-auto flex gap-4 items-center">
             <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
