@@ -3,44 +3,51 @@ import { InfiniteMovingCards } from "./infinite-moving-cards";
 const testimonials = [
   {
     quote:
-      "It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity, it was the season of Light, it was the season of Darkness, it was the spring of hope, it was the winter of despair.",
-    name: "Charles Dickens",
-    title: "A Tale of Two Cities",
+      "This new platform revolutionized how we manage our swim team. The features are outstanding and the interface is incredibly user-friendly.",
+    name: "Sarah Johnson",
+    organization: "Aquatic Aces Swim Club",
   },
   {
     quote:
-      "To be, or not to be, that is the question: Whether 'tis nobler in the mind to suffer The slings and arrows of outrageous fortune, Or to take Arms against a Sea of troubles, And by opposing end them: to die, to sleep.",
-    name: "William Shakespeare",
-    title: "Hamlet",
-  },
-  {
-    quote: "All that we see or seem is but a dream within a dream.",
-    name: "Edgar Allan Poe",
-    title: "A Dream Within a Dream",
+      "As a coach, I've tried several swim team management tools, but none compare to this one. It's intuitive, efficient, and has everything we need to streamline our operations.",
+    name: "Michael Thompson",
+    organization: "Pacific Coast Aquatics",
   },
   {
     quote:
-      "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.",
-    name: "Jane Austen",
-    title: "Pride and Prejudice",
+      "Our swimmers love the new platform! It's helped them stay organized, motivated, and connected with their teammates like never before.",
+    name: "Emily Rodriguez",
+    organization: "Golden Dolphins Swim Team",
   },
   {
     quote:
-      "Call me Ishmael. Some years ago—never mind how long precisely—having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world.",
-    name: "Herman Melville",
-    title: "Moby-Dick",
+      "I've been using this software for months now, and I'm continually impressed by its capabilities. It's a game-changer for swim coaches and teams.",
+    name: "David Lee",
+    organization: "Central Valley Swim Academy",
+  },
+  {
+    quote:
+      "This platform has made managing our swim team a breeze. From scheduling practices to tracking performance metrics, it's all in one place and easy to access.",
+    name: "Jessica Smith",
+    organization: "Marine Marlins Swim Club",
+  },
+  {
+    quote:
+      "I highly recommend this software to any swim coach or team manager. It has saved us countless hours of administrative work and allowed us to focus more on coaching and training.",
+    name: "Daniel Brown",
+    organization: "Cascade Rapids Aquatics",
   },
 ];
 
 export function Testimonials() {
   return (
-    <div className="h-[40rem] rounded-md flex flex-col antialiased bg-white dark:bg-black dark:bg-grid-white/[0.05] items-center justify-center relative overflow-hidden">
-      <h2 className="text-4xl">What people say</h2>
+    <section className="relative mt-16 md:mt-18">
+      <h2 className="text-4xl mb-8">What people are saying</h2>
       <InfiniteMovingCards
         items={testimonials}
         direction="right"
         speed="slow"
       />
-    </div>
+    </section>
   );
 }

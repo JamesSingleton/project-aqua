@@ -5,6 +5,9 @@ import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 
 import { ThemeProvider } from "@/components/providers";
+import Header from "@/components/header";
+import { Footer } from "@/components/footer";
+import { CTA } from "@/components/cta";
 
 export const metadata: Metadata = {
   title: {
@@ -13,6 +16,13 @@ export const metadata: Metadata = {
   },
   description:
     "Project Aqua is the all-in-one solution for managing swim teams, tracking stats, registering for events, and setting up meets.",
+};
+
+export const viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)" },
+    { media: "(prefers-color-scheme: dark)" },
+  ],
 };
 
 export default function RootLayout({
@@ -24,9 +34,8 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
-          "min-h-screen font-sans antialiased",
-          GeistSans.variable,
-          GeistMono.variable,
+          `${GeistSans.variable} ${GeistMono.variable}`,
+          "bg-background overflow-x-hidden",
         )}
       >
         <ThemeProvider
@@ -35,7 +44,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <Header />
+          <main className="container mx-auto px-4 overflow-hidden md:overflow-visible">
+            {children}
+            <CTA />
+          </main>
+          <Footer />
         </ThemeProvider>
       </body>
     </html>
