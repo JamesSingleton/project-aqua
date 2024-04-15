@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { Button, buttonVariants } from "@repo/ui/button";
 
-import { cn } from "@/lib/utils";
-
 export function Hero() {
   return (
     <section className="text-center mt-16 md:mt-18 items-center flex flex-col">

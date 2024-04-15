@@ -79,22 +79,10 @@ export function Footer() {
               <span>Solutions</span>
               <ul>
                 <li className="transition-colors hover:text-primary text-muted-foreground">
-                  <Link href="/engine">Midday Engine</Link>
+                  <Link href="/coaches">For Coaches</Link>
                 </li>
                 <li className="transition-colors hover:text-primary text-muted-foreground">
-                  <Link href="https://docs.midday.ai/self-hosted">
-                    Self hosted
-                  </Link>
-                </li>
-                <li className="transition-colors hover:text-primary text-muted-foreground">
-                  <Link href="/pricing">SaaS hosting</Link>
-                </li>
-                {/* Nothing here yet */}
-                {/* <li className="transition-colors hover:text-primary text-muted-foreground">
-                  <Link href="/open-startup">Open startup</Link>
-                </li> */}
-                <li className="transition-colors hover:text-primary text-muted-foreground">
-                  <Link href="/oss-friends">OSS friends</Link>
+                  <Link href="/clubs">For Clubs</Link>
                 </li>
               </ul>
             </div>
