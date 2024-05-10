@@ -22,10 +22,42 @@ import AthleteInfo from "@/components/roster/athlete-info";
 import { mockAthleteData } from "@/lib/mock-data";
 import { columns } from "@/components/roster/columns";
 import { DataTable } from "@/components/roster/data-table";
+
 import { Athlete } from "@/types";
+import type { Metadata, ResolvingMetadata } from "next";
 
 async function getData({ teamId }: { teamId: string }): Promise<Athlete[]> {
   return mockAthleteData;
+}
+
+export async function generateMetadata(
+  {
+    params,
+    searchParams,
+  }: {
+    params: { teamId: string };
+    searchParams: { [key: string]: string | string[] | undefined };
+  },
+  parent: ResolvingMetadata
+): Promise<Metadata> {
+  const id = params.teamId;
+
+  return {
+    title: "Manager Your Roster",
+    alternates: {
+      canonical: `/admin/${id}/roster`,
+    },
+    description:
+      "View and manage your swim team's roster. Add, edit, and remove swimmers as needed.",
+    openGraph: {
+      title: "Manager Your Roster",
+      description:
+        "View and manage your swim team's roster. Add, edit, and remove swimmers as needed.",
+      type: "website",
+      url: `/admin/${id}/roster`,
+      siteName: "Project Aqua",
+    },
+  };
 }
 
 export default async function RosterPage({
@@ -39,14 +71,14 @@ export default async function RosterPage({
   const rosterData = await getData({ teamId });
   const { athleteId } = searchParams;
   const selectedAthlete = rosterData.find(
-    (athlete) => athlete.id === athleteId,
+    (athlete) => athlete.id === athleteId
   );
   const maleAthletes = rosterData.filter(
-    (athlete) => athlete.gender === "Male",
+    (athlete) => athlete.gender === "Male"
   );
 
   const femaleAthletes = rosterData.filter(
-    (athlete) => athlete.gender === "Female",
+    (athlete) => athlete.gender === "Female"
   );
 
   return (

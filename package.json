@@ -1,12 +1,13 @@
 {
   "name": "project-aqua",
   "private": true,
+  "license": "AGPL-3.0-only",
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "prepare": "husky install"
+    "prepare": "husky"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.2.2",

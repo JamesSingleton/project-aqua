@@ -14,6 +14,19 @@ import {
 } from "@repo/ui/dropdown-menu";
 import MobileNav from "@/components/mobile-nav";
 
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  metadataBase: new URL("http://localhost:3001"),
+  title: {
+    template: "%s | Project Aqua",
+    default:
+      "Swim Coach Dashboard: Roster, Upcoming Meets, and More | Project Aqua",
+  },
+  description:
+    "Stay on top of your swim team's activities with Project Aqua's Swim Coach Dashboard. View your roster, track upcoming meets, and access other essential tools for effective team management.",
+};
+
 export default function AdminLayout({
   children,
   modal,

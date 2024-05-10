@@ -242,6 +242,8 @@ importers:
         specifier: ^5.4.3
         version: 5.4.5
 
+  packages/emails: {}
+
   packages/eslint-config:
     devDependencies:
       '@typescript-eslint/eslint-plugin':

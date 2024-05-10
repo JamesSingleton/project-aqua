@@ -5,6 +5,7 @@ export default function AthleteModal() {
   return (
     <Modal>
       <h2>Create Athlete</h2>
+      <div>hello world</div>
     </Modal>
   );
 }

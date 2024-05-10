@@ -30,6 +30,28 @@ import { Button, buttonVariants } from "@repo/ui/button";
 import { Badge } from "@repo/ui/badge";
 import { cn } from "@/lib/utils";
 
+import type { Metadata, ResolvingMetadata } from "next";
+
+type Props = {
+  params: { teamId: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+};
+
+export async function generateMetadata(
+  { params, searchParams }: Props,
+  parent: ResolvingMetadata
+): Promise<Metadata> {
+  console.log("asdasdasdasdasdadasd");
+  const previousMetadata = (await parent).title;
+
+  return {
+    ...previousMetadata,
+    alternates: {
+      canonical: `/admin/${params.teamId}`,
+    },
+  };
+}
+
 const swimMeets = [
   {
     id: 1,

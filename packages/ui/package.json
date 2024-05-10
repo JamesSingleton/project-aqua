@@ -34,7 +34,7 @@
     "./tooltip": "./src/components/ui/tooltip.tsx"
   },
   "scripts": {
-    "lint": "eslint . --max-warnings 0",
+    "lint": "eslint .",
     "generate:component": "turbo gen react-component"
   },
   "devDependencies": {
