@@ -41,7 +41,6 @@ export async function generateMetadata(
   { params, searchParams }: Props,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
-  console.log("asdasdasdasdasdadasd");
   const previousMetadata = (await parent).title;
 
   return {
