@@ -17,7 +17,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="overscroll-none bg-background">
-        <Providers>{children}</Providers>
+        <Providers>
+          <>
+          {children}
+          </>
+        </Providers>
       </body>
     </html>
   );
