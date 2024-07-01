@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@react-email/components": "^0.0.19",
-    "@repo/ui": "*",
+    "@repo/ui": "workspace:*",
     "@vercel/analytics": "^1.1.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
@@ -29,8 +29,8 @@
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "^14.2.3",
-    "@repo/eslint-config": "*",
-    "@repo/typescript-config": "*",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
     "@types/eslint": "^8.56.1",
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.3",
