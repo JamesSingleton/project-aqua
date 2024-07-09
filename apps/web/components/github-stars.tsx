@@ -11,7 +11,9 @@ export function GithubStars() {
       try {
         const response = await fetchGithubStars();
         setData(response);
-      } catch {}
+      } catch {
+        console.error("Failed to fetch GitHub stars");
+      }
     }
 
     fetchData();
@@ -45,7 +47,7 @@ export function GithubStars() {
             minimumFractionDigits: 0,
             maximumFractionDigits: 1,
           }).format(
-            (data as { stargazers_count?: number }).stargazers_count ?? 0,
+            (data as { stargazers_count?: number }).stargazers_count ?? 0
           )}
       </div>
     </a>

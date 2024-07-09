@@ -69,7 +69,7 @@ const Header = () => {
             <Icons.logo className="h-8 w-8" />
           </Link>
           <ul className="space-x-2 font-medium text-sm hidden md:flex mx-3">
-            {links.map(({ path, name, title }) => {
+            {links.map(({ path, title }) => {
               const isActive =
                 path === "/updates"
                   ? pathname.includes("updates")
@@ -81,7 +81,7 @@ const Header = () => {
                     href={path}
                     className={cn(
                       "h-8 items-center justify-center rounded-md text-sm font-medium transition-colors px-3 py-2 inline-flex text-secondary-foreground hover:bg-secondary",
-                      isActive && "bg-secondary hover:bg-secondary",
+                      isActive && "bg-secondary hover:bg-secondary"
                     )}
                   >
                     {title}
@@ -152,7 +152,7 @@ const Header = () => {
               className="px-3 pt-8 text-xl text-[#707070] dark:text-[#878787] space-y-8 mb-8"
               variants={listVariant}
             >
-              {links.map(({ path, name, title }) => {
+              {links.map(({ path, title }) => {
                 const isActive =
                   path === "/updates"
                     ? pathname.includes("updates")
