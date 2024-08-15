@@ -47,7 +47,7 @@ export function GithubStars() {
             minimumFractionDigits: 0,
             maximumFractionDigits: 1,
           }).format(
-            (data as { stargazers_count?: number }).stargazers_count ?? 0
+            (data as { stargazers_count?: number }).stargazers_count ?? 0,
           )}
       </div>
     </a>

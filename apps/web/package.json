@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "next lint && pnpm prettier:check",
+    "prettier:check": "prettier --check .",
+    "prettier:write": "prettier --write ."
   },
   "dependencies": {
     "@react-email/components": "^0.0.22",

@@ -18,9 +18,7 @@ export default function RootLayout({
     >
       <body className="overscroll-none bg-background">
         <Providers>
-          <>
-          {children}
-          </>
+          <>{children}</>
         </Providers>
       </body>
     </html>

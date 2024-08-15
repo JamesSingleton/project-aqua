@@ -25,6 +25,6 @@ export function Modal({ children }: { children: React.ReactNode }) {
     <Dialog defaultOpen onOpenChange={(open) => !open && navigateBack()}>
       {children}
     </Dialog>,
-    document.getElementById("modal-root")!
+    document.getElementById("modal-root")!,
   );
 }
