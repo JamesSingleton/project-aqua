@@ -5,11 +5,9 @@ import { Dialog } from "@repo/ui/dialog";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 
-export function Modal({ children }: { children: React.ReactNode }) {
+export function Modal({ children }: { children: React.ReactElement }) {
   const router = useRouter();
   const dialogRef = useRef<ElementRef<"dialog">>(null);
-
-  console.log("Somewhere in the modal");
 
   useEffect(() => {
     if (!dialogRef.current?.open) {
