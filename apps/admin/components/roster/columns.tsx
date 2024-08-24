@@ -121,7 +121,7 @@ export const columns: ColumnDef<Athlete>[] = [
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link
-                  href={`/admin/${params.teamId}/athletes/${athlete.id}/edit`}
+                  href={`/admin/${params.teamId}/swimmers/${athlete.id}/edit`}
                 >
                   Edit
                 </Link>

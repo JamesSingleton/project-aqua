@@ -38,7 +38,7 @@ export async function generateMetadata(
     params: { teamId: string };
     searchParams: { [key: string]: string | string[] | undefined };
   },
-  parent: ResolvingMetadata,
+  parent: ResolvingMetadata
 ): Promise<Metadata> {
   const id = params.teamId;
 
@@ -71,14 +71,14 @@ export default async function RosterPage({
   const rosterData = await getData({ teamId });
   const { athleteId } = searchParams;
   const selectedAthlete = rosterData.find(
-    (athlete) => athlete.id === athleteId,
+    (athlete) => athlete.id === athleteId
   );
-  const maleAthletes = rosterData.filter(
-    (athlete) => athlete.gender === "Male",
+  const maleSwimmers = rosterData.filter(
+    (athlete) => athlete.gender === "Male"
   );
 
-  const femaleAthletes = rosterData.filter(
-    (athlete) => athlete.gender === "Female",
+  const femaleSwimmers = rosterData.filter(
+    (athlete) => athlete.gender === "Female"
   );
 
   return (
@@ -98,7 +98,7 @@ export default async function RosterPage({
               </CardHeader>
               <CardFooter>
                 <Link
-                  href={`/admin/${teamId}/athletes/create`}
+                  href={`/admin/${teamId}/swimmers/create`}
                   className={buttonVariants()}
                 >
                   <UserPlusIcon className="h-4 w-4" />
@@ -114,10 +114,10 @@ export default async function RosterPage({
               <CardContent>
                 <div className="grid gap-4">
                   <div className="text-xs text-muted-foreground">
-                    Male Swimmers: {maleAthletes.length}
+                    Male Swimmers: {maleSwimmers.length}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Female Swimmers: {femaleAthletes.length}
+                    Female Swimmers: {femaleSwimmers.length}
                   </div>
                 </div>
               </CardContent>
