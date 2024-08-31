@@ -8,6 +8,9 @@ import {
   CalendarIcon,
   CircleX,
   CircleCheck,
+  Calendar,
+  Award,
+  TrendingUp,
 } from "lucide-react";
 import {
   Card,
@@ -39,7 +42,7 @@ type Props = {
 
 export async function generateMetadata(
   { params, searchParams }: Props,
-  parent: ResolvingMetadata,
+  parent: ResolvingMetadata
 ): Promise<Metadata> {
   const previousMetadata = (await parent).title;
 
@@ -84,54 +87,58 @@ export default function AdminHomePage({
     <>
       <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
       <div className="flex flex-1 flex-col gap-4 md:gap-8">
-        <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Roster</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">
+                Total Swimmers
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">25</div>
+              <div className="text-2xl font-bold">45</div>
               <p className="text-xs text-muted-foreground">
-                +20.1% from last month
+                +4 from last season
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Upcoming Swim Meets
+                Upcoming Meets
               </CardTitle>
-              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+              <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">+2350</div>
+              <div className="text-2xl font-bold">3</div>
               <p className="text-xs text-muted-foreground">
-                +180.1% from last month
+                Next meet in 2 weeks
               </p>
             </CardContent>
           </Card>
-          <Card x-chunk="dashboard-01-chunk-2">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Sales</CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">
+                Team Records
+              </CardTitle>
+              <Award className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">+12,234</div>
-              <p className="text-xs text-muted-foreground">
-                +19% from last month
-              </p>
+              <div className="text-2xl font-bold">12</div>
+              <p className="text-xs text-muted-foreground">2 new this season</p>
             </CardContent>
           </Card>
-          <Card x-chunk="dashboard-01-chunk-3">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Now</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">
+                Performance Trend
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">+573</div>
+              <div className="text-2xl font-bold">+8.2%</div>
               <p className="text-xs text-muted-foreground">
-                +201 since last hour
+                Improvement from last meet
               </p>
             </CardContent>
           </Card>
@@ -174,7 +181,9 @@ export default function AdminHomePage({
                         liam@example.com
                       </div>
                     </TableCell>
-                    <TableCell className="hidden xl:table-cell">Sale</TableCell>
+                    <TableCell className="hidden xl:table-cell">
+                      Invitational
+                    </TableCell>
                     <TableCell className="hidden xl:table-cell">
                       <Badge className="text-xs" variant="outline">
                         Approved
@@ -193,7 +202,7 @@ export default function AdminHomePage({
                       </div>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">
-                      Refund
+                      Dual Meet
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">
                       <Badge className="text-xs" variant="outline">
@@ -265,14 +274,14 @@ export default function AdminHomePage({
               </Table>
             </CardContent>
           </Card>
-          <Card x-chunk="dashboard-01-chunk-5">
+          <Card>
             <CardHeader>
-              <CardTitle>Recent Sales</CardTitle>
+              <CardTitle>Action Items</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-8">
               <div className="flex items-center gap-4">
                 <Avatar className="hidden h-9 w-9 sm:flex">
-                  <AvatarImage src="/avatars/01.png" alt="Avatar" />
+                  <AvatarImage src="/placeholder.svg" alt="Avatar" />
                   <AvatarFallback>OM</AvatarFallback>
                 </Avatar>
                 <div className="grid gap-1">
@@ -287,7 +296,7 @@ export default function AdminHomePage({
               </div>
               <div className="flex items-center gap-4">
                 <Avatar className="hidden h-9 w-9 sm:flex">
-                  <AvatarImage src="/avatars/02.png" alt="Avatar" />
+                  <AvatarImage src="/placeholder.svg" alt="Avatar" />
                   <AvatarFallback>JL</AvatarFallback>
                 </Avatar>
                 <div className="grid gap-1">
@@ -302,7 +311,7 @@ export default function AdminHomePage({
               </div>
               <div className="flex items-center gap-4">
                 <Avatar className="hidden h-9 w-9 sm:flex">
-                  <AvatarImage src="/avatars/03.png" alt="Avatar" />
+                  <AvatarImage src="/placeholder.svg" alt="Avatar" />
                   <AvatarFallback>IN</AvatarFallback>
                 </Avatar>
                 <div className="grid gap-1">
@@ -317,7 +326,7 @@ export default function AdminHomePage({
               </div>
               <div className="flex items-center gap-4">
                 <Avatar className="hidden h-9 w-9 sm:flex">
-                  <AvatarImage src="/avatars/04.png" alt="Avatar" />
+                  <AvatarImage src="/placeholder.svg" alt="Avatar" />
                   <AvatarFallback>WK</AvatarFallback>
                 </Avatar>
                 <div className="grid gap-1">
@@ -332,7 +341,7 @@ export default function AdminHomePage({
               </div>
               <div className="flex items-center gap-4">
                 <Avatar className="hidden h-9 w-9 sm:flex">
-                  <AvatarImage src="/avatars/05.png" alt="Avatar" />
+                  <AvatarImage src="/placeholder.svg" alt="Avatar" />
                   <AvatarFallback>SD</AvatarFallback>
                 </Avatar>
                 <div className="grid gap-1">

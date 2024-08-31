@@ -4,7 +4,9 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "build": "turbo build",
-    "dev": "turbo dev",
+    "dev": "turbo dev --parallel",
+    "dev:admin": "turbo dev --filter=@project-aqua/admin",
+    "dev:web": "turbo dev --filter=@project-aqua/web",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
@@ -12,7 +14,7 @@
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "prettier": "^3.3.3",
-    "turbo": "^2.0.14"
+    "turbo": "^2.1.0"
   },
   "engines": {
     "node": ">=18"
