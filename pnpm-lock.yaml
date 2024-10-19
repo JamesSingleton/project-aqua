@@ -97,8 +97,8 @@ importers:
   apps/desktop:
     devDependencies:
       electron:
-        specifier: ^32.1.2
-        version: 32.1.2
+        specifier: ^33.0.1
+        version: 33.0.1
 
   apps/web:
     dependencies:
@@ -1885,6 +1885,7 @@ packages:
 
   boolean@3.2.0:
     resolution: {integrity: sha512-d0II/GO9uf9lfUHH2BQsjxzRJZBdsjgsBiW4BvhWk/3qoKwQFjIDVN19PfX8F2D/r9PCMTtLWjYVCFrpeYUzsw==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
 
   brace-expansion@1.1.11:
     resolution: {integrity: sha512-iCuPHDFgrHX7H2vEI/5xpz07zSHB00TpugqhmYtVmMO6518mCuRMoOYFldEBl0g187ufozdaHgWKcYFb61qGiA==}
@@ -2248,8 +2249,8 @@ packages:
   electron-to-chromium@1.5.7:
     resolution: {integrity: sha512-6FTNWIWMxMy/ZY6799nBlPtF1DFDQ6VQJ7yyDP27SJNt5lwtQ5ufqVvHylb3fdQefvRcgA3fKcFMJi9OLwBRNw==}
 
-  electron@32.1.2:
-    resolution: {integrity: sha512-CXe6doFzhmh1U7daOvUzmF6Cj8hssdYWMeEPRnRO6rB9/bbwMlWctcQ7P8NJXhLQ88/vYUJQrJvlJPh8qM0BRQ==}
+  electron@33.0.1:
+    resolution: {integrity: sha512-PipPnWH4gvf7o+P8jlKQZGgPfb5eHcLgTrnKkFzb98MXhyPjVJYCR7YWqcawZ8IfyJCut8vMxLuBFLT1Ag8TSQ==}
     engines: {node: '>= 12.20.55'}
     hasBin: true
 
@@ -6507,7 +6508,7 @@ snapshots:
 
   electron-to-chromium@1.5.7: {}
 
-  electron@32.1.2:
+  electron@33.0.1:
     dependencies:
       '@electron/get': 2.0.3
       '@types/node': 20.14.10
