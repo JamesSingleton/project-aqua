@@ -1,7 +1,7 @@
-export default function AnalyticsPage({
+export default async function AnalyticsPage({
   params,
 }: {
-  params: { teamId: string };
+  params: Promise<{ teamId: string }>;
 }) {
   return (
     <>

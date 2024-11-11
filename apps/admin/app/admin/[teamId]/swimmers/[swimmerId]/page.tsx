@@ -54,7 +54,7 @@ interface MeetResult {
 }
 
 async function getSwimmerData(
-  swimmerId: string,
+  swimmerId: string
 ): Promise<{ swimmer: Swimmer; meetResults: MeetResult[] }> {
   // In a real application, this would be an API call or database query
   const swimmer: Swimmer = {
@@ -103,9 +103,10 @@ async function getSwimmerData(
 export default async function AthletePage({
   params,
 }: {
-  params: { teamId: string; swimmerId: string };
+  params: Promise<{ teamId: string; swimmerId: string }>;
 }) {
-  const { swimmer, meetResults } = await getSwimmerData(params.swimmerId);
+  const { teamId, swimmerId } = await params;
+  const { swimmer, meetResults } = await getSwimmerData(swimmerId);
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -125,7 +126,7 @@ export default async function AthletePage({
           </div>
         </div>
         <Link
-          href={`/admin/${params.teamId}/swimmers/${params.swimmerId}/edit`}
+          href={`/admin/${teamId}/swimmers/${swimmerId}/edit`}
           className={buttonVariants()}
         >
           <Edit className="mr-2 h-4 w-4" />

@@ -36,20 +36,21 @@ import { cn } from "@/lib/utils";
 import type { Metadata, ResolvingMetadata } from "next";
 
 type Props = {
-  params: { teamId: string };
-  searchParams: { [key: string]: string | string[] | undefined };
+  params: Promise<{ teamId: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
 export async function generateMetadata(
   { params, searchParams }: Props,
-  parent: ResolvingMetadata,
+  parent: ResolvingMetadata
 ): Promise<Metadata> {
+  const { teamId } = await params;
   const previousMetadata = (await parent).title;
 
   return {
     ...previousMetadata,
     alternates: {
-      canonical: `/admin/${params.teamId}`,
+      canonical: `/admin/${teamId}`,
     },
   };
 }
@@ -78,11 +79,12 @@ const swimMeets = [
   },
 ];
 
-export default function AdminHomePage({
+export default async function AdminHomePage({
   params,
 }: {
-  params: { teamId: string };
+  params: Promise<{ teamId: string }>;
 }) {
+  const { teamId } = await params;
   return (
     <>
       <h1 className="text-lg font-semibold md:text-2xl">Dashboard</h1>
@@ -153,7 +155,7 @@ export default function AdminHomePage({
                 </CardDescription>
               </div>
               <Link
-                href={`/admin/${params.teamId}/meets`}
+                href={`/admin/${teamId}/meets`}
                 className={cn(buttonVariants({ size: "sm" }), "ml-auto gap-1")}
               >
                 View All

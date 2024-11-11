@@ -1,9 +1,10 @@
 export default async function EditAthlete({
   params,
 }: {
-  params: { teamId: string; athleteId: string };
+  params: Promise<{ teamId: string; athleteId: string }>;
 }) {
-  console.log({ teamId: params.teamId, athleteId: params.athleteId });
+  const { teamId, athleteId } = await params;
+  console.log({ teamId: teamId, athleteId: athleteId });
   return (
     <div>
       <h1>Edit Athlete</h1>

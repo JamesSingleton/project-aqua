@@ -1,8 +1,8 @@
 import { headers } from "next/headers";
 import { MetadataRoute } from "next";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const headersList = headers();
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const headersList = await headers();
   const domain = headersList.get("host") as string;
 
   return [

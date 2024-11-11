@@ -22,7 +22,7 @@ import { Badge } from "@repo/ui/badge";
 export default async function MeetsPage({
   params,
 }: {
-  params: { teamId: string };
+  params: Promise<{ teamId: string }>;
 }) {
   return (
     <>

@@ -35,26 +35,26 @@ export async function generateMetadata(
     params,
     searchParams,
   }: {
-    params: { teamId: string };
-    searchParams: { [key: string]: string | string[] | undefined };
+    params: Promise<{ teamId: string }>;
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
   },
-  parent: ResolvingMetadata,
+  parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const id = params.teamId;
+  const { teamId } = await params;
 
   return {
     title: "Manager Your Roster",
     alternates: {
-      canonical: `/admin/${id}/roster`,
+      canonical: `/admin/${teamId}/roster`,
     },
     description:
       "View and manage your swim team's roster. Add, edit, and remove swimmers as needed.",
     openGraph: {
-      title: "Manager Your Roster",
+      title: "Manage Your Roster",
       description:
         "View and manage your swim team's roster. Add, edit, and remove swimmers as needed.",
       type: "website",
-      url: `/admin/${id}/roster`,
+      url: `/admin/${teamId}/roster`,
       siteName: "Project Aqua",
     },
   };
@@ -64,21 +64,21 @@ export default async function RosterPage({
   params,
   searchParams,
 }: {
-  params: { teamId: string };
-  searchParams: { [key: string]: string | string[] | undefined };
+  params: Promise<{ teamId: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const { teamId } = params;
+  const { teamId } = await params;
   const rosterData = await getData({ teamId });
-  const { athleteId } = searchParams;
+  const { athleteId } = await searchParams;
   const selectedAthlete = rosterData.find(
-    (athlete) => athlete.id === athleteId,
+    (athlete) => athlete.id === athleteId
   );
   const maleSwimmers = rosterData.filter(
-    (athlete) => athlete.gender === "Male",
+    (athlete) => athlete.gender === "Male"
   );
 
   const femaleSwimmers = rosterData.filter(
-    (athlete) => athlete.gender === "Female",
+    (athlete) => athlete.gender === "Female"
   );
 
   return (

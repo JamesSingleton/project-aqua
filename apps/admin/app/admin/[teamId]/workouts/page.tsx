@@ -1,7 +1,7 @@
-export default function WorkoutsPage({
+export default async function WorkoutsPage({
   params,
 }: {
-  params: { teamId: string };
+  params: Promise<{ teamId: string }>;
 }) {
   return (
     <>

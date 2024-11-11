@@ -1,71 +1,89 @@
-"use client";
+"use client"
 
-import { useState, memo, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import * as React from "react"
+import { ChevronsUpDown, Plus } from "lucide-react"
+
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@repo/ui/select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar"
 
-import { cn } from "@/lib/utils";
-
-interface TeamSwitcherProps {
-  isCollapsed: boolean;
+export function TeamSwitcher({
+  teams,
+}: {
   teams: {
-    id: string;
-    name: string;
-    logo: React.ReactNode;
-  }[];
-}
+    name: string
+    logo: React.ElementType
+    plan: string
+  }[]
+}) {
+  const { isMobile } = useSidebar()
+  const [activeTeam, setActiveTeam] = React.useState(teams[0])
 
-export const TeamSwitcher = memo(
-  ({ isCollapsed, teams }: TeamSwitcherProps) => {
-    const params = useParams();
-    const { teamId } = params;
-    const [selectedTeam, setSelectedTeam] = useState<string>(
-      Array.isArray(teamId) ? teamId[0] : teamId || "",
-    );
-
-    const router = useRouter();
-
-    const handleTeamChange = useCallback(
-      (teamId: string) => {
-        setSelectedTeam(teamId);
-        router.push(`/admin/${teamId}`);
-      },
-      [router],
-    );
-
-    const className = cn(
-      "flex items-center gap-2 [&>span]:line-clamp-1 [&>span]:flex [&>span]:w-full [&>span]:items-center [&>span]:gap-1 [&>span]:truncate [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0",
-      isCollapsed &&
-        "flex h-9 w-9 shrink-0 items-center justify-center p-0 [&>span]:w-auto [&>svg]:hidden",
-    );
-
-    return (
-      <Select defaultValue={selectedTeam} onValueChange={handleTeamChange}>
-        <SelectTrigger className={className} aria-label="Select team">
-          <SelectValue placeholder="Select a team">
-            {teams.find((team) => team.id === selectedTeam)?.logo}
-            <span className={cn("ml-2", isCollapsed && "hidden")}>
-              {teams.find((team) => team.id === selectedTeam)?.name}
-            </span>
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {teams.map((team) => (
-            <SelectItem key={team.id} value={team.id}>
-              <div className="flex items-center gap-3 [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0 [&_svg]:text-foreground">
-                {team.logo}
-                {team.name}
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              size="lg"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            >
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <activeTeam.logo className="size-4" />
               </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    );
-  },
-);
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold">
+                  {activeTeam.name}
+                </span>
+                <span className="truncate text-xs">{activeTeam.plan}</span>
+              </div>
+              <ChevronsUpDown className="ml-auto" />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+            align="start"
+            side={isMobile ? "bottom" : "right"}
+            sideOffset={4}
+          >
+            <DropdownMenuLabel className="text-xs text-muted-foreground">
+              Teams
+            </DropdownMenuLabel>
+            {teams.map((team, index) => (
+              <DropdownMenuItem
+                key={team.name}
+                onClick={() => setActiveTeam(team)}
+                className="gap-2 p-2"
+              >
+                <div className="flex size-6 items-center justify-center rounded-sm border">
+                  <team.logo className="size-4 shrink-0" />
+                </div>
+                {team.name}
+                <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="gap-2 p-2">
+              <div className="flex size-6 items-center justify-center rounded-md border bg-background">
+                <Plus className="size-4" />
+              </div>
+              <div className="font-medium text-muted-foreground">Add team</div>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  )
+}

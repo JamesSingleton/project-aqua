@@ -1,7 +1,7 @@
 export default function EditIndividualWorkoutPage({
   params,
 }: {
-  params: { teamId: string; workoutId: string };
+  params: Promise<{ teamId: string; workoutId: string }>;
 }) {
   return (
     <>

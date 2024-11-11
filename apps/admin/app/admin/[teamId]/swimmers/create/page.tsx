@@ -1,7 +1,7 @@
-export default function CreateAthlete({
+export default async function CreateAthlete({
   params,
 }: {
-  params: { teamId: string };
+  params: Promise<{ teamId: string }>;
 }) {
   return (
     <>
