@@ -38,7 +38,7 @@ export async function generateMetadata(
     params: Promise<{ teamId: string }>;
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
   },
-  parent: ResolvingMetadata
+  parent: ResolvingMetadata,
 ): Promise<Metadata> {
   const { teamId } = await params;
 
@@ -71,14 +71,14 @@ export default async function RosterPage({
   const rosterData = await getData({ teamId });
   const { athleteId } = await searchParams;
   const selectedAthlete = rosterData.find(
-    (athlete) => athlete.id === athleteId
+    (athlete) => athlete.id === athleteId,
   );
   const maleSwimmers = rosterData.filter(
-    (athlete) => athlete.gender === "Male"
+    (athlete) => athlete.gender === "Male",
   );
 
   const femaleSwimmers = rosterData.filter(
-    (athlete) => athlete.gender === "Female"
+    (athlete) => athlete.gender === "Female",
   );
 
   return (

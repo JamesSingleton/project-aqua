@@ -54,7 +54,7 @@ interface MeetResult {
 }
 
 async function getSwimmerData(
-  swimmerId: string
+  swimmerId: string,
 ): Promise<{ swimmer: Swimmer; meetResults: MeetResult[] }> {
   // In a real application, this would be an API call or database query
   const swimmer: Swimmer = {
