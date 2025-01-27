@@ -34,7 +34,7 @@ export default function Features() {
           <TrendingUpIcon className=" h-10 w-10 mb-4" />
           <h2 className="text-2xl font-semibold mb-2">Performance Tracking</h2>
           <p className="text-secondary-foreground">
-            Monitor your team's progress with advanced analytics.
+            Monitor your team&apos;s progress with advanced analytics.
           </p>
         </div>
         <div className="col-span-1 sm:col-span-1 lg:col-span-1 xl:col-span-2 row-span-2 flex flex-col items-center justify-center bg-secondary p-6 rounded-lg text-center">
@@ -48,7 +48,7 @@ export default function Features() {
           <BarChartIcon className=" h-10 w-10 mb-4" />
           <h2 className="text-2xl font-semibold mb-2">Team Analytics</h2>
           <p className="text-secondary-foreground">
-            Dive deep into your team's performance with detailed analytics.
+            Dive deep into your team&apos;s performance with detailed analytics.
           </p>
         </div>
         <div className="col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-3 row-span-3 flex flex-col items-center justify-center bg-secondary p-6 rounded-lg text-center">

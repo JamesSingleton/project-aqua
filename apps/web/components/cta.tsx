@@ -8,7 +8,7 @@ export function CTA() {
         Effortless Team Management with Project Aqua.
       </span>
       <p className="text-muted-foreground mt-6">
-        Simplify swim team management with Project Aqua's user-friendly
+        Simplify swim team management with Project Aqua&apos;s user-friendly
         platform. Spend less time on admin tasks and more time coaching your
         team to greatness.
       </p>
