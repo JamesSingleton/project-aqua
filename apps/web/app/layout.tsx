@@ -29,13 +29,13 @@ export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
-}): JSX.Element {
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
           `${GeistSans.variable} ${GeistMono.variable}`,
-          "bg-background overflow-x-hidden",
+          "bg-background overflow-x-hidden"
         )}
       >
         <ThemeProvider
