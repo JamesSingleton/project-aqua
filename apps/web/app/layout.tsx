@@ -35,7 +35,7 @@ export default function RootLayout({
       <body
         className={cn(
           `${GeistSans.variable} ${GeistMono.variable}`,
-          "bg-background overflow-x-hidden"
+          "bg-background overflow-x-hidden",
         )}
       >
         <ThemeProvider
