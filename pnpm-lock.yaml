@@ -124,11 +124,8 @@ importers:
   apps/desktop:
     devDependencies:
       electron:
-        specifier: ^33.2.1
-        version: 33.2.1
-      eslint:
-        specifier: ^9.19.0
-        version: 9.19.0(jiti@1.21.7)
+        specifier: ^34.2.0
+        version: 34.2.0
 
   apps/web:
     dependencies:
@@ -2068,8 +2065,8 @@ packages:
   electron-to-chromium@1.5.7:
     resolution: {integrity: sha512-6FTNWIWMxMy/ZY6799nBlPtF1DFDQ6VQJ7yyDP27SJNt5lwtQ5ufqVvHylb3fdQefvRcgA3fKcFMJi9OLwBRNw==}
 
-  electron@33.2.1:
-    resolution: {integrity: sha512-SG/nmSsK9Qg1p6wAW+ZfqU+AV8cmXMTIklUL18NnOKfZLlum4ZsDoVdmmmlL39ZmeCaq27dr7CgslRPahfoVJg==}
+  electron@34.2.0:
+    resolution: {integrity: sha512-SYwBJNeXBTm1q/ErybQMUBZAYqEreBUqBwTrNkw1rV4YatDZk5Aittpcus3PPeC4UoI/tqmJ946uG8AKHTd6CA==}
     engines: {node: '>= 12.20.55'}
     hasBin: true
 
@@ -5950,7 +5947,7 @@ snapshots:
 
   electron-to-chromium@1.5.7: {}
 
-  electron@33.2.1:
+  electron@34.2.0:
     dependencies:
       '@electron/get': 2.0.3
       '@types/node': 20.17.10

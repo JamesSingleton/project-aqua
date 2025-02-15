@@ -9,7 +9,6 @@
   },
   "author": "",
   "devDependencies": {
-    "electron": "^33.2.1",
-    "eslint": "^9.19.0"
+    "electron": "^34.2.0"
   }
 }
