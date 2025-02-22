@@ -1,5 +1,5 @@
 "use client";
-
+import Link from "next/link";
 import {
   BadgeCheck,
   Bell,
@@ -8,7 +8,6 @@ import {
   LogOut,
   Sparkles,
 } from "lucide-react";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -48,7 +47,7 @@ export function NavUser({
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarFallback className="rounded-lg">SN</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{user.name}</span>
@@ -67,7 +66,7 @@ export function NavUser({
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">SN</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">{user.name}</span>
@@ -84,17 +83,23 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheck />
-                Account
+              <DropdownMenuItem asChild>
+                <Link href="/settings/account">
+                  <BadgeCheck />
+                  Account
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Billing
+              <DropdownMenuItem asChild>
+                <Link href="/settings">
+                  <CreditCard />
+                  Billing
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
+              <DropdownMenuItem asChild>
+                <Link href="/settings/notifications">
+                  <Bell />
+                  Notifications
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
