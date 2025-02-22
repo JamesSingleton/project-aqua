@@ -1,3 +1,4 @@
+"use client";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@repo/ui/badge";
 import { Checkbox } from "@repo/ui/checkbox";
@@ -41,12 +42,12 @@ export const columns: ColumnDef<User>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "username",
+    accessorKey: "lastName",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Username" />
+      <DataTableColumnHeader column={column} title="Last Name" />
     ),
     cell: ({ row }) => (
-      <LongText className="max-w-36">{row.getValue("username")}</LongText>
+      <LongText className="max-w-36">{row.getValue("lastName")}</LongText>
     ),
     meta: {
       className: cn(
@@ -58,16 +59,39 @@ export const columns: ColumnDef<User>[] = [
     enableHiding: false,
   },
   {
-    id: "fullName",
+    accessorKey: "firstName",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Name" />
+      <DataTableColumnHeader column={column} title="First Name" />
     ),
-    cell: ({ row }) => {
-      const { firstName, lastName } = row.original;
-      const fullName = `${firstName} ${lastName}`;
-      return <LongText className="max-w-36">{fullName}</LongText>;
+    enableHiding: false,
+  },
+  {
+    accessorKey: "gender",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Gender" />
+    ),
+  },
+  {
+    accessorKey: "age",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Age" />
+    ),
+  },
+  {
+    accessorKey: "birthday",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Birthday" />
+    ),
+    enableSorting: false,
+  },
+  {
+    accessorKey: "roster",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Roster" />
+    ),
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id));
     },
-    meta: { className: "w-36" },
   },
   {
     accessorKey: "email",
@@ -79,63 +103,63 @@ export const columns: ColumnDef<User>[] = [
     ),
   },
   {
-    accessorKey: "phoneNumber",
+    accessorKey: "memberType",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Phone Number" />
+      <DataTableColumnHeader column={column} title="Member Type" />
     ),
-    cell: ({ row }) => <div>{row.getValue("phoneNumber")}</div>,
+    cell: ({ row }) => <div>{row.getValue("memberType")}</div>,
     enableSorting: false,
   },
-  {
-    accessorKey: "status",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Status" />
-    ),
-    cell: ({ row }) => {
-      const { status } = row.original;
-      const badgeColor = callTypes.get(status);
-      return (
-        <div className="flex space-x-2">
-          <Badge variant="outline" className={cn("capitalize", badgeColor)}>
-            {row.getValue("status")}
-          </Badge>
-        </div>
-      );
-    },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
-    enableHiding: false,
-    enableSorting: false,
-  },
-  {
-    accessorKey: "role",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Role" />
-    ),
-    cell: ({ row }) => {
-      const { role } = row.original;
-      const userType = userTypes.find(({ value }) => value === role);
+  // {
+  //   accessorKey: "status",
+  //   header: ({ column }) => (
+  //     <DataTableColumnHeader column={column} title="Status" />
+  //   ),
+  //   cell: ({ row }) => {
+  //     const { status } = row.original;
+  //     const badgeColor = callTypes.get(status);
+  //     return (
+  //       <div className="flex space-x-2">
+  //         <Badge variant="outline" className={cn("capitalize", badgeColor)}>
+  //           {row.getValue("status")}
+  //         </Badge>
+  //       </div>
+  //     );
+  //   },
+  //   filterFn: (row, id, value) => {
+  //     return value.includes(row.getValue(id));
+  //   },
+  //   enableHiding: false,
+  //   enableSorting: false,
+  // },
+  // {
+  //   accessorKey: "role",
+  //   header: ({ column }) => (
+  //     <DataTableColumnHeader column={column} title="Role" />
+  //   ),
+  //   cell: ({ row }) => {
+  //     const { role } = row.original;
+  //     const userType = userTypes.find(({ value }) => value === role);
 
-      if (!userType) {
-        return null;
-      }
+  //     if (!userType) {
+  //       return null;
+  //     }
 
-      return (
-        <div className="flex items-center gap-x-2">
-          {userType.icon && (
-            <userType.icon size={16} className="text-muted-foreground" />
-          )}
-          <span className="text-sm capitalize">{row.getValue("role")}</span>
-        </div>
-      );
-    },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
-    enableSorting: false,
-    enableHiding: false,
-  },
+  //     return (
+  //       <div className="flex items-center gap-x-2">
+  //         {userType.icon && (
+  //           <userType.icon size={16} className="text-muted-foreground" />
+  //         )}
+  //         <span className="text-sm capitalize">{row.getValue("role")}</span>
+  //       </div>
+  //     );
+  //   },
+  //   filterFn: (row, id, value) => {
+  //     return value.includes(row.getValue(id));
+  //   },
+  //   enableSorting: false,
+  //   enableHiding: false,
+  // },
   {
     id: "actions",
     cell: DataTableRowActions,
