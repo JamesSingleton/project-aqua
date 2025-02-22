@@ -1,22 +1,9 @@
 import Link from "next/link";
-import {
-  Users,
-  ArrowUpRight,
-  CreditCard,
-  DollarSign,
-  Activity,
-  CalendarIcon,
-  CircleX,
-  CircleCheck,
-  Calendar,
-  Award,
-  TrendingUp,
-} from "lucide-react";
+import { Users, ArrowUpRight, Calendar, Award, TrendingUp } from "lucide-react";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@repo/ui/card";
@@ -29,7 +16,7 @@ import {
   TableHeader,
 } from "@repo/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@repo/ui/avatar";
-import { Button, buttonVariants } from "@repo/ui/button";
+import { buttonVariants } from "@repo/ui/button";
 import { Badge } from "@repo/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -42,7 +29,7 @@ type Props = {
 
 export async function generateMetadata(
   { params, searchParams }: Props,
-  parent: ResolvingMetadata,
+  parent: ResolvingMetadata
 ): Promise<Metadata> {
   const { teamId } = await params;
   const previousMetadata = (await parent).title;
