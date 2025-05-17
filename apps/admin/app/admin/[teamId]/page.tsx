@@ -6,7 +6,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@repo/ui/card";
+} from "@repo/ui/components/card";
 import {
   Table,
   TableBody,
@@ -14,10 +14,14 @@ import {
   TableHead,
   TableRow,
   TableHeader,
-} from "@repo/ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from "@repo/ui/avatar";
-import { buttonVariants } from "@repo/ui/button";
-import { Badge } from "@repo/ui/badge";
+} from "@repo/ui/components/table";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@repo/ui/components/avatar";
+import { buttonVariants } from "@repo/ui/components/button";
+import { Badge } from "@repo/ui/components/badge";
 import { cn } from "@/lib/utils";
 
 import type { Metadata, ResolvingMetadata } from "next";

@@ -1,7 +1,7 @@
 "use client";
 import { ColumnDef } from "@tanstack/react-table";
-import { Badge } from "@repo/ui/badge";
-import { Checkbox } from "@repo/ui/checkbox";
+import { Badge } from "@repo/ui/components/badge";
+import { Checkbox } from "@repo/ui/components/checkbox";
 
 import { cn } from "@/lib/utils";
 import LongText from "@/components/long-text";

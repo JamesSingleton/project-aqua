@@ -7,8 +7,8 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from "@repo/ui/card";
-import { Button, buttonVariants } from "@repo/ui/button";
+} from "@repo/ui/components/card";
+import { Button, buttonVariants } from "@repo/ui/components/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@repo/ui/tabs";
 import {
   Table,
@@ -17,7 +17,7 @@ import {
   TableHead,
   TableBody,
   TableCell,
-} from "@repo/ui/table";
+} from "@repo/ui/components/table";
 import AthleteInfo from "@/components/roster/athlete-info";
 import { mockAthleteData } from "@/lib/mock-data";
 // import { columns } from "@/components/roster/columns";
@@ -30,7 +30,7 @@ import { UsersTable } from "./_components/users-table";
 import { columns } from "./_components/user-columns";
 import { userListSchema, swimmerListSchema } from "@/data/schema";
 import { users, swimmers } from "@/data/users";
-import UsersProvider from "@/lib/users-context";
+import UsersProvider from "@/contexts/users-context";
 
 async function getData({ teamId }: { teamId: string }): Promise<Athlete[]> {
   return mockAthleteData;

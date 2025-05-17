@@ -1,13 +1,17 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "@repo/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@repo/ui/components/popover";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@repo/ui/tooltip";
+} from "@repo/ui/components/tooltip";
 
 interface Props {
   children: React.ReactNode;

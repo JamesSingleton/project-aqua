@@ -14,7 +14,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@repo/ui/card";
+} from "@repo/ui/components/card";
 import { Button } from "@repo/ui/button";
 import { Separator } from "@repo/ui/separator";
 import {

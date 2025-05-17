@@ -1,8 +1,8 @@
 "use client";
 import { type ReactNode } from "react";
-import { TooltipProvider } from "@repo/ui/tooltip";
+import { TooltipProvider } from "@repo/ui/components/tooltip";
 import { ThemeProvider } from "./theme-provider";
-import { SearchProvider } from "@/lib/search-context";
+import { SearchProvider } from "@/contexts/search-context";
 
 export default function Providers({ children }: { children: ReactNode }) {
   return (

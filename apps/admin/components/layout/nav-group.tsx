@@ -1,7 +1,7 @@
 "use client";
 import { ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useParams } from "next/navigation";
+import { usePathname, useParams, useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import {
   Collapsible,
@@ -61,6 +61,7 @@ const NavBadge = ({ children }: { children: ReactNode }) => (
 
 const SidebarMenuLink = ({ item, href }: { item: NavLink; href: string }) => {
   const { setOpenMobile } = useSidebar();
+
   const params = useParams();
   const teamId = params.teamId;
   const fullHref = `/admin/${teamId}${item.url}`;
