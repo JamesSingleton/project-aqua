@@ -8,7 +8,12 @@ import {
   TrendingUp,
   Edit,
 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@repo/ui/components/tabs";
 import {
   Card,
   CardContent,
@@ -16,11 +21,15 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@repo/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@repo/ui/avatar";
-import { Button, buttonVariants } from "@repo/ui/button";
-import { Input } from "@repo/ui/input";
-import { Label } from "@repo/ui/label";
+} from "@repo/ui/components/card";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@repo/ui/components/avatar";
+import { Button, buttonVariants } from "@repo/ui/components/button";
+import { Input } from "@repo/ui/components/input";
+import { Label } from "@repo/ui/components/label";
 import {
   Table,
   TableBody,
@@ -28,7 +37,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@repo/ui/table";
+} from "@repo/ui/components/table";
 
 interface Swimmer {
   id: string;
@@ -54,7 +63,7 @@ interface MeetResult {
 }
 
 async function getSwimmerData(
-  swimmerId: string,
+  swimmerId: string
 ): Promise<{ swimmer: Swimmer; meetResults: MeetResult[] }> {
   // In a real application, this would be an API call or database query
   const swimmer: Swimmer = {

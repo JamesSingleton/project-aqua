@@ -1,7 +1,7 @@
 "use client";
 
 import { type ElementRef, useEffect, useRef } from "react";
-import { Dialog } from "@repo/ui/dialog";
+import { Dialog } from "@repo/ui/components/dialog";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 
@@ -23,6 +23,6 @@ export function Modal({ children }: { children: React.ReactElement }) {
     <Dialog defaultOpen onOpenChange={(open) => !open && navigateBack()}>
       {children}
     </Dialog>,
-    document.getElementById("modal-root")!,
+    document.getElementById("modal-root")!
   );
 }

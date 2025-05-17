@@ -1,7 +1,8 @@
 "use client";
 import { type ReactNode } from "react";
-import { TooltipProvider } from "@repo/ui/tooltip";
+import { TooltipProvider } from "@repo/ui/components/tooltip";
 import { ThemeProvider } from "./theme-provider";
+import { SearchProvider } from "@/contexts/search-context";
 
 export default function Providers({ children }: { children: ReactNode }) {
   return (
@@ -12,7 +13,7 @@ export default function Providers({ children }: { children: ReactNode }) {
         enableSystem
         disableTransitionOnChange
       >
-        {children}
+        <SearchProvider>{children}</SearchProvider>
       </ThemeProvider>
     </TooltipProvider>
   );
