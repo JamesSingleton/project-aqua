@@ -24,7 +24,7 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-} from "@/components/ui/sidebar";
+} from "@project-aqua/ui/components/sidebar";
 
 // This is sample data.
 const data = {
@@ -36,17 +36,17 @@ const data = {
   teams: [
     {
       name: "Acme Inc",
-      logo: GalleryVerticalEnd,
+      logo: GalleryVerticalEnd as React.ElementType,
       plan: "Enterprise",
     },
     {
       name: "Acme Corp.",
-      logo: AudioWaveform,
+      logo: AudioWaveform as React.ElementType,
       plan: "Startup",
     },
     {
       name: "Evil Corp.",
-      logo: Command,
+      logo: Command as React.ElementType,
       plan: "Free",
     },
   ],

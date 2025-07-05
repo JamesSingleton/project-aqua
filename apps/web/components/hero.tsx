@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Button, buttonVariants } from "@repo/ui/button";
+import { Button, buttonVariants } from "@project-aqua/ui/components/button";
 
 export function Hero() {
   return (

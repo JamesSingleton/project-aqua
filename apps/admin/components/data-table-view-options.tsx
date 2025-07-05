@@ -3,7 +3,7 @@
 import { Settings2Icon } from "lucide-react";
 import { Table } from "@tanstack/react-table";
 
-import { Button } from "@repo/ui/button";
+import { Button } from "@project-aqua/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -11,7 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@repo/ui/dropdown-menu";
+} from "@project-aqua/ui/components/dropdown-menu";
 
 interface DataTableViewOptionsProps<TData> {
   table: Table<TData>;

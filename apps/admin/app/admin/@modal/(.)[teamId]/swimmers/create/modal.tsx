@@ -1,7 +1,7 @@
 "use client";
 
 import { type ElementRef, useEffect, useRef } from "react";
-import { Dialog } from "@repo/ui/dialog";
+import { Dialog } from "@project-aqua/ui/components/dialog";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 

@@ -19,8 +19,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@repo/ui/table";
-import { Input } from "@repo/ui/input";
+} from "@project-aqua/ui/components/table";
+import { Input } from "@project-aqua/ui/components/input";
 import {
   Sheet,
   SheetContent,
@@ -28,7 +28,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@repo/ui/sheet";
+} from "@project-aqua/ui/components/sheet";
 import { DataTablePagination } from "../data-table-pagination";
 import { DataTableViewOptions } from "../data-table-view-options";
 

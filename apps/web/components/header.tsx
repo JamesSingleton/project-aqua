@@ -3,9 +3,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { NavigationMenu } from "@repo/ui/navigation-menu";
+import { NavigationMenu } from "@project-aqua/ui/components/navigation-menu";
+import { cn } from "@project-aqua/ui/lib/utils";
 
-import { cn } from "@/lib/utils";
 import { Icons } from "./icons";
 
 const links = [

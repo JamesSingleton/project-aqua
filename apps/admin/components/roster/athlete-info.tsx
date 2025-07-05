@@ -14,21 +14,21 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@repo/ui/card";
-import { Button } from "@repo/ui/button";
-import { Separator } from "@repo/ui/separator";
+} from "@project-aqua/ui/components/card";
+import { Button } from "@project-aqua/ui/components/button";
+import { Separator } from "@project-aqua/ui/components/separator";
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
-} from "@repo/ui/pagination";
+} from "@project-aqua/ui/components/pagination";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuSeparator,
   DropdownMenuItem,
-} from "@repo/ui/dropdown-menu";
+} from "@project-aqua/ui/components/dropdown-menu";
 
 import type { Athlete } from "@/types";
 

@@ -1,8 +1,12 @@
 import * as React from "react";
 import { CheckIcon, PlusCircleIcon } from "lucide-react";
-import { Badge } from "@repo/ui/badge";
-import { Button } from "@repo/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@repo/ui/popover";
+import { Badge } from "@project-aqua/ui/components/badge";
+import { Button } from "@project-aqua/ui/components/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@project-aqua/ui/components/popover";
 import {
   Command,
   CommandEmpty,
@@ -11,6 +15,6 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@repo/ui/command";
+} from "@project-aqua/ui/components/command";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@project-aqua/ui/lib/utils";
