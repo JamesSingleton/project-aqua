@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { buttonVariants } from "@repo/ui/button";
+import { buttonVariants } from "@project-aqua/ui/components/button";
 
 export function CTA() {
   return (

@@ -1,14 +1,14 @@
-import { Button } from "@repo/ui/button";
+import { Button } from "@project-aqua/ui/components/button";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from "@repo/ui/card";
-import { Input } from "@repo/ui/input";
-import { Label } from "@repo/ui/label";
-import { Select } from "@repo/ui/select";
+} from "@project-aqua/ui/components/card";
+import { Input } from "@project-aqua/ui/components/input";
+import { Label } from "@project-aqua/ui/components/label";
+import { Select } from "@project-aqua/ui/components/select";
 import {
   TableHeader,
   TableRow,
@@ -16,8 +16,8 @@ import {
   TableBody,
   TableCell,
   Table,
-} from "@repo/ui/table";
-import { Badge } from "@repo/ui/badge";
+} from "@project-aqua/ui/components/table";
+import { Badge } from "@project-aqua/ui/components/badge";
 
 export default async function MeetsPage({
   params,

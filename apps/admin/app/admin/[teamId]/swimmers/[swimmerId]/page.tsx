@@ -8,7 +8,12 @@ import {
   TrendingUp,
   Edit,
 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@project-aqua/ui/components/tabs";
 import {
   Card,
   CardContent,
@@ -16,11 +21,15 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@repo/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@repo/ui/avatar";
-import { Button, buttonVariants } from "@repo/ui/button";
-import { Input } from "@repo/ui/input";
-import { Label } from "@repo/ui/label";
+} from "@project-aqua/ui/components/card";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@project-aqua/ui/components/avatar";
+import { Button, buttonVariants } from "@project-aqua/ui/components/button";
+import { Input } from "@project-aqua/ui/components/input";
+import { Label } from "@project-aqua/ui/components/label";
 import {
   Table,
   TableBody,
@@ -28,7 +37,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@repo/ui/table";
+} from "@project-aqua/ui/components/table";
 
 interface Swimmer {
   id: string;

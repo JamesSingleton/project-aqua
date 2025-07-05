@@ -7,9 +7,14 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from "@repo/ui/card";
-import { Button, buttonVariants } from "@repo/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@repo/ui/tabs";
+} from "@project-aqua/ui/components/card";
+import { Button, buttonVariants } from "@project-aqua/ui/components/button";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@project-aqua/ui/components/tabs";
 import {
   Table,
   TableHeader,
@@ -17,7 +22,7 @@ import {
   TableHead,
   TableBody,
   TableCell,
-} from "@repo/ui/table";
+} from "@project-aqua/ui/components/table";
 import AthleteInfo from "@/components/roster/athlete-info";
 import { mockAthleteData } from "@/lib/mock-data";
 import { columns } from "@/components/roster/columns";

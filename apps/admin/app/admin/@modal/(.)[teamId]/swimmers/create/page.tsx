@@ -5,20 +5,28 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@repo/ui/dialog";
-import { Label } from "@repo/ui/label";
-import { Input } from "@repo/ui/input";
-import { Button } from "@repo/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@repo/ui/avatar";
+} from "@project-aqua/ui/components/dialog";
+import { Label } from "@project-aqua/ui/components/label";
+import { Input } from "@project-aqua/ui/components/input";
+import { Button } from "@project-aqua/ui/components/button";
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from "@project-aqua/ui/components/avatar";
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from "@repo/ui/select";
-import { Popover, PopoverTrigger, PopoverContent } from "@repo/ui/popover";
-import { Calendar } from "@repo/ui/calendar";
+} from "@project-aqua/ui/components/select";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@project-aqua/ui/components/popover";
+import { Calendar } from "@project-aqua/ui/components/calendar";
 
 import { Modal } from "./modal";
 

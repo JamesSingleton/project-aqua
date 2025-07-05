@@ -1,13 +1,11 @@
 {
-  "extends": "@repo/typescript-config/react-library.json",
+  "extends": "@project-aqua/typescript-config/react-library.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "baseUrl": "src",
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@/components/*": ["components/*"]
+      "@project-aqua/ui/*": ["./src/*"]
     }
   },
-  "include": ["src"],
+  "include": ["."],
   "exclude": ["node_modules", "dist"]
 }

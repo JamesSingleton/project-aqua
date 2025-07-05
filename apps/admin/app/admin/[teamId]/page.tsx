@@ -19,7 +19,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@repo/ui/card";
+} from "@project-aqua/ui/components/card";
 import {
   Table,
   TableBody,
@@ -27,11 +27,15 @@ import {
   TableHead,
   TableRow,
   TableHeader,
-} from "@repo/ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from "@repo/ui/avatar";
-import { Button, buttonVariants } from "@repo/ui/button";
-import { Badge } from "@repo/ui/badge";
-import { cn } from "@/lib/utils";
+} from "@project-aqua/ui/components/table";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@project-aqua/ui/components/avatar";
+import { Button, buttonVariants } from "@project-aqua/ui/components/button";
+import { Badge } from "@project-aqua/ui/components/badge";
+import { cn } from "@project-aqua/ui/lib/utils";
 
 import type { Metadata, ResolvingMetadata } from "next";
 

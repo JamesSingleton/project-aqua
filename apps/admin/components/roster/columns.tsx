@@ -11,9 +11,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@repo/ui/dropdown-menu";
-import { Button } from "@repo/ui/button";
-import { Checkbox } from "@repo/ui/checkbox";
+} from "@project-aqua/ui/components/dropdown-menu";
+import { Button } from "@project-aqua/ui/components/button";
+import { Checkbox } from "@project-aqua/ui/components/checkbox";
 
 import { DataTableColumnHeader } from "../data-table-column-header";
 
@@ -24,9 +24,9 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@repo/ui/sheet";
-import { Separator } from "@repo/ui/separator";
-import { ScrollArea } from "@repo/ui/scroll-area";
+} from "@project-aqua/ui/components/sheet";
+import { Separator } from "@project-aqua/ui/components/separator";
+import { ScrollArea } from "@project-aqua/ui/components/scroll-area";
 
 export const columns: ColumnDef<Athlete>[] = [
   {

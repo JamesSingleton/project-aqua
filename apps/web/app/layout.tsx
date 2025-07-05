@@ -1,7 +1,7 @@
-import "./globals.css";
+import "@project-aqua/ui/globals.css";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
-import { cn } from "@/lib/utils";
+import { cn } from "@project-aqua/ui/lib/utils";
 import type { Metadata } from "next";
 
 import { ThemeProvider } from "@/components/providers";

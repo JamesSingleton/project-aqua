@@ -3,11 +3,14 @@
 import * as React from "react";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
-
-import { cn } from "@/lib/utils";
-import { Button } from "@repo/ui/button";
-import { Calendar } from "@repo/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@repo/ui/popover";
+import { cn } from "@project-aqua/ui/lib/utils";
+import { Button } from "@project-aqua/ui/components/button";
+import { Calendar } from "@project-aqua/ui/components/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@project-aqua/ui/components/popover";
 
 export function DatePicker() {
   const [date, setDate] = React.useState<Date>();
