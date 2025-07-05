@@ -9,6 +9,6 @@
   },
   "author": "",
   "devDependencies": {
-    "electron": "^34.2.0"
+    "electron": "^37.2.0"
   }
 }
