@@ -53,10 +53,10 @@
     "@tailwindcss/postcss": "^4.1.11",
     "@turbo/gen": "^2.5.4",
     "@types/eslint": "^9.6.1",
-    "@types/node": "^24.0.10",
+    "@types/node": "^24.0.14",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "eslint": "^9.30.1",
+    "eslint": "^9.31.0",
     "tailwindcss": "^4.1.11",
     "typescript": "^5.8.3"
   }
