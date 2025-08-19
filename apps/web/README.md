@@ -21,27 +21,27 @@ These are just some of the base routes and will advance over time.
 
 ### Base URL
 
-- `/admin/${teamId}`: Base URL for team-specific pages, where `${teamId}` represents the unique identifier of the selected team.
+- `/team/${teamId}`: Base URL for team-specific pages, where `${teamId}` represents the unique identifier of the selected team.
 
 ### Routes
 
 1. **Dashboard**
-   - `/admin/${teamId}`: Route for the admin dashboard of the selected team, providing an overview of key metrics and recent activities.
+   - `/team/${teamId}`: Route for the admin dashboard of the selected team, providing an overview of key metrics and recent activities.
 
 2. **Workouts**
-   - `/admin/${teamId}/workouts`: Route for managing workouts specific to the selected team, enabling coaches to create, edit, and schedule training sessions.
+   - `/team/${teamId}/workouts`: Route for managing workouts specific to the selected team, enabling coaches to create, edit, and schedule training sessions.
 
 3. **Athletes**
-   - `/admin/${teamId}/athletes`: Route for managing athlete profiles and performance metrics for the selected team, facilitating athlete tracking and attendance monitoring.
+   - `/team/${teamId}/athletes`: Route for managing athlete profiles and performance metrics for the selected team, facilitating athlete tracking and attendance monitoring.
 
 4. **Events**
-   - `/admin/${teamId}/events`: Route for managing events (e.g., competitions, meets) for the selected team, allowing coaches to create, view, and manage event details.
+   - `/team/${teamId}/events`: Route for managing events (e.g., competitions, meets) for the selected team, allowing coaches to create, view, and manage event details.
 
 5. **Analytics**
-   - `/admin/${teamId}/analytics`: Route for accessing analytics and performance insights related to the selected team, offering trend analysis and training effectiveness evaluation.
+   - `/team/${teamId}/analytics`: Route for accessing analytics and performance insights related to the selected team, offering trend analysis and training effectiveness evaluation.
 
 6. **Settings**
-   - `/admin/${teamId}/settings`: Route for configuring team-specific settings and application preferences, allowing coaches to customize the software to suit their needs.
+   - `/team/${teamId}/settings`: Route for configuring team-specific settings and application preferences, allowing coaches to customize the software to suit their needs.
 
 ### Benefits
 

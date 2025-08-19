@@ -50,7 +50,7 @@ export async function generateMetadata(
   return {
     title: "Manager Your Roster",
     alternates: {
-      canonical: `/admin/${teamId}/roster`,
+      canonical: `/team/${teamId}/roster`,
     },
     description:
       "View and manage your swim team's roster. Add, edit, and remove swimmers as needed.",
@@ -59,7 +59,7 @@ export async function generateMetadata(
       description:
         "View and manage your swim team's roster. Add, edit, and remove swimmers as needed.",
       type: "website",
-      url: `/admin/${teamId}/roster`,
+      url: `/team/${teamId}/roster`,
       siteName: "Project Aqua",
     },
   };
@@ -103,7 +103,7 @@ export default async function RosterPage({
               </CardHeader>
               <CardFooter>
                 <Link
-                  href={`/admin/${teamId}/swimmers/create`}
+                  href={`/team/${teamId}/swimmers/create`}
                   className={buttonVariants()}
                 >
                   <UserPlusIcon className="h-4 w-4" />

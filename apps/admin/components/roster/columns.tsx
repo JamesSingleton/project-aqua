@@ -113,7 +113,7 @@ export const columns: ColumnDef<Athlete>[] = [
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link
-                  href={`/admin/${params.teamId}/roster?athleteId=${athlete.id}`}
+                  href={`/team/${params.teamId}/roster?athleteId=${athlete.id}`}
                   onClick={() => setIsMenuOpen(true)}
                 >
                   Quick View
@@ -121,7 +121,7 @@ export const columns: ColumnDef<Athlete>[] = [
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link
-                  href={`/admin/${params.teamId}/swimmers/${athlete.id}/edit`}
+                  href={`/team/${params.teamId}/swimmers/${athlete.id}/edit`}
                 >
                   Edit
                 </Link>

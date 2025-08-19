@@ -76,12 +76,12 @@ export default function AthleteInfo({ athlete }: AthleteInfoProps) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
-                <Link href={`/admin/${teamId}/swimmers/${athlete.id}`}>
+                <Link href={`/team/${teamId}/swimmers/${athlete.id}`}>
                   View
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href={`/admin/${teamId}/swimmers/${athlete.id}/edit`}>
+                <Link href={`/team/${teamId}/swimmers/${athlete.id}/edit`}>
                   Edit
                 </Link>
               </DropdownMenuItem>

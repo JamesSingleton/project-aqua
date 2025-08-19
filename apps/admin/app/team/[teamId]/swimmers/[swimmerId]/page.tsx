@@ -135,7 +135,7 @@ export default async function AthletePage({
           </div>
         </div>
         <Link
-          href={`/admin/${teamId}/swimmers/${swimmerId}/edit`}
+          href={`/team/${teamId}/swimmers/${swimmerId}/edit`}
           className={buttonVariants()}
         >
           <Edit className="mr-2 h-4 w-4" />
