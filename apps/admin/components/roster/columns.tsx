@@ -72,6 +72,10 @@ export const columns: ColumnDef<Athlete>[] = [
     },
   },
   {
+    accessorKey: "age",
+    header: "Age",
+  },
+  {
     accessorKey: "birthday",
     header: "Birthday",
     cell: ({ row }) => {
@@ -81,10 +85,6 @@ export const columns: ColumnDef<Athlete>[] = [
         day: "numeric",
       });
     },
-  },
-  {
-    accessorKey: "age",
-    header: "Age",
   },
   {
     id: "actions",
@@ -113,7 +113,7 @@ export const columns: ColumnDef<Athlete>[] = [
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link
-                  href={`/team/${params.teamId}/roster?athleteId=${athlete.id}`}
+                  href={`/team/${params.teamId}/people/roster?athleteId=${athlete.id}`}
                   onClick={() => setIsMenuOpen(true)}
                 >
                   Quick View

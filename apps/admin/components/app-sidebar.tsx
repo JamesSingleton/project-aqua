@@ -3,19 +3,21 @@
 import * as React from "react";
 import {
   AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
   GalleryVerticalEnd,
-  Map,
-  PieChart,
-  Settings2,
-  SquareTerminal,
+  LayoutDashboard,
+  Settings,
+  LifeBuoy,
+  Send,
+  ChartNoAxesCombined,
+  Waves,
+  Dumbbell,
+  UserCheck,
+  CalendarPlus,
+  Users,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
-import { NavProjects } from "@/components/nav-projects";
+import { NavQuickActions } from "@/components/nav-quick-actions";
 import { NavUser } from "@/components/nav-user";
 import { TeamSwitcher } from "@/components/team-switcher";
 import {
@@ -25,133 +27,138 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@project-aqua/ui/components/sidebar";
+import { NavSecondary } from "./nav-secondary";
 
 // This is sample data.
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
+    name: "James Singleton",
+    email: "james.singleton@example.com",
     avatar: "/avatars/shadcn.jpg",
   },
   teams: [
     {
-      name: "Acme Inc",
+      name: "Arizona Seals Swimming Academy",
       logo: GalleryVerticalEnd as React.ElementType,
-      plan: "Enterprise",
+      plan: "Club",
     },
     {
-      name: "Acme Corp.",
+      name: "Maricopa High School",
       logo: AudioWaveform as React.ElementType,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command as React.ElementType,
-      plan: "Free",
+      plan: "High School",
     },
   ],
   navMain: [
     {
-      title: "Playground",
+      title: "Dashboard",
+      icon: LayoutDashboard,
+      url: "/dashboard",
+    },
+    {
+      title: "People",
+      icon: Users,
       url: "#",
-      icon: SquareTerminal,
-      isActive: true,
       items: [
         {
-          title: "History",
+          title: "Roster",
+          url: "/people/roster",
+        },
+        {
+          title: "Add Swimmer",
+          url: "/swimmers/create",
+        },
+      ],
+    },
+    {
+      title: "Training",
+      url: "#",
+      icon: Dumbbell,
+      items: [
+        {
+          title: "Workouts",
           url: "#",
         },
         {
-          title: "Starred",
+          title: "Planning",
           url: "#",
         },
         {
-          title: "Settings",
+          title: "Groups",
           url: "#",
         },
       ],
     },
     {
-      title: "Models",
+      title: "Meets",
       url: "#",
-      icon: Bot,
+      icon: Waves,
       items: [
         {
-          title: "Genesis",
+          title: "Entries",
           url: "#",
         },
         {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
+          title: "Results",
           url: "#",
         },
       ],
     },
     {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
+      title: "Reports",
+      url: "/reports",
+      icon: ChartNoAxesCombined,
       items: [
         {
-          title: "Introduction",
-          url: "#",
+          title: "Overview",
+          url: "/reports",
         },
         {
-          title: "Get Started",
-          url: "#",
+          title: "Training",
+          url: "/reports/training",
         },
         {
-          title: "Tutorials",
-          url: "#",
+          title: "Performance",
+          url: "/reports/performance",
         },
         {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
+          title: "Attendance",
+          url: "/reports/attendance",
         },
       ],
     },
   ],
-  projects: [
+  quickActions: [
     {
-      name: "Design Engineering",
+      name: "Take Attendance",
       url: "#",
-      icon: Frame,
+      icon: UserCheck,
     },
     {
-      name: "Sales & Marketing",
+      name: "Add Swim Meet",
       url: "#",
-      icon: PieChart,
+      icon: CalendarPlus,
     },
     {
-      name: "Travel",
+      name: "Send Quick Email",
       url: "#",
-      icon: Map,
+      icon: Send,
+    },
+  ],
+  navSecondary: [
+    {
+      title: "Settings",
+      url: "#",
+      icon: Settings,
+    },
+    {
+      title: "Support",
+      url: "#",
+      icon: LifeBuoy,
+    },
+    {
+      title: "Feedback",
+      url: "#",
+      icon: Send,
     },
   ],
 };
@@ -164,7 +171,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        <NavQuickActions projects={data.quickActions} />
+        <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
