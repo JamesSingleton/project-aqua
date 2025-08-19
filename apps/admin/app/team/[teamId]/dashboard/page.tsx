@@ -54,7 +54,7 @@ export async function generateMetadata(
   return {
     ...previousMetadata,
     alternates: {
-      canonical: `/admin/${teamId}`,
+      canonical: `/team/${teamId}`,
     },
   };
 }
@@ -159,7 +159,7 @@ export default async function AdminHomePage({
                 </CardDescription>
               </div>
               <Link
-                href={`/admin/${teamId}/meets`}
+                href={`/team/${teamId}/meets`}
                 className={cn(buttonVariants({ size: "sm" }), "ml-auto gap-1")}
               >
                 View All
