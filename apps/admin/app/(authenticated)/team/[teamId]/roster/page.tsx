@@ -1,224 +1,240 @@
+// app/team/[teamId]/roster/page.tsx
+
 import {
-  Button,
-  buttonVariants,
-} from "@project-aqua/design-system/components/ui/button";
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from "@project-aqua/design-system/components/ui/breadcrumb";
+import { Button } from "@project-aqua/design-system/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@project-aqua/design-system/components/ui/card";
+import { Separator } from "@project-aqua/design-system/components/ui/separator";
+import { SidebarTrigger } from "@project-aqua/design-system/components/ui/sidebar";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@project-aqua/design-system/components/ui/table";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@project-aqua/design-system/components/ui/tabs";
-import { FileIcon, UserPlusIcon } from "lucide-react";
-import type { Metadata, ResolvingMetadata } from "next";
+  ChevronRightIcon,
+  ShieldCheckIcon,
+  UploadIcon,
+  UserPlusIcon,
+  UsersIcon,
+} from "lucide-react";
 import Link from "next/link";
-import { Header } from "@/components/header";
-import { columns } from "@/components/roster/columns";
-import { DataTable } from "@/components/roster/data-table";
-import { mockAthleteData } from "@/lib/mock-data";
-import type { Athlete } from "@/types";
+import { MOCK_GROUPS, MOCK_STATS } from "@/lib/mock-data";
 
-async function getData({ teamId }: { teamId: string }): Promise<Athlete[]> {
-  return mockAthleteData;
-}
-
-export async function generateMetadata(
-  {
-    params,
-    searchParams,
-  }: {
-    params: Promise<{ teamId: string }>;
-    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-  },
-  parent: ResolvingMetadata
-): Promise<Metadata> {
-  const { teamId } = await params;
-
-  return {
-    title: "Manager Your Roster",
-    alternates: {
-      canonical: `/team/${teamId}/roster`,
-    },
-    description:
-      "View and manage your swim team's roster. Add, edit, and remove swimmers as needed.",
-    openGraph: {
-      title: "Manage Your Roster",
-      description:
-        "View and manage your swim team's roster. Add, edit, and remove swimmers as needed.",
-      type: "website",
-      url: `/team/${teamId}/roster`,
-      siteName: "Project Aqua",
-    },
-  };
-}
-
-export default async function RosterPage({
-  params,
-  searchParams,
-}: {
+interface RosterPageProps {
   params: Promise<{ teamId: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-  const { teamId } = await params;
-  const rosterData = await getData({ teamId });
-  const { athleteId } = await searchParams;
-  const selectedAthlete = rosterData.find(
-    (athlete) => athlete.id === athleteId
-  );
-  const maleSwimmers = rosterData.filter(
-    (athlete) => athlete.gender === "Male"
-  );
+}
 
-  const femaleSwimmers = rosterData.filter(
-    (athlete) => athlete.gender === "Female"
-  );
+export default async function RosterPage({ params }: RosterPageProps) {
+  const { teamId } = await params;
+  const stats = MOCK_STATS;
+  const groups = MOCK_GROUPS;
 
   return (
     <>
-      <Header page="Roster" pages={["Roster"]} />
+      <header className="flex h-14 shrink-0 items-center gap-2 border-border border-b px-4">
+        <SidebarTrigger className="-ml-1" />
+        <Separator className="mx-2 h-4" orientation="vertical" />
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbPage>Roster</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </header>
 
-      <div className="flex flex-1 flex-col gap-4 px-4 pb-4 md:gap-6 md:px-6 md:pb-6">
-        <div className="flex items-center justify-between">
-          <h1 className="font-semibold text-lg md:text-2xl">Roster</h1>
-        </div>
-        <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Card className="sm:col-span-2">
-              <CardHeader className="pb-3">
-                <CardTitle>Your Swim Team</CardTitle>
-                <CardDescription className="max-w-lg text-balance leading-relaxed">
-                  Manage your swim team's performance and progress.
-                </CardDescription>
-              </CardHeader>
-              <CardFooter>
-                <Link
-                  className={buttonVariants()}
-                  href={`/team/${teamId}/swimmers/create`}
-                >
-                  <UserPlusIcon className="h-4 w-4" />
-                  <span className="ml-2">Add Swimmer</span>
-                </Link>
-              </CardFooter>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Swimmers</CardDescription>
-                <CardTitle className="text-3xl">{rosterData.length}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4">
-                  <div className="text-muted-foreground text-xs">
-                    Male Swimmers: {maleSwimmers.length}
-                  </div>
-                  <div className="text-muted-foreground text-xs">
-                    Female Swimmers: {femaleSwimmers.length}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>This Month</CardDescription>
-                <CardTitle className="text-3xl">80 Practices</CardTitle>
-              </CardHeader>
-            </Card>
+      <div className="flex flex-col gap-6 p-6">
+        {/* Page header */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="font-semibold text-2xl tracking-tight">Roster</h1>
+            <p className="mt-1 text-muted-foreground text-sm">
+              Manage athletes, coaches, and training groups.
+            </p>
           </div>
-          <Tabs className="max-w-full overflow-auto" defaultValue="swimmers">
-            <div className="flex items-center">
-              <TabsList>
-                <TabsTrigger value="swimmers">Swimmers</TabsTrigger>
-                <TabsTrigger value="staff">Staff</TabsTrigger>
-              </TabsList>
-              <div className="ml-auto flex items-center gap-2">
-                <Button
-                  className="h-7 gap-1 text-sm"
-                  size="sm"
-                  variant="outline"
-                >
-                  <FileIcon className="h-3.5 w-3.5" />
-                  <span className="sr-only sm:not-sr-only">Export</span>
-                </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/team/${teamId}/roster/import`}>
+                <UploadIcon className="mr-1.5 h-4 w-4" />
+                Import
+              </Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link href={`/team/${teamId}/roster/athletes/new`}>
+                <UserPlusIcon className="mr-1.5 h-4 w-4" />
+                Add athlete
+              </Link>
+            </Button>
+          </div>
+        </div>
+
+        {/* Stat cards */}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-1.5">
+                <UsersIcon className="h-3.5 w-3.5" />
+                Total athletes
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="font-semibold text-3xl tabular-nums">
+                {stats.totalAthletes}
               </div>
+              <p className="mt-1 text-muted-foreground text-xs">
+                {stats.activeAthletes} active
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Male / Female</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="font-semibold text-3xl tabular-nums">
+                {stats.maleCount}
+                <span className="mx-1 font-normal text-lg text-muted-foreground">
+                  /
+                </span>
+                {stats.femaleCount}
+              </div>
+              <p className="mt-1 text-muted-foreground text-xs">gender split</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-1.5">
+                <ShieldCheckIcon className="h-3.5 w-3.5" />
+                Coaches
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="font-semibold text-3xl tabular-nums">
+                {stats.totalCoaches}
+              </div>
+              <p className="mt-1 text-muted-foreground text-xs">on staff</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Training groups</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="font-semibold text-3xl tabular-nums">
+                {stats.groupCount}
+              </div>
+              <p className="mt-1 text-muted-foreground text-xs">
+                active groups
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Quick nav cards */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Link
+            className="group block rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/50 hover:bg-muted/30"
+            href={`/team/${teamId}/roster/athletes`}
+          >
+            <div className="mb-3 flex items-start justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <UsersIcon className="h-5 w-5 text-primary" />
+              </div>
+              <ChevronRightIcon className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-foreground" />
             </div>
-            <TabsContent value="swimmers">
-              <Card>
-                <CardHeader className="px-7">
-                  <CardTitle>Roster</CardTitle>
-                  <CardDescription>
-                    View and manage your swim team's roster.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <DataTable columns={columns} data={mockAthleteData} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="staff">
-              <Card>
-                <CardHeader className="px-7">
-                  <CardTitle>Staff</CardTitle>
-                  <CardDescription>
-                    View and manage your swim team's staff.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead className="hidden sm:table-cell">
-                          Role
-                        </TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Email
-                        </TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Phone
-                        </TableHead>
-                        {/* a table head that a switch would be useful for */}
-                        <TableHead className="hidden md:table-cell">
-                          Admin
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell>Jane Doe</TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          Coach
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          janedoe@example.com
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          555-555-5555
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+            <h2 className="font-semibold">Athletes</h2>
+            <p className="mt-1 text-muted-foreground text-sm">
+              {stats.totalAthletes} athletes across {stats.groupCount} groups
+            </p>
+          </Link>
+
+          <Link
+            className="group block rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/50 hover:bg-muted/30"
+            href={`/team/${teamId}/roster/coaches`}
+          >
+            <div className="mb-3 flex items-start justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <ShieldCheckIcon className="h-5 w-5 text-primary" />
+              </div>
+              <ChevronRightIcon className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-foreground" />
+            </div>
+            <h2 className="font-semibold">Coaches &amp; staff</h2>
+            <p className="mt-1 text-muted-foreground text-sm">
+              {stats.totalCoaches} staff members, certifications &amp; roles
+            </p>
+          </Link>
         </div>
-        <div>
-          {/* {selectedAthlete && <AthleteInfo athlete={selectedAthlete} />} */}
-        </div>
+
+        {/* Groups breakdown */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Training groups</CardTitle>
+                <CardDescription className="mt-0.5">
+                  Athlete distribution by group
+                </CardDescription>
+              </div>
+              <Button asChild className="h-7 text-xs" size="sm" variant="ghost">
+                <Link href={`/team/${teamId}/roster/athletes`}>
+                  View all athletes
+                  <ChevronRightIcon className="ml-1 h-3 w-3" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y">
+              {groups.map((group) => {
+                const pct = Math.round(
+                  (group.athleteCount / stats.totalAthletes) * 100
+                );
+                return (
+                  <div
+                    className="flex items-center gap-4 px-6 py-3.5"
+                    key={group.name}
+                  >
+                    <div className="w-28 shrink-0">
+                      <p className="font-medium text-sm">{group.name}</p>
+                      <p className="text-muted-foreground text-xs">
+                        {group.coach}
+                      </p>
+                    </div>
+                    <div className="flex-1">
+                      <div className="mb-1 flex items-center gap-2">
+                        <div
+                          className="h-2 rounded-full bg-primary transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center gap-3 text-muted-foreground text-xs">
+                        <span className="tabular-nums">{group.maleCount}M</span>
+                        <span className="tabular-nums">
+                          {group.femaleCount}F
+                        </span>
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="font-semibold text-sm tabular-nums">
+                        {group.athleteCount}
+                      </p>
+                      <p className="text-muted-foreground text-xs">athletes</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </>
   );
