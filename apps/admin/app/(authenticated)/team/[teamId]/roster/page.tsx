@@ -1,7 +1,7 @@
 import {
   Button,
   buttonVariants,
-} from "@project-aqua/design-system/components/button";
+} from "@project-aqua/design-system/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,7 +9,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@project-aqua/design-system/components/card";
+} from "@project-aqua/design-system/components/ui/card";
 import {
   Table,
   TableBody,
@@ -17,16 +17,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@project-aqua/design-system/components/table";
+} from "@project-aqua/design-system/components/ui/table";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@project-aqua/design-system/components/tabs";
+} from "@project-aqua/design-system/components/ui/tabs";
 import { FileIcon, UserPlusIcon } from "lucide-react";
 import type { Metadata, ResolvingMetadata } from "next";
 import Link from "next/link";
+import { Header } from "@/components/header";
 import { columns } from "@/components/roster/columns";
 import { DataTable } from "@/components/roster/data-table";
 import { mockAthleteData } from "@/lib/mock-data";
@@ -89,10 +90,12 @@ export default async function RosterPage({
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <h1 className="font-semibold text-lg md:text-2xl">Roster</h1>
-      </div>
-      <div className="max-w-full overflow-auto">
+      <Header page="Roster" pages={["Roster"]} />
+
+      <div className="flex flex-1 flex-col gap-4 px-4 pb-4 md:gap-6 md:px-6 md:pb-6">
+        <div className="flex items-center justify-between">
+          <h1 className="font-semibold text-lg md:text-2xl">Roster</h1>
+        </div>
         <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <Card className="sm:col-span-2">
