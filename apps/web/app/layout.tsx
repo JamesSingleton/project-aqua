@@ -1,13 +1,12 @@
-import "@project-aqua/ui/globals.css";
-import { GeistSans } from "geist/font/sans";
+import "@project-aqua/design-system/globals.css";
+import { cn } from "@project-aqua/design-system/lib/utils";
 import { GeistMono } from "geist/font/mono";
-import { cn } from "@project-aqua/ui/lib/utils";
+import { GeistSans } from "geist/font/sans";
 import type { Metadata } from "next";
-
-import { ThemeProvider } from "@/components/providers";
-import Header from "@/components/header";
-import { Footer } from "@/components/footer";
 import { CTA } from "@/components/cta";
+import { Footer } from "@/components/footer";
+import Header from "@/components/header";
+import { ThemeProvider } from "@/components/providers";
 
 export const metadata: Metadata = {
   title: {
@@ -35,17 +34,17 @@ export default function RootLayout({
       <body
         className={cn(
           `${GeistSans.variable} ${GeistMono.variable}`,
-          "bg-background overflow-x-hidden",
+          "overflow-x-hidden bg-background"
         )}
       >
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
-          enableSystem
           disableTransitionOnChange
+          enableSystem
         >
           <Header />
-          <main className="container mx-auto px-4 overflow-hidden md:overflow-visible">
+          <main className="container mx-auto overflow-hidden px-4 md:overflow-visible">
             {children}
             <CTA />
           </main>

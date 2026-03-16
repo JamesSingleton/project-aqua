@@ -1,8 +1,11 @@
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
+import { Geist } from "next/font/google";
 
-import "@project-aqua/ui/globals.css";
-import Providers from "@/components/providers";
+import "@project-aqua/design-system/styles/globals.css";
+import { DesignSystemProvider } from "@project-aqua/design-system";
+import { fonts } from "@project-aqua/design-system/lib/fonts";
+import { cn } from "@project-aqua/design-system/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export default function RootLayout({
   children,
@@ -11,14 +14,14 @@ export default function RootLayout({
 }>) {
   return (
     <html
+      className={cn(fonts, "font-sans", geist.variable)}
       lang="en"
-      className={`${GeistSans.variable} ${GeistMono.variable}`}
       suppressHydrationWarning
     >
-      <body className="overscroll-none bg-background">
-        <Providers>
-          <>{children}</>
-        </Providers>
+      <body>
+        <DesignSystemProvider>
+          {children}
+        </DesignSystemProvider>
       </body>
     </html>
   );

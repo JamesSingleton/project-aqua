@@ -1,0 +1,23 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "radix-nova",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/styles/globals.css",
+    "baseColor": "mauve",
+    "cssVariables": true
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@project-aqua/design-system/components",
+    "utils": "@project-aqua/design-system/lib/utils",
+    "hooks": "@project-aqua/design-system/hooks",
+    "lib": "@project-aqua/design-system/lib",
+    "ui": "@project-aqua/design-system/components/ui"
+  },
+  "rtl": false,
+  "menuColor": "default-translucent",
+  "menuAccent": "subtle"
+}

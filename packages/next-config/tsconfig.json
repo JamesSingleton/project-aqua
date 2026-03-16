@@ -1,0 +1,8 @@
+{
+  "extends": "@project-aqua/typescript-config/nextjs.json",
+  "compilerOptions": {
+    "baseUrl": "."
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
+}

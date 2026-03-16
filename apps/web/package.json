@@ -11,7 +11,7 @@
     "prettier:write": "prettier --write ."
   },
   "dependencies": {
-    "@project-aqua/ui": "workspace:*",
+    "@project-aqua/design-system": "workspace:*",
     "@react-email/components": "^1.0.8",
     "@vercel/analytics": "^1.6.1",
     "date-fns": "^4.1.0",
@@ -25,7 +25,6 @@
     "resend": "^6.9.2"
   },
   "devDependencies": {
-    "@project-aqua/eslint-config": "workspace:*",
     "@project-aqua/typescript-config": "workspace:*",
     "@types/eslint": "^9.6.1",
     "@types/node": "^25.3.0",

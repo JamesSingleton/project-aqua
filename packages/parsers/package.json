@@ -1,0 +1,14 @@
+{
+  "name": "@project-aqua/parsers",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+  },
+  "devDependencies":   {
+    "@project-aqua/typescript-config": "workspace:*",
+    "@types/node": "^25.5.0",
+    "typescript": "^5.9.3"
+  }
+}

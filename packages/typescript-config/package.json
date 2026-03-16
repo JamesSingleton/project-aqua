@@ -2,7 +2,8 @@
   "name": "@project-aqua/typescript-config",
   "version": "0.0.0",
   "private": true,
-  "publishConfig": {
-    "access": "public"
+  "scripts": {
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   }
 }

@@ -1,5 +1,173 @@
 import type { Athlete } from "@/types";
 
+// ---
+// Types
+// ---
+
+interface UpcomingMeet {
+  date: string;
+  deadlineUrgency: "ok" | "soon" | "urgent";
+  entriesSubmitted: number;
+  entriesTotal: number;
+  entryDeadline: string;
+  id: string;
+  location: string;
+  name: string;
+}
+
+interface RecentDrop {
+  athleteName: string;
+  date: string;
+  dropSeconds: number;
+  event: string;
+  id: string;
+  newTime: string;
+  previousTime: string;
+}
+
+interface ActionItem {
+  description: string;
+  href: string;
+  id: string;
+  title: string;
+  type: "entry_deadline" | "missing_times" | "import_needed" | "attendance";
+  urgency: "high" | "medium" | "low";
+}
+
+interface AttendanceSummary {
+  date: string;
+  present: number;
+  total: number;
+}
+
+// ---
+// Mock data (replace with real queries)
+// ---
+
+export const upcomingMeets: UpcomingMeet[] = [
+  {
+    id: "1",
+    name: "Desert Classic Invitational",
+    date: "Mar 22, 2026",
+    location: "Peoria Aquatic Center",
+    entriesSubmitted: 18,
+    entriesTotal: 24,
+    entryDeadline: "Mar 18, 2026",
+    deadlineUrgency: "urgent",
+  },
+  {
+    id: "2",
+    name: "AIA 5A State Championship",
+    date: "Apr 11, 2026",
+    location: "Skyline Aquatic Center, Mesa",
+    entriesSubmitted: 0,
+    entriesTotal: 24,
+    entryDeadline: "Apr 1, 2026",
+    deadlineUrgency: "soon",
+  },
+  {
+    id: "3",
+    name: "Maricopa Dual vs. Casa Grande",
+    date: "Mar 28, 2026",
+    location: "Copper Sky Aquatic Center",
+    entriesSubmitted: 24,
+    entriesTotal: 24,
+    entryDeadline: "Mar 25, 2026",
+    deadlineUrgency: "ok",
+  },
+];
+
+export const recentDrops: RecentDrop[] = [
+  {
+    id: "1",
+    athleteName: "Jordan Alvarez",
+    event: "200 Free",
+    previousTime: "1:58.42",
+    newTime: "1:55.87",
+    dropSeconds: 2.55,
+    date: "Mar 14",
+  },
+  {
+    id: "2",
+    athleteName: "Maya Chen",
+    event: "100 Fly",
+    previousTime: "1:02.18",
+    newTime: "1:01.04",
+    dropSeconds: 1.14,
+    date: "Mar 14",
+  },
+  {
+    id: "3",
+    athleteName: "Tyler Brooks",
+    event: "500 Free",
+    previousTime: "5:12.33",
+    newTime: "5:09.01",
+    dropSeconds: 3.32,
+    date: "Mar 13",
+  },
+  {
+    id: "4",
+    athleteName: "Sofia Reyes",
+    event: "100 Back",
+    previousTime: "1:05.90",
+    newTime: "1:04.22",
+    dropSeconds: 1.68,
+    date: "Mar 12",
+  },
+  {
+    id: "5",
+    athleteName: "Ethan Park",
+    event: "200 IM",
+    previousTime: "2:18.44",
+    newTime: "2:15.99",
+    dropSeconds: 2.45,
+    date: "Mar 12",
+  },
+];
+
+export const actionItems: ActionItem[] = [
+  {
+    id: "1",
+    type: "entry_deadline",
+    title: "Desert Classic entries due in 3 days",
+    description: "6 athletes still need event assignments",
+    urgency: "high",
+    href: "/meets/entries",
+  },
+  {
+    id: "2",
+    type: "missing_times",
+    title: "4 athletes missing seed times",
+    description: "Required for State Championship entries",
+    urgency: "high",
+    href: "/times/personal-bests",
+  },
+  {
+    id: "3",
+    type: "import_needed",
+    title: "State meet package available",
+    description: "Import .ev3 file to set up event list",
+    urgency: "medium",
+    href: "/roster/import",
+  },
+  {
+    id: "4",
+    type: "attendance",
+    title: "3 athletes missed 5+ practices",
+    description: "May affect eligibility for State",
+    urgency: "medium",
+    href: "/practice/attendance",
+  },
+];
+
+export const attendanceThisWeek: AttendanceSummary[] = [
+  { date: "Mon", present: 21, total: 24 },
+  { date: "Tue", present: 19, total: 24 },
+  { date: "Wed", present: 23, total: 24 },
+  { date: "Thu", present: 20, total: 24 },
+  { date: "Fri", present: 22, total: 24 },
+];
+
 export const mockAthleteData: Athlete[] = [
   {
     id: "a1b2c3",
@@ -409,12 +577,12 @@ export const mockTeams = [
     name: "Team A",
     logo: (
       <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="50"
         height="50"
         viewBox="0 0 24 24"
+        width="50"
+        xmlns="http://www.w3.org/2000/svg"
       >
-        <circle cx="12" cy="12" r="10" fill="blue" />
+        <circle cx="12" cy="12" fill="blue" r="10" />
       </svg>
     ),
   },
@@ -423,12 +591,12 @@ export const mockTeams = [
     name: "Team B",
     logo: (
       <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="50"
         height="50"
         viewBox="0 0 24 24"
+        width="50"
+        xmlns="http://www.w3.org/2000/svg"
       >
-        <rect width="24" height="24" fill="green" />
+        <rect fill="green" height="24" width="24" />
       </svg>
     ),
   },
@@ -437,14 +605,14 @@ export const mockTeams = [
     name: "Team C",
     logo: (
       <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="50"
         height="50"
         viewBox="0 0 24 24"
+        width="50"
+        xmlns="http://www.w3.org/2000/svg"
       >
         <path
-          fill="orange"
           d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"
+          fill="orange"
         />
       </svg>
     ),
