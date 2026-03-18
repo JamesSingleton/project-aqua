@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint && pnpm prettier:check",
-    "prettier:check": "prettier --check .",
-    "prettier:write": "prettier --write ."
+    "analyze": "ANALYZE=true npm run build",
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
     "@project-aqua/design-system": "workspace:*",

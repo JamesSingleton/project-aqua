@@ -5,7 +5,8 @@
     "paths": {
       "@/*": ["./*"],
       "@project-aqua/*": ["../../packages/*"]
-    }
+    },
+    "strictNullChecks": true
   },
   "include": [
     "next-env.d.ts",

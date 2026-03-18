@@ -1,3 +1,6 @@
 {
-  "extends": "@project-aqua/typescript-config/base.json"
+  "extends": "@project-aqua/typescript-config/base.json",
+  "compilerOptions": {
+    "strictNullChecks": true
+  }
 }
