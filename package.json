@@ -15,10 +15,10 @@
     "db:push": "cd packages/database && npx drizzle-kit push"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.7",
+    "@biomejs/biome": "^2.4.8",
     "@project-aqua/typescript-config": "workspace:*",
-    "@turbo/gen": "^2.8.17",
-    "turbo": "^2.8.17",
+    "@turbo/gen": "^2.8.20",
+    "turbo": "^2.8.20",
     "ultracite": "^7.3.2"
   },
   "packageManager": "pnpm@10.4.1",
