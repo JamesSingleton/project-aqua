@@ -31,10 +31,6 @@ import {
   splitLines,
 } from "./utils";
 
-const WHITE_SPACE_REGEX = /\s+/;
-const SINGLE_LETTER_A_TO_G_REGEX = /^[A-Ga-g]$/;
-const SINGLE_LETTER_A_TO_Z_REGEX = /^[A-Za-z]$/;
-
 // ─── USA-S SWIMS Event Catalog → Stroke mapping ───────────────────────────────
 //
 // The SD3 D01 record stores a USA Swimming SWIMS event catalog number (evnum),
@@ -274,13 +270,13 @@ function parseD01(line: string): Sd3Entry {
   const lastName =
     commaIdx >= 0 ? nameRaw.slice(0, commaIdx).trim() : nameRaw.trim();
   const firstAndMI = commaIdx >= 0 ? nameRaw.slice(commaIdx + 1).trim() : "";
-  const nameParts = firstAndMI.split(WHITE_SPACE_REGEX);
+  const nameParts = firstAndMI.split(/\s+/);
   const firstName = nameParts[0] ?? "";
   // Middle initial: last token if it's a single alpha char (e.g. "Damien R" → "R")
   const middleInitialFromName =
     nameParts.length > 1 &&
     nameParts[nameParts.length - 1]!.length === 1 &&
-    SINGLE_LETTER_A_TO_Z_REGEX.test(nameParts[nameParts.length - 1]!)
+    /^[A-Za-z]$/.test(nameParts[nameParts.length - 1]!)
       ? nameParts[nameParts.length - 1]!.toUpperCase()
       : "";
 
@@ -344,7 +340,7 @@ function parseD3(line: string): Sd3AthleteExtended {
   const middleRaw = field(line, 46, 60);
   // A single alpha character is a middle initial; longer strings are middle names
   const middleInitial =
-    middleRaw.length === 1 && SINGLE_LETTER_A_TO_Z_REGEX.test(middleRaw)
+    middleRaw.length === 1 && /^[A-Za-z]$/.test(middleRaw)
       ? middleRaw.toUpperCase()
       : "";
   const middleName = middleRaw.length > 1 ? middleRaw : "";

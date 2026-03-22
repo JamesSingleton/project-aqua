@@ -403,3 +403,97 @@ export interface Ev3File {
   events: Ev3Event[];
   header: Ev3MeetHeader;
 }
+
+// ─── Roster types (fileCode "03" HY3, "20" CL2) ─────────────────────────────
+
+/** Academic year for high school swimmers */
+export type GradeYear = "FR" | "SO" | "JR" | "SR" | "";
+
+/**
+ * Unified roster athlete record — used when parsing fileCode "03" (HY3)
+ * or fileCode "20" (CL2/SD3) files which contain no meet or event data.
+ */
+export interface RosterAthlete {
+  age: number;
+  /** ISO yyyy-MM-dd — may be empty in high school rosters */
+  dob: string;
+  firstName: string;
+  gender: Gender;
+  gradeYear: GradeYear;
+  /** Jersey / squad number from HY3 D1 record — 0 if not set */
+  jerseyNumber: number;
+  lastName: string;
+  lsc: string;
+  /** USA-S member ID (12 hex chars) — may be empty in high school rosters */
+  memberId: string;
+  middleInitial: string;
+}
+
+/**
+ * Extended team info available from HY3 C1/C2/C3 records and CL2 C11.
+ * Superset of both Cl2Team and Hy3Team.
+ */
+export interface SwimTeamInfo {
+  abbreviation: string;
+  address: string;
+  city: string;
+  /** Head coach name (HY3 only, empty in CL2) */
+  coachName: string;
+  country: string;
+  /** Contact email (HY3 C3 record only) */
+  email: string;
+  lsc: string;
+  name: string;
+  /** "HS"=high school, ""=club */
+  schoolType: string;
+  /** Short name / mascot code e.g. "MHS" */
+  shortName: string;
+  state: string;
+  zip: string;
+}
+
+// ─── Swim* type aliases (used by unified hy3.ts parser) ─────────────────────
+// These map the Swim* names used in the new unified parser to the existing
+// concrete types, keeping backward compatibility while enabling cleaner APIs.
+
+export interface SwimMeet {
+  address: string;
+  altitude: number;
+  city: string;
+  country: string;
+  course: Course;
+  endDate: string;
+  facility: string;
+  masters: boolean;
+  name: string;
+  startDate: string;
+  state: string;
+  zip: string;
+}
+
+export type SwimAthlete = Hy3Athlete;
+export type SwimAthleteResult = Hy3Result;
+
+export interface SwimAthleteEntry {
+  entry: {
+    gender: Gender;
+    athleteId: number;
+    distance: number;
+    stroke: Stroke;
+    ageGroupMin: number;
+    ageGroupMax: number;
+    round: string;
+    entryFee: number;
+    eventNumber: number;
+    seedRank: string;
+    qualifyingTime: number | null;
+    qualifyingCourse: Course;
+    altQualifyingTime: number | null;
+  };
+  results: SwimAthleteResult[];
+}
+
+export interface SwimAthleteRecord {
+  athlete: SwimAthlete;
+  entries: SwimAthleteEntry[];
+}

@@ -25,17 +25,13 @@ import {
   TabsTrigger,
 } from "@project-aqua/design-system/components/ui/tabs";
 import { cn } from "@project-aqua/design-system/lib/utils";
-import type {
-  Cl2File,
-  Ev3File,
-  Hy3File,
-  HyvFile,
-  Sd3File,
-} from "@project-aqua/parsers/types";
-
+import type { ParsedCl2File } from "@project-aqua/parsers/cl2";
+import type { ParsedHy3File } from "@project-aqua/parsers/hy3";
+import type { Ev3File, HyvFile, Sd3File } from "@project-aqua/parsers/types";
 import type { FileType, ParsedFile } from "../page";
 import { Cl2View } from "./cl2-view";
 import { Ev3View } from "./ev3-view";
+import { Hy3ResultsView } from "./hy3-results";
 import { Hy3View } from "./hy3-view";
 import { HyvView } from "./hyv-view";
 import { Sd3View } from "./sd3-view";
@@ -109,54 +105,71 @@ export function ParsedFileCard({ file }: { file: ParsedFile }) {
         {file.type === "sd3" && <Sd3View data={file.data as Sd3File} />}
         {file.type === "hyv" && <HyvView data={file.data as HyvFile} />}
         {file.type === "ev3" && <Ev3View data={file.data as Ev3File} />}
-        {file.type === "cl2" && <Cl2View data={file.data as Cl2File} />}
-        {file.type === "hy3" && (
-          <Tabs defaultValue="results">
-            <TabsList className="mb-4">
-              <TabsTrigger value="results">Results</TabsTrigger>
-              <TabsTrigger value="teams">
-                Teams ({(file.data as Hy3File).teams.size})
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="results">
-              <Hy3View data={file.data as Hy3File} />
-            </TabsContent>
-            <TabsContent value="teams">
-              <ScrollArea className="h-80 rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Abbr</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>LSC</TableHead>
-                      <TableHead>City</TableHead>
-                      <TableHead>Athletes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {[...(file.data as Hy3File).teams.entries()].map(
-                      ([abbr, { team, athletes }]) => (
-                        <TableRow key={abbr}>
-                          <TableCell className="font-medium font-mono">
-                            {abbr}
-                          </TableCell>
-                          <TableCell>{team.name}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {team.lsc}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {[team.city, team.state].filter(Boolean).join(", ")}
-                          </TableCell>
-                          <TableCell>{athletes.length}</TableCell>
-                        </TableRow>
-                      )
-                    )}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
-            </TabsContent>
-          </Tabs>
-        )}
+        {file.type === "cl2" && <Cl2View data={file.data as ParsedCl2File} />}
+        {file.type === "hy3" &&
+          (() => {
+            const hy3data = file.data as ParsedHy3File;
+            // Results/entries get a Teams tab; roster is self-contained
+            if (
+              hy3data.fileType === "results" ||
+              hy3data.fileType === "entries"
+            ) {
+              return (
+                <Tabs defaultValue="results">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="results">Results</TabsTrigger>
+                    <TabsTrigger value="teams">
+                      Teams ({hy3data.teams.size})
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="results">
+                    <Hy3ResultsView data={hy3data} />
+                  </TabsContent>
+                  <TabsContent value="teams">
+                    <ScrollArea className="h-[320px] rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Abbr</TableHead>
+                            <TableHead>Name</TableHead>
+                            <TableHead>LSC</TableHead>
+                            <TableHead>City</TableHead>
+                            <TableHead>Coach</TableHead>
+                            <TableHead>Athletes</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {[...hy3data.teams.entries()].map(
+                            ([abbr, { team, athletes }]) => (
+                              <TableRow key={abbr}>
+                                <TableCell className="font-medium font-mono">
+                                  {abbr}
+                                </TableCell>
+                                <TableCell>{team.name}</TableCell>
+                                <TableCell className="text-muted-foreground">
+                                  {team.lsc}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">
+                                  {[team.city, team.state]
+                                    .filter(Boolean)
+                                    .join(", ")}
+                                </TableCell>
+                                <TableCell className="text-muted-foreground">
+                                  {team.coachName}
+                                </TableCell>
+                                <TableCell>{athletes.length}</TableCell>
+                              </TableRow>
+                            )
+                          )}
+                        </TableBody>
+                      </Table>
+                    </ScrollArea>
+                  </TabsContent>
+                </Tabs>
+              );
+            }
+            return <Hy3View data={hy3data} />;
+          })()}
       </CardContent>
     </Card>
   );

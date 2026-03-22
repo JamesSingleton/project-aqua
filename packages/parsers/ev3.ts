@@ -32,8 +32,6 @@ import {
   splitLines,
 } from "./utils";
 
-const REGEX = /\*>$/;
-
 // ─── Stroke mapping ───────────────────────────────────────────────────────────
 
 /**
@@ -86,7 +84,7 @@ function parseEv3Stroke(s: string): Stroke {
  */
 function parseEv3Header(line: string): Ev3MeetHeader {
   // Strip *> terminator if present
-  const cleaned = line.replace(REGEX, "").trim();
+  const cleaned = line.replace(/\*>$/, "").trim();
   const parts = cleaned.split(";");
 
   return {
@@ -141,7 +139,7 @@ function parseEv3Header(line: string): Ev3MeetHeader {
  * 29: "0"
  */
 function parseEv3Event(line: string): Ev3Event | null {
-  const cleaned = line.replace(REGEX, "").trim();
+  const cleaned = line.replace(/\*>$/, "").trim();
   const parts = cleaned.split(";");
   if (parts.length < 10) {
     return null;

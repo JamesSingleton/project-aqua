@@ -4,8 +4,6 @@
 
 import type { Course, Gender, Stroke } from "./types";
 
-const LINE_BREAK_REGEX = /\r\n|\r|\n/;
-
 // ─── Fixed-width field helpers ────────────────────────────────────────────────
 
 /** Extract a substring by 0-based start/end and trim whitespace */
@@ -34,7 +32,7 @@ export function decodeHytekBuffer(buf: Buffer): string {
  * Handles both \r\n and \r line endings.
  */
 export function splitLines(content: string): string[] {
-  return content.split(LINE_BREAK_REGEX).map((l) => l.trimEnd());
+  return content.split(/\r\n|\r|\n/).map((l) => l.trimEnd());
 }
 
 // ─── Time parsing ────────────────────────────────────────────────────────────
@@ -65,7 +63,7 @@ export function parseTime(raw: string): number | null {
     if (parts.length === 2) {
       const minutes = Number(parts[0]);
       const seconds = Number(parts[1]);
-      if (Number.isNaN(minutes) || Number.isNaN(seconds)) {
+      if (isNaN(minutes) || isNaN(seconds)) {
         return null;
       }
       return minutes * 60 + seconds;
@@ -73,7 +71,7 @@ export function parseTime(raw: string): number | null {
   }
 
   const val = Number(cleaned);
-  if (Number.isNaN(val) || val === 0) {
+  if (isNaN(val) || val === 0) {
     return null;
   }
   return val;

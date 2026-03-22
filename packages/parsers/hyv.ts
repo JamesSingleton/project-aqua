@@ -30,8 +30,6 @@ import {
   splitLines,
 } from "./utils";
 
-const UPPERCASE_A_G_REGEX = /[A-G]/;
-
 // ─── Stroke from event code ───────────────────────────────────────────────────
 
 /**
@@ -44,7 +42,7 @@ const UPPERCASE_A_G_REGEX = /[A-G]/;
 function parseHyvStroke(strokeField: string, eventCode: string): Stroke {
   // Prefer the stroke number field if present
   const n = Number(strokeField);
-  if (!Number.isNaN(n) && n >= 1 && n <= 7) {
+  if (!isNaN(n) && n >= 1 && n <= 7) {
     const map: Record<number, Stroke> = {
       1: "A",
       2: "B",
@@ -59,7 +57,7 @@ function parseHyvStroke(strokeField: string, eventCode: string): Stroke {
 
   // Fall back to last char of event code
   const lastChar = eventCode.slice(-1).toUpperCase();
-  if (UPPERCASE_A_G_REGEX.test(lastChar)) {
+  if (/[A-G]/.test(lastChar)) {
     return parseStroke(lastChar);
   }
 
