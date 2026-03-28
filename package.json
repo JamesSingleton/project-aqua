@@ -12,13 +12,14 @@
     "db:migrate": "cd packages/database && npx drizzle-kit migrate",
     "db:generate": "cd packages/database && npx drizzle-kit generate",
     "db:pull": "cd packages/database && npx drizzle-kit pull",
-    "db:push": "cd packages/database && npx drizzle-kit push"
+    "db:push": "cd packages/database && npx drizzle-kit push",
+    "db:studio": "cd packages/database && npx drizzle-kit studio"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.8",
+    "@biomejs/biome": "^2.4.9",
     "@project-aqua/typescript-config": "workspace:*",
-    "@turbo/gen": "^2.8.20",
-    "turbo": "^2.8.20",
+    "@turbo/gen": "^2.8.21",
+    "turbo": "^2.8.21",
     "ultracite": "^7.3.2"
   },
   "packageManager": "pnpm@10.4.1",
@@ -28,5 +29,10 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "supabase"
+    ]
+  }
 }

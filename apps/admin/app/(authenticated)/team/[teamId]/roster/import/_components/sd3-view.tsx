@@ -47,8 +47,6 @@ export function Sd3View({ data }: { data: Sd3File }) {
     return true;
   });
 
-  console.log(data);
-
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
