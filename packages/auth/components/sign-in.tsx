@@ -7,6 +7,7 @@ import {
 } from "@project-aqua/design-system/components/ui/field";
 import { Input } from "@project-aqua/design-system/components/ui/input";
 import { cn } from "@project-aqua/design-system/lib/utils";
+import Link from "next/link";
 
 export function SignInForm({
   className,
@@ -40,10 +41,7 @@ export function SignInForm({
         <Field>
           <Button type="submit">Login</Button>
           <FieldDescription className="text-center">
-            Don&apos;t have an account?{" "}
-            <a className="underline underline-offset-4" href="/#">
-              Sign up
-            </a>
+            Don&apos;t have an account? <Link href="/sign-up">Sign up</Link>
           </FieldDescription>
         </Field>
       </FieldGroup>
