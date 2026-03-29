@@ -4,13 +4,14 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@project-aqua/ui/*": ["../../packages/ui/src/*"]
+      "@project-aqua/design-system/*": ["../../packages/design-system/*"]
     },
     "plugins": [
       {
         "name": "next"
       }
-    ]
+    ],
+    "strictNullChecks": true
   },
   "include": [
     "next-env.d.ts",

@@ -1,12 +1,12 @@
 {
   "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "new-york",
+  "style": "radix-nova",
   "rsc": true,
   "tsx": true,
   "tailwind": {
     "config": "",
-    "css": "../../packages/ui/src/styles/globals.css",
-    "baseColor": "neutral",
+    "css": "../../packages/design-system/styles/globals.css",
+    "baseColor": "mauve",
     "cssVariables": true
   },
   "iconLibrary": "lucide",
@@ -14,7 +14,10 @@
     "components": "@/components",
     "hooks": "@/hooks",
     "lib": "@/lib",
-    "utils": "@project-aqua/ui/lib/utils",
-    "ui": "@project-aqua/ui/components"
-  }
+    "utils": "@project-aqua/design-system/lib/utils",
+    "ui": "@project-aqua/design-system/components/ui"
+  },
+  "rtl": false,
+  "menuColor": "default-translucent",
+  "menuAccent": "subtle"
 }

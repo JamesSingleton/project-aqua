@@ -1,9 +1,6 @@
 "use client";
 
-import { Settings2Icon } from "lucide-react";
-import { Table } from "@tanstack/react-table";
-
-import { Button } from "@project-aqua/ui/components/button";
+import { Button } from "@project-aqua/design-system/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -11,24 +8,24 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@project-aqua/ui/components/dropdown-menu";
-
-interface DataTableViewOptionsProps<TData> {
-  table: Table<TData>;
-}
+} from "@project-aqua/design-system/components/ui/dropdown-menu";
+import type { Table } from "@tanstack/react-table";
+import { Settings2 } from "lucide-react";
 
 export function DataTableViewOptions<TData>({
   table,
-}: DataTableViewOptionsProps<TData>) {
+}: {
+  table: Table<TData>;
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="outline"
-          size="sm"
           className="ml-auto hidden h-8 lg:flex"
+          size="sm"
+          variant="outline"
         >
-          <Settings2Icon className="mr-2 h-4 w-4" />
+          <Settings2 />
           View
         </Button>
       </DropdownMenuTrigger>
@@ -39,14 +36,14 @@ export function DataTableViewOptions<TData>({
           .getAllColumns()
           .filter(
             (column) =>
-              typeof column.accessorFn !== "undefined" && column.getCanHide(),
+              typeof column.accessorFn !== "undefined" && column.getCanHide()
           )
           .map((column) => {
             return (
               <DropdownMenuCheckboxItem
-                key={column.id}
-                className="capitalize"
                 checked={column.getIsVisible()}
+                className="capitalize"
+                key={column.id}
                 onCheckedChange={(value) => column.toggleVisibility(!!value)}
               >
                 {column.id}

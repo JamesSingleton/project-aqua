@@ -1,1 +1,1 @@
-export { default } from "@project-aqua/ui/postcss.config";
+export { default } from "@project-aqua/design-system/postcss.config";

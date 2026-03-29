@@ -1,12 +1,5 @@
 "use client";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import {
-  CopyIcon,
-  MoreVerticalIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-} from "lucide-react";
+import { Button } from "@project-aqua/design-system/components/ui/button";
 import {
   Card,
   CardContent,
@@ -14,25 +7,32 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
-import { Button } from "@project-aqua/ui/components/button";
-import { Separator } from "@project-aqua/ui/components/separator";
+} from "@project-aqua/design-system/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@project-aqua/design-system/components/ui/dropdown-menu";
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
-} from "@project-aqua/ui/components/pagination";
+} from "@project-aqua/design-system/components/ui/pagination";
+import { Separator } from "@project-aqua/design-system/components/ui/separator";
 import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuSeparator,
-  DropdownMenuItem,
-} from "@project-aqua/ui/components/dropdown-menu";
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CopyIcon,
+  MoreVerticalIcon,
+} from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 
 import type { Athlete } from "@/types";
 
-type AthleteInfoProps = {
+interface AthleteInfoProps {
   athlete: Athlete;
 };
 
@@ -46,12 +46,12 @@ export default function AthleteInfo({ athlete }: AthleteInfoProps) {
         <div className="grid gap-0.5">
           <CardTitle className="group flex items-center gap-2 text-xl">
             {athlete.name}
-            <span className="text-lg text-gray-500">(ID: {athlete.id})</span>
+            <span className="text-gray-500 text-lg">(ID: {athlete.id})</span>
             <Button
               className="h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100"
               size="icon"
-              variant="outline"
               title="Copy Swimmer ID"
+              variant="outline"
             >
               <CopyIcon className="h-3 w-3" />
               <span className="sr-only">Copy Swimmer ID</span>
@@ -114,8 +114,8 @@ export default function AthleteInfo({ athlete }: AthleteInfoProps) {
           <ul className="grid gap-3">
             {athlete.personalRecords.map((record) => (
               <li
-                key={record.event}
                 className="flex items-center justify-between"
+                key={record.event}
               >
                 <span className="text-muted-foreground">{record.event}</span>
                 <span>{record.time}</span>
@@ -130,7 +130,7 @@ export default function AthleteInfo({ athlete }: AthleteInfoProps) {
               <div className="font-semibold">Parent Information</div>
               <dl className="grid gap-3">
                 {athlete.parents.map((parent) => (
-                  <div key={parent.name} className="grid gap-3">
+                  <div className="grid gap-3" key={parent.name}>
                     <div className="flex items-center justify-between">
                       <dt className="text-muted-foreground">Name</dt>
                       <dd>{parent.name}</dd>
@@ -196,13 +196,13 @@ export default function AthleteInfo({ athlete }: AthleteInfoProps) {
         )}
       </CardContent>
       <CardFooter className="flex flex-row items-center border-t bg-muted/50 px-6 py-3">
-        <div className="text-xs text-muted-foreground">
+        <div className="text-muted-foreground text-xs">
           Updated
-          <time dateTime="2023-11-23" className="pl-1">
+          <time className="pl-1" dateTime="2023-11-23">
             November 23, 2023
           </time>
         </div>
-        <Pagination className="ml-auto mr-0 w-auto">
+        <Pagination className="mr-0 ml-auto w-auto">
           <PaginationContent>
             <PaginationItem>
               <Button className="h-6 w-6" size="icon" variant="outline">

@@ -1,0 +1,14 @@
+{
+  "extends": "@project-aqua/typescript-config/base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "strictNullChecks": true
+  },
+  "include": [
+    "./**/*.ts",
+    "./**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

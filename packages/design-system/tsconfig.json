@@ -1,0 +1,18 @@
+{
+  "extends": "@project-aqua/typescript-config/nextjs.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@project-aqua/*": ["../*"],
+      "@project-aqua/design-system/*": ["./*"]
+    },
+    "strictNullChecks": true
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
+}

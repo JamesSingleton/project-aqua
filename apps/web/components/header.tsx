@@ -1,10 +1,10 @@
 "use client";
-import { useState } from "react";
+import { NavigationMenu } from "@project-aqua/design-system/components/navigation-menu";
+import { cn } from "@project-aqua/design-system/lib/utils";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
-import { NavigationMenu } from "@project-aqua/ui/components/navigation-menu";
-import { cn } from "@project-aqua/ui/lib/utils";
+import { useState } from "react";
 
 import { Icons } from "./icons";
 
@@ -61,14 +61,14 @@ const Header = () => {
   };
 
   return (
-    <header className="h-12 sticky mt-4 top-4 z-50 px-2 md:px-4 md:flex justify-center">
-      <nav className="border border-border p-3 rounded-2xl flex items-center backdrop-filter backdrop-blur-xl bg-[#FDFDFC] dark:bg-[#121212] bg-opacity-70">
+    <header className="sticky top-4 z-50 mt-4 h-12 justify-center px-2 md:flex md:px-4">
+      <nav className="flex items-center rounded-2xl border border-border bg-[#FDFDFC] bg-opacity-70 p-3 backdrop-blur-xl backdrop-filter dark:bg-[#121212]">
         <NavigationMenu>
           <Link href="/">
             <span className="sr-only">Project Aqua Logo</span>
             <Icons.logo className="h-8 w-8" />
           </Link>
-          <ul className="space-x-2 font-medium text-sm hidden md:flex mx-3">
+          <ul className="mx-3 hidden space-x-2 font-medium text-sm md:flex">
             {links.map(({ path, title }) => {
               const isActive =
                 path === "/updates"
@@ -78,11 +78,11 @@ const Header = () => {
               return (
                 <li key={path}>
                   <Link
-                    href={path}
                     className={cn(
-                      "h-8 items-center justify-center rounded-md text-sm font-medium transition-colors px-3 py-2 inline-flex text-secondary-foreground hover:bg-secondary",
-                      isActive && "bg-secondary hover:bg-secondary",
+                      "inline-flex h-8 items-center justify-center rounded-md px-3 py-2 font-medium text-secondary-foreground text-sm transition-colors hover:bg-secondary",
+                      isActive && "bg-secondary hover:bg-secondary"
                     )}
+                    href={path}
                   >
                     {title}
                   </Link>
@@ -92,25 +92,25 @@ const Header = () => {
           </ul>
         </NavigationMenu>
         <button
-          type="button"
-          className="ml-auto md:hidden p-2"
+          className="ml-auto p-2 md:hidden"
           onClick={() => handleToggleMenu()}
+          type="button"
         >
           <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width={18}
-            height={13}
             fill="none"
+            height={13}
+            width={18}
+            xmlns="http://www.w3.org/2000/svg"
           >
             <path
-              fill="currentColor"
               d="M0 12.195v-2.007h18v2.007H0Zm0-5.017V5.172h18v2.006H0Zm0-5.016V.155h18v2.007H0Z"
+              fill="currentColor"
             />
           </svg>
         </button>
         <Link
+          className="hidden h-8 items-center justify-center rounded-md bg-primary px-3 py-2 font-medium text-primary-foreground text-sm transition-colors hover:bg-primary/90 md:inline-flex"
           href="https://project-aqua-admin.vercel.app"
-          className="hidden md:inline-flex h-8 items-center justify-center rounded-md text-sm font-medium transition-colors px-3 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
         >
           Sign in
         </Link>
@@ -118,28 +118,28 @@ const Header = () => {
 
       {isOpen && (
         <motion.div
-          className="fixed bg-background top-0 right-0 left-0 bottom-0 h-screen z-10 px-2 m-[1px]"
-          initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
+          className="fixed top-0 right-0 bottom-0 left-0 z-10 m-[1px] h-screen bg-background px-2"
+          initial={{ opacity: 0 }}
         >
-          <div className="mt-4 flex justify-between p-3 relative">
-            <button type="button" onClick={handleToggleMenu}>
+          <div className="relative mt-4 flex justify-between p-3">
+            <button onClick={handleToggleMenu} type="button">
               <span className="sr-only">Project Aqua Logo</span>
               <Icons.logo className="h-8 w-8" />
             </button>
 
             <button
-              type="button"
-              className="ml-auto md:hidden p-2 absolute right-[10px] top-2"
+              className="absolute top-2 right-[10px] ml-auto p-2 md:hidden"
               onClick={handleToggleMenu}
+              type="button"
             >
               <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width={24}
-                height={24}
                 className="fill-primary"
+                height={24}
+                width={24}
+                xmlns="http://www.w3.org/2000/svg"
               >
-                <path fill="none" d="M0 0h24v24H0V0z" />
+                <path d="M0 0h24v24H0V0z" fill="none" />
                 <path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" />
               </svg>
             </button>
@@ -147,9 +147,9 @@ const Header = () => {
 
           <div className="h-full overflow-auto">
             <motion.ul
-              initial="hidden"
               animate="show"
-              className="px-3 pt-8 text-xl text-[#707070] dark:text-[#878787] space-y-8 mb-8"
+              className="mb-8 space-y-8 px-3 pt-8 text-[#707070] text-xl dark:text-[#878787]"
+              initial="hidden"
               variants={listVariant}
             >
               {links.map(({ path, title }) => {
@@ -159,10 +159,10 @@ const Header = () => {
                     : path === lastPath;
 
                 return (
-                  <motion.li variants={itemVariant} key={path}>
+                  <motion.li key={path} variants={itemVariant}>
                     <Link
-                      href={path}
                       className={cn(isActive && "text-primary")}
+                      href={path}
                       onClick={handleToggleMenu}
                     >
                       {title}
@@ -178,8 +178,8 @@ const Header = () => {
               </motion.li>
 
               <motion.li
-                variants={itemVariant}
                 className="flex items-center space-x-2"
+                variants={itemVariant}
               >
                 <Link href="https://github.com/JamesSingleton/project-aqua">
                   Open Source
@@ -191,7 +191,7 @@ const Header = () => {
                 variants={itemVariant}
               >
                 <Link
-                  className="text-xl text-primary"
+                  className="text-primary text-xl"
                   href="https://project-aqua-admin.vercel.app"
                 >
                   Sign in

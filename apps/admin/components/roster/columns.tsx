@@ -1,9 +1,6 @@
 "use client";
-import { useState } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import { ColumnDef } from "@tanstack/react-table";
-import { CopyIcon, MoreVerticalIcon } from "lucide-react";
+import { Button } from "@project-aqua/design-system/components/ui/button";
+import { Checkbox } from "@project-aqua/design-system/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,41 +8,42 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@project-aqua/ui/components/dropdown-menu";
-import { Button } from "@project-aqua/ui/components/button";
-import { Checkbox } from "@project-aqua/ui/components/checkbox";
-
-import { DataTableColumnHeader } from "../data-table-column-header";
-
-import type { Athlete } from "@/types";
+} from "@project-aqua/design-system/components/ui/dropdown-menu";
+import { ScrollArea } from "@project-aqua/design-system/components/ui/scroll-area";
+import { Separator } from "@project-aqua/design-system/components/ui/separator";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@project-aqua/ui/components/sheet";
-import { Separator } from "@project-aqua/ui/components/separator";
-import { ScrollArea } from "@project-aqua/ui/components/scroll-area";
+} from "@project-aqua/design-system/components/ui/sheet";
+import type { ColumnDef } from "@tanstack/react-table";
+import { CopyIcon, MoreVerticalIcon } from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useState } from "react";
+import type { Athlete } from "@/types";
+import { DataTableColumnHeader } from "../data-table-column-header";
 
 export const columns: ColumnDef<Athlete>[] = [
   {
     id: "select",
     header: ({ table }) => (
       <Checkbox
+        aria-label="Select all"
         checked={
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
       />
     ),
     cell: ({ row }) => (
       <Checkbox
+        aria-label="Select row"
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
       />
     ),
     enableSorting: false,
@@ -97,7 +95,7 @@ export const columns: ColumnDef<Athlete>[] = [
         <>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
+              <Button className="h-8 w-8 p-0" variant="ghost">
                 <span className="sr-only">Open menu</span>
                 <MoreVerticalIcon className="h-4 w-4" />
               </Button>
@@ -128,20 +126,20 @@ export const columns: ColumnDef<Athlete>[] = [
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+          <Sheet onOpenChange={setIsMenuOpen} open={isMenuOpen}>
             <SheetContent className="sm:max-w-md">
               <SheetHeader className="flex flex-col space-y-2 text-left">
-                <SheetTitle className="font-semibold tracking-tight group flex items-center gap-2 text-lg">
+                <SheetTitle className="group flex items-center gap-2 font-semibold text-lg tracking-tight">
                   {athlete.name}
-                  <span className="text-sm text-gray-500">
+                  <span className="text-gray-500 text-sm">
                     (ID: {athlete.id})
                   </span>
                   <Button
                     className="h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100"
-                    size="icon"
-                    variant="outline"
-                    title="Copy Swimmer ID"
                     onClick={() => navigator.clipboard.writeText(athlete.id)}
+                    size="icon"
+                    title="Copy Swimmer ID"
+                    variant="outline"
                   >
                     <CopyIcon className="h-3 w-3" />
                     <span className="sr-only">Copy Swimmer ID</span>
@@ -181,8 +179,8 @@ export const columns: ColumnDef<Athlete>[] = [
                   <ul className="grid gap-3">
                     {athlete.personalRecords.map((record) => (
                       <li
-                        key={record.event}
                         className="flex items-center justify-between"
+                        key={record.event}
                       >
                         <span className="text-muted-foreground">
                           {record.event}
@@ -199,7 +197,7 @@ export const columns: ColumnDef<Athlete>[] = [
                       <div className="font-semibold">Parent Information</div>
                       <dl className="grid gap-3">
                         {athlete.parents.map((parent) => (
-                          <div key={parent.name} className="grid gap-3">
+                          <div className="grid gap-3" key={parent.name}>
                             <div className="flex items-center justify-between">
                               <dt className="text-muted-foreground">Name</dt>
                               <dd>{parent.name}</dd>
