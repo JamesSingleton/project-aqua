@@ -2,6 +2,10 @@ packages:
   - "apps/*"
   - "packages/*"
 
+allowBuilds:
+  esbuild: true
+  sharp: true
+
 catalog:
   "@types/node": "^25.9.3"
   "@types/react": "^19.2.17"
@@ -21,3 +25,6 @@ catalog:
   stripe: "^18.0.0"
   typescript: "^6.0.3"
   zod: "^4.4.3"
+
+minimumReleaseAgeExclude:
+  - resend@6.14.0
