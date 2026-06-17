@@ -104,7 +104,7 @@ export default function AthleteModal() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent align="start" className="w-auto p-0">
-                  <Calendar initialFocus mode="single" />
+                  <Calendar mode="single" />
                 </PopoverContent>
               </Popover>
             </div>
@@ -123,7 +123,7 @@ export default function AthleteModal() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent align="start" className="w-auto p-0">
-                  <Calendar initialFocus mode="single" />
+                  <Calendar mode="single" />
                 </PopoverContent>
               </Popover>
             </div>
