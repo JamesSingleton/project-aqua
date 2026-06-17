@@ -1,8 +1,5 @@
 "use client";
 
-import { Settings2Icon } from "lucide-react";
-import { Table } from "@tanstack/react-table";
-
 import { Button } from "@project-aqua/ui/components/button";
 import {
   DropdownMenu,
@@ -12,6 +9,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@project-aqua/ui/components/dropdown-menu";
+import type { Table } from "@tanstack/react-table";
+import { Settings2Icon } from "lucide-react";
 
 interface DataTableViewOptionsProps<TData> {
   table: Table<TData>;

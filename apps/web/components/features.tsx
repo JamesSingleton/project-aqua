@@ -1,13 +1,13 @@
 import {
+  BarChartIcon,
+  ComponentIcon,
+  CreativeCommonsIcon,
+  FileTextIcon,
+  FlagIcon,
   GaugeIcon,
   MergeIcon,
-  TrendingUpIcon,
   SearchIcon,
-  BarChartIcon,
-  FileTextIcon,
-  ComponentIcon,
-  FlagIcon,
-  CreativeCommonsIcon,
+  TrendingUpIcon,
 } from "lucide-react";
 
 export default function Features() {

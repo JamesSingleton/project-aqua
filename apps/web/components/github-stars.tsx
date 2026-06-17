@@ -1,7 +1,7 @@
 "use client";
 
-import { fetchGithubStars } from "@/lib/fetch-github-stars";
 import { useEffect, useState } from "react";
+import { fetchGithubStars } from "@/lib/fetch-github-stars";
 
 export function GithubStars() {
   const [data, setData] = useState(0);

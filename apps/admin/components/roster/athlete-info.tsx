@@ -1,12 +1,5 @@
 "use client";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import {
-  CopyIcon,
-  MoreVerticalIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-} from "lucide-react";
+import { Button } from "@project-aqua/ui/components/button";
 import {
   Card,
   CardContent,
@@ -15,20 +8,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@project-aqua/ui/components/card";
-import { Button } from "@project-aqua/ui/components/button";
-import { Separator } from "@project-aqua/ui/components/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@project-aqua/ui/components/dropdown-menu";
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
 } from "@project-aqua/ui/components/pagination";
+import { Separator } from "@project-aqua/ui/components/separator";
 import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuSeparator,
-  DropdownMenuItem,
-} from "@project-aqua/ui/components/dropdown-menu";
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CopyIcon,
+  MoreVerticalIcon,
+} from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 
 import type { Athlete } from "@/types";
 

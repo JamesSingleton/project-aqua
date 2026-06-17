@@ -1,19 +1,9 @@
-import Link from "next/link";
 import {
-  User,
-  Calendar,
-  Phone,
-  Users,
-  Trophy,
-  TrendingUp,
-  Edit,
-} from "lucide-react";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@project-aqua/ui/components/tabs";
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@project-aqua/ui/components/avatar";
+import { Button, buttonVariants } from "@project-aqua/ui/components/button";
 import {
   Card,
   CardContent,
@@ -22,12 +12,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@project-aqua/ui/components/card";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@project-aqua/ui/components/avatar";
-import { Button, buttonVariants } from "@project-aqua/ui/components/button";
 import { Input } from "@project-aqua/ui/components/input";
 import { Label } from "@project-aqua/ui/components/label";
 import {
@@ -38,6 +22,22 @@ import {
   TableHeader,
   TableRow,
 } from "@project-aqua/ui/components/table";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@project-aqua/ui/components/tabs";
+import {
+  Calendar,
+  Edit,
+  Phone,
+  TrendingUp,
+  Trophy,
+  User,
+  Users,
+} from "lucide-react";
+import Link from "next/link";
 
 interface Swimmer {
   id: string;

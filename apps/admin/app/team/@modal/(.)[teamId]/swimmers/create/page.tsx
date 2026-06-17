@@ -1,32 +1,32 @@
-import { UploadIcon, CalendarDaysIcon } from "lucide-react";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@project-aqua/ui/components/avatar";
+import { Button } from "@project-aqua/ui/components/button";
+import { Calendar } from "@project-aqua/ui/components/calendar";
 import {
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@project-aqua/ui/components/dialog";
-import { Label } from "@project-aqua/ui/components/label";
 import { Input } from "@project-aqua/ui/components/input";
-import { Button } from "@project-aqua/ui/components/button";
-import {
-  Avatar,
-  AvatarImage,
-  AvatarFallback,
-} from "@project-aqua/ui/components/avatar";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@project-aqua/ui/components/select";
+import { Label } from "@project-aqua/ui/components/label";
 import {
   Popover,
-  PopoverTrigger,
   PopoverContent,
+  PopoverTrigger,
 } from "@project-aqua/ui/components/popover";
-import { Calendar } from "@project-aqua/ui/components/calendar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@project-aqua/ui/components/select";
+import { CalendarDaysIcon, UploadIcon } from "lucide-react";
 
 import { Modal } from "./modal";
 
@@ -104,7 +104,7 @@ export default function AthleteModal() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent align="start" className="w-auto p-0">
-                  <Calendar initialFocus mode="single" />
+                  <Calendar mode="single" />
                 </PopoverContent>
               </Popover>
             </div>
@@ -123,7 +123,7 @@ export default function AthleteModal() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent align="start" className="w-auto p-0">
-                  <Calendar initialFocus mode="single" />
+                  <Calendar mode="single" />
                 </PopoverContent>
               </Popover>
             </div>

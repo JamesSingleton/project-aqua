@@ -1,6 +1,6 @@
 "use client";
-import { type ReactNode } from "react";
 import { TooltipProvider } from "@project-aqua/ui/components/tooltip";
+import type { ReactNode } from "react";
 import { ThemeProvider } from "./theme-provider";
 
 export default function Providers({ children }: { children: ReactNode }) {

@@ -1,23 +1,23 @@
+import { Badge } from "@project-aqua/ui/components/badge";
 import { Button } from "@project-aqua/ui/components/button";
 import {
   Card,
+  CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
-  CardContent,
 } from "@project-aqua/ui/components/card";
 import { Input } from "@project-aqua/ui/components/input";
 import { Label } from "@project-aqua/ui/components/label";
 import { Select } from "@project-aqua/ui/components/select";
 import {
-  TableHeader,
-  TableRow,
-  TableHead,
+  Table,
   TableBody,
   TableCell,
-  Table,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@project-aqua/ui/components/table";
-import { Badge } from "@project-aqua/ui/components/badge";
 
 export default async function MeetsPage({
   params,

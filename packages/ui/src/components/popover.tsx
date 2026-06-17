@@ -1,9 +1,8 @@
 "use client";
 
-import * as React from "react";
-import * as PopoverPrimitive from "@radix-ui/react-popover";
-
 import { cn } from "@project-aqua/ui/lib/utils";
+import * as PopoverPrimitive from "@radix-ui/react-popover";
+import type * as React from "react";
 
 function Popover({
   ...props
@@ -45,4 +44,4 @@ function PopoverAnchor({
   return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />;
 }
 
-export { Popover, PopoverTrigger, PopoverContent, PopoverAnchor };
+export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger };

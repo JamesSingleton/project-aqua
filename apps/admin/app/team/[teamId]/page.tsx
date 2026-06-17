@@ -1,17 +1,10 @@
-import Link from "next/link";
 import {
-  Users,
-  ArrowUpRight,
-  CreditCard,
-  DollarSign,
-  Activity,
-  CalendarIcon,
-  CircleX,
-  CircleCheck,
-  Calendar,
-  Award,
-  TrendingUp,
-} from "lucide-react";
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@project-aqua/ui/components/avatar";
+import { Badge } from "@project-aqua/ui/components/badge";
+import { Button, buttonVariants } from "@project-aqua/ui/components/button";
 import {
   Card,
   CardContent,
@@ -25,19 +18,25 @@ import {
   TableBody,
   TableCell,
   TableHead,
-  TableRow,
   TableHeader,
+  TableRow,
 } from "@project-aqua/ui/components/table";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@project-aqua/ui/components/avatar";
-import { Button, buttonVariants } from "@project-aqua/ui/components/button";
-import { Badge } from "@project-aqua/ui/components/badge";
 import { cn } from "@project-aqua/ui/lib/utils";
-
+import {
+  Activity,
+  ArrowUpRight,
+  Award,
+  Calendar,
+  CalendarIcon,
+  CircleCheck,
+  CircleX,
+  CreditCard,
+  DollarSign,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 import type { Metadata, ResolvingMetadata } from "next";
+import Link from "next/link";
 
 type Props = {
   params: Promise<{ teamId: string }>;

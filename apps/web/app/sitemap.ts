@@ -1,5 +1,5 @@
+import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
-import { MetadataRoute } from "next";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const headersList = await headers();

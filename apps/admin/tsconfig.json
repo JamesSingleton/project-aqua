@@ -1,7 +1,6 @@
 {
   "extends": "@project-aqua/typescript-config/nextjs.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
       "@project-aqua/ui/*": ["../../packages/ui/src/*"]
