@@ -4,12 +4,7 @@
     "paths": {
       "@/*": ["./*"],
       "@project-aqua/ui/*": ["../../packages/ui/src/*"]
-    },
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
+    }
   },
   "include": [
     "next-env.d.ts",

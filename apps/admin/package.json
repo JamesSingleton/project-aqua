@@ -14,6 +14,13 @@
     "check:types": "tsc --noEmit"
   },
   "dependencies": {
+    "@project-aqua/auth": "workspace:*",
+    "@project-aqua/billing": "workspace:*",
+    "@project-aqua/db": "workspace:*",
+    "@project-aqua/emails": "workspace:*",
+    "@project-aqua/swim-core": "workspace:*",
+    "@project-aqua/swim-formats": "workspace:*",
+    "@project-aqua/usa-swimming": "workspace:*",
     "@project-aqua/ui": "workspace:*",
     "@radix-ui/react-icons": "^1.3.2",
     "@tanstack/react-query": "^5.101.0",
@@ -23,13 +30,15 @@
     "next": "catalog:",
     "next-themes": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@project-aqua/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "drizzle-orm": "catalog:",
     "typescript": "catalog:"
   }
 }

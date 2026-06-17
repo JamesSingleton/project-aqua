@@ -1,0 +1,38 @@
+{
+  "name": "@project-aqua/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./schema": "./src/schema/index.ts",
+    "./authz": "./src/authz.ts",
+    "./queries/roster": "./src/queries/roster.ts",
+    "./queries/meets": "./src/queries/meets.ts",
+    "./queries/attendance": "./src/queries/attendance.ts",
+    "./queries/progression": "./src/queries/progression.ts",
+    "./queries/billing": "./src/queries/billing.ts",
+    "./queries/imports": "./src/queries/imports.ts",
+    "./queries/safesport": "./src/queries/safesport.ts"
+  },
+  "scripts": {
+    "check:types": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@project-aqua/swim-core": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "postgres": "catalog:"
+  },
+  "devDependencies": {
+    "@project-aqua/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "drizzle-kit": "catalog:",
+    "typescript": "catalog:"
+  }
+}

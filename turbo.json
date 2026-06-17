@@ -25,6 +25,20 @@
     "lint:fix": {
       "dependsOn": ["^topo"],
       "cache": false
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "db:migrate": {
+      "cache": false
+    },
+    "db:studio": {
+      "persistent": true,
+      "cache": false
+    },
+    "email:dev": {
+      "persistent": true,
+      "cache": false
     }
   }
 }

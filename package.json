@@ -2,7 +2,7 @@
   "name": "project-aqua",
   "private": true,
   "license": "AGPL-3.0-only",
-  "packageManager": "pnpm@10.4.1",
+  "packageManager": "pnpm@11.7.0",
   "engines": {
     "node": ">=24"
   },
@@ -22,11 +22,16 @@
     "format": "biome format --write .",
     "lint": "turbo lint",
     "lint:fix": "turbo lint:fix",
-    "check:types": "turbo check:types"
+    "check:types": "turbo check:types",
+    "db:generate": "turbo db:generate",
+    "db:migrate": "turbo db:migrate",
+    "db:studio": "turbo db:studio",
+    "email:dev": "turbo email:dev"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.0",
     "@project-aqua/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
     "turbo": "^2.9.18",
     "typescript": "catalog:"
   }

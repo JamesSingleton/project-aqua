@@ -21,6 +21,7 @@ export interface Athlete {
   name: string;
   gender: "Male" | "Female";
   age: number;
+  isMinor?: boolean;
   dateOfBirth: string;
   trainingGroups: string[];
   practiceGroup: string;

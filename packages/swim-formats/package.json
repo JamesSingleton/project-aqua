@@ -1,0 +1,25 @@
+{
+  "name": "@project-aqua/swim-formats",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./sdif": "./src/sdif/parser.ts",
+    "./csv": "./src/csv/parser.ts",
+    "./hy3": "./src/hy3/parser.ts"
+  },
+  "scripts": {
+    "check:types": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
+  },
+  "dependencies": {
+    "@project-aqua/swim-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@project-aqua/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

@@ -1,220 +1,148 @@
-import { Button, buttonVariants } from "@project-aqua/ui/components/button";
+import { getSession } from "@project-aqua/auth/session";
+import { requireTeamMember } from "@project-aqua/db/authz";
+import { db } from "@project-aqua/db/client";
+import { getRoster } from "@project-aqua/db/queries/roster";
+import { organization } from "@project-aqua/db/schema";
+import { isMinorSwimmer } from "@project-aqua/swim-core/age";
+import { buttonVariants } from "@project-aqua/ui/components/button";
+import { Badge } from "@project-aqua/ui/components/badge";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@project-aqua/ui/components/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@project-aqua/ui/components/table";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@project-aqua/ui/components/tabs";
-import { FileIcon, UserPlusIcon } from "lucide-react";
-import type { Metadata, ResolvingMetadata } from "next";
+import { UserPlusIcon } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
-import AthleteInfo from "@/components/roster/athlete-info";
+import { eq } from "drizzle-orm";
 import { columns } from "@/components/roster/columns";
 import { DataTable } from "@/components/roster/data-table";
-import { mockAthleteData } from "@/lib/mock-data";
-import type { Athlete } from "@/types";
+import type { Swimmer } from "@/types";
+import { RosterImportExport } from "./roster-import-export";
 
-async function getData({ teamId }: { teamId: string }): Promise<Athlete[]> {
-  return mockAthleteData;
+function mapRosterToSwimmers(
+  roster: Awaited<ReturnType<typeof getRoster>>,
+): Swimmer[] {
+  return roster.map((row) => ({
+    id: row.swimmerId,
+    name: row.preferredName
+      ? `${row.preferredName} (${row.firstName} ${row.lastName})`
+      : `${row.firstName} ${row.lastName}`,
+    gender: row.gender === "male" ? "Male" : "Female",
+    isMinor: isMinorSwimmer(row.dateOfBirth),
+    age: row.dateOfBirth
+      ? Math.floor(
+          (Date.now() - new Date(row.dateOfBirth).getTime()) /
+            (365.25 * 24 * 60 * 60 * 1000),
+        )
+      : 0,
+    dateOfBirth: row.dateOfBirth ?? "",
+    trainingGroups: row.trainingGroups ?? [],
+    practiceGroup: row.practiceGroup ?? "",
+    personalRecords: [],
+    parents: [],
+    emergencyContacts: [],
+  }));
 }
 
-export async function generateMetadata(
-  {
-    params,
-    searchParams,
-  }: {
-    params: Promise<{ teamId: string }>;
-    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-  },
-  parent: ResolvingMetadata,
-): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}): Promise<Metadata> {
   const { teamId } = await params;
-
   return {
-    title: "Manager Your Roster",
-    alternates: {
-      canonical: `/team/${teamId}/roster`,
-    },
-    description:
-      "View and manage your swim team's roster. Add, edit, and remove swimmers as needed.",
-    openGraph: {
-      title: "Manage Your Roster",
-      description:
-        "View and manage your swim team's roster. Add, edit, and remove swimmers as needed.",
-      type: "website",
-      url: `/team/${teamId}/roster`,
-      siteName: "Project Aqua",
-    },
+    title: "Roster",
+    alternates: { canonical: `/team/${teamId}/roster` },
   };
 }
 
 export default async function RosterPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ teamId: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { teamId } = await params;
-  const rosterData = await getData({ teamId });
-  const { athleteId } = await searchParams;
-  const selectedAthlete = rosterData.find(
-    (athlete) => athlete.id === athleteId,
-  );
-  const maleSwimmers = rosterData.filter(
-    (athlete) => athlete.gender === "Male",
-  );
+  const session = await getSession();
+  await requireTeamMember(session?.user?.id, teamId);
 
-  const femaleSwimmers = rosterData.filter(
-    (athlete) => athlete.gender === "Female",
-  );
+  const roster = await getRoster(teamId);
+  const swimmers = mapRosterToSwimmers(roster);
+
+  const [org] = await db
+    .select()
+    .from(organization)
+    .where(eq(organization.id, teamId))
+    .limit(1);
+  const metadata = org?.metadata ? JSON.parse(org.metadata) : {};
+  const teamType = (metadata.teamType as string) ?? "club";
+
+  const maleSwimmers = swimmers.filter((s) => s.gender === "Male").length;
+  const femaleSwimmers = swimmers.filter((s) => s.gender === "Female").length;
 
   return (
-    <>
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold md:text-2xl">Roster</h1>
-      </div>
-      <div className="overflow-auto max-w-full">
-        <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Card className="sm:col-span-2">
-              <CardHeader className="pb-3">
-                <CardTitle>Your Swim Team</CardTitle>
-                <CardDescription className="max-w-lg text-balance leading-relaxed">
-                  Manage your swim team's performance and progress.
-                </CardDescription>
-              </CardHeader>
-              <CardFooter>
-                <Link
-                  href={`/team/${teamId}/swimmers/create`}
-                  className={buttonVariants()}
-                >
-                  <UserPlusIcon className="h-4 w-4" />
-                  <span className="ml-2">Add Swimmer</span>
-                </Link>
-              </CardFooter>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Swimmers</CardDescription>
-                <CardTitle className="text-3xl">{rosterData.length}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4">
-                  <div className="text-xs text-muted-foreground">
-                    Male Swimmers: {maleSwimmers.length}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Female Swimmers: {femaleSwimmers.length}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>This Month</CardDescription>
-                <CardTitle className="text-3xl">80 Practices</CardTitle>
-              </CardHeader>
-            </Card>
-          </div>
-          <Tabs defaultValue="swimmers" className="overflow-auto max-w-full">
-            <div className="flex items-center">
-              <TabsList>
-                <TabsTrigger value="swimmers">Swimmers</TabsTrigger>
-                <TabsTrigger value="staff">Staff</TabsTrigger>
-              </TabsList>
-              <div className="ml-auto flex items-center gap-2">
-                <Button
-                  className="h-7 gap-1 text-sm"
-                  size="sm"
-                  variant="outline"
-                >
-                  <FileIcon className="h-3.5 w-3.5" />
-                  <span className="sr-only sm:not-sr-only">Export</span>
-                </Button>
-              </div>
-            </div>
-            <TabsContent value="swimmers">
-              <Card>
-                <CardHeader className="px-7">
-                  <CardTitle>Roster</CardTitle>
-                  <CardDescription>
-                    View and manage your swim team's roster.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <DataTable columns={columns} data={mockAthleteData} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="staff">
-              <Card>
-                <CardHeader className="px-7">
-                  <CardTitle>Staff</CardTitle>
-                  <CardDescription>
-                    View and manage your swim team's staff.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead className="hidden sm:table-cell">
-                          Role
-                        </TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Email
-                        </TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Phone
-                        </TableHead>
-                        {/* a table head that a switch would be useful for */}
-                        <TableHead className="hidden md:table-cell">
-                          Admin
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell>Jane Doe</TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          Coach
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          janedoe@example.com
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          555-555-5555
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
         <div>
-          {/* {selectedAthlete && <AthleteInfo athlete={selectedAthlete} />} */}
+          <h1 className="text-3xl font-bold tracking-tight">Roster</h1>
+          <p className="text-muted-foreground">
+            Manage your team&apos;s swimmers ·{" "}
+            <Badge variant="outline" className="capitalize">
+              {teamType.replace("_", " ")}
+            </Badge>
+          </p>
         </div>
+        <Link
+          href={`/team/${teamId}/swimmers/create`}
+          className={buttonVariants()}
+        >
+          <UserPlusIcon className="mr-2 size-4" />
+          Add swimmer
+        </Link>
       </div>
-    </>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Total</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{swimmers.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Male</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{maleSwimmers}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Female</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{femaleSwimmers}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <RosterImportExport teamId={teamId} />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Swimmers</CardTitle>
+          <CardDescription>
+            {swimmers.length} active swimmers on roster
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DataTable columns={columns(teamId)} data={swimmers} />
+        </CardContent>
+      </Card>
+    </div>
   );
 }

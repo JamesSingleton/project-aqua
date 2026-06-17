@@ -8,165 +8,91 @@ import {
   SidebarRail,
 } from "@project-aqua/ui/components/sidebar";
 import {
-  AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  GalleryVerticalEnd,
-  MapIcon,
-  PieChart,
+  Calendar,
+  LayoutDashboard,
   Settings2,
-  SquareTerminal,
+  TrendingUp,
+  Trophy,
+  Users,
 } from "lucide-react";
-import type * as React from "react";
 import { NavMain } from "@/components/nav-main";
-import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
-import { TeamSwitcher } from "@/components/team-switcher";
+import { type TeamItem, TeamSwitcher } from "@/components/team-switcher";
 
-// This is sample data.
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  teams: [
+export function AppSidebar({
+  teamId,
+  teams,
+  user,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & {
+  teamId: string;
+  teams: TeamItem[];
+  user: { name: string; email: string; image?: string | null };
+}) {
+  const navMain = [
     {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd as React.ElementType,
-      plan: "Enterprise",
+      title: "Dashboard",
+      url: `/team/${teamId}`,
+      icon: LayoutDashboard,
+      isActive: false,
+      items: [],
     },
     {
-      name: "Acme Corp.",
-      logo: AudioWaveform as React.ElementType,
-      plan: "Startup",
+      title: "Roster",
+      url: `/team/${teamId}/roster`,
+      icon: Users,
+      items: [],
     },
     {
-      name: "Evil Corp.",
-      logo: Command as React.ElementType,
-      plan: "Free",
-    },
-  ],
-  navMain: [
-    {
-      title: "Playground",
-      url: "#",
-      icon: SquareTerminal,
-      isActive: true,
+      title: "Meets",
+      url: `/team/${teamId}/meets`,
+      icon: Trophy,
       items: [
-        {
-          title: "History",
-          url: "#",
-        },
-        {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
-          url: "#",
-        },
+        { title: "All meets", url: `/team/${teamId}/meets` },
+        { title: "Import meet", url: `/team/${teamId}/meets/import` },
       ],
     },
     {
-      title: "Models",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
+      title: "Attendance",
+      url: `/team/${teamId}/attendance`,
+      icon: Calendar,
+      items: [],
     },
     {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
+      title: "Progression",
+      url: `/team/${teamId}/progression`,
+      icon: TrendingUp,
+      items: [],
     },
     {
       title: "Settings",
-      url: "#",
+      url: `/team/${teamId}/settings`,
       icon: Settings2,
       items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
+        { title: "Team", url: `/team/${teamId}/settings` },
+        { title: "Billing", url: `/team/${teamId}/settings/billing` },
+        { title: "SafeSport", url: `/team/${teamId}/settings/safesport` },
+        { title: "USA Swimming", url: `/team/${teamId}/settings/usa-swimming` },
       ],
     },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: MapIcon,
-    },
-  ],
-};
+  ];
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher teams={teams} activeTeamId={teamId} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        <NavMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser
+          user={{
+            name: user.name,
+            email: user.email,
+            avatar: user.image ?? undefined,
+          }}
+        />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

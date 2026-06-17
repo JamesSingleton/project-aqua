@@ -1,0 +1,28 @@
+{
+  "name": "@project-aqua/swim-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./events": "./src/events.ts",
+    "./times": "./src/times.ts",
+    "./validators": "./src/validators.ts",
+    "./plans": "./src/plans.ts",
+    "./event-catalog": "./src/event-catalog.ts",
+    "./age": "./src/age.ts"
+  },
+  "scripts": {
+    "check:types": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@project-aqua/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}
