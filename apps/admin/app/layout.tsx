@@ -1,5 +1,5 @@
-import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import { GeistSans } from "geist/font/sans";
 
 import "@project-aqua/ui/globals.css";
 import Providers from "@/components/providers";

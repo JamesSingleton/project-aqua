@@ -1,5 +1,5 @@
+import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
-import { MetadataRoute } from "next";
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const headersList = await headers();

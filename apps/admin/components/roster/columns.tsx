@@ -1,9 +1,6 @@
 "use client";
-import { useState } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import { ColumnDef } from "@tanstack/react-table";
-import { CopyIcon, MoreVerticalIcon } from "lucide-react";
+import { Button } from "@project-aqua/ui/components/button";
+import { Checkbox } from "@project-aqua/ui/components/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,12 +9,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@project-aqua/ui/components/dropdown-menu";
-import { Button } from "@project-aqua/ui/components/button";
-import { Checkbox } from "@project-aqua/ui/components/checkbox";
-
-import { DataTableColumnHeader } from "../data-table-column-header";
-
-import type { Athlete } from "@/types";
+import { ScrollArea } from "@project-aqua/ui/components/scroll-area";
+import { Separator } from "@project-aqua/ui/components/separator";
 import {
   Sheet,
   SheetContent,
@@ -25,8 +18,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@project-aqua/ui/components/sheet";
-import { Separator } from "@project-aqua/ui/components/separator";
-import { ScrollArea } from "@project-aqua/ui/components/scroll-area";
+import type { ColumnDef } from "@tanstack/react-table";
+import { CopyIcon, MoreVerticalIcon } from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useState } from "react";
+import type { Athlete } from "@/types";
+import { DataTableColumnHeader } from "../data-table-column-header";
 
 export const columns: ColumnDef<Athlete>[] = [
   {

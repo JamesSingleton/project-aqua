@@ -2,26 +2,32 @@
   "name": "project-aqua",
   "private": true,
   "license": "AGPL-3.0-only",
-  "scripts": {
-    "build": "turbo build",
-    "dev": "turbo dev --parallel",
-    "dev:admin": "turbo dev --filter=@project-aqua/admin",
-    "dev:web": "turbo dev --filter=@project-aqua/web",
-    "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
-  },
-  "devDependencies": {
-    "@project-aqua/eslint-config": "workspace:*",
-    "@project-aqua/typescript-config": "workspace:*",
-    "prettier": "^3.8.1",
-    "turbo": "^2.8.10"
-  },
   "packageManager": "pnpm@10.4.1",
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "scripts": {
+    "build": "turbo build",
+    "clean": "git clean -xdf node_modules",
+    "clean:workspaces": "turbo clean",
+    "dev": "turbo dev --parallel",
+    "dev:admin": "turbo dev --filter=@project-aqua/admin",
+    "dev:web": "turbo dev --filter=@project-aqua/web",
+    "start:admin": "turbo start --filter=@project-aqua/admin",
+    "start:web": "turbo start --filter=@project-aqua/web",
+    "format": "biome format --write .",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint:fix",
+    "check:types": "turbo typecheck"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.0",
+    "@project-aqua/typescript-config": "workspace:*",
+    "turbo": "^2.9.18",
+    "typescript": "catalog:"
+  }
 }

@@ -1,8 +1,5 @@
 "use client";
 
-import * as React from "react";
-import { ChevronsUpDown, Plus } from "lucide-react";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +15,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@project-aqua/ui/components/sidebar";
+import { ChevronsUpDown, Plus } from "lucide-react";
+import * as React from "react";
 
 export function TeamSwitcher({
   teams,

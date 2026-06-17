@@ -1,10 +1,10 @@
 "use client";
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
 import { NavigationMenu } from "@project-aqua/ui/components/navigation-menu";
 import { cn } from "@project-aqua/ui/lib/utils";
+import { motion } from "framer-motion";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 import { Icons } from "./icons";
 

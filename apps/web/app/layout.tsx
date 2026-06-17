@@ -1,13 +1,12 @@
 import "@project-aqua/ui/globals.css";
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
 import { cn } from "@project-aqua/ui/lib/utils";
+import { GeistMono } from "geist/font/mono";
+import { GeistSans } from "geist/font/sans";
 import type { Metadata } from "next";
-
-import { ThemeProvider } from "@/components/providers";
-import Header from "@/components/header";
-import { Footer } from "@/components/footer";
 import { CTA } from "@/components/cta";
+import { Footer } from "@/components/footer";
+import Header from "@/components/header";
+import { ThemeProvider } from "@/components/providers";
 
 export const metadata: Metadata = {
   title: {

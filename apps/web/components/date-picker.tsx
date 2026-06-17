@@ -1,9 +1,5 @@
 "use client";
 
-import * as React from "react";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
-import { cn } from "@project-aqua/ui/lib/utils";
 import { Button } from "@project-aqua/ui/components/button";
 import { Calendar } from "@project-aqua/ui/components/calendar";
 import {
@@ -11,6 +7,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@project-aqua/ui/components/popover";
+import { cn } from "@project-aqua/ui/lib/utils";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
+import * as React from "react";
 
 export function DatePicker() {
   const [date, setDate] = React.useState<Date>();

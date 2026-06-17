@@ -1,11 +1,3 @@
-import type { Metadata } from "next";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@project-aqua/ui/components/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
-import { Separator } from "@project-aqua/ui/components/separator";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,6 +6,14 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@project-aqua/ui/components/breadcrumb";
+import { Separator } from "@project-aqua/ui/components/separator";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@project-aqua/ui/components/sidebar";
+import type { Metadata } from "next";
+import { AppSidebar } from "@/components/app-sidebar";
 
 export const metadata: Metadata = {
   metadataBase: new URL("http://localhost:3001"),

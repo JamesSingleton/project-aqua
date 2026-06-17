@@ -1,15 +1,18 @@
 "use client";
 
-import * as React from "react";
+import { Button, buttonVariants } from "@project-aqua/ui/components/button";
+import { cn } from "@project-aqua/ui/lib/utils";
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "lucide-react";
-import { DayButton, DayPicker, getDefaultClassNames } from "react-day-picker";
-
-import { cn } from "@project-aqua/ui/lib/utils";
-import { Button, buttonVariants } from "@project-aqua/ui/components/button";
+import * as React from "react";
+import {
+  type DayButton,
+  DayPicker,
+  getDefaultClassNames,
+} from "react-day-picker";
 
 function Calendar({
   className,

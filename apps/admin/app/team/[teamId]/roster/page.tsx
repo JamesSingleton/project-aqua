@@ -1,35 +1,34 @@
-import Link from "next/link";
-import { FileIcon, UserPlusIcon } from "lucide-react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "@project-aqua/ui/components/card";
 import { Button, buttonVariants } from "@project-aqua/ui/components/button";
 import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@project-aqua/ui/components/tabs";
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@project-aqua/ui/components/card";
 import {
   Table,
-  TableHeader,
-  TableRow,
-  TableHead,
   TableBody,
   TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@project-aqua/ui/components/table";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@project-aqua/ui/components/tabs";
+import { FileIcon, UserPlusIcon } from "lucide-react";
+import type { Metadata, ResolvingMetadata } from "next";
+import Link from "next/link";
 import AthleteInfo from "@/components/roster/athlete-info";
-import { mockAthleteData } from "@/lib/mock-data";
 import { columns } from "@/components/roster/columns";
 import { DataTable } from "@/components/roster/data-table";
-
-import { Athlete } from "@/types";
-import type { Metadata, ResolvingMetadata } from "next";
+import { mockAthleteData } from "@/lib/mock-data";
+import type { Athlete } from "@/types";
 
 async function getData({ teamId }: { teamId: string }): Promise<Athlete[]> {
   return mockAthleteData;

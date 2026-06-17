@@ -1,8 +1,8 @@
 // shout out to https://ui.aceternity.com/components/infinite-moving-cards
 "use client";
 
-import React, { useEffect, useState } from "react";
 import { cn } from "@project-aqua/ui/lib/utils";
+import React, { useEffect, useState } from "react";
 
 export const InfiniteMovingCards = ({
   items,
