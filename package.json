@@ -22,7 +22,7 @@
     "format": "biome format --write .",
     "lint": "turbo lint",
     "lint:fix": "turbo lint:fix",
-    "check:types": "turbo typecheck"
+    "check:types": "turbo check:types"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.0",
