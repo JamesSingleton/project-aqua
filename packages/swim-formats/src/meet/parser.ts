@@ -4,8 +4,19 @@ import { parseHy3 } from "../hy3/parser";
 import { parseSdif } from "../sdif/parser";
 import type { ParsedMeet } from "../types";
 import { parseEventExportXls } from "../xls/parser";
+import { extractMeetFileFromZip, isZipBytes, isZipFilename } from "./zip";
 
 export type MeetFileFormat = "sdif" | "hy3" | "ev3" | "hyv" | "cl2" | "xls";
+
+export {
+  type ExtractedMeetFile,
+  extractMeetFileFromZip,
+  isZipBytes,
+  isZipFilename,
+} from "./zip";
+
+const UNSUPPORTED_MEET_FILE =
+  "Unsupported meet file. Use SD3/SDIF, HY3, EV3, HYV, CL2, XLS, or ZIP.";
 
 export function detectMeetFileFormat(
   filename: string,
@@ -56,14 +67,17 @@ export function parseMeetFileFromBytes(
   bytes: Uint8Array,
   filename: string,
 ): ParsedMeet {
+  if (isZipFilename(filename) || isZipBytes(bytes)) {
+    const extracted = extractMeetFileFromZip(bytes);
+    return parseMeetFileFromBytes(extracted.bytes, extracted.filename);
+  }
+
   const format = detectMeetFileFormat(filename);
   if (format === "xls") {
     return parseEventExportXls(bytes);
   }
   if (!format) {
-    throw new Error(
-      "Unsupported meet file. Use SD3/SDIF, HY3, EV3, HYV, CL2, or XLS.",
-    );
+    throw new Error(UNSUPPORTED_MEET_FILE);
   }
   const content = new TextDecoder("utf-8").decode(bytes);
   return parseMeetFile(content, format);

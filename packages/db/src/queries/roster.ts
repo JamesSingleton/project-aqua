@@ -5,7 +5,18 @@ import type {
   SwimmerContactsInput,
   SwimmerMedicalInput,
 } from "@project-aqua/swim-core/validators";
-import { and, eq } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  isNull,
+  or,
+  type SQL,
+} from "drizzle-orm";
 import { db } from "../client";
 import { member, organization } from "../schema/auth";
 import { trainingGroups } from "../schema/groups";
@@ -16,6 +27,167 @@ import {
   swimmers,
   teamSwimmerMemberships,
 } from "../schema/swimmers";
+
+export type RosterSortId =
+  | "firstName"
+  | "lastName"
+  | "dateOfBirth"
+  | "gender"
+  | "status"
+  | "classYear"
+  | "groupName"
+  | "usaId";
+
+export type RosterPageInput = {
+  q?: string;
+  status?: string[];
+  gender?: string[];
+  groupId?: string[];
+  classYear?: string[];
+  sort?: { id: string; desc: boolean }[];
+  page?: number;
+  perPage?: number;
+};
+
+export type RosterRowResult = {
+  membershipId: string;
+  swimmerId: string;
+  firstName: string;
+  middleName: string | null;
+  lastName: string;
+  preferredName: string | null;
+  dateOfBirth: string | null;
+  gender: "male" | "female";
+  governingBodyId: string | null;
+  practiceGroup: string | null;
+  trainingGroups: string[] | null;
+  groupId: string | null;
+  groupName: string | null;
+  classYear: string | null;
+  status: "active" | "inactive";
+  joinedAt: Date;
+};
+
+const rosterSelect = {
+  membershipId: teamSwimmerMemberships.id,
+  swimmerId: swimmers.id,
+  firstName: swimmers.firstName,
+  middleName: swimmers.middleName,
+  lastName: swimmers.lastName,
+  preferredName: swimmers.preferredName,
+  dateOfBirth: swimmers.dateOfBirth,
+  gender: swimmers.gender,
+  governingBodyId: swimmers.governingBodyId,
+  practiceGroup: teamSwimmerMemberships.practiceGroup,
+  trainingGroups: teamSwimmerMemberships.trainingGroups,
+  groupId: teamSwimmerMemberships.groupId,
+  groupName: trainingGroups.name,
+  classYear: teamSwimmerMemberships.classYear,
+  status: teamSwimmerMemberships.status,
+  joinedAt: teamSwimmerMemberships.joinedAt,
+};
+
+function buildRosterWhere(
+  organizationId: string,
+  input: RosterPageInput = {},
+): SQL | undefined {
+  const conditions: SQL[] = [
+    eq(teamSwimmerMemberships.organizationId, organizationId),
+  ];
+
+  const statuses = input.status?.filter(Boolean);
+  if (statuses && statuses.length > 0) {
+    conditions.push(
+      inArray(
+        teamSwimmerMemberships.status,
+        statuses as ("active" | "inactive")[],
+      ),
+    );
+  } else {
+    conditions.push(eq(teamSwimmerMemberships.status, "active"));
+  }
+
+  const genders = input.gender?.filter(Boolean);
+  if (genders && genders.length > 0) {
+    conditions.push(inArray(swimmers.gender, genders as ("male" | "female")[]));
+  }
+
+  const groupIds = input.groupId?.filter(Boolean);
+  if (groupIds && groupIds.length > 0) {
+    const includeUnassigned = groupIds.includes("none");
+    const realGroupIds = groupIds.filter((id) => id !== "none");
+    const groupConditions: SQL[] = [];
+    if (realGroupIds.length > 0) {
+      groupConditions.push(
+        inArray(teamSwimmerMemberships.groupId, realGroupIds),
+      );
+    }
+    if (includeUnassigned) {
+      groupConditions.push(isNull(teamSwimmerMemberships.groupId));
+    }
+    if (groupConditions.length === 1) {
+      conditions.push(groupConditions[0]!);
+    } else if (groupConditions.length > 1) {
+      conditions.push(or(...groupConditions)!);
+    }
+  }
+
+  const classYears = input.classYear?.filter(Boolean);
+  if (classYears && classYears.length > 0) {
+    conditions.push(inArray(teamSwimmerMemberships.classYear, classYears));
+  }
+
+  const q = input.q?.trim();
+  if (q) {
+    const pattern = `%${q}%`;
+    conditions.push(
+      or(
+        ilike(swimmers.firstName, pattern),
+        ilike(swimmers.lastName, pattern),
+        ilike(swimmers.preferredName, pattern),
+      )!,
+    );
+  }
+
+  return and(...conditions);
+}
+
+function buildRosterOrderBy(sort?: { id: string; desc: boolean }[]) {
+  if (!sort || sort.length === 0) {
+    return [asc(swimmers.lastName), asc(swimmers.firstName)];
+  }
+
+  const orderBy = sort.flatMap((item) => {
+    const direction = item.desc ? desc : asc;
+    switch (item.id) {
+      case "firstName":
+        return [direction(swimmers.firstName)];
+      case "lastName":
+        return [direction(swimmers.lastName)];
+      case "dateOfBirth":
+      case "age":
+        return [direction(swimmers.dateOfBirth)];
+      case "gender":
+        return [direction(swimmers.gender)];
+      case "status":
+        return [direction(teamSwimmerMemberships.status)];
+      case "classYear":
+        return [direction(teamSwimmerMemberships.classYear)];
+      case "groupId":
+      case "groupName":
+      case "trainingGroup":
+        return [direction(trainingGroups.name)];
+      case "usaId":
+        return [direction(swimmers.governingBodyId)];
+      default:
+        return [];
+    }
+  });
+
+  return orderBy.length > 0
+    ? orderBy
+    : [asc(swimmers.lastName), asc(swimmers.firstName)];
+}
 
 function generateId(): string {
   return crypto.randomUUID();
@@ -101,24 +273,7 @@ export async function findSwimmerByGoverningBodyId(governingBodyId: string) {
 
 export async function getRoster(organizationId: string) {
   const rows = await db
-    .select({
-      membershipId: teamSwimmerMemberships.id,
-      swimmerId: swimmers.id,
-      firstName: swimmers.firstName,
-      middleName: swimmers.middleName,
-      lastName: swimmers.lastName,
-      preferredName: swimmers.preferredName,
-      dateOfBirth: swimmers.dateOfBirth,
-      gender: swimmers.gender,
-      governingBodyId: swimmers.governingBodyId,
-      practiceGroup: teamSwimmerMemberships.practiceGroup,
-      trainingGroups: teamSwimmerMemberships.trainingGroups,
-      groupId: teamSwimmerMemberships.groupId,
-      groupName: trainingGroups.name,
-      classYear: teamSwimmerMemberships.classYear,
-      status: teamSwimmerMemberships.status,
-      joinedAt: teamSwimmerMemberships.joinedAt,
-    })
+    .select(rosterSelect)
     .from(teamSwimmerMemberships)
     .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
     .leftJoin(
@@ -133,6 +288,159 @@ export async function getRoster(organizationId: string) {
     );
 
   return rows;
+}
+
+export async function getRosterPage(
+  organizationId: string,
+  input: RosterPageInput = {},
+): Promise<{
+  data: RosterRowResult[];
+  pageCount: number;
+  total: number;
+}> {
+  const page = Math.max(1, input.page ?? 1);
+  const perPage = Math.min(100, Math.max(1, input.perPage ?? 10));
+  const offset = (page - 1) * perPage;
+  const where = buildRosterWhere(organizationId, input);
+  const orderBy = buildRosterOrderBy(input.sort);
+
+  try {
+    const [data, countRows] = await Promise.all([
+      db
+        .select(rosterSelect)
+        .from(teamSwimmerMemberships)
+        .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
+        .leftJoin(
+          trainingGroups,
+          eq(teamSwimmerMemberships.groupId, trainingGroups.id),
+        )
+        .where(where)
+        .orderBy(...orderBy)
+        .limit(perPage)
+        .offset(offset),
+      db
+        .select({ total: count() })
+        .from(teamSwimmerMemberships)
+        .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
+        .leftJoin(
+          trainingGroups,
+          eq(teamSwimmerMemberships.groupId, trainingGroups.id),
+        )
+        .where(where),
+    ]);
+
+    const total = Number(countRows[0]?.total ?? 0);
+    return {
+      data: data as RosterRowResult[],
+      total,
+      pageCount: Math.max(1, Math.ceil(total / perPage)),
+    };
+  } catch {
+    return { data: [], total: 0, pageCount: 0 };
+  }
+}
+
+export async function getRosterFacetCounts(organizationId: string) {
+  const baseWhere = and(
+    eq(teamSwimmerMemberships.organizationId, organizationId),
+  );
+  const activeWhere = and(
+    baseWhere,
+    eq(teamSwimmerMemberships.status, "active"),
+  );
+
+  const [statusRows, genderRows, groupRows, classYearRows] = await Promise.all([
+    db
+      .select({
+        value: teamSwimmerMemberships.status,
+        count: count(),
+      })
+      .from(teamSwimmerMemberships)
+      .where(baseWhere)
+      .groupBy(teamSwimmerMemberships.status),
+    db
+      .select({
+        value: swimmers.gender,
+        count: count(),
+      })
+      .from(teamSwimmerMemberships)
+      .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
+      .where(activeWhere)
+      .groupBy(swimmers.gender),
+    db
+      .select({
+        value: teamSwimmerMemberships.groupId,
+        name: trainingGroups.name,
+        count: count(),
+      })
+      .from(teamSwimmerMemberships)
+      .leftJoin(
+        trainingGroups,
+        eq(teamSwimmerMemberships.groupId, trainingGroups.id),
+      )
+      .where(activeWhere)
+      .groupBy(teamSwimmerMemberships.groupId, trainingGroups.name),
+    db
+      .select({
+        value: teamSwimmerMemberships.classYear,
+        count: count(),
+      })
+      .from(teamSwimmerMemberships)
+      .where(activeWhere)
+      .groupBy(teamSwimmerMemberships.classYear),
+  ]);
+
+  const status: Record<string, number> = {};
+  for (const row of statusRows) {
+    status[row.value] = Number(row.count);
+  }
+
+  const gender: Record<string, number> = {};
+  for (const row of genderRows) {
+    gender[row.value] = Number(row.count);
+  }
+
+  const groupId: Record<string, number> = {};
+  for (const row of groupRows) {
+    groupId[row.value ?? "none"] = Number(row.count);
+  }
+
+  const classYear: Record<string, number> = {};
+  for (const row of classYearRows) {
+    if (row.value) classYear[row.value] = Number(row.count);
+  }
+
+  return {
+    status,
+    gender,
+    groupId,
+    classYear,
+    totalActive: status.active ?? 0,
+    maleActive: gender.male ?? 0,
+    femaleActive: gender.female ?? 0,
+  };
+}
+
+export async function getRosterForExport(
+  organizationId: string,
+  input: RosterPageInput & { swimmerIds?: string[] } = {},
+) {
+  const where = buildRosterWhere(organizationId, input);
+  const conditions: SQL[] = where ? [where] : [];
+  if (input.swimmerIds && input.swimmerIds.length > 0) {
+    conditions.push(inArray(swimmers.id, input.swimmerIds));
+  }
+
+  return db
+    .select(rosterSelect)
+    .from(teamSwimmerMemberships)
+    .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
+    .leftJoin(
+      trainingGroups,
+      eq(teamSwimmerMemberships.groupId, trainingGroups.id),
+    )
+    .where(and(...conditions))
+    .orderBy(...buildRosterOrderBy(input.sort));
 }
 
 export async function getSwimmerById(

@@ -74,6 +74,8 @@ export const meetEvents = pgTable("meet_events", {
   eventKey: text("event_key")
     .notNull()
     .references(() => swimEvents.eventKey),
+  /** Meet-specific entry qualifying cut (from EV3/HYV), milliseconds. */
+  qualifyingTimeMs: integer("qualifying_time_ms"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

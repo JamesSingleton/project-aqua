@@ -9,7 +9,16 @@ import {
   type RelayStroke,
   type Stroke,
 } from "@project-aqua/swim-core/events";
-import { detectMeetFileFormat } from "@project-aqua/swim-formats/meet";
+import { formatTime } from "@project-aqua/swim-core/times";
+import {
+  detectMeetFileFormat,
+  isZipFilename,
+} from "@project-aqua/swim-formats/meet";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@project-aqua/ui/components/alert";
 import { Button } from "@project-aqua/ui/components/button";
 import { Calendar } from "@project-aqua/ui/components/calendar";
 import {
@@ -37,7 +46,7 @@ import {
   SelectValue,
 } from "@project-aqua/ui/components/select";
 import { cn } from "@project-aqua/ui/lib/utils";
-import { CalendarIcon, Loader, Upload } from "lucide-react";
+import { AlertTriangleIcon, CalendarIcon, Loader, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useRef, useState } from "react";
 import {
@@ -46,7 +55,7 @@ import {
   parseMeetFilePreviewAction,
 } from "./actions";
 
-const MEET_ACCEPT = ".sd3,.sdif,.cl2,.hy3,.ev3,.hyv,.xls,.xlsx,.txt";
+const MEET_ACCEPT = ".sd3,.sdif,.cl2,.hy3,.ev3,.hyv,.xls,.xlsx,.txt,.zip";
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const GENDER_OPTIONS = [
   { value: "female", label: "Female" },
@@ -189,6 +198,7 @@ export function MeetImportButton({
   const [error, setError] = useState<string | null>(null);
   const [fileMeta, setFileMeta] = useState<{
     name: string;
+    label: string;
     sizeLabel: string;
     content: string;
     encoding: "utf8" | "base64";
@@ -227,7 +237,10 @@ export function MeetImportButton({
     setBusy(true);
     try {
       const lower = file.name.toLowerCase();
-      const isBinary = lower.endsWith(".xls") || lower.endsWith(".xlsx");
+      const isBinary =
+        lower.endsWith(".xls") ||
+        lower.endsWith(".xlsx") ||
+        lower.endsWith(".zip");
       const encoding = isBinary ? ("base64" as const) : ("utf8" as const);
       let content: string;
       if (isBinary) {
@@ -239,13 +252,17 @@ export function MeetImportButton({
       } else {
         content = await file.text();
       }
-      const format = detectMeetFileFormat(
-        file.name,
-        isBinary ? undefined : content,
-      );
-      if (!format) {
-        setError("Not a meet file. Use SD3/SDIF, HY3, EV3, HYV, CL2, or XLS.");
-        return;
+      if (!isZipFilename(file.name)) {
+        const format = detectMeetFileFormat(
+          file.name,
+          isBinary ? undefined : content,
+        );
+        if (!format) {
+          setError(
+            "Not a meet file. Use SD3/SDIF, HY3, EV3, HYV, CL2, XLS, or ZIP.",
+          );
+          return;
+        }
       }
 
       const parsed = await parseMeetFilePreviewAction(
@@ -256,6 +273,9 @@ export function MeetImportButton({
       );
       setFileMeta({
         name: file.name,
+        label: parsed.sourceFilename
+          ? `${file.name} → ${parsed.sourceFilename}`
+          : file.name,
         sizeLabel: formatBytes(file.size),
         content,
         encoding,
@@ -511,7 +531,7 @@ export function MeetImportButton({
                       : "Drag & Drop or Choose file to upload"}
                   </p>
                   <p className="text-muted-foreground text-sm text-balance">
-                    SD3, HY3, EV3, HYV, CL2, or XLS · Up to{" "}
+                    SD3, HY3, EV3, HYV, CL2, XLS, or ZIP · Up to{" "}
                     {MAX_FILE_BYTES / (1024 * 1024)} MB
                   </p>
                 </div>
@@ -522,7 +542,7 @@ export function MeetImportButton({
           {step === "review" && review && preview && fileMeta ? (
             <>
               <p className="text-muted-foreground text-sm">
-                {fileMeta.name} · {fileMeta.sizeLabel} · {preview.format} ·{" "}
+                {fileMeta.label} · {fileMeta.sizeLabel} · {preview.format} ·{" "}
                 {preview.events.length} events
                 {preview.entryCount ? ` · ${preview.entryCount} entries` : ""}
                 {preview.resultCount ? ` · ${preview.resultCount} results` : ""}
@@ -530,6 +550,21 @@ export function MeetImportButton({
                   ? ` · ${preview.exhibitionCount} exhibition`
                   : ""}
               </p>
+
+              {preview.skippedDiveEvents != null &&
+              preview.skippedDiveEvents > 0 ? (
+                <Alert>
+                  <AlertTriangleIcon />
+                  <AlertTitle>Diving events skipped</AlertTitle>
+                  <AlertDescription>
+                    {preview.skippedDiveEvents === 1
+                      ? "1 diving event was found in this file and was not imported."
+                      : `${preview.skippedDiveEvents} diving events were found in this file and were not imported.`}{" "}
+                    Project Aqua currently supports swim events only; diving
+                    support is planned.
+                  </AlertDescription>
+                </Alert>
+              ) : null}
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2 sm:col-span-2">
@@ -699,6 +734,12 @@ export function MeetImportButton({
                       </span>
                       <span className="truncate">
                         {formatEventName(event.distance, event.stroke)}
+                        {event.qualifyingTimeMs != null &&
+                        event.qualifyingTimeMs > 0 ? (
+                          <span className="text-muted-foreground ml-1.5 tabular-nums">
+                            QT {formatTime(event.qualifyingTimeMs)}
+                          </span>
+                        ) : null}
                       </span>
                       <Select
                         items={GENDER_OPTIONS}

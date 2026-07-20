@@ -44,13 +44,23 @@ export default async function MeetRegistrationPage({
     ),
   );
 
-  const relayEvents = events.filter(isRelayEvent).map((event) => ({
-    id: event.id,
-    label: `#${event.eventNumber ?? "—"} ${formatEventName(event.distance, event.stroke)}`,
-  }));
+  const relayEvents = events.filter(isRelayEvent).map((event) => {
+    const gender =
+      event.gender === "female"
+        ? "Female"
+        : event.gender === "male"
+          ? "Male"
+          : event.gender === "mixed"
+            ? "Mixed"
+            : event.gender;
+    return {
+      id: event.id,
+      label: `#${event.eventNumber ?? "—"} ${gender} ${formatEventName(event.distance, event.stroke)}`,
+    };
+  });
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex min-w-0 flex-col gap-8">
       <RegistrationBoard
         teamId={teamId}
         meetId={meetId}
@@ -82,6 +92,7 @@ export default async function MeetRegistrationPage({
           gender: e.gender,
           ageGroup: e.ageGroup,
           eventKey: e.eventKey,
+          qualifyingTimeMs: e.qualifyingTimeMs ?? null,
         }))}
         entries={entries.map((e) => ({
           id: e.id,

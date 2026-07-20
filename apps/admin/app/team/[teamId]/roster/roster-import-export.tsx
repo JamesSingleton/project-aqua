@@ -167,9 +167,7 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={<Button type="button" variant="outline" size="sm" />}
-      >
+      <DialogTrigger render={<Button type="button" variant="outline" />}>
         <Upload data-icon="inline-start" />
         Import
       </DialogTrigger>

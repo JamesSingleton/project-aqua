@@ -25,7 +25,7 @@ export default async function MeetDetailLayout({
   const description = `${meet.startDate.toLocaleDateString()}${endLabel} · ${meet.course}${meet.location ? ` · ${meet.location}` : ""}${meet.address ? ` · ${meet.address}` : ""}`;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-6">
       <SetBreadcrumbEntity id={meetId} label={meet.name} />
       <div className="text-muted-foreground text-sm">
         <Link

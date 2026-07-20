@@ -5,6 +5,10 @@ export { exportHy3 } from "./export/meet";
 export { parseHy3 } from "./hy3/parser";
 export {
   detectMeetFileFormat,
+  type ExtractedMeetFile,
+  extractMeetFileFromZip,
+  isZipBytes,
+  isZipFilename,
   type MeetFileFormat,
   parseMeetFile,
   parseMeetFileFromBytes,

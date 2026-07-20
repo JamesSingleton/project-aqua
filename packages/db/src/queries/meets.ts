@@ -200,6 +200,7 @@ export async function addMeetEvent(
     ageGroup?: string;
     eventKey: string;
     course?: "SCY" | "SCM" | "LCM";
+    qualifyingTimeMs?: number | null;
   },
 ) {
   const gender = parseEventGender(event.gender);
@@ -221,6 +222,7 @@ export async function addMeetEvent(
     gender,
     ageGroup: event.ageGroup,
     eventKey: event.eventKey,
+    qualifyingTimeMs: event.qualifyingTimeMs ?? null,
   });
   return id;
 }

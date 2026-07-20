@@ -1,6 +1,7 @@
 "use client";
 
 import { formatEventName } from "@project-aqua/swim-core/events";
+import { Badge } from "@project-aqua/ui/components/badge";
 import { Button } from "@project-aqua/ui/components/button";
 import {
   Card,
@@ -9,6 +10,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@project-aqua/ui/components/card";
+import { Label } from "@project-aqua/ui/components/label";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@project-aqua/ui/components/select";
 import {
   Table,
   TableBody,
@@ -17,9 +27,8 @@ import {
   TableHeader,
   TableRow,
 } from "@project-aqua/ui/components/table";
-import { cn } from "@project-aqua/ui/lib/utils";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { Fragment, useMemo, useState, useTransition } from "react";
 import { updateMeetEntryStatusAction } from "../actions";
 
 type MatrixEvent = {
@@ -43,11 +52,58 @@ type MatrixEntry = {
   status: string;
 };
 
+type GroupBy = "swimmer" | "event";
+
+const GROUP_BY_OPTIONS: { value: GroupBy; label: string }[] = [
+  { value: "swimmer", label: "Swimmer" },
+  { value: "event", label: "Event" },
+];
+
+function isGroupBy(value: string): value is GroupBy {
+  return value === "swimmer" || value === "event";
+}
+
 function formatGenderShort(gender: string) {
   if (gender === "female" || gender === "f") return "F";
   if (gender === "mixed" || gender === "x") return "X";
   if (gender === "male" || gender === "m") return "M";
   return "";
+}
+
+function eventLabel(event: MatrixEvent) {
+  const gender = formatGenderShort(event.gender);
+  return `#${event.eventNumber ?? "—"} ${gender ? `${gender} ` : ""}${formatEventName(event.distance, event.stroke)}`.trim();
+}
+
+function statusBadge(status: string) {
+  if (status === "approved") {
+    return (
+      <Badge
+        variant="secondary"
+        className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+      >
+        Approved
+      </Badge>
+    );
+  }
+  if (status === "draft") {
+    return (
+      <Badge
+        variant="secondary"
+        className="bg-amber-500/15 text-amber-700 dark:text-amber-400"
+      >
+        Draft
+      </Badge>
+    );
+  }
+  if (status === "scratched") {
+    return (
+      <Badge variant="destructive" className="line-through">
+        Scratched
+      </Badge>
+    );
+  }
+  return <Badge variant="outline">{status}</Badge>;
 }
 
 export function EntryMatrix({
@@ -66,17 +122,25 @@ export function EntryMatrix({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
+  const [groupBy, setGroupBy] = useState<GroupBy>("swimmer");
 
-  const entryByKey = useMemo(() => {
-    const map = new Map<string, MatrixEntry>();
-    for (const entry of entries) {
-      map.set(`${entry.membershipId}:${entry.meetEventId}`, entry);
-    }
-    return map;
-  }, [entries]);
+  const eventById = useMemo(
+    () => new Map(events.map((event) => [event.id, event])),
+    [events],
+  );
+
+  const swimmerById = useMemo(
+    () => new Map(swimmers.map((swimmer) => [swimmer.membershipId, swimmer])),
+    [swimmers],
+  );
 
   const draftEntries = useMemo(
     () => entries.filter((e) => e.status === "draft"),
+    [entries],
+  );
+
+  const activeEntries = useMemo(
+    () => entries.filter((e) => e.status !== "scratched"),
     [entries],
   );
 
@@ -89,6 +153,60 @@ export function EntryMatrix({
       }),
     [events],
   );
+
+  const groups = useMemo(() => {
+    if (groupBy === "swimmer") {
+      const byMembership = new Map<string, MatrixEntry[]>();
+      for (const entry of activeEntries) {
+        const list = byMembership.get(entry.membershipId) ?? [];
+        list.push(entry);
+        byMembership.set(entry.membershipId, list);
+      }
+
+      return swimmers
+        .map((swimmer) => {
+          const rows = (byMembership.get(swimmer.membershipId) ?? []).toSorted(
+            (a, b) => {
+              const ea = eventById.get(a.meetEventId);
+              const eb = eventById.get(b.meetEventId);
+              const an = ea?.eventNumber ?? Number.MAX_SAFE_INTEGER;
+              const bn = eb?.eventNumber ?? Number.MAX_SAFE_INTEGER;
+              return an - bn;
+            },
+          );
+          return {
+            key: swimmer.membershipId,
+            label: `${swimmer.firstName} ${swimmer.lastName}`,
+            rows,
+          };
+        })
+        .sort((a, b) => a.label.localeCompare(b.label));
+    }
+
+    const byEvent = new Map<string, MatrixEntry[]>();
+    for (const entry of activeEntries) {
+      const list = byEvent.get(entry.meetEventId) ?? [];
+      list.push(entry);
+      byEvent.set(entry.meetEventId, list);
+    }
+
+    return sortedEvents
+      .map((event) => {
+        const rows = (byEvent.get(event.id) ?? []).toSorted((a, b) => {
+          const sa = swimmerById.get(a.membershipId);
+          const sb = swimmerById.get(b.membershipId);
+          const na = sa ? `${sa.lastName} ${sa.firstName}` : "";
+          const nb = sb ? `${sb.lastName} ${sb.firstName}` : "";
+          return na.localeCompare(nb);
+        });
+        return {
+          key: event.id,
+          label: eventLabel(event),
+          rows,
+        };
+      })
+      .filter((group) => group.rows.length > 0);
+  }, [groupBy, swimmers, sortedEvents, activeEntries, eventById, swimmerById]);
 
   function approveDrafts() {
     if (draftEntries.length === 0) return;
@@ -113,13 +231,18 @@ export function EntryMatrix({
     return null;
   }
 
+  const showEventColumn = groupBy === "swimmer";
+  const showSwimmerColumn = groupBy === "event";
+  const columnCount = 2;
+
   return (
-    <Card>
+    <Card className="min-w-0 overflow-hidden">
       <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
-        <div>
-          <CardTitle>Entry matrix</CardTitle>
+        <div className="min-w-0">
+          <CardTitle>Entries</CardTitle>
           <CardDescription>
-            Committed swimmers × events. Draft cells can be bulk-approved.
+            Committed swimmers and their events. Group by swimmer or event;
+            approve drafts in bulk.
           </CardDescription>
         </div>
         <Button
@@ -133,77 +256,100 @@ export function EntryMatrix({
             : `Approve drafts${draftEntries.length > 0 ? ` (${draftEntries.length})` : ""}`}
         </Button>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex min-w-0 flex-col gap-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="entry-group-by">Group by</Label>
+            <Select
+              items={GROUP_BY_OPTIONS}
+              value={groupBy}
+              onValueChange={(value) => {
+                if (value != null && isGroupBy(value)) setGroupBy(value);
+              }}
+            >
+              <SelectTrigger id="entry-group-by" className="w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {GROUP_BY_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         {error ? (
-          <p className="text-destructive mb-3 text-sm" role="alert">
+          <p className="text-destructive text-sm" role="alert">
             {error}
           </p>
         ) : null}
-        <div className="overflow-x-auto">
+
+        {groupBy === "event" && activeEntries.length === 0 ? (
+          <p className="text-muted-foreground text-sm">
+            No entries yet. Commit swimmers and add events from the board above.
+          </p>
+        ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="sticky left-0 z-10 bg-background min-w-36">
-                  Swimmer
-                </TableHead>
-                {sortedEvents.map((event) => (
-                  <TableHead
-                    key={event.id}
-                    className="min-w-16 text-center text-xs whitespace-normal"
-                  >
-                    <span className="block font-medium">
-                      #{event.eventNumber ?? "—"}
-                    </span>
-                    <span className="text-muted-foreground font-normal">
-                      {formatGenderShort(event.gender)}{" "}
-                      {formatEventName(event.distance, event.stroke)}
-                    </span>
-                  </TableHead>
-                ))}
+                {showSwimmerColumn ? <TableHead>Swimmer</TableHead> : null}
+                {showEventColumn ? <TableHead>Event</TableHead> : null}
+                <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {swimmers.map((swimmer) => (
-                <TableRow key={swimmer.membershipId}>
-                  <TableCell className="sticky left-0 z-10 bg-background font-medium whitespace-nowrap">
-                    {swimmer.firstName} {swimmer.lastName}
-                  </TableCell>
-                  {sortedEvents.map((event) => {
-                    const entry = entryByKey.get(
-                      `${swimmer.membershipId}:${event.id}`,
-                    );
-                    const status = entry?.status;
-                    return (
-                      <TableCell key={event.id} className="text-center">
-                        <span
-                          className={cn(
-                            "inline-flex size-6 items-center justify-center rounded text-xs font-medium",
-                            status === "approved" &&
-                              "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
-                            status === "draft" &&
-                              "bg-amber-500/15 text-amber-700 dark:text-amber-400",
-                            status === "scratched" &&
-                              "bg-destructive/10 text-destructive line-through",
-                            !status && "text-muted-foreground/40",
-                          )}
-                          title={status ?? "Not entered"}
-                        >
-                          {status === "approved"
-                            ? "✓"
-                            : status === "draft"
-                              ? "D"
-                              : status === "scratched"
-                                ? "S"
-                                : "·"}
-                        </span>
+              {groups.map((group) => (
+                <Fragment key={group.key}>
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableCell colSpan={columnCount} className="font-medium">
+                      {group.label}
+                      <span className="text-muted-foreground ml-2 font-normal">
+                        {group.rows.length}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                  {group.rows.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={columnCount}
+                        className="text-muted-foreground text-sm"
+                      >
+                        No events entered
                       </TableCell>
-                    );
-                  })}
-                </TableRow>
+                    </TableRow>
+                  ) : (
+                    group.rows.map((entry) => {
+                      const event = eventById.get(entry.meetEventId);
+                      const swimmer = swimmerById.get(entry.membershipId);
+                      return (
+                        <TableRow key={entry.id}>
+                          {showSwimmerColumn ? (
+                            <TableCell>
+                              {swimmer
+                                ? `${swimmer.firstName} ${swimmer.lastName}`
+                                : "—"}
+                            </TableCell>
+                          ) : null}
+                          {showEventColumn ? (
+                            <TableCell>
+                              {event ? eventLabel(event) : "—"}
+                            </TableCell>
+                          ) : null}
+                          <TableCell>{statusBadge(entry.status)}</TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </Fragment>
               ))}
             </TableBody>
           </Table>
-        </div>
+        )}
       </CardContent>
     </Card>
   );

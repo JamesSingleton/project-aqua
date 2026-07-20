@@ -17,8 +17,10 @@ import { patchTeamUiPreferences } from "@project-aqua/db/queries/preferences";
 import {
   addSwimmer,
   getRoster,
+  getRosterForExport,
   getSwimmerContactsForMembership,
   getSwimmerMedicalForMembership,
+  type RosterPageInput,
   removeSwimmerFromTeam,
   updateSwimmer,
 } from "@project-aqua/db/queries/roster";
@@ -111,6 +113,23 @@ export async function removeSwimmerAction(teamId: string, swimmerId: string) {
   revalidatePath(`/team/${teamId}/roster`);
 }
 
+export async function removeSwimmersAction(
+  teamId: string,
+  swimmerIds: string[],
+) {
+  const session = await getSession();
+  await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+  const uniqueIds = [...new Set(swimmerIds.filter(Boolean))];
+  if (uniqueIds.length === 0) {
+    throw new Error("Select at least one swimmer");
+  }
+  await Promise.all(
+    uniqueIds.map((swimmerId) => removeSwimmerFromTeam(swimmerId, teamId)),
+  );
+  revalidatePath(`/team/${teamId}/roster`);
+  return { removed: uniqueIds.length };
+}
+
 export async function fetchRosterAction(teamId: string) {
   const session = await getSession();
   await requireTeamRole(session?.user?.id, teamId, [
@@ -146,7 +165,10 @@ export async function fetchSwimmerPiiAction(
   return { contacts, medical };
 }
 
-export async function exportRosterCsvAction(teamId: string) {
+export async function exportRosterCsvAction(
+  teamId: string,
+  options?: RosterPageInput & { swimmerIds?: string[] },
+) {
   const session = await getSession();
   const headerStore = await headers();
   const ip =
@@ -156,7 +178,24 @@ export async function exportRosterCsvAction(teamId: string) {
 
   await canExportRoster(session?.user?.id, teamId);
 
-  const roster = await getRoster(teamId);
+  const roster =
+    options &&
+    (options.swimmerIds?.length ||
+      options.q ||
+      options.status?.length ||
+      options.gender?.length ||
+      options.groupId?.length ||
+      options.classYear?.length)
+      ? await getRosterForExport(teamId, {
+          ...options,
+          // Selection export should include inactive rows when ids are explicit
+          status: options.swimmerIds?.length
+            ? options.status?.length
+              ? options.status
+              : ["active", "inactive"]
+            : options.status,
+        })
+      : await getRoster(teamId);
   const lines = [
     "first_name,last_name,middle_name,preferred_name,date_of_birth,gender,practice_group,class_year,usa_member_id",
     ...roster.map((r) =>

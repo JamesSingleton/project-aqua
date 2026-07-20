@@ -43,6 +43,8 @@ import type { ParsedMeet } from "@project-aqua/swim-formats";
 import { exportHy3 } from "@project-aqua/swim-formats/hy3";
 import {
   detectMeetFileFormat,
+  extractMeetFileFromZip,
+  isZipFilename,
   type MeetFileFormat,
   parseMeetFile,
   parseMeetFileFromBytes,
@@ -186,10 +188,13 @@ export type MeetImportPreview = {
     gender: string;
     ageGroup?: string;
     eventKey: string;
+    qualifyingTimeMs?: number;
   }>;
   entryCount: number;
   resultCount: number;
   exhibitionCount?: number;
+  /** Dive events found in the file but not imported (swim-only for now). */
+  skippedDiveEvents?: number;
   entryLimits?: {
     maxIndividualEntries?: number;
     maxRelayEntries?: number;
@@ -197,20 +202,50 @@ export type MeetImportPreview = {
     packages?: Array<{ individual: number; relay: number }>;
   };
   format: MeetFileFormat;
+  /** Inner filename when the upload was a ZIP container. */
+  sourceFilename?: string;
 };
 
 function decodeMeetFilePayload(
   content: string,
   filename: string,
   encoding: "utf8" | "base64" = "utf8",
-): { format: MeetFileFormat; parsed: ParsedMeet; textContent: string } {
+): {
+  format: MeetFileFormat;
+  parsed: ParsedMeet;
+  textContent: string;
+  sourceFilename?: string;
+} {
+  if (isZipFilename(filename)) {
+    if (encoding !== "base64") {
+      throw new Error("ZIP meet packs must be uploaded as binary files.");
+    }
+    const bytes = Uint8Array.from(Buffer.from(content, "base64"));
+    const extracted = extractMeetFileFromZip(bytes);
+    if (extracted.format === "xls") {
+      return {
+        format: extracted.format,
+        parsed: parseMeetFileFromBytes(extracted.bytes, extracted.filename),
+        textContent: content,
+        sourceFilename: extracted.filename,
+      };
+    }
+    const text = new TextDecoder("utf-8").decode(extracted.bytes);
+    return {
+      format: extracted.format,
+      parsed: parseMeetFile(text, extracted.format),
+      textContent: text,
+      sourceFilename: extracted.filename,
+    };
+  }
+
   const format = detectMeetFileFormat(
     filename,
     encoding === "utf8" ? content : undefined,
   );
   if (!format) {
     throw new Error(
-      "Unsupported meet file. Use SD3/SDIF, HY3, EV3, HYV, CL2, or XLS.",
+      "Unsupported meet file. Use SD3/SDIF, HY3, EV3, HYV, CL2, XLS, or ZIP.",
     );
   }
 
@@ -253,7 +288,11 @@ export async function parseMeetFilePreviewAction(
   await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
   await assertFeature(teamId, "meet_import");
 
-  const { format, parsed } = decodeMeetFilePayload(content, filename, encoding);
+  const { format, parsed, sourceFilename } = decodeMeetFilePayload(
+    content,
+    filename,
+    encoding,
+  );
   return {
     name: parsed.name,
     startDate: parsed.startDate,
@@ -267,12 +306,15 @@ export async function parseMeetFilePreviewAction(
       gender: e.gender,
       ageGroup: e.ageGroup,
       eventKey: e.eventKey,
+      qualifyingTimeMs: e.qualifyingTimeMs,
     })),
     entryCount: parsed.entries.length,
     resultCount: parsed.results.length,
     exhibitionCount: parsed.entries.filter((e) => e.exhibition).length,
+    skippedDiveEvents: parsed.skippedDiveEvents,
     entryLimits: parsed.entryLimits,
     format,
+    sourceFilename,
   };
 }
 
@@ -292,6 +334,7 @@ export type MeetImportReviewOverrides = {
     gender: string;
     ageGroup?: string;
     eventKey: string;
+    qualifyingTimeMs?: number;
   }>;
 };
 
@@ -395,6 +438,7 @@ export async function importMeetFileAction(
         gender: e.gender as ParsedMeet["events"][number]["gender"],
         ageGroup: e.ageGroup,
         eventKey: e.eventKey,
+        qualifyingTimeMs: e.qualifyingTimeMs,
       }));
     }
 

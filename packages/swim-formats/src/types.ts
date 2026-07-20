@@ -21,6 +21,12 @@ export interface ParsedMeet {
     maxCombinedEntries?: number;
     packages?: Array<{ individual: number; relay: number }>;
   };
+  /**
+   * Diving events detected in the source file but not imported yet.
+   * Hy-Tek uses stroke `6` (HYV) / `F` (EV3). Swim-only import skips these
+   * and surfaces the count so coaches know what was omitted.
+   */
+  skippedDiveEvents?: number;
 }
 
 export interface ParsedEvent {
@@ -32,6 +38,8 @@ export interface ParsedEvent {
   eventKey: string;
   /** Championship round when present (HYV): prelims/finals/swimoff/time trial. */
   roundType?: "prelim" | "finals" | "swimoff" | "time_trial";
+  /** Primary meet qualifying/entry cut time in milliseconds when present. */
+  qualifyingTimeMs?: number;
 }
 
 export interface ParsedEntry {

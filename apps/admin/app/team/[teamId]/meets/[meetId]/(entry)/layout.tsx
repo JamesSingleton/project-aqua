@@ -10,9 +10,9 @@ export default async function MeetEntryLayout({
   const { teamId, meetId } = await params;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-6">
       <MeetEntryNav teamId={teamId} meetId={meetId} />
-      <div className="mt-2">{children}</div>
+      <div className="mt-2 min-w-0">{children}</div>
     </div>
   );
 }

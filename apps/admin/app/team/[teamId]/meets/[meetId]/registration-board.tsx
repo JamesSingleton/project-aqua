@@ -11,8 +11,12 @@ import {
   isSwimmerEligibleForEvent,
 } from "@project-aqua/swim-core/events";
 import { formatTime, parseTime } from "@project-aqua/swim-core/times";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@project-aqua/ui/components/alert";
 import { Button } from "@project-aqua/ui/components/button";
-import { Checkbox } from "@project-aqua/ui/components/checkbox";
 import { Input } from "@project-aqua/ui/components/input";
 import {
   Select,
@@ -23,8 +27,19 @@ import {
   SelectValue,
 } from "@project-aqua/ui/components/select";
 import { Spinner } from "@project-aqua/ui/components/spinner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@project-aqua/ui/components/tooltip";
 import { cn } from "@project-aqua/ui/lib/utils";
-import { Minus, Plus, Search } from "lucide-react";
+import {
+  AlertTriangleIcon,
+  Minus,
+  Plus,
+  Search,
+  SquareCheckBig,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
@@ -55,6 +70,7 @@ type EventRow = {
   gender: string;
   ageGroup: string | null;
   eventKey: string;
+  qualifyingTimeMs: number | null;
 };
 
 type EntryRow = {
@@ -147,8 +163,113 @@ function seedDisplay(ms: number | null, course: string) {
   return `${formatTime(ms)}${course.charAt(0)}`;
 }
 
+function qtDisplay(ms: number | null | undefined) {
+  if (ms == null || ms <= 0) return null;
+  return formatTime(ms);
+}
+
 function groupLabel(row: RosterRow) {
   return row.groupName ?? row.practiceGroup ?? "No group";
+}
+
+function entryLimitAlert(args: {
+  limits: MeetEntryLimits | null | undefined;
+  entryCounts: { individual: number; relay: number };
+  limitsSummary: string | null;
+  availableEvents: EventRow[];
+}): { title: string; description: string } | null {
+  const { limits, entryCounts, limitsSummary, availableEvents } = args;
+  if (!limits || availableEvents.length === 0) return null;
+
+  const individualCheck = canAddMeetEntry(limits, entryCounts, false);
+  const relayCheck = canAddMeetEntry(limits, entryCounts, true);
+  if (individualCheck.ok && relayCheck.ok) return null;
+
+  const hasIndividualAvailable = availableEvents.some(
+    (event) => !isRelayStroke(event.stroke, event.eventKey),
+  );
+  const hasRelayAvailable = availableEvents.some((event) =>
+    isRelayStroke(event.stroke, event.eventKey),
+  );
+
+  const blockingIndividual = !individualCheck.ok && hasIndividualAvailable;
+  const blockingRelay = !relayCheck.ok && hasRelayAvailable;
+  if (!blockingIndividual && !blockingRelay) return null;
+
+  const current = `${entryCounts.individual} individual + ${entryCounts.relay} relay`;
+  const limitLine = limitsSummary ? ` Meet limit: ${limitsSummary}.` : "";
+
+  if (blockingIndividual && blockingRelay) {
+    const reason = !individualCheck.ok
+      ? individualCheck.reason
+      : !relayCheck.ok
+        ? relayCheck.reason
+        : "Entry limits exceeded.";
+    return {
+      title: "Entry limit reached",
+      description: `${reason} This swimmer has ${current}.${limitLine} Remove an entry to add another event.`,
+    };
+  }
+
+  if (blockingIndividual) {
+    return {
+      title: "Individual entry limit reached",
+      description: `${!individualCheck.ok ? individualCheck.reason : ""} This swimmer has ${current}.${limitLine}${
+        hasRelayAvailable && relayCheck.ok
+          ? " Relay events can still be added."
+          : " Remove an individual entry to add another."
+      }`,
+    };
+  }
+
+  return {
+    title: "Relay entry limit reached",
+    description: `${!relayCheck.ok ? relayCheck.reason : ""} This swimmer has ${current}.${limitLine}${
+      hasIndividualAvailable && individualCheck.ok
+        ? " Individual events can still be added."
+        : " Remove a relay entry to add another."
+    }`,
+  };
+}
+
+function AddEntryButton({
+  disabled,
+  limitReason,
+  pending,
+  onClick,
+}: {
+  disabled: boolean;
+  limitReason?: string;
+  pending: boolean;
+  onClick: () => void;
+}) {
+  const button = (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      disabled={disabled}
+      aria-label={
+        limitReason ? `Add entry unavailable: ${limitReason}` : "Add entry"
+      }
+      onClick={onClick}
+    >
+      {pending ? <Spinner /> : <Plus className="size-4" />}
+    </Button>
+  );
+
+  if (!limitReason) return button;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={<span className="inline-flex cursor-not-allowed" />}
+      >
+        {button}
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs">{limitReason}</TooltipContent>
+    </Tooltip>
+  );
 }
 
 export function RegistrationBoard({
@@ -180,9 +301,6 @@ export function RegistrationBoard({
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<RosterFilter>("committed");
   const [groupFilter, setGroupFilter] = useState<string>("all");
-  const [selectMode, setSelectMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
-  const [bulkStatus, setBulkStatus] = useState<CommitmentStatus>("committed");
   const [membershipId, setMembershipId] = useState(
     roster[0]?.membershipId ?? "",
   );
@@ -281,6 +399,17 @@ export function RegistrationBoard({
     );
   }, [events, enteredEventIds, selectedSwimmer]);
 
+  const limitAlert = useMemo(
+    () =>
+      entryLimitAlert({
+        limits,
+        entryCounts,
+        limitsSummary,
+        availableEvents,
+      }),
+    [limits, entryCounts, limitsSummary, availableEvents],
+  );
+
   function bestSeedFor(eventKey: string) {
     if (!membershipId) return null;
     return (
@@ -326,24 +455,28 @@ export function RegistrationBoard({
     router.refresh();
   }
 
-  function toggleSelect(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
+  const uncommittedCount = useMemo(() => {
+    return roster.filter(
+      (row) =>
+        (commitmentByMembership.get(row.membershipId) ?? "pending") !==
+        "committed",
+    ).length;
+  }, [roster, commitmentByMembership]);
 
-  function applyBulkCommitment() {
-    const ids = [...selectedIds];
+  function commitAllSwimmers() {
+    const ids = roster
+      .filter(
+        (row) =>
+          (commitmentByMembership.get(row.membershipId) ?? "pending") !==
+          "committed",
+      )
+      .map((row) => row.membershipId);
     if (ids.length === 0) return;
-    setPendingAction("bulk");
+    setPendingAction("commit-all");
     startTransition(async () => {
       try {
-        await setMeetCommitmentsBulkAction(teamId, meetId, ids, bulkStatus);
-        setSelectedIds(new Set());
-        setSelectMode(false);
+        await setMeetCommitmentsBulkAction(teamId, meetId, ids, "committed");
+        setFilter("committed");
         refresh();
       } finally {
         setPendingAction(null);
@@ -386,9 +519,9 @@ export function RegistrationBoard({
     : null;
 
   return (
-    <div className="flex min-h-112 flex-col gap-4 lg:flex-row lg:items-stretch">
+    <div className="flex min-h-112 min-w-0 w-full flex-col gap-4 lg:flex-row lg:items-stretch">
       {/* Lane board */}
-      <aside className="border-border bg-card flex w-full flex-col overflow-hidden rounded-lg border lg:w-[36%] lg:max-w-md">
+      <aside className="border-border bg-card flex w-full min-w-0 shrink-0 flex-col overflow-hidden rounded-lg border lg:w-[36%] lg:max-w-md">
         <div className="border-border space-y-3 border-b p-3">
           <div className="relative">
             <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2" />
@@ -451,53 +584,37 @@ export function RegistrationBoard({
                 </SelectGroup>
               </SelectContent>
             </Select>
-            <Button
-              type="button"
-              variant={selectMode ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => {
-                setSelectMode((v) => !v);
-                setSelectedIds(new Set());
-              }}
-            >
-              {selectMode ? "Done" : "Select…"}
-            </Button>
-          </div>
-          {selectMode && selectedIds.size > 0 ? (
-            <div className="bg-muted/50 flex flex-wrap items-center gap-2 rounded-md border px-2 py-1.5">
-              <span className="text-sm font-medium">{selectedIds.size}</span>
-              <Select
-                items={COMMITMENT_ITEMS}
-                value={bulkStatus}
-                onValueChange={(v) => {
-                  if (v != null) setBulkStatus(v as CommitmentStatus);
-                }}
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={pending || uncommittedCount === 0}
+                    onClick={commitAllSwimmers}
+                    aria-label={
+                      uncommittedCount === 0
+                        ? "All swimmers already committed"
+                        : `Commit all ${uncommittedCount} uncommitted swimmers`
+                    }
+                  />
+                }
               >
-                <SelectTrigger className="h-8 w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {COMMITMENT_ITEMS.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <Button
-                size="sm"
-                disabled={pending}
-                onClick={applyBulkCommitment}
-              >
-                {pendingAction === "bulk" ? (
+                {pendingAction === "commit-all" ? (
                   <Spinner data-icon="inline-start" />
-                ) : null}
-                Apply
-              </Button>
-            </div>
-          ) : null}
+                ) : (
+                  <SquareCheckBig data-icon="inline-start" />
+                )}
+                Commit all
+              </TooltipTrigger>
+              <TooltipContent>
+                {uncommittedCount === 0
+                  ? "Everyone is already committed"
+                  : `Commit ${uncommittedCount} swimmer${uncommittedCount === 1 ? "" : "s"} who are not yet committed`}
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
 
         <ul className="max-h-[70vh] flex-1 overflow-y-auto">
@@ -515,53 +632,40 @@ export function RegistrationBoard({
 
               return (
                 <li key={row.membershipId} className="border-border border-b">
-                  <div
+                  <button
+                    type="button"
                     className={cn(
-                      "flex items-stretch gap-2 transition-colors",
+                      "flex w-full min-w-0 flex-col gap-0.5 px-3 py-2.5 text-left transition-colors",
                       active && "bg-muted/60",
                     )}
+                    onClick={() => setMembershipId(row.membershipId)}
                   >
-                    {selectMode ? (
-                      <div className="flex items-center pl-3">
-                        <Checkbox
-                          checked={selectedIds.has(row.membershipId)}
-                          onCheckedChange={() => toggleSelect(row.membershipId)}
-                          aria-label={`Select ${row.firstName} ${row.lastName}`}
-                        />
-                      </div>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="flex min-w-0 flex-1 flex-col gap-0.5 px-3 py-2.5 text-left"
-                      onClick={() => setMembershipId(row.membershipId)}
-                    >
-                      <span className="truncate text-sm font-medium">
-                        {row.firstName} {row.lastName}
-                        {rowAge != null ? (
-                          <span className="text-muted-foreground font-normal">
-                            {" "}
-                            · {rowAge}
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="text-muted-foreground flex items-center gap-2 text-xs">
-                        <span
-                          className={cn(
-                            "inline-block size-1.5 rounded-full",
-                            status === "committed" && "bg-emerald-500",
-                            status === "declined" && "bg-destructive",
-                            status === "pending" && "bg-muted-foreground/40",
-                          )}
-                          aria-hidden
-                        />
-                        {commitmentLabel(status)}
-                        <span>·</span>
-                        <span>
-                          {count} {count === 1 ? "event" : "events"}
+                    <span className="truncate text-sm font-medium">
+                      {row.firstName} {row.lastName}
+                      {rowAge != null ? (
+                        <span className="text-muted-foreground font-normal">
+                          {" "}
+                          · {rowAge}
                         </span>
+                      ) : null}
+                    </span>
+                    <span className="text-muted-foreground flex items-center gap-2 text-xs">
+                      <span
+                        className={cn(
+                          "inline-block size-1.5 rounded-full",
+                          status === "committed" && "bg-emerald-500",
+                          status === "declined" && "bg-destructive",
+                          status === "pending" && "bg-muted-foreground/40",
+                        )}
+                        aria-hidden
+                      />
+                      {commitmentLabel(status)}
+                      <span>·</span>
+                      <span>
+                        {count} {count === 1 ? "event" : "events"}
                       </span>
-                    </button>
-                  </div>
+                    </span>
+                  </button>
                 </li>
               );
             })
@@ -644,6 +748,16 @@ export function RegistrationBoard({
             </header>
 
             <div className="flex-1 space-y-6 overflow-y-auto p-4">
+              {limitAlert ? (
+                <Alert className="border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-50">
+                  <AlertTriangleIcon />
+                  <AlertTitle>{limitAlert.title}</AlertTitle>
+                  <AlertDescription className="text-amber-800 dark:text-amber-100/90">
+                    {limitAlert.description}
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+
               <div className="space-y-2">
                 <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                   Entered
@@ -654,47 +768,61 @@ export function RegistrationBoard({
                   </p>
                 ) : (
                   <ul className="divide-border divide-y rounded-md border">
-                    {swimmerEntries.map((entry) => (
-                      <li
-                        key={entry.id}
-                        className="flex items-center gap-3 px-3 py-2.5"
-                      >
-                        <span className="min-w-0 flex-1 truncate text-sm">
-                          {formatEventLine(entry)}
-                        </span>
-                        <span className="font-timing text-sm tabular-nums">
-                          {seedDisplay(entry.seedTimeMs, course)}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          disabled={pending}
-                          aria-label="Remove entry"
-                          onClick={() => {
-                            setPendingAction(`remove:${entry.id}`);
-                            startTransition(async () => {
-                              try {
-                                await deleteMeetEntryAction(
-                                  teamId,
-                                  meetId,
-                                  entry.id,
-                                );
-                                refresh();
-                              } finally {
-                                setPendingAction(null);
-                              }
-                            });
-                          }}
+                    {swimmerEntries.map((entry) => {
+                      const meetEvent = events.find(
+                        (e) => e.id === entry.meetEventId,
+                      );
+                      const qtLabel = qtDisplay(meetEvent?.qualifyingTimeMs);
+                      return (
+                        <li
+                          key={entry.id}
+                          className="flex items-center gap-3 px-3 py-2.5"
                         >
-                          {pendingAction === `remove:${entry.id}` ? (
-                            <Spinner />
-                          ) : (
-                            <Minus className="size-4" />
-                          )}
-                        </Button>
-                      </li>
-                    ))}
+                          <span className="min-w-0 flex-1 truncate text-sm">
+                            {formatEventLine(entry)}
+                          </span>
+                          <span
+                            className="text-muted-foreground font-timing w-16 shrink-0 text-right text-xs tabular-nums"
+                            title={
+                              qtLabel ? `Qualifying time ${qtLabel}` : undefined
+                            }
+                          >
+                            {qtLabel ? `QT ${qtLabel}` : ""}
+                          </span>
+                          <span className="font-timing w-20 shrink-0 text-right text-sm tabular-nums">
+                            {seedDisplay(entry.seedTimeMs, course)}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            disabled={pending}
+                            aria-label="Remove entry"
+                            onClick={() => {
+                              setPendingAction(`remove:${entry.id}`);
+                              startTransition(async () => {
+                                try {
+                                  await deleteMeetEntryAction(
+                                    teamId,
+                                    meetId,
+                                    entry.id,
+                                  );
+                                  refresh();
+                                } finally {
+                                  setPendingAction(null);
+                                }
+                              });
+                            }}
+                          >
+                            {pendingAction === `remove:${entry.id}` ? (
+                              <Spinner />
+                            ) : (
+                              <Minus className="size-4" />
+                            )}
+                          </Button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
@@ -724,6 +852,15 @@ export function RegistrationBoard({
                         entryCounts,
                         candidateIsRelay,
                       );
+                      const resolved = resolveSeed(event.id, event.eventKey);
+                      const seedMs = resolved?.seedTimeMs ?? null;
+                      const qtMs = event.qualifyingTimeMs;
+                      const missesQt =
+                        qtMs != null &&
+                        qtMs > 0 &&
+                        seedMs != null &&
+                        seedMs > 0 &&
+                        seedMs > qtMs;
                       return (
                         <li
                           key={event.id}
@@ -732,8 +869,23 @@ export function RegistrationBoard({
                           <span className="min-w-0 flex-1 truncate text-sm">
                             {formatEventLine(event)}
                           </span>
+                          <span
+                            className="text-muted-foreground font-timing w-16 shrink-0 text-right text-xs tabular-nums"
+                            title={
+                              qtMs != null && qtMs > 0
+                                ? `Qualifying time ${formatTime(qtMs)}`
+                                : undefined
+                            }
+                          >
+                            {qtMs != null && qtMs > 0
+                              ? `QT ${formatTime(qtMs)}`
+                              : ""}
+                          </span>
                           <Input
-                            className="font-timing h-8 w-24 text-sm tabular-nums"
+                            className={cn(
+                              "font-timing h-8 w-24 text-sm tabular-nums",
+                              missesQt && "border-amber-500/80",
+                            )}
                             placeholder="NT"
                             value={seedInputValue(event.id, event.eventKey)}
                             onChange={(e) =>
@@ -743,6 +895,7 @@ export function RegistrationBoard({
                               }))
                             }
                             aria-label={`Seed time for ${formatEventName(event.distance, event.stroke)}`}
+                            aria-invalid={missesQt || undefined}
                           />
                           {best != null &&
                           seedDrafts[event.id] === undefined ? (
@@ -750,25 +903,36 @@ export function RegistrationBoard({
                               best
                             </span>
                           ) : null}
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
+                          {missesQt ? (
+                            <Tooltip>
+                              <TooltipTrigger
+                                render={
+                                  <span className="text-amber-700 dark:text-amber-400 inline-flex items-center gap-1 text-xs" />
+                                }
+                                aria-label="Seed slower than qualifying time"
+                              >
+                                <AlertTriangleIcon className="size-3.5 shrink-0" />
+                                <span className="sr-only sm:not-sr-only">
+                                  Slow vs QT
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                Seed {formatTime(seedMs!)} is slower than the
+                                meet QT {formatTime(qtMs!)}. Edit the seed if
+                                you have a faster practice or time-trial time.
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : null}
+                          <AddEntryButton
                             disabled={
                               pending || !membershipId || !limitCheck.ok
                             }
-                            title={
+                            limitReason={
                               !limitCheck.ok ? limitCheck.reason : undefined
                             }
-                            aria-label="Add entry"
+                            pending={pendingAction === `add:${event.id}`}
                             onClick={() => addEntry(event)}
-                          >
-                            {pendingAction === `add:${event.id}` ? (
-                              <Spinner />
-                            ) : (
-                              <Plus className="size-4" />
-                            )}
-                          </Button>
+                          />
                         </li>
                       );
                     })}

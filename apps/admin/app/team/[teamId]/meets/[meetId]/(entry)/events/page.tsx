@@ -1,4 +1,5 @@
 import { formatEventName } from "@project-aqua/swim-core/events";
+import { formatTime } from "@project-aqua/swim-core/times";
 import {
   Card,
   CardContent,
@@ -68,6 +69,7 @@ export default async function MeetEventsPage({
                 <TableHead>Event</TableHead>
                 <TableHead>Gender</TableHead>
                 <TableHead>Age group</TableHead>
+                <TableHead className="text-right">Qualifying time</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -79,6 +81,12 @@ export default async function MeetEventsPage({
                   </TableCell>
                   <TableCell>{formatGenderLabel(event.gender)}</TableCell>
                   <TableCell>{event.ageGroup ?? "—"}</TableCell>
+                  <TableCell className="font-timing text-right tabular-nums">
+                    {event.qualifyingTimeMs != null &&
+                    event.qualifyingTimeMs > 0
+                      ? formatTime(event.qualifyingTimeMs)
+                      : "—"}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

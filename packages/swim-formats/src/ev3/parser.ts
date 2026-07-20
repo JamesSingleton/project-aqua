@@ -6,6 +6,7 @@ import {
   type RelayStroke,
   type Stroke,
 } from "@project-aqua/swim-core/events";
+import { parseTime } from "@project-aqua/swim-core/times";
 import type { ParsedEvent, ParsedMeet } from "../types";
 
 const STROKE_CODES: Record<string, string> = {
@@ -26,8 +27,18 @@ const STROKE_CODES: Record<string, string> = {
   IM: "im",
 };
 
+/** Hy-Tek dive stroke codes. Not mapped to swim strokes; skipped until dive support ships. */
+const DIVE_STROKE_CODES = new Set(["6", "F", "DV", "DIVE"]);
+
+const HYTEK_TIME_RE = /^\d{1,2}:\d{2}\.\d{1,2}$|^\d{1,2}\.\d{1,2}$/;
+
 function mapStroke(code: string): string {
   return STROKE_CODES[code.toUpperCase()] ?? STROKE_CODES[code] ?? "free";
+}
+
+function isDiveStrokeCode(code: string | undefined): boolean {
+  const normalized = (code ?? "").trim().toUpperCase();
+  return DIVE_STROKE_CODES.has(normalized);
 }
 
 /** Map Hy-Tek gender codes (G/F/B/M/X) → EventGender. eventKey still uses m/f/x. */
@@ -101,6 +112,19 @@ function eventKeyFor(
   );
 }
 
+/** First non-empty Hy-Tek time among candidates → milliseconds. */
+function firstQualifyingTimeMs(
+  ...candidates: Array<string | undefined>
+): number | undefined {
+  for (const raw of candidates) {
+    const trimmed = raw?.trim();
+    if (!trimmed || !HYTEK_TIME_RE.test(trimmed)) continue;
+    const ms = parseTime(trimmed);
+    if (ms > 0) return ms;
+  }
+  return undefined;
+}
+
 /** Parse Hy-Tek Meet Manager EV3 event template files. */
 export function parseEv3(content: string): ParsedMeet {
   const lines = content.split(/\r?\n/).filter((l) => l.trim());
@@ -152,11 +176,19 @@ export function parseEv3(content: string): ParsedMeet {
     if (!Number.isFinite(eventNumber)) continue;
 
     // EV3: [2]=round F/P, [4]=I/R, [5]=gender G/B, [6-7]=age, [8]=distance, [9]=stroke
+    // Dive events use stroke F (and often distance 0); skip until dive support lands.
+    if (isDiveStrokeCode(parts[9])) {
+      meet.skippedDiveEvents = (meet.skippedDiveEvents ?? 0) + 1;
+      continue;
+    }
+
     const gender = mapGender(parts[5] ?? "B");
     const isRelay = (parts[4] ?? "I").toUpperCase() === "R";
     const distance = Number.parseInt(parts[8] ?? "0", 10) || 0;
     const stroke = mapRelayStroke(mapStroke(parts[9] ?? "1"), isRelay);
     const ageGroup = formatAgeGroup(parts[6], parts[7]);
+    // Primary entry QT slots [19]/[20] (match HYV [8]/[9]).
+    const qualifyingTimeMs = firstQualifyingTimeMs(parts[19], parts[20]);
 
     const event: ParsedEvent = {
       eventNumber,
@@ -165,6 +197,7 @@ export function parseEv3(content: string): ParsedMeet {
       gender,
       ageGroup,
       eventKey: eventKeyFor(distance, stroke, meet.course, gender),
+      ...(qualifyingTimeMs != null ? { qualifyingTimeMs } : {}),
     };
     meet.events.push(event);
   }
@@ -220,6 +253,12 @@ export function parseHyv(content: string): ParsedMeet {
             : ("finals" as const);
 
     // HYV: [1]=round, [2]=gender F/M, [3]=I/R, [4-5]=age, [6]=distance, [7]=stroke
+    // Dive events use stroke code 6; skip until dive support lands.
+    if (isDiveStrokeCode(parts[7])) {
+      meet.skippedDiveEvents = (meet.skippedDiveEvents ?? 0) + 1;
+      continue;
+    }
+
     const gender = mapGender(parts[2] ?? "M");
     const isRelay = (parts[3] ?? "I").toUpperCase() === "R";
     const distance = Number.parseInt(parts[6] ?? "0", 10) || 0;
@@ -231,6 +270,8 @@ export function parseHyv(content: string): ParsedMeet {
       ageLow === 0 &&
       (ageHigh === 0 || ageHigh === 109);
     const ageGroup = openAge ? undefined : formatAgeGroup(parts[4], parts[5]);
+    // Primary QT: first non-empty of [8]/[9].
+    const qualifyingTimeMs = firstQualifyingTimeMs(parts[8], parts[9]);
 
     meet.events.push({
       eventNumber,
@@ -240,6 +281,7 @@ export function parseHyv(content: string): ParsedMeet {
       ageGroup,
       eventKey: eventKeyFor(distance, stroke, meet.course, gender),
       roundType,
+      ...(qualifyingTimeMs != null ? { qualifyingTimeMs } : {}),
     });
   }
 

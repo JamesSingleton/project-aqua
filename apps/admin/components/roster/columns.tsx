@@ -33,8 +33,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { removeSwimmerAction } from "@/app/team/[teamId]/roster/actions";
+import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import type { Athlete } from "@/types";
-import { DataTableColumnHeader } from "../data-table-column-header";
+import type { Option } from "@/types/data-table";
 import { SwimmerQuickView } from "./swimmer-quick-view";
 
 function statusVariant(status: string) {
@@ -166,29 +167,25 @@ function RowActions({ teamId, athlete }: { teamId: string; athlete: Athlete }) {
   );
 }
 
-function nameSearchFilter(
-  row: { original: Athlete },
-  _columnId: string,
-  value: unknown,
-) {
-  const q = String(value).toLowerCase().trim();
-  if (!q) return true;
-  const haystack = [
-    row.original.firstName,
-    row.original.lastName,
-    row.original.preferredName,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-  return haystack.includes(q);
-}
+export type RosterColumnOptions = {
+  showClassYear?: boolean;
+  statusOptions?: Option[];
+  genderOptions?: Option[];
+  groupOptions?: Option[];
+  classYearOptions?: Option[];
+};
 
 export function columns(
   teamId: string,
-  options: { showClassYear?: boolean } = {},
+  options: RosterColumnOptions = {},
 ): ColumnDef<Athlete>[] {
-  const { showClassYear = false } = options;
+  const {
+    showClassYear = false,
+    statusOptions = [],
+    genderOptions = [],
+    groupOptions = [],
+    classYearOptions = [],
+  } = options;
 
   return [
     {
@@ -213,9 +210,16 @@ export function columns(
       ),
       enableSorting: false,
       enableHiding: false,
+      size: 40,
     },
     {
+      id: "firstName",
       accessorKey: "firstName",
+      meta: {
+        label: "Name",
+        placeholder: "Filter names…",
+        variant: "text",
+      },
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="First Name" />
       ),
@@ -224,11 +228,13 @@ export function columns(
           {row.original.preferredName || row.original.firstName}
         </span>
       ),
-      filterFn: nameSearchFilter,
+      enableColumnFilter: true,
       enableHiding: false,
     },
     {
+      id: "lastName",
       accessorKey: "lastName",
+      meta: { label: "Last Name" },
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Last Name" />
       ),
@@ -238,8 +244,13 @@ export function columns(
       enableHiding: false,
     },
     {
+      id: "gender",
       accessorKey: "gender",
-      meta: { label: "Gender" },
+      meta: {
+        label: "Gender",
+        variant: "multiSelect",
+        options: genderOptions,
+      },
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Gender" />
       ),
@@ -248,8 +259,10 @@ export function columns(
           {row.original.gender === "Male" ? "M" : "F"}
         </span>
       ),
+      enableColumnFilter: true,
     },
     {
+      id: "dateOfBirth",
       accessorKey: "dateOfBirth",
       meta: { label: "Birthday" },
       header: ({ column }) => (
@@ -265,17 +278,24 @@ export function columns(
           : "—",
     },
     {
+      id: "age",
       accessorKey: "age",
       meta: { label: "Age" },
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Age" />
       ),
+      enableSorting: false,
     },
     ...(showClassYear
       ? [
           {
+            id: "classYear",
             accessorKey: "classYear",
-            meta: { label: "Class" },
+            meta: {
+              label: "Class",
+              variant: "multiSelect",
+              options: classYearOptions,
+            },
             header: ({ column }) => (
               <DataTableColumnHeader column={column} title="Class" />
             ),
@@ -285,18 +305,27 @@ export function columns(
               const label = CLASS_YEAR_LABELS[year as ClassYear];
               return label ? `${year} · ${label}` : year;
             },
+            enableColumnFilter: true,
           } satisfies ColumnDef<Athlete>,
         ]
       : []),
     {
+      id: "groupId",
       accessorKey: "trainingGroup",
-      meta: { label: "Training Group" },
+      meta: {
+        label: "Group",
+        variant: "multiSelect",
+        options: groupOptions,
+      },
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Training Group" />
       ),
       cell: ({ row }) => row.original.trainingGroup || "—",
+      enableColumnFilter: true,
+      enableSorting: true,
     },
     {
+      id: "usaId",
       accessorKey: "usaId",
       meta: { label: "USA ID" },
       header: ({ column }) => (
@@ -307,8 +336,13 @@ export function columns(
       ),
     },
     {
+      id: "status",
       accessorKey: "status",
-      meta: { label: "Status" },
+      meta: {
+        label: "Status",
+        variant: "multiSelect",
+        options: statusOptions,
+      },
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" />
       ),
@@ -320,6 +354,7 @@ export function columns(
           {row.original.status}
         </Badge>
       ),
+      enableColumnFilter: true,
     },
     {
       id: "actions",
@@ -327,6 +362,7 @@ export function columns(
       cell: ({ row }) => <RowActions teamId={teamId} athlete={row.original} />,
       enableSorting: false,
       enableHiding: false,
+      size: 120,
     },
   ];
 }

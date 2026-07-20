@@ -123,4 +123,80 @@ describe("parseHyv", () => {
     assert.match(meet.location ?? "", /Kerry Croswhite/);
     assert.equal(e1?.roundType, "finals");
   });
+
+  it("parses AZSI primary qualifying times", () => {
+    const content = readFileSync(join(fixturesDir, "azsi-events.hyv"), "utf8");
+    const meet = parseHyv(content);
+    const e1 = meet.events.find((e) => e.eventNumber === 1);
+    // 4:58.19 → 298190 ms
+    assert.equal(e1?.qualifyingTimeMs, 4 * 60_000 + 58_190);
+  });
+
+  it("parses Charger invitational QT from second HYV slot", () => {
+    const content = readFileSync(
+      join(fixturesDir, "charger-events.hyv"),
+      "utf8",
+    );
+    const meet = parseHyv(content);
+    const e13 = byEventNumber(meet.events, 13);
+    const e7 = byEventNumber(meet.events, 7);
+    assert.equal(e13?.qualifyingTimeMs, 6 * 60_000 + 30_000);
+    assert.equal(e7?.qualifyingTimeMs, undefined);
+  });
+
+  it("skips diving stroke code 6", () => {
+    const content = readFileSync(
+      join(fixturesDir, "charger-events.hyv"),
+      "utf8",
+    );
+    const meet = parseHyv(content);
+    assert.equal(meet.skippedDiveEvents, 2);
+    assert.equal(byEventNumber(meet.events, 23), undefined);
+    assert.equal(byEventNumber(meet.events, 24), undefined);
+  });
+});
+
+describe("parseEv3 qualifying times", () => {
+  it("parses AZSI primary QT from EV3 slots [19]/[20]", () => {
+    const content = readFileSync(join(fixturesDir, "azsi-events.ev3"), "utf8");
+    const meet = parseEv3(content);
+    const e1 = meet.events.find((e) => e.eventNumber === 1);
+    assert.equal(e1?.qualifyingTimeMs, 4 * 60_000 + 58_190);
+  });
+
+  it("parses Charger 500 free QT and leaves open events empty", () => {
+    const content = readFileSync(
+      join(fixturesDir, "charger-events.ev3"),
+      "utf8",
+    );
+    const meet = parseEv3(content);
+    const e13 = byEventNumber(meet.events, 13);
+    const e14 = byEventNumber(meet.events, 14);
+    const e7 = byEventNumber(meet.events, 7);
+    assert.equal(e13?.qualifyingTimeMs, 6 * 60_000 + 30_000);
+    assert.equal(e14?.qualifyingTimeMs, 6 * 60_000 + 10_000);
+    assert.equal(e7?.qualifyingTimeMs, undefined);
+  });
+
+  it("skips diving events instead of mapping them to freestyle", () => {
+    const content = readFileSync(
+      join(fixturesDir, "charger-events.ev3"),
+      "utf8",
+    );
+    const meet = parseEv3(content);
+    assert.equal(meet.skippedDiveEvents, 2);
+    assert.equal(meet.events.length, 22);
+    assert.equal(byEventNumber(meet.events, 23), undefined);
+    assert.equal(byEventNumber(meet.events, 24), undefined);
+  });
+
+  it("leaves Sonoran invitational events without QTs", () => {
+    const content = readFileSync(
+      join(fixturesDir, "sonoran-events.ev3"),
+      "utf8",
+    );
+    const meet = parseEv3(content);
+    assert.ok(meet.events.every((e) => e.qualifyingTimeMs == null));
+    assert.equal(meet.skippedDiveEvents, undefined);
+  });
 });

@@ -7,5 +7,5 @@ Copied from `Project Aqua Test Data` for parser/integration testing.
 | `AZAZSL_ext7716201449890453768.sd3` | TeamUnify SDIF meet entries |
 | `roster-swimmers.cl2` / `roster-only.hy3` | Hy-Tek roster exports |
 | `mari-entries.cl2` / `mari-entries.hy3` | Team Manager meet entries |
-| `sonoran-events.ev3` / `azsi-events.ev3` / `azsi-events.hyv` | Meet events templates |
+| `sonoran-events.ev3` / `azsi-events.ev3` / `azsi-events.hyv` / `charger-events.ev3` / `charger-events.hyv` | Meet events templates (incl. QTs) |
 | `azsi-results.cl2` / `azsi-results.hy3` | Meet Manager results |

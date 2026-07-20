@@ -18,6 +18,7 @@ interface EmergencyContact extends BaseContact {
 
 export interface Athlete {
   id: string;
+  membershipId: string;
   firstName: string;
   lastName: string;
   preferredName?: string | null;
@@ -29,6 +30,7 @@ export interface Athlete {
   trainingGroup: string;
   trainingGroups: string[];
   practiceGroup: string;
+  groupId?: string | null;
   classYear?: string | null;
   usaId?: string | null;
   status: string;

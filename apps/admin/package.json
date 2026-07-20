@@ -34,6 +34,7 @@
     "lucide-react": "catalog:",
     "next": "catalog:",
     "next-themes": "catalog:",
+    "nuqs": "^2.9.0",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-hook-form": "^7.81.0",
