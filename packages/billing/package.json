@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./stripe": "./src/stripe.ts",
+    "./polar": "./src/polar.ts",
     "./features": "./src/features.ts",
     "./webhooks": "./src/webhooks.ts"
   },
@@ -15,11 +16,12 @@
     "lint:fix": "biome check --write ."
   },
   "dependencies": {
+    "@polar-sh/sdk": "^0.48.1",
     "@project-aqua/db": "workspace:*",
     "@project-aqua/emails": "workspace:*",
     "@project-aqua/swim-core": "workspace:*",
     "drizzle-orm": "catalog:",
-    "stripe": "catalog:"
+    "stripe": "^22.3.1"
   },
   "devDependencies": {
     "@project-aqua/typescript-config": "workspace:*",

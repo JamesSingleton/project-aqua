@@ -1,11 +1,14 @@
 import { getSession } from "@project-aqua/auth/session";
+import { requireSwimmerTeamAccess } from "@project-aqua/db/authz";
 import {
-  getSwimmerAffiliations,
+  getSwimmerBestTimes,
+  getSwimmerMeetHistory,
+} from "@project-aqua/db/queries/progression";
+import {
   getClubRegistrationForMembership,
+  getSwimmerAffiliations,
   getSwimmerById,
 } from "@project-aqua/db/queries/roster";
-import { getSwimmerBestTimes, getSwimmerMeetHistory } from "@project-aqua/db/queries/progression";
-import { requireSwimmerTeamAccess } from "@project-aqua/db/authz";
 import { isMinorSwimmer } from "@project-aqua/swim-core/age";
 import { formatTime } from "@project-aqua/swim-core/times";
 import { Badge } from "@project-aqua/ui/components/badge";
@@ -24,8 +27,21 @@ import {
   TableHeader,
   TableRow,
 } from "@project-aqua/ui/components/table";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SwimmerProfileTabs } from "./swimmer-profile-tabs";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string; swimmerId: string }>;
+}): Promise<Metadata> {
+  const { teamId, swimmerId } = await params;
+  const swimmer = await getSwimmerById(swimmerId, teamId);
+  const displayName =
+    swimmer?.preferredName ?? `${swimmer?.firstName} ${swimmer?.lastName}`;
+  return { title: displayName };
+}
 
 export default async function SwimmerProfilePage({
   params,
@@ -37,13 +53,13 @@ export default async function SwimmerProfilePage({
   await requireSwimmerTeamAccess(session?.user?.id, swimmerId, teamId);
 
   const [swimmer, bestTimes, meetHistory, affiliations] = await Promise.all([
-      getSwimmerById(swimmerId, teamId),
-      getSwimmerBestTimes(swimmerId),
-      getSwimmerMeetHistory(swimmerId),
-      session?.user?.id
-        ? getSwimmerAffiliations(swimmerId, session.user.id)
-        : Promise.resolve([]),
-    ]);
+    getSwimmerById(swimmerId, teamId),
+    getSwimmerBestTimes(swimmerId),
+    getSwimmerMeetHistory(swimmerId),
+    session?.user?.id
+      ? getSwimmerAffiliations(swimmerId, session.user.id)
+      : Promise.resolve([]),
+  ]);
 
   if (!swimmer) notFound();
 
@@ -66,10 +82,8 @@ export default async function SwimmerProfilePage({
         </div>
         <p className="text-muted-foreground">
           {swimmer.gender === "male" ? "Male" : "Female"} ·{" "}
-          {swimmer.practiceGroup ?? "No practice group"}
-          {swimmer.governingBodyId && (
-            <> · USA ID {swimmer.governingBodyId}</>
-          )}
+          {swimmer.groupName ?? swimmer.practiceGroup ?? "No practice group"}
+          {swimmer.governingBodyId && <> · USA ID {swimmer.governingBodyId}</>}
         </p>
       </div>
 
@@ -103,7 +117,7 @@ export default async function SwimmerProfilePage({
               <TableBody>
                 {bestTimes.map((bt) => (
                   <TableRow key={bt.id}>
-                    <TableCell>{bt.eventKey}</TableCell>
+                    <TableCell>{bt.eventLabel ?? bt.eventKey}</TableCell>
                     <TableCell>{bt.course}</TableCell>
                     <TableCell className="font-mono">
                       {formatTime(bt.timeMs)}

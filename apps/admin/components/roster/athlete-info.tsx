@@ -68,22 +68,30 @@ export default function AthleteInfo({ athlete }: AthleteInfoProps) {
         </div>
         <div className="ml-auto flex items-center gap-1">
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="h-8 w-8" size="icon" variant="outline">
-                <MoreVerticalIcon className="h-3.5 w-3.5" />
-                <span className="sr-only">More</span>
-              </Button>
+            <DropdownMenuTrigger
+              render={
+                <Button className="h-8 w-8" size="icon" variant="outline" />
+              }
+            >
+              <MoreVerticalIcon className="h-3.5 w-3.5" />
+              <span className="sr-only">More</span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link href={`/team/${teamId}/swimmers/${athlete.id}`}>
-                  View
-                </Link>
+              <DropdownMenuItem
+                nativeButton={false}
+                render={
+                  <Link href={`/team/${teamId}/swimmers/${athlete.id}`} />
+                }
+              >
+                View
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={`/team/${teamId}/swimmers/${athlete.id}/edit`}>
-                  Edit
-                </Link>
+              <DropdownMenuItem
+                nativeButton={false}
+                render={
+                  <Link href={`/team/${teamId}/swimmers/${athlete.id}/edit`} />
+                }
+              >
+                Edit
               </DropdownMenuItem>
               <DropdownMenuItem>Export</DropdownMenuItem>
               <DropdownMenuSeparator />

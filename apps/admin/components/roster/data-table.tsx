@@ -1,13 +1,7 @@
 "use client";
+
+import { Button } from "@project-aqua/ui/components/button";
 import { Input } from "@project-aqua/ui/components/input";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@project-aqua/ui/components/sheet";
 import {
   Table,
   TableBody,
@@ -28,23 +22,54 @@ import {
   useReactTable,
   type VisibilityState,
 } from "@tanstack/react-table";
-import { useState } from "react";
+import { Download } from "lucide-react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { DataTablePagination } from "../data-table-pagination";
 import { DataTableViewOptions } from "../data-table-view-options";
+
+export type RosterViewState = {
+  columnVisibility: VisibilityState;
+  sorting: SortingState;
+};
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  toolbarEnd?: ReactNode;
+  initialColumnVisibility?: VisibilityState;
+  initialSorting?: SortingState;
+  onViewChange?: (view: RosterViewState) => void;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  toolbarEnd,
+  initialColumnVisibility = {},
+  initialSorting = [],
+  onViewChange,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>(initialSorting);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
+    initialColumnVisibility,
+  );
   const [rowSelection, setRowSelection] = useState({});
+  const skipPersist = useRef(true);
+  const onViewChangeRef = useRef(onViewChange);
+  onViewChangeRef.current = onViewChange;
+
+  useEffect(() => {
+    if (!onViewChangeRef.current) return;
+    if (skipPersist.current) {
+      skipPersist.current = false;
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      onViewChangeRef.current?.({ columnVisibility, sorting });
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [columnVisibility, sorting]);
 
   const table = useReactTable({
     data,
@@ -66,17 +91,22 @@ export function DataTable<TData, TValue>({
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center py-4">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-2 py-4">
         <Input
           placeholder="Filter names..."
-          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+          value={
+            (table.getColumn("firstName")?.getFilterValue() as string) ?? ""
+          }
           onChange={(event) =>
-            table.getColumn("name")?.setFilterValue(event.target.value)
+            table.getColumn("firstName")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
-        <DataTableViewOptions table={table} />
+        <div className="ml-auto flex items-center gap-2">
+          {toolbarEnd}
+          <DataTableViewOptions table={table} />
+        </div>
       </div>
       <div className="rounded-md border">
         <Table>
@@ -130,5 +160,26 @@ export function DataTable<TData, TValue>({
       </div>
       <DataTablePagination table={table} />
     </div>
+  );
+}
+
+export function RosterExportButton({
+  onExport,
+  loading,
+}: {
+  onExport: () => void;
+  loading?: boolean;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      disabled={loading}
+      onClick={onExport}
+    >
+      <Download data-icon="inline-start" />
+      {loading ? "Exporting…" : "Export roster"}
+    </Button>
   );
 }

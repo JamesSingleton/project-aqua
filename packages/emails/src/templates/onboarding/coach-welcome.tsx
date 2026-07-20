@@ -1,5 +1,5 @@
-import { Text } from "@react-email/components";
-import { EmailButton, EmailLayout, textStyle } from "../_layout.js";
+import { Text } from "react-email";
+import { EmailButton, EmailLayout, textStyle } from "../_layout";
 
 export interface CoachWelcomeProps {
   name: string;

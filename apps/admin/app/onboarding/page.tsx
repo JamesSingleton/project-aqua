@@ -1,117 +1,610 @@
 "use client";
 
-import { organization } from "@project-aqua/auth/client";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  authClient,
+  organization,
+  useSession,
+} from "@project-aqua/auth/client";
+import { PLAN_LIMITS, type PlanTier } from "@project-aqua/swim-core/plans";
+import { TEAM_TYPES } from "@project-aqua/swim-core/team-types";
+import { Avatar, AvatarFallback } from "@project-aqua/ui/components/avatar";
 import { Button } from "@project-aqua/ui/components/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@project-aqua/ui/components/card";
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@project-aqua/ui/components/field";
 import { Input } from "@project-aqua/ui/components/input";
-import { Label } from "@project-aqua/ui/components/label";
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from "@project-aqua/ui/components/radio-group";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@project-aqua/ui/components/select";
+import { cn } from "@project-aqua/ui/lib/utils";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Building2,
+  ChevronRight,
+  CreditCard,
+  UserRound,
+  Waves,
+} from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { uploadTeamLogoAction } from "@/app/team/[teamId]/settings/actions";
+import {
+  BILLING_STEP_FIELDS,
+  COACH_STEP_FIELDS,
+  type OnboardingFormValues,
+  onboardingFormSchema,
+  TEAM_STEP_FIELDS,
+} from "@/schemas";
+import { updateOnboardingCoachAction } from "./actions";
+import { OnboardingIllustration } from "./onboarding-illustration";
 
-const TEAM_TYPES = [
-  { value: "club", label: "Club" },
-  { value: "high_school", label: "High School" },
-  { value: "college", label: "College" },
-  { value: "national", label: "National" },
+const LOGO_ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/svg+xml";
+
+type StepId = "team" | "coach" | "billing";
+
+const STEPS = [
+  {
+    id: "team" as const,
+    label: "Team",
+    description: "Name, type & logo",
+    icon: Building2,
+    fields: TEAM_STEP_FIELDS,
+  },
+  {
+    id: "coach" as const,
+    label: "Coach",
+    description: "Your profile",
+    icon: UserRound,
+    fields: COACH_STEP_FIELDS,
+  },
+  {
+    id: "billing" as const,
+    label: "Billing",
+    description: "Choose a plan",
+    icon: CreditCard,
+    fields: BILLING_STEP_FIELDS,
+  },
 ] as const;
+
+const PLAN_OPTIONS: {
+  value: PlanTier;
+  price: string;
+  blurb: string;
+}[] = [
+  {
+    value: "free",
+    price: "$0/month",
+    blurb: `Up to ${PLAN_LIMITS.free.maxSwimmers} swimmers · ${PLAN_LIMITS.free.maxCoaches} coach · ${PLAN_LIMITS.free.aiGenerationsIncluded} AI gens/mo`,
+  },
+  {
+    value: "pro",
+    price: "Pro",
+    blurb: `Up to ${PLAN_LIMITS.pro.maxSwimmers} swimmers · ${PLAN_LIMITS.pro.maxCoaches} coaches · ${PLAN_LIMITS.pro.aiGenerationsIncluded} AI gens/mo + overage`,
+  },
+  {
+    value: "enterprise",
+    price: "Enterprise",
+    blurb: "Unlimited swimmers & coaches · SWIMS sync · highest AI limits",
+  },
+];
+
+function slugify(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function BrandMark() {
+  return (
+    <Link href="/sign-in" className="flex items-center gap-3">
+      <div className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-full">
+        <Waves className="size-4" />
+      </div>
+      <span className="text-xl font-bold">Project Aqua</span>
+    </Link>
+  );
+}
+
+function Stepper({
+  stepId,
+  onStepClick,
+}: {
+  stepId: StepId;
+  onStepClick: (id: StepId) => void;
+}) {
+  const currentIndex = STEPS.findIndex((s) => s.id === stepId);
+
+  return (
+    <nav aria-label="Onboarding steps">
+      <ol className="flex items-center justify-between gap-y-4 max-md:flex-col max-md:items-start xl:gap-x-8">
+        {STEPS.flatMap((item, index) => {
+          const Icon = item.icon;
+          const active = stepId === item.id;
+          const done = index < currentIndex;
+          const nodes = [];
+          if (index > 0) {
+            nodes.push(
+              <li key={`sep-${item.id}`} className="max-md:hidden" aria-hidden>
+                <ChevronRight className="text-foreground size-4" />
+              </li>,
+            );
+          }
+          nodes.push(
+            <li key={item.id}>
+              <button
+                type="button"
+                onClick={() => onStepClick(item.id)}
+                className="flex h-auto shrink-0 cursor-pointer items-center gap-2 rounded-md bg-transparent p-0"
+              >
+                <Avatar
+                  className={cn(
+                    "size-9 after:border-none",
+                    active || done
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-transparent text-foreground",
+                  )}
+                >
+                  <AvatarFallback
+                    className={cn(
+                      "*:[svg]:size-4",
+                      active || done
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-transparent text-foreground",
+                    )}
+                  >
+                    <Icon />
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col items-start text-left">
+                  <span className="text-base font-medium">{item.label}</span>
+                  <span className="text-muted-foreground text-sm">
+                    {item.description}
+                  </span>
+                </div>
+              </button>
+            </li>,
+          );
+          return nodes;
+        })}
+      </ol>
+    </nav>
+  );
+}
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [teamName, setTeamName] = useState("");
-  const [teamType, setTeamType] = useState<string>("club");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { data: session } = useSession();
+  const [stepId, setStepId] = useState<StepId>("team");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState("");
 
-  async function handleCreateTeam(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+  const form = useForm<OnboardingFormValues>({
+    resolver: zodResolver(onboardingFormSchema),
+    defaultValues: {
+      teamName: "",
+      teamType: "club",
+      coachName: "",
+      coachTitle: "",
+      plan: "free",
+    },
+    mode: "onTouched",
+  });
 
-    const slug = teamName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "");
+  const {
+    control,
+    register,
+    handleSubmit,
+    setValue,
+    getValues,
+    watch,
+    trigger,
+    formState: { errors, isSubmitting },
+  } = form;
 
-    const result = await organization.create({
-      name: teamName,
+  const stepIndex = STEPS.findIndex((s) => s.id === stepId);
+  const teamType = watch("teamType");
+  const selectedType = TEAM_TYPES.find((t) => t.value === teamType);
+
+  useEffect(() => {
+    const sessionName = session?.user?.name?.trim();
+    if (sessionName && !getValues("coachName")) {
+      setValue("coachName", sessionName);
+    }
+  }, [session?.user?.name, setValue, getValues]);
+
+  useEffect(() => {
+    if (!logoFile) {
+      setLogoPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(logoFile);
+    setLogoPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [logoFile]);
+
+  async function goToStep(next: StepId) {
+    setSubmitError("");
+    const nextIndex = STEPS.findIndex((s) => s.id === next);
+    if (nextIndex > stepIndex) {
+      for (let i = stepIndex; i < nextIndex; i++) {
+        const fields = STEPS[i]?.fields;
+        if (!fields) continue;
+        const valid = await trigger([...fields]);
+        if (!valid) {
+          setStepId(STEPS[i]!.id);
+          return;
+        }
+      }
+    }
+    setStepId(next);
+  }
+
+  async function goNext() {
+    const fields = STEPS[stepIndex]?.fields;
+    if (fields) {
+      const valid = await trigger([...fields]);
+      if (!valid) return;
+    }
+    const next = STEPS[stepIndex + 1];
+    if (next) setStepId(next.id);
+  }
+
+  function goPrev() {
+    setSubmitError("");
+    const prev = STEPS[stepIndex - 1];
+    if (prev) setStepId(prev.id);
+  }
+
+  async function onSubmit(values: OnboardingFormValues) {
+    setSubmitError("");
+
+    const baseSlug = slugify(values.teamName) || "team";
+    let slug = baseSlug;
+    let result = await organization.create({
+      name: values.teamName.trim(),
       slug,
-      metadata: { teamType, plan: "free" },
+      metadata: { teamType: values.teamType, plan: values.plan },
     });
 
+    if (result.error?.message?.toLowerCase().includes("slug")) {
+      slug = `${baseSlug}-${crypto.randomUUID().slice(0, 8)}`;
+      result = await organization.create({
+        name: values.teamName.trim(),
+        slug,
+        metadata: { teamType: values.teamType, plan: values.plan },
+      });
+    }
+
     if (result.error) {
-      setError(result.error.message ?? "Failed to create team");
-      setLoading(false);
+      setSubmitError(result.error.message ?? "Failed to create team");
       return;
     }
 
     const teamId = result.data?.id;
-    if (teamId) {
-      await organization.setActive({ organizationId: teamId });
-      router.push(`/team/${teamId}`);
-      router.refresh();
+    if (!teamId) {
+      setSubmitError("Failed to create team");
+      return;
     }
+
+    await organization.setActive({ organizationId: teamId });
+
+    const coachResult = await updateOnboardingCoachAction({
+      teamId,
+      coachName: values.coachName,
+      coachTitle: values.coachTitle || undefined,
+    });
+    if (!coachResult.ok) {
+      setSubmitError(coachResult.error);
+      router.push(`/team/${teamId}/settings`);
+      router.refresh();
+      return;
+    }
+
+    let logoWarning = false;
+    if (logoFile) {
+      const formData = new FormData();
+      formData.set("logo", logoFile);
+      const upload = await uploadTeamLogoAction(teamId, formData);
+      if (!upload.ok) logoWarning = true;
+    }
+
+    if (values.plan === "pro" || values.plan === "enterprise") {
+      try {
+        await authClient.checkout({
+          slug: values.plan,
+          referenceId: teamId,
+        });
+        return;
+      } catch {
+        // Billing can be completed later in settings
+      }
+    }
+
+    const dest = logoWarning
+      ? `/team/${teamId}/settings?logoError=1`
+      : `/team/${teamId}`;
+    router.push(dest);
+    router.refresh();
   }
 
   return (
-    <div className="flex min-h-svh items-center justify-center p-6">
-      <Card className="w-full max-w-lg">
-        <CardHeader>
-          <CardTitle>Create your swim team</CardTitle>
-          <CardDescription>
-            Set up your team to start managing your roster, meets, and
-            attendance.
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleCreateTeam}>
-          <CardContent className="space-y-4">
-            {error && <p className="text-destructive text-sm">{error}</p>}
-            <div className="space-y-2">
-              <Label htmlFor="teamName">Team name</Label>
-              <Input
-                id="teamName"
-                value={teamName}
-                onChange={(e) => setTeamName(e.target.value)}
-                placeholder="FAST Swim Club"
-                required
-              />
+    <div className="flex size-full min-h-dvh flex-col lg:grid lg:grid-cols-12">
+      <div className="bg-muted flex flex-col overflow-hidden max-lg:hidden lg:col-span-4">
+        <div className="flex items-start p-6">
+          <BrandMark />
+        </div>
+        <div className="flex size-full items-center justify-center p-6">
+          <OnboardingIllustration className="max-h-[min(641px,70dvh)] w-auto" />
+        </div>
+      </div>
+
+      <div className="flex items-start p-4 sm:p-6 lg:hidden">
+        <BrandMark />
+      </div>
+
+      <div className="flex flex-1 items-center justify-center p-4 sm:p-6 lg:col-span-8 lg:p-8">
+        <form
+          className="flex w-full max-w-3xl flex-col gap-12"
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+        >
+          <Stepper stepId={stepId} onStepClick={goToStep} />
+
+          <FieldGroup className="gap-6">
+            {submitError ? <FieldError>{submitError}</FieldError> : null}
+
+            {stepId === "team" ? (
+              <FieldSet>
+                <FieldLegend>Team</FieldLegend>
+                <FieldDescription>
+                  Set up your swim team workspace. You can change these later in
+                  settings.
+                </FieldDescription>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <Field
+                    className="sm:col-span-2"
+                    data-invalid={!!errors.teamName}
+                  >
+                    <FieldLabel htmlFor="teamName">Team name</FieldLabel>
+                    <Input
+                      id="teamName"
+                      placeholder="FAST Swim Club"
+                      aria-invalid={!!errors.teamName}
+                      {...register("teamName")}
+                    />
+                    <FieldError>{errors.teamName?.message}</FieldError>
+                  </Field>
+
+                  <Field
+                    className="sm:col-span-2"
+                    data-invalid={!!errors.teamType}
+                  >
+                    <FieldLabel htmlFor="teamType">Team type</FieldLabel>
+                    <Controller
+                      control={control}
+                      name="teamType"
+                      render={({ field }) => (
+                        <Select
+                          items={TEAM_TYPES}
+                          value={field.value}
+                          onValueChange={(v) => {
+                            if (v != null) field.onChange(v);
+                          }}
+                        >
+                          <SelectTrigger
+                            id="teamType"
+                            className="w-full"
+                            aria-invalid={!!errors.teamType}
+                          >
+                            <SelectValue placeholder="Select team type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              {TEAM_TYPES.map((type) => (
+                                <SelectItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {selectedType ? (
+                      <FieldDescription>
+                        {selectedType.description}
+                      </FieldDescription>
+                    ) : null}
+                    <FieldError>{errors.teamType?.message}</FieldError>
+                  </Field>
+
+                  <Field className="sm:col-span-2">
+                    <FieldLabel htmlFor="teamLogo">
+                      Team logo (optional)
+                    </FieldLabel>
+                    <div className="flex w-full items-center gap-3">
+                      <div className="bg-muted flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border">
+                        {logoPreview ? (
+                          <img
+                            src={logoPreview}
+                            alt="Logo preview"
+                            className="size-full object-cover"
+                          />
+                        ) : (
+                          <Waves className="text-muted-foreground size-6" />
+                        )}
+                      </div>
+                      <div className="flex min-w-0 flex-1 flex-col gap-1">
+                        <Input
+                          id="teamLogo"
+                          type="file"
+                          accept={LOGO_ACCEPT}
+                          onChange={(e) => {
+                            setLogoFile(e.target.files?.[0] ?? null);
+                          }}
+                        />
+                        <FieldDescription>
+                          JPEG, PNG, WebP, AVIF, or SVG · max 2 MB
+                        </FieldDescription>
+                      </div>
+                    </div>
+                  </Field>
+                </div>
+              </FieldSet>
+            ) : null}
+
+            {stepId === "coach" ? (
+              <FieldSet>
+                <FieldLegend>Coach profile</FieldLegend>
+                <FieldDescription>
+                  Tell us who you are on the coaching staff. This shows up on
+                  the roster and team invites.
+                </FieldDescription>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <Field data-invalid={!!errors.coachName}>
+                    <FieldLabel htmlFor="coachName">Your name</FieldLabel>
+                    <Input
+                      id="coachName"
+                      placeholder="Alex Rivera"
+                      autoComplete="name"
+                      aria-invalid={!!errors.coachName}
+                      {...register("coachName")}
+                    />
+                    <FieldError>{errors.coachName?.message}</FieldError>
+                  </Field>
+
+                  <Field data-invalid={!!errors.coachTitle}>
+                    <FieldLabel htmlFor="coachTitle">
+                      Title (optional)
+                    </FieldLabel>
+                    <Input
+                      id="coachTitle"
+                      placeholder="Head Coach"
+                      aria-invalid={!!errors.coachTitle}
+                      {...register("coachTitle")}
+                    />
+                    <FieldDescription>
+                      e.g. Head Coach, Age Group Coach, Assistant Coach
+                    </FieldDescription>
+                    <FieldError>{errors.coachTitle?.message}</FieldError>
+                  </Field>
+                </div>
+              </FieldSet>
+            ) : null}
+
+            {stepId === "billing" ? (
+              <FieldSet>
+                <FieldLegend>Billing</FieldLegend>
+                <FieldDescription>
+                  Start free or upgrade when you create the team. You can change
+                  plans later in settings.
+                </FieldDescription>
+                <Field data-invalid={!!errors.plan}>
+                  <Controller
+                    control={control}
+                    name="plan"
+                    render={({ field }) => (
+                      <RadioGroup
+                        value={field.value}
+                        onValueChange={(v) => {
+                          if (
+                            v === "free" ||
+                            v === "pro" ||
+                            v === "enterprise"
+                          ) {
+                            field.onChange(v);
+                          }
+                        }}
+                        className="grid gap-4 sm:grid-cols-3"
+                      >
+                        {PLAN_OPTIONS.map((option) => {
+                          const selected = field.value === option.value;
+                          return (
+                            <label
+                              key={option.value}
+                              className={cn(
+                                "border-border hover:border-primary/40 flex cursor-pointer flex-col gap-3 rounded-lg border p-4 transition-colors",
+                                selected &&
+                                  "border-primary ring-primary/20 ring-2",
+                              )}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <p className="font-medium capitalize">
+                                    {option.value}
+                                  </p>
+                                  <p className="text-muted-foreground text-sm">
+                                    {option.price}
+                                  </p>
+                                </div>
+                                <RadioGroupItem value={option.value} />
+                              </div>
+                              <p className="text-muted-foreground text-sm text-pretty">
+                                {option.blurb}
+                              </p>
+                            </label>
+                          );
+                        })}
+                      </RadioGroup>
+                    )}
+                  />
+                  <FieldError>{errors.plan?.message}</FieldError>
+                </Field>
+              </FieldSet>
+            ) : null}
+
+            <div className="flex justify-between gap-4">
+              <Button
+                type="button"
+                variant="secondary"
+                size="lg"
+                disabled={stepIndex === 0 || isSubmitting}
+                onClick={goPrev}
+              >
+                <ArrowLeft data-icon="inline-start" />
+                Previous
+              </Button>
+              {stepIndex < STEPS.length - 1 ? (
+                <Button
+                  type="button"
+                  size="lg"
+                  disabled={isSubmitting}
+                  onClick={goNext}
+                >
+                  Next
+                  <ArrowRight data-icon="inline-end" />
+                </Button>
+              ) : (
+                <Button type="submit" size="lg" disabled={isSubmitting}>
+                  {isSubmitting ? "Creating…" : "Create team"}
+                  {!isSubmitting ? <ArrowRight data-icon="inline-end" /> : null}
+                </Button>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="teamType">Team type</Label>
-              <Select value={teamType} onValueChange={setTeamType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select team type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TEAM_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating..." : "Create team"}
-            </Button>
-          </CardFooter>
+          </FieldGroup>
         </form>
-      </Card>
+      </div>
     </div>
   );
 }

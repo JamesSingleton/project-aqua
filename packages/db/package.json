@@ -10,11 +10,21 @@
     "./authz": "./src/authz.ts",
     "./queries/roster": "./src/queries/roster.ts",
     "./queries/meets": "./src/queries/meets.ts",
+    "./queries/time-standards": "./src/queries/time-standards.ts",
     "./queries/attendance": "./src/queries/attendance.ts",
     "./queries/progression": "./src/queries/progression.ts",
     "./queries/billing": "./src/queries/billing.ts",
     "./queries/imports": "./src/queries/imports.ts",
-    "./queries/safesport": "./src/queries/safesport.ts"
+    "./queries/safesport": "./src/queries/safesport.ts",
+    "./queries/members": "./src/queries/members.ts",
+    "./queries/calendar": "./src/queries/calendar.ts",
+    "./queries/workouts": "./src/queries/workouts.ts",
+    "./queries/analytics": "./src/queries/analytics.ts",
+    "./queries/groups": "./src/queries/groups.ts",
+    "./queries/ai-quota": "./src/queries/ai-quota.ts",
+    "./queries/notifications": "./src/queries/notifications.ts",
+    "./queries/preferences": "./src/queries/preferences.ts",
+    "./calendar-ics": "./src/calendar-ics.ts"
   },
   "scripts": {
     "check:types": "tsc --noEmit",
@@ -22,7 +32,9 @@
     "lint:fix": "biome check --write .",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:push": "drizzle-kit push",
+    "import:best-times": "tsx scripts/import-best-times-csv.mts"
   },
   "dependencies": {
     "@project-aqua/swim-core": "workspace:*",
@@ -33,6 +45,7 @@
     "@project-aqua/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "drizzle-kit": "catalog:",
+    "tsx": "^4.23.1",
     "typescript": "catalog:"
   }
 }

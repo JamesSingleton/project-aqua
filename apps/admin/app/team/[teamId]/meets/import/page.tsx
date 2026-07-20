@@ -1,10 +1,11 @@
-import MeetImportClient from "./import-client";
+import { redirect } from "next/navigation";
 
+/** Legacy `/meets/import` URL — import lives on the meets page now. */
 export default async function MeetImportPage({
   params,
 }: {
   params: Promise<{ teamId: string }>;
 }) {
   const { teamId } = await params;
-  return <MeetImportClient teamId={teamId} />;
+  redirect(`/team/${teamId}/meets`);
 }

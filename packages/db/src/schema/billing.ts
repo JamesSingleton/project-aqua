@@ -1,6 +1,6 @@
 import { relations } from "drizzle-orm";
 import { pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
-import { organization } from "./auth.js";
+import { organization } from "./auth";
 
 export const planTierEnum = pgEnum("plan_tier", ["free", "pro", "enterprise"]);
 
@@ -17,8 +17,12 @@ export const subscriptions = pgTable("subscriptions", {
     .notNull()
     .unique()
     .references(() => organization.id, { onDelete: "cascade" }),
-  stripeCustomerId: text("stripe_customer_id"),
-  stripeSubscriptionId: text("stripe_subscription_id"),
+  /** @deprecated SaaS billing moved to Polar — kept for migration */ stripeCustomerId:
+    text("stripe_customer_id"),
+  /** @deprecated SaaS billing moved to Polar — kept for migration */ stripeSubscriptionId:
+    text("stripe_subscription_id"),
+  polarCustomerId: text("polar_customer_id"),
+  polarSubscriptionId: text("polar_subscription_id"),
   plan: planTierEnum("plan").notNull().default("free"),
   status: subscriptionStatusEnum("status").notNull().default("active"),
   currentPeriodEnd: timestamp("current_period_end"),

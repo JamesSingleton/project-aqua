@@ -1,6 +1,6 @@
 import { currentSeasonYear } from "@project-aqua/swim-core/age";
 import { and, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
-import { db } from "../client.js";
+import { db } from "../client";
 import {
   auditLog,
   maappAcknowledgments,
@@ -9,7 +9,7 @@ import {
   staffCredentials,
   swimmers,
   teamSwimmerMemberships,
-} from "../schema/index.js";
+} from "../schema/index";
 
 function generateId(): string {
   return crypto.randomUUID();
@@ -43,7 +43,11 @@ export async function getStaffCredentials(organizationId: string) {
 
 export async function upsertStaffCredential(data: {
   memberId: string;
-  credentialType: (typeof SAFESPORT_TYPES)[number] | "background_check" | "cpr_aed" | "stsc";
+  credentialType:
+    | (typeof SAFESPORT_TYPES)[number]
+    | "background_check"
+    | "cpr_aed"
+    | "stsc";
   status: "current" | "expired" | "pending" | "not_started";
   completedAt?: Date;
   expiresAt?: Date;
@@ -97,8 +101,7 @@ export async function getComplianceSummary(organizationId: string) {
   const coachesNeedingTraining = credentials.filter(
     (c) =>
       (SAFESPORT_TYPES as readonly string[]).includes(c.credentialType) &&
-      (c.status !== "current" ||
-        (c.expiresAt && c.expiresAt <= now)),
+      (c.status !== "current" || (c.expiresAt && c.expiresAt <= now)),
   );
 
   const memberIds = [...new Set(credentials.map((c) => c.memberId))];

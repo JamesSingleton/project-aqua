@@ -1,13 +1,19 @@
 import { isMinorSwimmer } from "@project-aqua/swim-core/age";
+import {
+  parseTeamType,
+  requiresSafeSportCompliance,
+  type TeamType,
+} from "@project-aqua/swim-core/team-types";
 import { and, eq, gt, inArray, isNull, or } from "drizzle-orm";
-import { db } from "./client.js";
+import { db } from "./client";
 import {
   auditLog,
   member,
+  organization,
   staffCredentials,
   swimmers,
   teamSwimmerMemberships,
-} from "./schema/index.js";
+} from "./schema/index";
 
 export const COACH_ROLES = [
   "owner",
@@ -72,7 +78,7 @@ export async function requireTeamRole(
 }
 
 export async function getUserTeams(userId: string) {
-  const { organization } = await import("./schema/index.js");
+  const { organization } = await import("./schema/index");
   return db
     .select({
       id: organization.id,
@@ -145,11 +151,33 @@ export async function hasCurrentSafeSportTraining(memberId: string) {
   return Boolean(row);
 }
 
+export async function getOrganizationTeamType(
+  organizationId: string,
+): Promise<TeamType> {
+  const [org] = await db
+    .select({ metadata: organization.metadata })
+    .from(organization)
+    .where(eq(organization.id, organizationId))
+    .limit(1);
+
+  if (!org?.metadata) return "club";
+  try {
+    const parsed = JSON.parse(org.metadata) as { teamType?: unknown };
+    return parseTeamType(parsed.teamType);
+  } catch {
+    return "club";
+  }
+}
+
 export async function requireCoachSafeSportCurrent(
   userId: string | undefined,
   organizationId: string,
 ) {
   const m = await requireTeamMember(userId, organizationId);
+  const teamType = await getOrganizationTeamType(organizationId);
+  if (!requiresSafeSportCompliance(teamType)) {
+    return m;
+  }
   const current = await hasCurrentSafeSportTraining(m.id);
   if (!current) {
     throw new AuthError(

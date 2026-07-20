@@ -1,10 +1,10 @@
-export { getBaseUrl, getEmailFrom, getResendClient } from "./client.js";
+export { getBaseUrl, getEmailFrom, getResendClient } from "./client";
 
-import { getBaseUrl } from "./client.js";
-import { sendEmail } from "./send.js";
+import { getBaseUrl } from "./client";
+import { sendEmail } from "./send";
 
-export type { EmailProps, EmailType, SendEmailOptions } from "./send.js";
-export { sendEmail } from "./send.js";
+export type { EmailProps, EmailType, SendEmailOptions } from "./send";
+export { sendEmail } from "./send";
 
 export async function sendVerifyEmail({
   user,

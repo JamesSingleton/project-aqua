@@ -1,7 +1,7 @@
 import { relations } from "drizzle-orm";
 import { jsonb, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
-import { member, organization } from "./auth.js";
-import { teamSwimmerMemberships } from "./swimmers.js";
+import { member, organization } from "./auth";
+import { teamSwimmerMemberships } from "./swimmers";
 
 export const credentialTypeEnum = pgEnum("credential_type", [
   "safesport_core",

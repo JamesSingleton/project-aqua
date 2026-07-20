@@ -1,8 +1,15 @@
 import type { Course } from "@project-aqua/swim-core/events";
 import { isFasterTime } from "@project-aqua/swim-core/times";
 import { and, asc, eq } from "drizzle-orm";
-import { db } from "../client.js";
-import { meetResults, swimmerBestTimes } from "../schema/index.js";
+import { db } from "../client";
+import { swimEvents } from "../schema/events";
+import {
+  meetEvents,
+  meetResults,
+  meets,
+  swimmerBestTimes,
+} from "../schema/meets";
+import { teamSwimmerMemberships } from "../schema/swimmers";
 
 function generateId(): string {
   return crypto.randomUUID();
@@ -59,8 +66,21 @@ export async function upsertBestTime(data: {
 
 export async function getSwimmerBestTimes(swimmerId: string) {
   return db
-    .select()
+    .select({
+      id: swimmerBestTimes.id,
+      swimmerId: swimmerBestTimes.swimmerId,
+      eventKey: swimmerBestTimes.eventKey,
+      eventLabel: swimEvents.label,
+      eventGender: swimEvents.gender,
+      course: swimmerBestTimes.course,
+      timeMs: swimmerBestTimes.timeMs,
+      achievedAt: swimmerBestTimes.achievedAt,
+      meetId: swimmerBestTimes.meetId,
+      createdAt: swimmerBestTimes.createdAt,
+      updatedAt: swimmerBestTimes.updatedAt,
+    })
     .from(swimmerBestTimes)
+    .leftJoin(swimEvents, eq(swimEvents.eventKey, swimmerBestTimes.eventKey))
     .where(eq(swimmerBestTimes.swimmerId, swimmerId))
     .orderBy(asc(swimmerBestTimes.eventKey));
 }
@@ -70,11 +90,13 @@ export async function getTeamTopTimes(organizationId: string) {
     .select({
       swimmerId: meetResults.swimmerId,
       eventKey: swimmerBestTimes.eventKey,
+      eventLabel: swimEvents.label,
       course: swimmerBestTimes.course,
       timeMs: swimmerBestTimes.timeMs,
       achievedAt: swimmerBestTimes.achievedAt,
     })
     .from(swimmerBestTimes)
+    .leftJoin(swimEvents, eq(swimEvents.eventKey, swimmerBestTimes.eventKey))
     .innerJoin(
       meetResults,
       eq(meetResults.swimmerId, swimmerBestTimes.swimmerId),
@@ -91,4 +113,43 @@ export async function getSwimmerMeetHistory(swimmerId: string) {
     .from(meetResults)
     .where(eq(meetResults.swimmerId, swimmerId))
     .orderBy(asc(meetResults.createdAt));
+}
+
+/** Time series for charts: results for an org, optionally filtered by eventKey */
+export async function getTeamResultSeries(
+  organizationId: string,
+  eventKey?: string,
+) {
+  const rows = await db
+    .select({
+      swimmerId: meetResults.swimmerId,
+      eventKey: meetEvents.eventKey,
+      eventLabel: swimEvents.label,
+      eventGender: swimEvents.gender,
+      course: swimEvents.course,
+      timeMs: meetResults.timeMs,
+      meetDate: meets.startDate,
+      meetName: meets.name,
+      isDq: meetResults.isDq,
+    })
+    .from(meetResults)
+    .innerJoin(meets, eq(meetResults.meetId, meets.id))
+    .innerJoin(meetEvents, eq(meetResults.meetEventId, meetEvents.id))
+    .leftJoin(swimEvents, eq(swimEvents.eventKey, meetEvents.eventKey))
+    .innerJoin(
+      teamSwimmerMemberships,
+      eq(teamSwimmerMemberships.swimmerId, meetResults.swimmerId),
+    )
+    .where(
+      and(
+        eq(teamSwimmerMemberships.organizationId, organizationId),
+        eq(teamSwimmerMemberships.status, "active"),
+      ),
+    )
+    .orderBy(asc(meets.startDate));
+
+  if (eventKey) {
+    return rows.filter((r) => r.eventKey === eventKey && !r.isDq);
+  }
+  return rows.filter((r) => !r.isDq);
 }

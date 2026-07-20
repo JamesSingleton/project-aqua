@@ -1,19 +1,21 @@
+import { isMinorSwimmer } from "@project-aqua/swim-core/age";
+import { parseClassYear } from "@project-aqua/swim-core/team-types";
 import type {
   RosterRow,
   SwimmerContactsInput,
   SwimmerMedicalInput,
 } from "@project-aqua/swim-core/validators";
-import { isMinorSwimmer } from "@project-aqua/swim-core/age";
 import { and, eq } from "drizzle-orm";
-import { db } from "../client.js";
-import { member, organization } from "../schema/auth.js";
+import { db } from "../client";
+import { member, organization } from "../schema/auth";
+import { trainingGroups } from "../schema/groups";
 import {
   swimmerClubRegistrations,
   swimmerContacts,
   swimmerMedical,
   swimmers,
   teamSwimmerMemberships,
-} from "../schema/swimmers.js";
+} from "../schema/swimmers";
 
 function generateId(): string {
   return crypto.randomUUID();
@@ -21,6 +23,10 @@ function generateId(): string {
 
 function resolveGoverningBodyId(data: RosterRow): string | undefined {
   return data.governingBodyId ?? data.usaMemberId ?? undefined;
+}
+
+function resolveClassYear(data: RosterRow): string | null {
+  return parseClassYear(data.classYear) ?? null;
 }
 
 async function upsertMembershipContacts(
@@ -107,11 +113,18 @@ export async function getRoster(organizationId: string) {
       governingBodyId: swimmers.governingBodyId,
       practiceGroup: teamSwimmerMemberships.practiceGroup,
       trainingGroups: teamSwimmerMemberships.trainingGroups,
+      groupId: teamSwimmerMemberships.groupId,
+      groupName: trainingGroups.name,
+      classYear: teamSwimmerMemberships.classYear,
       status: teamSwimmerMemberships.status,
       joinedAt: teamSwimmerMemberships.joinedAt,
     })
     .from(teamSwimmerMemberships)
     .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
+    .leftJoin(
+      trainingGroups,
+      eq(teamSwimmerMemberships.groupId, trainingGroups.id),
+    )
     .where(
       and(
         eq(teamSwimmerMemberships.organizationId, organizationId),
@@ -142,10 +155,17 @@ export async function getSwimmerById(
       governingBodyId: swimmers.governingBodyId,
       practiceGroup: teamSwimmerMemberships.practiceGroup,
       trainingGroups: teamSwimmerMemberships.trainingGroups,
+      groupId: teamSwimmerMemberships.groupId,
+      groupName: trainingGroups.name,
+      classYear: teamSwimmerMemberships.classYear,
       status: teamSwimmerMemberships.status,
     })
     .from(teamSwimmerMemberships)
     .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
+    .leftJoin(
+      trainingGroups,
+      eq(teamSwimmerMemberships.groupId, trainingGroups.id),
+    )
     .where(
       and(
         eq(swimmers.id, swimmerId),
@@ -235,7 +255,10 @@ export async function getSwimmerAffiliations(
       role: member.role,
     })
     .from(teamSwimmerMemberships)
-    .innerJoin(organization, eq(teamSwimmerMemberships.organizationId, organization.id))
+    .innerJoin(
+      organization,
+      eq(teamSwimmerMemberships.organizationId, organization.id),
+    )
     .innerJoin(
       member,
       and(
@@ -315,6 +338,7 @@ async function createMembershipForTeam(
       swimmerId,
       practiceGroup: data.practiceGroup ?? null,
       trainingGroups: data.trainingGroups ?? [],
+      classYear: resolveClassYear(data),
       status: "active",
     });
 
@@ -393,6 +417,7 @@ export async function addSwimmer(organizationId: string, data: RosterRow) {
       swimmerId,
       practiceGroup: data.practiceGroup ?? null,
       trainingGroups: data.trainingGroups ?? [],
+      classYear: resolveClassYear(data),
       status: "active",
     });
 
@@ -450,7 +475,11 @@ export async function updateSwimmer(
         .where(eq(swimmers.id, swimmerId));
     }
 
-    if (data.practiceGroup !== undefined || data.trainingGroups !== undefined) {
+    if (
+      data.practiceGroup !== undefined ||
+      data.trainingGroups !== undefined ||
+      data.classYear !== undefined
+    ) {
       await tx
         .update(teamSwimmerMemberships)
         .set({
@@ -460,13 +489,20 @@ export async function updateSwimmer(
           ...(data.trainingGroups !== undefined && {
             trainingGroups: data.trainingGroups,
           }),
+          ...(data.classYear !== undefined && {
+            classYear: parseClassYear(data.classYear),
+          }),
           updatedAt: new Date(),
         })
         .where(eq(teamSwimmerMemberships.id, membership.membershipId));
     }
 
     if (data.contacts) {
-      await upsertMembershipContacts(tx, membership.membershipId, data.contacts);
+      await upsertMembershipContacts(
+        tx,
+        membership.membershipId,
+        data.contacts,
+      );
     }
 
     if (data.medical) {

@@ -124,7 +124,9 @@ export function SwimmerProfileTabs({
       <Card>
         <CardHeader>
           <CardTitle>This team</CardTitle>
-          <CardDescription>Club registration on this affiliation</CardDescription>
+          <CardDescription>
+            Club registration on this affiliation
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           {clubRegistration ? (
@@ -147,7 +149,9 @@ export function SwimmerProfileTabs({
               )}
             </>
           ) : (
-            <p className="text-muted-foreground">No club registration on file.</p>
+            <p className="text-muted-foreground">
+              No club registration on file.
+            </p>
           )}
         </CardContent>
       </Card>
@@ -205,7 +209,9 @@ export function SwimmerProfileTabs({
                       {pii.medical.allergies ?? "—"}
                     </p>
                     <p>
-                      <span className="text-muted-foreground">Medications:</span>{" "}
+                      <span className="text-muted-foreground">
+                        Medications:
+                      </span>{" "}
                       {pii.medical.medications ?? "—"}
                     </p>
                     <p>
@@ -218,7 +224,9 @@ export function SwimmerProfileTabs({
                     </p>
                   </>
                 ) : (
-                  <p className="text-muted-foreground">No medical info on file.</p>
+                  <p className="text-muted-foreground">
+                    No medical info on file.
+                  </p>
                 )}
               </TabsContent>
             </Tabs>

@@ -1,10 +1,19 @@
 import { Suspense } from "react";
-import SignInPage from "./sign-in-content";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { LoginForm } from "@/components/auth/login-form";
 
-export default function Page() {
+export default function SignInPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <SignInPage />
-    </Suspense>
+    <AuthShell>
+      <Suspense
+        fallback={
+          <p className="text-muted-foreground text-center text-sm">
+            Loading...
+          </p>
+        }
+      >
+        <LoginForm />
+      </Suspense>
+    </AuthShell>
   );
 }

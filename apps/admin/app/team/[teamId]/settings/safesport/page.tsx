@@ -1,5 +1,13 @@
 import { getSession } from "@project-aqua/auth/session";
-import { requireTeamRole } from "@project-aqua/db/authz";
+import {
+  getOrganizationTeamType,
+  requireTeamRole,
+} from "@project-aqua/db/authz";
+import {
+  requiresSafeSportCompliance,
+  teamTypeLabel,
+} from "@project-aqua/swim-core/team-types";
+import { SettingsSection } from "../settings-section";
 import { getSafeSportDashboardAction } from "./actions";
 import { SafeSportSettingsClient } from "./safesport-settings";
 
@@ -17,21 +25,36 @@ export default async function SafeSportSettingsPage({
     "admin",
   ]);
 
+  const teamType = await getOrganizationTeamType(teamId);
+
+  if (!requiresSafeSportCompliance(teamType)) {
+    return (
+      <SettingsSection
+        title="SafeSport"
+        description={`Not required for ${teamTypeLabel(teamType)} teams`}
+      >
+        <p className="text-muted-foreground max-w-2xl text-sm text-pretty">
+          SafeSport training and MAAPP apply to USA Swimming–affiliated
+          programs. High school and college teams typically follow school or
+          athletic association policies instead. Switch your team type to USA
+          Swimming Club in settings if this team should track SafeSport.
+        </p>
+      </SettingsSection>
+    );
+  }
+
   const { summary, credentials } = await getSafeSportDashboardAction(teamId);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">SafeSport</h1>
-        <p className="text-muted-foreground">
-          MAAPP compliance, coach training, and reporting
-        </p>
-      </div>
+    <SettingsSection
+      title="SafeSport & MAAPP"
+      description="Coach training, credentials, and reporting for this team."
+    >
       <SafeSportSettingsClient
         teamId={teamId}
         summary={summary}
         credentials={credentials}
       />
-    </div>
+    </SettingsSection>
   );
 }

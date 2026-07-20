@@ -1,63 +1,95 @@
+import { getSession } from "@project-aqua/auth/session";
+import { getMember, getOrganizationTeamType } from "@project-aqua/db/authz";
 import { db } from "@project-aqua/db/client";
+import { getTeamMembers } from "@project-aqua/db/queries/members";
 import { organization } from "@project-aqua/db/schema";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@project-aqua/ui/components/card";
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@project-aqua/ui/components/alert";
 import { eq } from "drizzle-orm";
-import Link from "next/link";
+import { AlertCircle } from "lucide-react";
+import { SettingsSection } from "./settings-section";
+import { TeamDangerZone } from "./team-danger-zone";
+import { TeamLogoUploader } from "./team-logo-uploader";
+import { TeamProfileForm } from "./team-profile-form";
+import { TeamTypeForm } from "./team-type-form";
 
 export default async function TeamSettingsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ teamId: string }>;
+  searchParams: Promise<{ logoError?: string }>;
 }) {
   const { teamId } = await params;
-  const [org] = await db
-    .select()
-    .from(organization)
-    .where(eq(organization.id, teamId))
-    .limit(1);
+  const { logoError } = await searchParams;
+  const session = await getSession();
 
-  const metadata = org?.metadata ? JSON.parse(org.metadata) : {};
+  const [org, teamType, members, membership] = await Promise.all([
+    db
+      .select()
+      .from(organization)
+      .where(eq(organization.id, teamId))
+      .limit(1)
+      .then((rows) => rows[0]),
+    getOrganizationTeamType(teamId),
+    getTeamMembers(teamId),
+    session?.user?.id
+      ? getMember(session.user.id, teamId)
+      : Promise.resolve(null),
+  ]);
+
+  const isOwner = membership?.role === "owner";
+  const currentOwner = members.find((m) => m.userId === session?.user?.id);
+  const transferCandidates = members.filter(
+    (m) => m.userId !== session?.user?.id && m.role !== "owner",
+  );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Team settings</h1>
-        <p className="text-muted-foreground">Manage your team profile</p>
-      </div>
+    <div className="flex flex-col">
+      {logoError ? (
+        <Alert className="mb-6">
+          <AlertCircle />
+          <AlertTitle>Team created without a logo</AlertTitle>
+          <AlertDescription>
+            Your team is ready. Upload a logo below when you have a moment.
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{org?.name}</CardTitle>
-          <CardDescription>Team ID: {teamId}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <p>
-            <span className="text-muted-foreground">Slug:</span> {org?.slug}
-          </p>
-          <p>
-            <span className="text-muted-foreground">Type:</span>{" "}
-            {metadata.teamType ?? "club"}
-          </p>
-          <p>
-            <span className="text-muted-foreground">Plan:</span>{" "}
-            {metadata.plan ?? "free"}
-          </p>
-          <p>
-            <Link
-              href={`/team/${teamId}/settings/safesport`}
-              className="text-primary underline"
-            >
-              SafeSport & MAAPP settings
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+      <SettingsSection
+        title="Team profile"
+        description="Name and logo shown across the admin app. Team names do not need to be unique."
+      >
+        <div className="flex flex-col gap-8">
+          <TeamProfileForm teamId={teamId} name={org?.name ?? ""} />
+          <TeamLogoUploader teamId={teamId} logoUrl={org?.logo ?? null} />
+        </div>
+      </SettingsSection>
+
+      <SettingsSection
+        title="Team type"
+        description="Controls SafeSport, USA Swimming, and roster defaults."
+        showSeparator
+      >
+        <TeamTypeForm teamId={teamId} teamType={teamType} />
+      </SettingsSection>
+
+      {isOwner && currentOwner ? (
+        <SettingsSection
+          title="Danger zone"
+          description="Irreversible or ownership-changing actions for this team."
+          showSeparator
+        >
+          <TeamDangerZone
+            teamId={teamId}
+            currentOwner={currentOwner}
+            candidates={transferCandidates}
+          />
+        </SettingsSection>
+      ) : null}
     </div>
   );
 }

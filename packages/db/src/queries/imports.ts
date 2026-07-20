@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
-import { db } from "../client.js";
-import { importJobs } from "../schema/index.js";
+import { db } from "../client";
+import { importJobs } from "../schema/index";
 
 function generateId(): string {
   return crypto.randomUUID();

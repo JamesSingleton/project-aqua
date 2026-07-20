@@ -1,20 +1,37 @@
+import type { EventGender } from "@project-aqua/swim-core/events";
+
 export interface ParsedMeet {
   name: string;
   startDate?: string;
+  endDate?: string;
   course: "SCY" | "SCM" | "LCM";
   location?: string;
+  address?: string;
+  altitude?: number;
+  sanctionNumber?: string;
+  notes?: string;
   events: ParsedEvent[];
   entries: ParsedEntry[];
   results: ParsedResult[];
+  relays?: ParsedRelayEntry[];
+  /** Entry limits when present in the source file; omit/undefined if not found. */
+  entryLimits?: {
+    maxIndividualEntries?: number;
+    maxRelayEntries?: number;
+    maxCombinedEntries?: number;
+    packages?: Array<{ individual: number; relay: number }>;
+  };
 }
 
 export interface ParsedEvent {
   eventNumber?: number;
   stroke: string;
   distance: number;
-  gender: string;
+  gender: EventGender;
   ageGroup?: string;
   eventKey: string;
+  /** Championship round when present (HYV): prelims/finals/swimoff/time trial. */
+  roundType?: "prelim" | "finals" | "swimoff" | "time_trial";
 }
 
 export interface ParsedEntry {
@@ -22,6 +39,11 @@ export interface ParsedEntry {
   swimmerName: string;
   seedTime?: string;
   usaMemberId?: string;
+  /** True when HY3 E1 col 84 is `X` (exhibition). */
+  exhibition?: boolean;
+  meetDivision?: string;
+  heat?: number;
+  lane?: number;
 }
 
 export interface ParsedResult {
@@ -30,6 +52,20 @@ export interface ParsedResult {
   time: string;
   place?: number;
   isDq?: boolean;
+  usaMemberId?: string;
+  resultType?: "prelim" | "swimoff" | "finals";
+  heat?: number;
+  lane?: number;
+  dqCode?: string;
+  exhibition?: boolean;
+}
+
+export interface ParsedRelayEntry {
+  eventNumber?: number;
+  swimmerNames: string[];
+  seedTime?: string;
+  teamCode?: string;
+  relayLetter?: string;
 }
 
 export interface ParsedRosterRow {
@@ -38,5 +74,6 @@ export interface ParsedRosterRow {
   dateOfBirth: string;
   gender: "male" | "female";
   practiceGroup?: string;
+  classYear?: string;
   usaMemberId?: string;
 }

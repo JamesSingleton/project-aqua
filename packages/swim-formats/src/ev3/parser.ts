@@ -1,0 +1,247 @@
+import {
+  buildEventKey,
+  type Course,
+  type EventGender,
+  parseEventGender,
+  type RelayStroke,
+  type Stroke,
+} from "@project-aqua/swim-core/events";
+import type { ParsedEvent, ParsedMeet } from "../types";
+
+const STROKE_CODES: Record<string, string> = {
+  "1": "free",
+  "2": "back",
+  "3": "breast",
+  "4": "fly",
+  "5": "im",
+  A: "free",
+  B: "back",
+  C: "breast",
+  D: "fly",
+  E: "im",
+  FR: "free",
+  BK: "back",
+  BR: "breast",
+  FL: "fly",
+  IM: "im",
+};
+
+function mapStroke(code: string): string {
+  return STROKE_CODES[code.toUpperCase()] ?? STROKE_CODES[code] ?? "free";
+}
+
+/** Map Hy-Tek gender codes (G/F/B/M/X) → EventGender. eventKey still uses m/f/x. */
+function mapGender(code: string): EventGender {
+  return parseEventGender(code);
+}
+
+/** Remap individual stroke to relay stroke when the event is a relay. */
+function mapRelayStroke(stroke: string, isRelay: boolean): string {
+  if (!isRelay) return stroke;
+  return stroke === "im" ? "medley_relay" : "free_relay";
+}
+
+function formatAgeGroup(
+  ageLow: string | undefined,
+  ageHigh: string | undefined,
+): string | undefined {
+  const low = ageLow?.trim();
+  const high = ageHigh?.trim();
+  const lowNumber = Number.parseInt(low ?? "", 10);
+  const highNumber = Number.parseInt(high ?? "", 10);
+  if (
+    Number.isFinite(lowNumber) &&
+    Number.isFinite(highNumber) &&
+    lowNumber <= 0 &&
+    (highNumber === 0 || highNumber >= 99)
+  ) {
+    return undefined;
+  }
+  if (low && high) return `${low}-${high}`;
+  return low || undefined;
+}
+
+function positiveInt(raw: string | undefined): number | undefined {
+  const value = Number.parseInt(raw?.trim() ?? "", 10);
+  return Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+function formatAddress(header: string[]): string | undefined {
+  const street = header[24]?.trim();
+  const city = header[26]?.trim();
+  const state = header[27]?.trim();
+  const postalCode = header[28]?.trim();
+  const country = header[29]?.trim();
+  const region = [state, postalCode].filter(Boolean).join(" ");
+  const cityLine = [city, region].filter(Boolean).join(", ");
+  return [street, cityLine, country].filter(Boolean).join(", ") || undefined;
+}
+
+function parseMmDdYyyy(raw: string): string | undefined {
+  const cleaned = raw.trim();
+  const m = cleaned.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m?.[1] || !m[2] || !m[3]) return undefined;
+  const month = m[1];
+  const day = m[2];
+  const year = m[3];
+  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+}
+
+function eventKeyFor(
+  distance: number,
+  stroke: string,
+  course: Course,
+  gender: EventGender,
+): string {
+  return buildEventKey(
+    distance,
+    stroke as Stroke | RelayStroke,
+    course,
+    gender,
+  );
+}
+
+/** Parse Hy-Tek Meet Manager EV3 event template files. */
+export function parseEv3(content: string): ParsedMeet {
+  const lines = content.split(/\r?\n/).filter((l) => l.trim());
+  const meet: ParsedMeet = {
+    name: "Imported Events",
+    course: "SCY",
+    events: [],
+    entries: [],
+    results: [],
+  };
+
+  const firstLine = lines[0];
+  if (!firstLine) return meet;
+
+  const header = firstLine.split(";");
+  meet.name = header[0]?.trim() || meet.name;
+  meet.location = header[1]?.trim() || undefined;
+  meet.address = formatAddress(header);
+  const start = parseMmDdYyyy(header[2] ?? "");
+  if (start) meet.startDate = start;
+  // EV3 meet header: [18]=combined, [19]=individual, [20]=relay.
+  const maxCombinedEntries = positiveInt(header[18]);
+  const maxIndividualEntries = positiveInt(header[19]);
+  const maxRelayEntries = positiveInt(header[20]);
+  if (
+    maxIndividualEntries !== undefined ||
+    maxRelayEntries !== undefined ||
+    maxCombinedEntries !== undefined
+  ) {
+    meet.entryLimits = {
+      maxIndividualEntries,
+      maxRelayEntries,
+      maxCombinedEntries,
+    };
+  }
+
+  const courseHint = (header[5] ?? "").toUpperCase();
+  if (courseHint.includes("L") || courseHint === "LCM") meet.course = "LCM";
+  else if (courseHint.includes("M") && !courseHint.includes("Y"))
+    meet.course = "SCM";
+  else meet.course = "SCY";
+
+  for (const line of lines.slice(1)) {
+    if (!line.includes(";")) continue;
+    const parts = line.replace(/\*>\s*$/, "").split(";");
+    if (parts.length < 10) continue;
+
+    const eventNumber = Number.parseInt(parts[0] ?? "", 10);
+    if (!Number.isFinite(eventNumber)) continue;
+
+    // EV3: [2]=round F/P, [4]=I/R, [5]=gender G/B, [6-7]=age, [8]=distance, [9]=stroke
+    const gender = mapGender(parts[5] ?? "B");
+    const isRelay = (parts[4] ?? "I").toUpperCase() === "R";
+    const distance = Number.parseInt(parts[8] ?? "0", 10) || 0;
+    const stroke = mapRelayStroke(mapStroke(parts[9] ?? "1"), isRelay);
+    const ageGroup = formatAgeGroup(parts[6], parts[7]);
+
+    const event: ParsedEvent = {
+      eventNumber,
+      distance,
+      stroke,
+      gender,
+      ageGroup,
+      eventKey: eventKeyFor(distance, stroke, meet.course, gender),
+    };
+    meet.events.push(event);
+  }
+
+  return meet;
+}
+
+/** Parse Hy-Tek HYV event/qualifying-time files. */
+export function parseHyv(content: string): ParsedMeet {
+  const lines = content.split(/\r?\n/).filter((l) => l.trim());
+  const meet: ParsedMeet = {
+    name: "Imported Events",
+    course: "SCY",
+    events: [],
+    entries: [],
+    results: [],
+  };
+
+  const firstLine = lines[0];
+  if (!firstLine) return meet;
+
+  const header = firstLine.split(";");
+  meet.name = header[0]?.trim() || meet.name;
+  const start = parseMmDdYyyy(header[1] ?? "");
+  if (start) meet.startDate = start;
+  const end = parseMmDdYyyy(header[2] ?? "");
+  if (end) meet.endDate = end;
+
+  const courseCode = (header[4] ?? "").trim().toUpperCase();
+  if (courseCode === "L" || courseCode === "LCM") meet.course = "LCM";
+  else if (courseCode === "S" || courseCode === "M" || courseCode === "SCM")
+    meet.course = "SCM";
+  else meet.course = "SCY";
+
+  meet.location = header[5]?.trim() || undefined;
+
+  for (const line of lines.slice(1)) {
+    const parts = line.split(";");
+    if (parts.length < 8) continue;
+
+    const eventToken = parts[0] ?? "";
+    const eventNumber = Number.parseInt(eventToken.replace(/\D/g, ""), 10);
+    if (!Number.isFinite(eventNumber)) continue;
+
+    const roundRaw = (parts[1] ?? "F").toUpperCase();
+    const roundType =
+      roundRaw === "P"
+        ? ("prelim" as const)
+        : roundRaw === "S"
+          ? ("swimoff" as const)
+          : roundRaw === "X"
+            ? ("time_trial" as const)
+            : ("finals" as const);
+
+    // HYV: [1]=round, [2]=gender F/M, [3]=I/R, [4-5]=age, [6]=distance, [7]=stroke
+    const gender = mapGender(parts[2] ?? "M");
+    const isRelay = (parts[3] ?? "I").toUpperCase() === "R";
+    const distance = Number.parseInt(parts[6] ?? "0", 10) || 0;
+    const stroke = mapRelayStroke(mapStroke(parts[7] ?? "1"), isRelay);
+    const ageLow = Number.parseInt(parts[4] ?? "", 10);
+    const ageHigh = Number.parseInt(parts[5] ?? "", 10);
+    const openAge =
+      Number.isFinite(ageLow) &&
+      ageLow === 0 &&
+      (ageHigh === 0 || ageHigh === 109);
+    const ageGroup = openAge ? undefined : formatAgeGroup(parts[4], parts[5]);
+
+    meet.events.push({
+      eventNumber,
+      distance,
+      stroke,
+      gender,
+      ageGroup,
+      eventKey: eventKeyFor(distance, stroke, meet.course, gender),
+      roundType,
+    });
+  }
+
+  return meet;
+}

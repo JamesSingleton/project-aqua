@@ -1,11 +1,14 @@
 import {
   buildEventKey,
-  type Course,
   COURSES,
+  type Course,
+  EVENT_GENDERS,
+  type EventGender,
   formatEventLabel,
-  type Stroke,
+  formatEventName,
   STROKES,
-} from "./events.js";
+  type Stroke,
+} from "./events";
 
 export type EventType = "individual" | "relay";
 
@@ -15,7 +18,7 @@ export interface CatalogEvent {
   distance: number;
   stroke: Stroke | "free_relay" | "medley_relay";
   course: Course;
-  gender: "m" | "f";
+  gender: EventGender;
   eventType: EventType;
   relayLegs?: number;
 }
@@ -46,7 +49,9 @@ const COURSE_DISTANCE_OVERRIDES: Partial<
 };
 
 function distancesFor(stroke: Stroke, course: Course): number[] {
-  return COURSE_DISTANCE_OVERRIDES[course]?.[stroke] ?? INDIVIDUAL_DISTANCES[stroke];
+  return (
+    COURSE_DISTANCE_OVERRIDES[course]?.[stroke] ?? INDIVIDUAL_DISTANCES[stroke]
+  );
 }
 
 function buildIndividualEvents(): CatalogEvent[] {
@@ -55,11 +60,11 @@ function buildIndividualEvents(): CatalogEvent[] {
   for (const course of COURSES) {
     for (const stroke of STROKES) {
       for (const distance of distancesFor(stroke, course)) {
-        for (const gender of ["m", "f"] as const) {
+        for (const gender of EVENT_GENDERS.filter((g) => g !== "mixed")) {
           const eventKey = buildEventKey(distance, stroke, course, gender);
           events.push({
             eventKey,
-            label: formatEventLabel(distance, stroke, course),
+            label: formatEventLabel(distance, stroke),
             distance,
             stroke,
             course,
@@ -90,13 +95,11 @@ function buildRelayEvents(): CatalogEvent[] {
 
   for (const { distance, stroke, courses } of relayConfigs) {
     for (const course of courses) {
-      for (const gender of ["m", "f"] as const) {
-        const strokeLabel =
-          stroke === "free_relay" ? "Freestyle Relay" : "Medley Relay";
-        const eventKey = `${distance}_${stroke}_${course.toLowerCase()}_${gender}`;
+      for (const gender of EVENT_GENDERS) {
+        const eventKey = buildEventKey(distance, stroke, course, gender);
         events.push({
           eventKey,
-          label: `${distance} ${strokeLabel} ${course}`,
+          label: formatEventName(distance, stroke),
           distance,
           stroke,
           course,

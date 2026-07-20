@@ -7,15 +7,22 @@
     ".": "./src/index.ts",
     "./sdif": "./src/sdif/parser.ts",
     "./csv": "./src/csv/parser.ts",
-    "./hy3": "./src/hy3/parser.ts"
+    "./hy3": "./src/hy3/index.ts",
+    "./roster": "./src/roster/parser.ts",
+    "./meet": "./src/meet/parser.ts",
+    "./ev3": "./src/ev3/parser.ts",
+    "./cl2": "./src/cl2/parser.ts",
+    "./xls": "./src/xls/parser.ts"
   },
   "scripts": {
     "check:types": "tsc --noEmit",
     "lint": "biome check .",
-    "lint:fix": "biome check --write ."
+    "lint:fix": "biome check --write .",
+    "test": "node --test --experimental-strip-types src/**/*.test.ts"
   },
   "dependencies": {
-    "@project-aqua/swim-core": "workspace:*"
+    "@project-aqua/swim-core": "workspace:*",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@project-aqua/typescript-config": "workspace:*",

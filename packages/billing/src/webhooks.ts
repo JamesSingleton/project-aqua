@@ -14,7 +14,7 @@ import {
 import type { PlanTier } from "@project-aqua/swim-core/plans";
 import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
-import { getStripe } from "./stripe.js";
+import { getStripe } from "./stripe";
 
 export async function handleStripeWebhook(
   body: string,

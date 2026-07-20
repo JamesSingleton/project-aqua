@@ -1,5 +1,6 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@project-aqua/ui/components/button";
 import {
   Card,
@@ -8,21 +9,50 @@ import {
   CardHeader,
   CardTitle,
 } from "@project-aqua/ui/components/card";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@project-aqua/ui/components/field";
 import { Input } from "@project-aqua/ui/components/input";
-import { Label } from "@project-aqua/ui/components/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@project-aqua/ui/components/select";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
 import {
   submitSafesportReportAction,
   updateStaffCredentialAction,
 } from "./actions";
+
+const reportCategories = [
+  { label: "MAAPP violation", value: "maapp_violation" },
+  { label: "Emotional misconduct", value: "emotional_misconduct" },
+  { label: "Physical misconduct", value: "physical_misconduct" },
+  { label: "Sexual misconduct", value: "sexual_misconduct" },
+  { label: "Other", value: "other" },
+] as const;
+
+const safesportReportFormSchema = z.object({
+  category: z.enum([
+    "emotional_misconduct",
+    "physical_misconduct",
+    "sexual_misconduct",
+    "maapp_violation",
+    "other",
+  ]),
+  description: z.string().trim().min(1, "Description is required"),
+});
+
+type SafesportReportFormValues = z.infer<typeof safesportReportFormSchema>;
 
 type CredentialRow = {
   id: string;
@@ -52,8 +82,19 @@ export function SafeSportSettingsClient({
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
-  const [reportDescription, setReportDescription] = useState("");
-  const [reportCategory, setReportCategory] = useState("maapp_violation");
+  const {
+    control,
+    register,
+    handleSubmit,
+    resetField,
+    formState: { errors, isSubmitting },
+  } = useForm<SafesportReportFormValues>({
+    resolver: zodResolver(safesportReportFormSchema),
+    defaultValues: {
+      category: "maapp_violation",
+      description: "",
+    },
+  });
 
   async function markCredentialCurrent(memberId: string) {
     setError("");
@@ -73,20 +114,14 @@ export function SafeSportSettingsClient({
     }
   }
 
-  async function submitReport(e: React.FormEvent) {
-    e.preventDefault();
+  async function submitReport(values: SafesportReportFormValues) {
     setError("");
     try {
       await submitSafesportReportAction(teamId, {
-        subjectDescription: reportDescription,
-        category: reportCategory as
-          | "emotional_misconduct"
-          | "physical_misconduct"
-          | "sexual_misconduct"
-          | "maapp_violation"
-          | "other",
+        subjectDescription: values.description,
+        category: values.category,
       });
-      setReportDescription("");
+      resetField("description");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Report failed");
@@ -98,7 +133,9 @@ export function SafeSportSettingsClient({
       ? Math.round((summary.minorAckCompleted / summary.minorAckTotal) * 100)
       : 100;
 
-  const coachRows = [...new Map(credentials.map((c) => [c.memberId, c])).values()];
+  const coachRows = [
+    ...new Map(credentials.map((c) => [c.memberId, c])).values(),
+  ];
 
   return (
     <div className="space-y-6">
@@ -113,7 +150,9 @@ export function SafeSportSettingsClient({
             <p className="text-3xl font-bold">
               {summary.coachesNeedingTraining}
             </p>
-            <p className="text-muted-foreground text-sm">need current SafeSport</p>
+            <p className="text-muted-foreground text-sm">
+              need current SafeSport
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -140,7 +179,9 @@ export function SafeSportSettingsClient({
       <Card>
         <CardHeader>
           <CardTitle>MAAPP policy</CardTitle>
-          <CardDescription>2025 Minor Athlete Abuse Prevention Policies</CardDescription>
+          <CardDescription>
+            2025 Minor Athlete Abuse Prevention Policies
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <p>
@@ -196,7 +237,9 @@ export function SafeSportSettingsClient({
                 className="flex items-center justify-between border-b pb-2 last:border-0"
               >
                 <div>
-                  <p className="font-medium capitalize">{c.role.replace("_", " ")}</p>
+                  <p className="font-medium capitalize">
+                    {c.role.replace("_", " ")}
+                  </p>
                   <p className="text-muted-foreground text-sm">
                     {c.status === "current" && c.expiresAt
                       ? `Expires ${new Date(c.expiresAt).toLocaleDateString()}`
@@ -233,41 +276,61 @@ export function SafeSportSettingsClient({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={submitReport} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <Select
-                value={reportCategory}
-                onValueChange={setReportCategory}
-              >
-                <SelectTrigger id="category">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="maapp_violation">MAAPP violation</SelectItem>
-                  <SelectItem value="emotional_misconduct">
-                    Emotional misconduct
-                  </SelectItem>
-                  <SelectItem value="physical_misconduct">
-                    Physical misconduct
-                  </SelectItem>
-                  <SelectItem value="sexual_misconduct">
-                    Sexual misconduct
-                  </SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Input
-                id="description"
-                value={reportDescription}
-                onChange={(e) => setReportDescription(e.target.value)}
-                required
-              />
-            </div>
-            <Button type="submit">Submit report</Button>
+          <form
+            onSubmit={handleSubmit(submitReport)}
+            className="flex flex-col gap-4"
+          >
+            <FieldGroup>
+              <Field data-invalid={!!errors.category}>
+                <FieldLabel htmlFor="category">Category</FieldLabel>
+                <Controller
+                  name="category"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      items={reportCategories}
+                      value={field.value}
+                      onValueChange={(value) => {
+                        if (value != null) field.onChange(value);
+                      }}
+                    >
+                      <SelectTrigger
+                        id="category"
+                        className="w-full"
+                        aria-invalid={!!errors.category}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {reportCategories.map((category) => (
+                            <SelectItem
+                              key={category.value}
+                              value={category.value}
+                            >
+                              {category.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <FieldError errors={[errors.category]} />
+              </Field>
+              <Field data-invalid={!!errors.description}>
+                <FieldLabel htmlFor="description">Description</FieldLabel>
+                <Input
+                  id="description"
+                  aria-invalid={!!errors.description}
+                  {...register("description")}
+                />
+                <FieldError errors={[errors.description]} />
+              </Field>
+            </FieldGroup>
+            <Button type="submit" className="w-fit" disabled={isSubmitting}>
+              {isSubmitting ? "Submitting…" : "Submit report"}
+            </Button>
           </form>
         </CardContent>
       </Card>

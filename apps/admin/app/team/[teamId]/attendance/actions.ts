@@ -7,8 +7,12 @@ import {
   getAttendanceForSession,
   getPracticeSessions,
   setAttendance,
+  setPracticeRsvp,
 } from "@project-aqua/db/queries/attendance";
-import type { AttendanceStatus } from "@project-aqua/swim-core/validators";
+import type {
+  AttendanceStatus,
+  RsvpStatus,
+} from "@project-aqua/swim-core/validators";
 import { revalidatePath } from "next/cache";
 
 export async function createSessionAction(
@@ -20,6 +24,7 @@ export async function createSessionAction(
     "owner",
     "head_coach",
     "assistant_coach",
+    "admin",
   ]);
 
   const id = await createPracticeSession(teamId, {
@@ -29,6 +34,7 @@ export async function createSessionAction(
   });
 
   revalidatePath(`/team/${teamId}/attendance`);
+  revalidatePath(`/team/${teamId}/calendar`);
   return id;
 }
 
@@ -43,10 +49,38 @@ export async function setAttendanceAction(
     "owner",
     "head_coach",
     "assistant_coach",
+    "admin",
   ]);
 
   await setAttendance(sessionId, membershipId, status);
   revalidatePath(`/team/${teamId}/attendance`);
+  revalidatePath(`/team/${teamId}/attendance/${sessionId}`);
+}
+
+export async function setRsvpAction(
+  teamId: string,
+  sessionId: string,
+  membershipId: string,
+  rsvpStatus: RsvpStatus,
+  absenceReason?: string,
+) {
+  const session = await getSession();
+  await requireTeamRole(session?.user?.id, teamId, [
+    "owner",
+    "head_coach",
+    "assistant_coach",
+    "admin",
+    "member",
+  ]);
+
+  await setPracticeRsvp(
+    sessionId,
+    membershipId,
+    rsvpStatus,
+    absenceReason ?? null,
+  );
+  revalidatePath(`/team/${teamId}/attendance/${sessionId}`);
+  revalidatePath(`/team/${teamId}/calendar`);
 }
 
 export async function getSessionsAction(teamId: string) {

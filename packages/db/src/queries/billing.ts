@@ -1,7 +1,7 @@
 import type { PlanTier } from "@project-aqua/swim-core/plans";
 import { eq } from "drizzle-orm";
-import { db } from "../client.js";
-import { subscriptions } from "../schema/index.js";
+import { db } from "../client";
+import { subscriptions } from "../schema/index";
 
 function generateId(): string {
   return crypto.randomUUID();
@@ -43,6 +43,8 @@ export async function updateSubscription(
     status?: "active" | "canceled" | "past_due" | "trialing";
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
+    polarCustomerId?: string;
+    polarSubscriptionId?: string;
     currentPeriodEnd?: Date;
   },
 ) {
@@ -55,7 +57,7 @@ export async function updateSubscription(
 export async function getOwnerEmail(
   organizationId: string,
 ): Promise<string | null> {
-  const { member, user } = await import("../schema/index.js");
+  const { member, user } = await import("../schema/index");
   const { and } = await import("drizzle-orm");
   const rows = await db
     .select({ email: user.email })

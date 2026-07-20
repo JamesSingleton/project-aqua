@@ -1,5 +1,5 @@
-import { syncMemberFromSwims } from "./sync.js";
-import type { SwimsWebhookPayload } from "./types.js";
+import { syncMemberFromSwims } from "./sync";
+import type { SwimsWebhookPayload } from "./types";
 
 export function verifySwimsWebhook(
   thumbprint: string | null,

@@ -5,7 +5,7 @@ export {
   signOut,
   signUp,
   useSession,
-} from "./client.js";
-export * from "./roles.js";
-export { auth, type Session } from "./server.js";
-export { getSession, requireSession } from "./session.js";
+} from "./client";
+export * from "./roles";
+export { auth, type Session } from "./server";
+export { getSession, requireSession } from "./session";

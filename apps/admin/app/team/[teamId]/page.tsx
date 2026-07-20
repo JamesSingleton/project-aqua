@@ -1,5 +1,4 @@
 import { getSession } from "@project-aqua/auth/session";
-import { getSession } from "@project-aqua/auth/session";
 import { getMember, hasCurrentSafeSportTraining } from "@project-aqua/db/authz";
 import { getAttendanceSummary } from "@project-aqua/db/queries/attendance";
 import { getMeets } from "@project-aqua/db/queries/meets";

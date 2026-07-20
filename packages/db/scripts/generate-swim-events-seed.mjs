@@ -7,7 +7,7 @@ const STROKE_LABELS = {
   back: "Backstroke",
   breast: "Breaststroke",
   fly: "Butterfly",
-  im: "Individual Medley",
+  im: "IM",
 };
 
 const COURSE_DISTANCE_OVERRIDES = {
@@ -25,7 +25,9 @@ const DEFAULT_DISTANCES = {
 };
 
 function distancesFor(stroke, course) {
-  return COURSE_DISTANCE_OVERRIDES[course]?.[stroke] ?? DEFAULT_DISTANCES[stroke];
+  return (
+    COURSE_DISTANCE_OVERRIDES[course]?.[stroke] ?? DEFAULT_DISTANCES[stroke]
+  );
 }
 
 function buildCatalog() {
@@ -34,11 +36,12 @@ function buildCatalog() {
   for (const course of COURSES) {
     for (const stroke of STROKES) {
       for (const distance of distancesFor(stroke, course)) {
-        for (const gender of ["m", "f"]) {
-          const eventKey = `${distance}_${stroke}_${course.toLowerCase()}_${gender}`;
+        for (const genderCode of ["m", "f"]) {
+          const gender = genderCode === "f" ? "female" : "male";
+          const eventKey = `${distance}_${stroke}_${course.toLowerCase()}_${genderCode}`;
           events.push({
             eventKey,
-            label: `${distance} ${STROKE_LABELS[stroke]} ${course}`,
+            label: `${distance} ${STROKE_LABELS[stroke]}`,
             distance,
             stroke,
             course,
@@ -63,11 +66,12 @@ function buildCatalog() {
     const strokeLabel =
       stroke === "free_relay" ? "Freestyle Relay" : "Medley Relay";
     for (const course of courses) {
-      for (const gender of ["m", "f"]) {
-        const eventKey = `${distance}_${stroke}_${course.toLowerCase()}_${gender}`;
+      for (const genderCode of ["m", "f"]) {
+        const gender = genderCode === "f" ? "female" : "male";
+        const eventKey = `${distance}_${stroke}_${course.toLowerCase()}_${genderCode}`;
         events.push({
           eventKey,
-          label: `${distance} ${strokeLabel} ${course}`,
+          label: `${distance} ${strokeLabel}`,
           distance,
           stroke,
           course,

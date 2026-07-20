@@ -1,39 +1,204 @@
 "use client";
+
+import {
+  CLASS_YEAR_LABELS,
+  type ClassYear,
+} from "@project-aqua/swim-core/team-types";
+import { Badge } from "@project-aqua/ui/components/badge";
 import { Button } from "@project-aqua/ui/components/button";
 import { Checkbox } from "@project-aqua/ui/components/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@project-aqua/ui/components/dropdown-menu";
-import { ScrollArea } from "@project-aqua/ui/components/scroll-area";
-import { Separator } from "@project-aqua/ui/components/separator";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@project-aqua/ui/components/sheet";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@project-aqua/ui/components/tooltip";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CopyIcon, MoreVerticalIcon } from "lucide-react";
+import {
+  CopyIcon,
+  EllipsisVerticalIcon,
+  EyeIcon,
+  PencilIcon,
+  Trash2Icon,
+  UserRoundIcon,
+} from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { removeSwimmerAction } from "@/app/team/[teamId]/roster/actions";
 import type { Athlete } from "@/types";
 import { DataTableColumnHeader } from "../data-table-column-header";
+import { SwimmerQuickView } from "./swimmer-quick-view";
 
-export function columns(teamId: string): ColumnDef<Athlete>[] {
+function statusVariant(status: string) {
+  const normalized = status.toLowerCase();
+  if (normalized === "active") return "default" as const;
+  if (normalized === "inactive") return "outline" as const;
+  return "secondary" as const;
+}
+
+function RowActions({ teamId, athlete }: { teamId: string; athlete: Athlete }) {
+  const router = useRouter();
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const profileHref = `/team/${teamId}/swimmers/${athlete.id}`;
+  const editHref = `${profileHref}/edit`;
+
+  function handleRemove() {
+    const confirmed = window.confirm(
+      `Remove ${athlete.name} from this team's roster?`,
+    );
+    if (!confirmed) return;
+    startTransition(async () => {
+      await removeSwimmerAction(teamId, athlete.id);
+      router.refresh();
+    });
+  }
+
+  return (
+    <>
+      <div className="flex items-center gap-1">
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Remove from roster"
+                disabled={pending}
+                onClick={handleRemove}
+              />
+            }
+          >
+            <Trash2Icon />
+          </TooltipTrigger>
+          <TooltipContent>Remove from roster</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Quick view"
+                onClick={() => setQuickViewOpen(true)}
+              />
+            }
+          >
+            <EyeIcon />
+          </TooltipTrigger>
+          <TooltipContent>Quick view</TooltipContent>
+        </Tooltip>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="More actions"
+                disabled={pending}
+              />
+            }
+          >
+            <EllipsisVerticalIcon />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-48">
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                nativeButton={false}
+                render={<Link href={editHref} />}
+              >
+                <PencilIcon />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                nativeButton={false}
+                render={<Link href={profileHref} />}
+              >
+                <UserRoundIcon />
+                View profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setQuickViewOpen(true)}>
+                <EyeIcon />
+                Quick view
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                onClick={() => navigator.clipboard.writeText(athlete.id)}
+              >
+                <CopyIcon />
+                Copy swimmer ID
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={handleRemove}
+                disabled={pending}
+              >
+                <Trash2Icon />
+                Remove from roster
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <SwimmerQuickView
+        teamId={teamId}
+        athlete={athlete}
+        open={quickViewOpen}
+        onOpenChange={setQuickViewOpen}
+      />
+    </>
+  );
+}
+
+function nameSearchFilter(
+  row: { original: Athlete },
+  _columnId: string,
+  value: unknown,
+) {
+  const q = String(value).toLowerCase().trim();
+  if (!q) return true;
+  const haystack = [
+    row.original.firstName,
+    row.original.lastName,
+    row.original.preferredName,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(q);
+}
+
+export function columns(
+  teamId: string,
+  options: { showClassYear?: boolean } = {},
+): ColumnDef<Athlete>[] {
+  const { showClassYear = false } = options;
+
   return [
     {
       id: "select",
       header: ({ table }) => (
         <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
+          checked={table.getIsAllPageRowsSelected()}
+          indeterminate={
+            table.getIsSomePageRowsSelected() &&
+            !table.getIsAllPageRowsSelected()
           }
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
@@ -50,243 +215,116 @@ export function columns(teamId: string): ColumnDef<Athlete>[] {
       enableHiding: false,
     },
     {
-      accessorKey: "name",
+      accessorKey: "firstName",
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Name" />
+        <DataTableColumnHeader column={column} title="First Name" />
       ),
       cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/team/${teamId}/swimmers/${row.original.id}`}
-            className="text-primary underline"
-          >
-            {row.original.name}
-          </Link>
-          {row.original.isMinor && (
-            <span className="text-muted-foreground text-xs">Minor</span>
-          )}
-        </div>
+        <span className="font-medium">
+          {row.original.preferredName || row.original.firstName}
+        </span>
+      ),
+      filterFn: nameSearchFilter,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "lastName",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Last Name" />
+      ),
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.lastName}</span>
       ),
       enableHiding: false,
     },
     {
       accessorKey: "gender",
+      meta: { label: "Gender" },
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Gender" />
       ),
-      cell: ({ row }) => {
-        return (
-          <span title={row.original.gender}>
-            {row.original.gender === "Male" ? "M" : "F"}
-          </span>
-        );
-      },
+      cell: ({ row }) => (
+        <span title={row.original.gender}>
+          {row.original.gender === "Male" ? "M" : "F"}
+        </span>
+      ),
     },
     {
-      accessorKey: "birthday",
-      header: "Birthday",
-      cell: ({ row }) => {
-        return new Date(row.original.dateOfBirth).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        });
-      },
+      accessorKey: "dateOfBirth",
+      meta: { label: "Birthday" },
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Birthday" />
+      ),
+      cell: ({ row }) =>
+        row.original.dateOfBirth
+          ? new Date(row.original.dateOfBirth).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })
+          : "—",
     },
     {
       accessorKey: "age",
-      header: "Age",
+      meta: { label: "Age" },
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Age" />
+      ),
+    },
+    ...(showClassYear
+      ? [
+          {
+            accessorKey: "classYear",
+            meta: { label: "Class" },
+            header: ({ column }) => (
+              <DataTableColumnHeader column={column} title="Class" />
+            ),
+            cell: ({ row }) => {
+              const year = row.original.classYear;
+              if (!year) return "—";
+              const label = CLASS_YEAR_LABELS[year as ClassYear];
+              return label ? `${year} · ${label}` : year;
+            },
+          } satisfies ColumnDef<Athlete>,
+        ]
+      : []),
+    {
+      accessorKey: "trainingGroup",
+      meta: { label: "Training Group" },
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Training Group" />
+      ),
+      cell: ({ row }) => row.original.trainingGroup || "—",
+    },
+    {
+      accessorKey: "usaId",
+      meta: { label: "USA ID" },
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="USA ID" />
+      ),
+      cell: ({ row }) => (
+        <span className="font-mono text-xs">{row.original.usaId || "—"}</span>
+      ),
+    },
+    {
+      accessorKey: "status",
+      meta: { label: "Status" },
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Status" />
+      ),
+      cell: ({ row }) => (
+        <Badge
+          variant={statusVariant(row.original.status)}
+          className="capitalize"
+        >
+          {row.original.status}
+        </Badge>
+      ),
     },
     {
       id: "actions",
-      cell: ({ row }) => {
-        const athlete = row.original;
-        const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-        return (
-          <>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                  <span className="sr-only">Open menu</span>
-                  <MoreVerticalIcon className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem
-                  onClick={() => navigator.clipboard.writeText(athlete.id)}
-                >
-                  Copy Swimmer's ID
-                </DropdownMenuItem>
-                <DropdownMenuItem>Mark as Inactive</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link
-                    href={`/team/${teamId}/roster?athleteId=${athlete.id}`}
-                    onClick={() => setIsMenuOpen(true)}
-                  >
-                    Quick View
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href={`/team/${teamId}/swimmers/${athlete.id}/edit`}>
-                    Edit
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-              <SheetContent className="sm:max-w-md">
-                <SheetHeader className="flex flex-col space-y-2 text-left">
-                  <SheetTitle className="font-semibold tracking-tight group flex items-center gap-2 text-lg">
-                    {athlete.name}
-                    <span className="text-sm text-gray-500">
-                      (ID: {athlete.id})
-                    </span>
-                    <Button
-                      className="h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100"
-                      size="icon"
-                      variant="outline"
-                      title="Copy Swimmer ID"
-                      onClick={() => navigator.clipboard.writeText(athlete.id)}
-                    >
-                      <CopyIcon className="h-3 w-3" />
-                      <span className="sr-only">Copy Swimmer ID</span>
-                    </Button>
-                  </SheetTitle>
-                  <SheetDescription>
-                    Date of Birth:{" "}
-                    {new Date(athlete.dateOfBirth).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </SheetDescription>
-                </SheetHeader>
-                <Separator className="my-4" />
-                <ScrollArea className="h-[calc(100vh-8rem)] pr-3 pb-10">
-                  <div className="grid gap-3">
-                    <div className="font-semibold">Swimmer Details</div>
-                    <ul className="grid gap-3">
-                      <li className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Age</span>
-                        <span>{athlete.age}</span>
-                      </li>
-                      <li className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Coach</span>
-                        <span>Coach O'Brien</span>
-                      </li>
-                      <li className="flex items-center justify-between">
-                        <span className="text-muted-foreground">
-                          Practice Group
-                        </span>
-                        <span>{athlete.practiceGroup}</span>
-                      </li>
-                    </ul>
-                    <Separator className="my-2" />
-                    <div className="font-semibold">Personal Records</div>
-                    <ul className="grid gap-3">
-                      {athlete.personalRecords.map((record) => (
-                        <li
-                          key={record.event}
-                          className="flex items-center justify-between"
-                        >
-                          <span className="text-muted-foreground">
-                            {record.event}
-                          </span>
-                          <span>{record.time}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  {athlete.parents.length > 0 && (
-                    <>
-                      <Separator className="my-4" />
-                      <div className="grid gap-3">
-                        <div className="font-semibold">Parent Information</div>
-                        <dl className="grid gap-3">
-                          {athlete.parents.map((parent) => (
-                            <div key={parent.name} className="grid gap-3">
-                              <div className="flex items-center justify-between">
-                                <dt className="text-muted-foreground">Name</dt>
-                                <dd>{parent.name}</dd>
-                              </div>
-                              {parent.email && (
-                                <div className="flex items-center justify-between">
-                                  <dt className="text-muted-foreground">
-                                    Email
-                                  </dt>
-                                  <dd>
-                                    <Link href={`mailto:${parent.email}`}>
-                                      {parent.email}
-                                    </Link>
-                                  </dd>
-                                </div>
-                              )}
-                              {parent.phone_number && (
-                                <div className="flex items-center justify-between">
-                                  <dt className="text-muted-foreground">
-                                    Phone
-                                  </dt>
-                                  <dd>
-                                    <Link href={`tel:${parent.phone_number}`}>
-                                      {parent.phone_number}
-                                    </Link>
-                                  </dd>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </dl>
-                      </div>
-                    </>
-                  )}
-                  {athlete.emergencyContacts.length > 0 && (
-                    <>
-                      <Separator className="my-4" />
-                      <div className="grid gap-3">
-                        <div className="font-semibold">
-                          Emergency Contact Information
-                        </div>
-                        <dl className="grid gap-3">
-                          {athlete.emergencyContacts.map((contact) => (
-                            <div
-                              className="grid gap-3"
-                              key={`${contact.name}_${contact.phone_number}`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <dt className="text-muted-foreground">
-                                  Contact
-                                </dt>
-                                <dd>{contact.name}</dd>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <dt className="text-muted-foreground">
-                                  Relationship
-                                </dt>
-                                <dd>{contact.relationship}</dd>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <dt className="text-muted-foreground">Phone</dt>
-                                <dd>
-                                  <Link href={`tel:${contact.phone_number}`}>
-                                    {contact.phone_number}
-                                  </Link>
-                                </dd>
-                              </div>
-                            </div>
-                          ))}
-                        </dl>
-                      </div>
-                    </>
-                  )}
-                </ScrollArea>
-              </SheetContent>
-            </Sheet>
-          </>
-        );
-      },
+      header: "Actions",
+      cell: ({ row }) => <RowActions teamId={teamId} athlete={row.original} />,
       enableSorting: false,
       enableHiding: false,
     },

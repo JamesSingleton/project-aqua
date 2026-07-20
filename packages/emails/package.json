@@ -14,7 +14,6 @@
     "email:dev": "email dev --dir src/templates --port 3002"
   },
   "dependencies": {
-    "@react-email/components": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-email": "catalog:",
@@ -22,9 +21,9 @@
   },
   "devDependencies": {
     "@project-aqua/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@types/node": "catalog:",
     "typescript": "catalog:"
   }
 }

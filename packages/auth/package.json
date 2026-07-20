@@ -16,6 +16,8 @@
     "lint:fix": "biome check --write ."
   },
   "dependencies": {
+    "@polar-sh/better-auth": "^1.8.4",
+    "@polar-sh/sdk": "^0.48.1",
     "@project-aqua/db": "workspace:*",
     "@project-aqua/emails": "workspace:*",
     "@project-aqua/swim-core": "workspace:*",

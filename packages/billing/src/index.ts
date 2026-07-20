@@ -1,3 +1,4 @@
-export * from "./features.js";
-export * from "./stripe.js";
-export * from "./webhooks.js";
+export * from "./features";
+export * from "./polar";
+export * from "./stripe";
+export * from "./webhooks";

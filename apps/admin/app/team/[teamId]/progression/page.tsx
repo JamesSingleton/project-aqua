@@ -1,4 +1,8 @@
-import { getSwimmerBestTimes } from "@project-aqua/db/queries/progression";
+import { getOrganizationTeamType } from "@project-aqua/db/authz";
+import {
+  getSwimmerBestTimes,
+  getTeamResultSeries,
+} from "@project-aqua/db/queries/progression";
 import { getRoster } from "@project-aqua/db/queries/roster";
 import { formatTime } from "@project-aqua/swim-core/times";
 import {
@@ -8,15 +12,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@project-aqua/ui/components/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@project-aqua/ui/components/table";
-import Link from "next/link";
+import type { Metadata } from "next";
+import { PageHeader } from "@/components/page-header";
+import { ProgressionChart } from "@/components/progression-chart";
+import { formatBestTimeEventLabel } from "./event-label";
+import { TeamTopTimes } from "./team-top-times";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}): Promise<Metadata> {
+  const { teamId } = await params;
+  return {
+    title: "Progression",
+    description: "Best times and meet result trends for your team.",
+    alternates: { canonical: `/team/${teamId}/progression` },
+  };
+}
 
 export default async function ProgressionPage({
   params,
@@ -24,7 +37,11 @@ export default async function ProgressionPage({
   params: Promise<{ teamId: string }>;
 }) {
   const { teamId } = await params;
-  const roster = await getRoster(teamId);
+  const [roster, series, teamType] = await Promise.all([
+    getRoster(teamId),
+    getTeamResultSeries(teamId),
+    getOrganizationTeamType(teamId),
+  ]);
 
   const swimmersWithTimes = await Promise.all(
     roster.map(async (swimmer) => ({
@@ -38,66 +55,102 @@ export default async function ProgressionPage({
       swimmerName: `${s.firstName} ${s.lastName}`,
       swimmerId: s.swimmerId,
       eventKey: bt.eventKey,
+      eventLabel: formatBestTimeEventLabel(
+        bt.eventLabel,
+        bt.course,
+        bt.eventGender,
+        teamType,
+      ),
       course: bt.course,
       timeMs: bt.timeMs,
-      achievedAt: bt.achievedAt,
+      achievedAt: bt.achievedAt.toISOString(),
     })),
   );
-
   allTimes.sort((a, b) => a.timeMs - b.timeMs);
 
+  // Chart: most common eventKey in series
+  const counts = new Map<string, number>();
+  const labelsByEventKey = new Map<string, string>();
+  for (const row of series) {
+    counts.set(row.eventKey, (counts.get(row.eventKey) ?? 0) + 1);
+    labelsByEventKey.set(
+      row.eventKey,
+      formatBestTimeEventLabel(
+        row.eventLabel,
+        row.course ?? "SCY",
+        row.eventGender,
+        teamType,
+      ),
+    );
+  }
+  let topEvent = "";
+  let topCount = 0;
+  for (const [key, n] of counts) {
+    if (n > topCount) {
+      topEvent = key;
+      topCount = n;
+    }
+  }
+
+  const chartPoints = series
+    .filter((r) => r.eventKey === topEvent)
+    .map((r) => ({
+      date: r.meetDate.toISOString().slice(0, 10),
+      timeMs: r.timeMs,
+      label: r.meetName,
+    }));
+
+  const topEventLabel = topEvent
+    ? (labelsByEventKey.get(topEvent) ?? topEvent)
+    : "";
+
+  // Group average improvement: first vs last half of chart points
+  let groupTrend: string | null = null;
+  if (chartPoints.length >= 4) {
+    const mid = Math.floor(chartPoints.length / 2);
+    const first =
+      chartPoints.slice(0, mid).reduce((s, p) => s + p.timeMs, 0) / mid;
+    const second =
+      chartPoints.slice(mid).reduce((s, p) => s + p.timeMs, 0) /
+      (chartPoints.length - mid);
+    const delta = first - second;
+    groupTrend =
+      delta > 0
+        ? `Group avg faster by ${formatTime(Math.round(delta))} on ${topEventLabel}`
+        : `Group avg slower by ${formatTime(Math.round(-delta))} on ${topEventLabel}`;
+  }
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Progression</h1>
-        <p className="text-muted-foreground">Best times tracked across meets</p>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Progression"
+        description="Best times and meet result trends from imported files"
+      />
 
       <Card>
         <CardHeader>
-          <CardTitle>Team top times</CardTitle>
+          <CardTitle>
+            {topEventLabel ? `Trend · ${topEventLabel}` : "Time Trend"}
+          </CardTitle>
           <CardDescription>
-            Fastest times per event from meet results
+            {groupTrend ??
+              "Lower is faster. Import more meets for a clearer line."}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {allTimes.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No times recorded yet. Import meet results to track progression.
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Swimmer</TableHead>
-                  <TableHead>Event</TableHead>
-                  <TableHead>Course</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {allTimes.slice(0, 50).map((row, i) => (
-                  <TableRow key={`${row.swimmerId}-${row.eventKey}-${i}`}>
-                    <TableCell>
-                      <Link
-                        href={`/team/${teamId}/swimmers/${row.swimmerId}`}
-                        className="text-primary underline"
-                      >
-                        {row.swimmerName}
-                      </Link>
-                    </TableCell>
-                    <TableCell>{row.eventKey}</TableCell>
-                    <TableCell>{row.course}</TableCell>
-                    <TableCell className="font-mono">
-                      {formatTime(row.timeMs)}
-                    </TableCell>
-                    <TableCell>{row.achievedAt.toLocaleDateString()}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <ProgressionChart points={chartPoints} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Team Top Times</CardTitle>
+          <CardDescription>
+            Fastest best times — group and filter to explore the roster
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TeamTopTimes times={allTimes} />
         </CardContent>
       </Card>
     </div>

@@ -1,3 +1,3 @@
-export * from "./authz.js";
-export { type Database, db } from "./client.js";
-export * from "./schema/index.js";
+export * from "./authz";
+export { type Database, db } from "./client";
+export * from "./schema/index";

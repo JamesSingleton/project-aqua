@@ -1,5 +1,5 @@
-import { Text } from "@react-email/components";
-import { EmailLayout, textStyle } from "../_layout.js";
+import { Text } from "react-email";
+import { EmailLayout, textStyle } from "../_layout";
 
 export interface SwimsSyncSummaryProps {
   teamName: string;

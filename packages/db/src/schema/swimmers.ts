@@ -8,7 +8,8 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
-import { organization } from "./auth.js";
+import { organization } from "./auth";
+import { trainingGroups } from "./groups";
 
 export const genderEnum = pgEnum("gender", ["male", "female"]);
 export const membershipStatusEnum = pgEnum("membership_status", [
@@ -49,8 +50,14 @@ export const teamSwimmerMemberships = pgTable(
     swimmerId: text("swimmer_id")
       .notNull()
       .references(() => swimmers.id, { onDelete: "cascade" }),
-    practiceGroup: text("practice_group"),
-    trainingGroups: text("training_groups").array(),
+    groupId: text("group_id").references(() => trainingGroups.id, {
+      onDelete: "set null",
+    }),
+    /** @deprecated Prefer groupId */ practiceGroup: text("practice_group"),
+    /** @deprecated Prefer groupId */ trainingGroups:
+      text("training_groups").array(),
+    /** High school class year: FR, SO, JR, SR */
+    classYear: text("class_year"),
     status: membershipStatusEnum("status").notNull().default("active"),
     joinedAt: timestamp("joined_at").notNull().defaultNow(),
     leftAt: timestamp("left_at"),
@@ -171,3 +178,20 @@ export const swimmerClubRegistrationsRelations = relations(
     }),
   }),
 );
+
+export const swimmerContactsRelations = relations(
+  swimmerContacts,
+  ({ one }) => ({
+    membership: one(teamSwimmerMemberships, {
+      fields: [swimmerContacts.membershipId],
+      references: [teamSwimmerMemberships.id],
+    }),
+  }),
+);
+
+export const swimmerMedicalRelations = relations(swimmerMedical, ({ one }) => ({
+  membership: one(teamSwimmerMemberships, {
+    fields: [swimmerMedical.membershipId],
+    references: [teamSwimmerMemberships.id],
+  }),
+}));

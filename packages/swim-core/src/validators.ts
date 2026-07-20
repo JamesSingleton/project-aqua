@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { COURSES, GENDERS } from "./events.js";
-import { isMinorSwimmer } from "./age.js";
+import { isMinorSwimmer } from "./age";
+import { COURSES, GENDERS } from "./events";
 
 export const swimmerContactsSchema = z.object({
   parentName: z.string().optional(),
@@ -37,6 +37,7 @@ export const rosterRowSchema = z
     phone: z.string().optional(),
     practiceGroup: z.string().optional(),
     trainingGroups: z.array(z.string()).optional(),
+    classYear: z.enum(["FR", "SO", "JR", "SR"]).optional(),
     usaMemberId: z.string().optional(),
     governingBodyId: z.string().optional(),
     contacts: swimmerContactsSchema.optional(),
@@ -84,6 +85,7 @@ export const createMeetSchema = z.object({
   endDate: z.string().optional(),
   course: z.enum(COURSES),
   location: z.string().optional(),
+  address: z.string().optional(),
 });
 
 export type CreateMeetInput = z.infer<typeof createMeetSchema>;
@@ -96,3 +98,24 @@ export const attendanceStatusSchema = z.enum([
 ]);
 
 export type AttendanceStatus = z.infer<typeof attendanceStatusSchema>;
+
+export const rsvpStatusSchema = z.enum([
+  "unknown",
+  "attending",
+  "absent",
+  "maybe",
+]);
+
+export type RsvpStatus = z.infer<typeof rsvpStatusSchema>;
+
+export const meetCommitmentStatusSchema = z.enum([
+  "pending",
+  "committed",
+  "declined",
+]);
+
+export type MeetCommitmentStatus = z.infer<typeof meetCommitmentStatusSchema>;
+
+export const meetEntryStatusSchema = z.enum(["draft", "approved", "scratched"]);
+
+export type MeetEntryStatus = z.infer<typeof meetEntryStatusSchema>;

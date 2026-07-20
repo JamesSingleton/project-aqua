@@ -1,4 +1,4 @@
-import type { SwimsClub, SwimsMember } from "./types.js";
+import type { SwimsClub, SwimsMember } from "./types";
 
 const SWIMS_BASE_URL =
   process.env.USA_SWIMMING_API_URL ??

@@ -25,7 +25,7 @@ Create → Add DNS records → Verify → Poll status → Send
 
 `resend.Domains.create/get/list/update/remove/verify` — same operations with snake_case params (e.g., `custom_return_path`, `open_tracking`, `click_tracking`).
 
-> **Claiming a domain another Resend account already verified?** See [Claim a Domain](#claim-a-domain) — Node SDK only, requires `resend >= 6.14.0`.
+> **Claiming a domain another Resend account already verified?** See [Claim a Domain](#claim-a-domain) — Node SDK (`resend >= 6.14.0`) and CLI (`resend domains claim`).
 
 ## Use a Subdomain
 
@@ -108,11 +108,11 @@ Claiming takes over a domain **another Resend account has already verified**. Th
 Claim → Add TXT proof to DNS → Verify claim → (completed) → Update DKIM in DNS → Verify domain → Send
 ```
 
-Claim methods are **Node SDK only** (`resend >= 6.14.0`) — no CLI or other-language SDK support yet.
+Claim methods are available via the **Node SDK** (`resend >= 6.14.0`) and the **CLI** (`resend domains claim`) — no other-language SDK support yet.
 
 | Operation | Method | Notes |
 |-----------|--------|-------|
-| Start claim | `resend.domains.claims.create({ name })` | Same body as `domains.create`. Returns a `domain_claim` with `domain_id` + the TXT `record` to add |
+| Start claim | `resend.domains.claims.create({ name })` | Accepts `name` (required) + optional `region`, `customReturnPath`, `openTracking`, `clickTracking`, `trackingSubdomain` (`domains.create` body minus `tls`/`capabilities`). Returns a `domain_claim` with `domain_id` + the TXT `record` to add |
 | Get claim | `resend.domains.claims.get(domainId)` | Latest claim for the placeholder domain — poll `status` |
 | Verify claim | `resend.domains.claims.verify(domainId)` | Triggers async DNS proof + transfer (not synchronous) |
 
@@ -176,4 +176,4 @@ A `blocked` status means a safety check failed — inspect `blocked_reason` (`gr
 | Reusing the old account's DNS records after a claim | A claim issues **new DKIM keys** — fetch the transferred domain with `domains.get()`, update DNS, then `domains.verify()` |
 | Treating the claim as done at `completed` | `completed` only means the transfer finished — the domain still needs its new DKIM records in DNS and a `domains.verify()` to send |
 | Expecting `claims.verify()` to be synchronous | It triggers an async DNS proof + transfer — poll `claims.get()` for `status` |
-| Looking for a `claim` CLI command or Python method | Claims are **Node SDK only** (`resend >= 6.14.0`) today |
+| Looking for a claim method in Python or another language | Claims are Node SDK + CLI only today — no other-language SDK support yet |

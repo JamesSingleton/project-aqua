@@ -10,7 +10,10 @@
     "./validators": "./src/validators.ts",
     "./plans": "./src/plans.ts",
     "./event-catalog": "./src/event-catalog.ts",
-    "./age": "./src/age.ts"
+    "./entry-limits": "./src/entry-limits.ts",
+    "./age": "./src/age.ts",
+    "./team-types": "./src/team-types.ts",
+    "./workout-parser": "./src/workout-parser.ts"
   },
   "scripts": {
     "check:types": "tsc --noEmit",

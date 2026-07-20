@@ -15,6 +15,8 @@ import {
   TableHeader,
   TableRow,
 } from "@project-aqua/ui/components/table";
+import Link from "next/link";
+import { PageHeader } from "@/components/page-header";
 import { AttendanceForm } from "./attendance-form";
 
 export default async function AttendancePage({
@@ -29,13 +31,11 @@ export default async function AttendancePage({
   ]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Attendance</h1>
-        <p className="text-muted-foreground">
-          Track practice attendance for your team
-        </p>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Attendance"
+        description="Take practice rolls. Gaps feed AI workout suggestions."
+      />
 
       <AttendanceForm teamId={teamId} rosterCount={roster.length} />
 
@@ -62,11 +62,16 @@ export default async function AttendancePage({
                 {sessions.map((session) => (
                   <TableRow key={session.id}>
                     <TableCell>
-                      {session.date.toLocaleDateString()}{" "}
-                      {session.date.toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      <Link
+                        href={`/team/${teamId}/attendance/${session.id}`}
+                        className="text-primary underline"
+                      >
+                        {session.date.toLocaleDateString()}{" "}
+                        {session.date.toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </Link>
                     </TableCell>
                     <TableCell>{session.location ?? "—"}</TableCell>
                     <TableCell>{session.notes ?? "—"}</TableCell>

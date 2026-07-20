@@ -1,7 +1,6 @@
 "use server";
 
 import { getSession } from "@project-aqua/auth/session";
-import { canAddSwimmer } from "@project-aqua/billing/features";
 import {
   canExportRoster,
   requireCoachSafeSportCurrent,
@@ -11,24 +10,34 @@ import {
   writeAuditLog,
 } from "@project-aqua/db/authz";
 import {
+  createImportJob,
+  updateImportJob,
+} from "@project-aqua/db/queries/imports";
+import { patchTeamUiPreferences } from "@project-aqua/db/queries/preferences";
+import {
   addSwimmer,
   getRoster,
   getSwimmerContactsForMembership,
   getSwimmerMedicalForMembership,
   removeSwimmerFromTeam,
-  searchSwimmerByUsaId,
   updateSwimmer,
 } from "@project-aqua/db/queries/roster";
 import {
   createMaappAcknowledgment,
   logAuditEvent,
 } from "@project-aqua/db/queries/safesport";
-import { db } from "@project-aqua/db/client";
-import { organization } from "@project-aqua/db/schema";
-import { sendMaappAcknowledgmentRequest } from "@project-aqua/emails";
+import {
+  sendRosterImportComplete,
+  sendRosterImportFailed,
+} from "@project-aqua/emails";
 import { isMinorSwimmer } from "@project-aqua/swim-core/age";
 import { rosterRowSchema } from "@project-aqua/swim-core/validators";
-import { eq } from "drizzle-orm";
+import { parseRosterCsv } from "@project-aqua/swim-formats/csv";
+import {
+  detectRosterFileFormat,
+  parseRosterFile,
+  rosterImportErrorForFile,
+} from "@project-aqua/swim-formats/roster";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 
@@ -64,68 +73,6 @@ function parseMedicalFromForm(formData: FormData) {
     conditions: conditions || undefined,
     notes: notes || undefined,
   };
-}
-
-function parseRosterFromForm(formData: FormData) {
-  return rosterRowSchema.parse({
-    firstName: formData.get("firstName"),
-    lastName: formData.get("lastName"),
-    middleName: formData.get("middleName") || undefined,
-    preferredName: formData.get("preferredName") || undefined,
-    dateOfBirth: formData.get("dateOfBirth"),
-    gender: formData.get("gender"),
-    email: formData.get("email") || undefined,
-    phone: formData.get("phone") || undefined,
-    practiceGroup: formData.get("practiceGroup") || undefined,
-    usaMemberId: formData.get("usaMemberId") || undefined,
-    linkExistingSwimmerId: formData.get("linkExistingSwimmerId") || undefined,
-    contacts: parseContactsFromForm(formData),
-    medical: parseMedicalFromForm(formData),
-  });
-}
-
-export async function createSwimmerAction(teamId: string, formData: FormData) {
-  const session = await getSession();
-  await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
-
-  const parsed = parseRosterFromForm(formData);
-
-  if (isMinorSwimmer(parsed.dateOfBirth)) {
-    await requireCoachSafeSportCurrent(session?.user?.id, teamId);
-  }
-
-  const canAdd = await canAddSwimmer(teamId);
-  if (!canAdd) {
-    throw new Error(
-      "Swimmer limit reached for your plan. Upgrade to add more.",
-    );
-  }
-
-  const result = await addSwimmer(teamId, parsed);
-
-  if (
-    isMinorSwimmer(parsed.dateOfBirth) &&
-    parsed.contacts?.parentEmail &&
-    session?.user
-  ) {
-    const [org] = await db
-      .select({ name: organization.name })
-      .from(organization)
-      .where(eq(organization.id, teamId))
-      .limit(1);
-
-    const swimmerName = `${parsed.firstName} ${parsed.lastName}`;
-    const baseUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
-    await sendMaappAcknowledgmentRequest(parsed.contacts.parentEmail, {
-      teamName: org?.name ?? "Your team",
-      swimmerName,
-      parentName: parsed.contacts.parentName,
-      acknowledgeUrl: `${baseUrl}/team/${teamId}/swimmers/${result.swimmerId}`,
-    });
-  }
-
-  revalidatePath(`/team/${teamId}/roster`);
-  return result;
 }
 
 export async function updateSwimmerAction(
@@ -176,13 +123,6 @@ export async function fetchRosterAction(teamId: string) {
   return getRoster(teamId);
 }
 
-export async function lookupUsaSwimmerAction(teamId: string, usaMemberId: string) {
-  const session = await getSession();
-  await requireTeamMember(session?.user?.id, teamId);
-  if (!usaMemberId.trim()) return null;
-  return searchSwimmerByUsaId(usaMemberId.trim());
-}
-
 export async function fetchSwimmerPiiAction(
   teamId: string,
   membershipId: string,
@@ -218,19 +158,19 @@ export async function exportRosterCsvAction(teamId: string) {
 
   const roster = await getRoster(teamId);
   const lines = [
-    "first_name,last_name,middle_name,preferred_name,date_of_birth,gender,practice_group,usa_member_id",
-    ...roster.map(
-      (r) =>
-        [
-          r.firstName,
-          r.lastName,
-          r.middleName ?? "",
-          r.preferredName ?? "",
-          r.dateOfBirth,
-          r.gender,
-          r.practiceGroup ?? "",
-          r.governingBodyId ?? "",
-        ].join(","),
+    "first_name,last_name,middle_name,preferred_name,date_of_birth,gender,practice_group,class_year,usa_member_id",
+    ...roster.map((r) =>
+      [
+        r.firstName,
+        r.lastName,
+        r.middleName ?? "",
+        r.preferredName ?? "",
+        r.dateOfBirth,
+        r.gender,
+        r.practiceGroup ?? "",
+        r.classYear ?? "",
+        r.governingBodyId ?? "",
+      ].join(","),
     ),
   ];
 
@@ -287,4 +227,118 @@ export async function recordMaappAcknowledgmentAction(
   }
 
   revalidatePath(`/team/${teamId}/settings/safesport`);
+}
+
+async function importRosterRows(
+  teamId: string,
+  rows: Awaited<ReturnType<typeof parseRosterCsv>>,
+  jobType: string,
+) {
+  const session = await getSession();
+  await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+
+  if (rows.length === 0) {
+    throw new Error("No swimmers found in file");
+  }
+
+  if (rows.some((r) => isMinorSwimmer(r.dateOfBirth))) {
+    await requireCoachSafeSportCurrent(session?.user?.id, teamId);
+  }
+
+  const jobId = await createImportJob(teamId, jobType);
+  await updateImportJob(jobId, { status: "processing" });
+
+  try {
+    let added = 0;
+    for (const row of rows) {
+      await addSwimmer(teamId, row);
+      added++;
+    }
+
+    revalidatePath(`/team/${teamId}/roster`);
+    await updateImportJob(jobId, {
+      status: "complete",
+      resultSummary: JSON.stringify({ added }),
+    });
+
+    if (session?.user?.email) {
+      await sendRosterImportComplete(session.user.email, {
+        teamName: "Your team",
+        added,
+        updated: 0,
+      });
+    }
+
+    return { added };
+  } catch (error) {
+    await updateImportJob(jobId, {
+      status: "failed",
+      errors: error instanceof Error ? error.message : "Import failed",
+    });
+
+    if (session?.user?.email) {
+      await sendRosterImportFailed(session.user.email, {
+        teamName: "Your team",
+        errorSummary: error instanceof Error ? error.message : "Import failed",
+      });
+    }
+
+    throw error;
+  }
+}
+
+export async function importRosterCsvAction(teamId: string, content: string) {
+  return importRosterRows(teamId, parseRosterCsv(content), "roster_csv");
+}
+
+export async function importRosterFileAction(
+  teamId: string,
+  filename: string,
+  content: string,
+) {
+  const importError = rosterImportErrorForFile(filename, content);
+  if (importError) {
+    throw new Error(importError);
+  }
+
+  const format = detectRosterFileFormat(filename, content);
+  if (!format) {
+    throw new Error(
+      "Unsupported file type. Use CSV, SD3, CL2, or HY3 roster exports.",
+    );
+  }
+
+  const rows = parseRosterFile(content, format);
+  return importRosterRows(teamId, rows, `roster_${format}`);
+}
+
+export async function saveRosterViewPreferencesAction(
+  teamId: string,
+  view: {
+    columnVisibility?: Record<string, boolean>;
+    sorting?: { id: string; desc: boolean }[];
+  },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const session = await getSession();
+    if (!session?.user?.id) {
+      return { ok: false, error: "Unauthorized" };
+    }
+    await requireTeamMember(session.user.id, teamId);
+    await patchTeamUiPreferences(session.user.id, teamId, {
+      roster: {
+        columnVisibility: view.columnVisibility,
+        sorting: view.sorting,
+      },
+    });
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error:
+        err instanceof Error
+          ? err.message
+          : "Failed to save roster view preferences",
+    };
+  }
 }

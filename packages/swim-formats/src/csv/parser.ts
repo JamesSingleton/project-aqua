@@ -1,4 +1,5 @@
-import type { ParsedRosterRow } from "../types.js";
+import { parseClassYear } from "@project-aqua/swim-core/team-types";
+import type { ParsedRosterRow } from "../types";
 
 export interface CsvColumnMapping {
   firstName: string;
@@ -6,6 +7,7 @@ export interface CsvColumnMapping {
   dateOfBirth: string;
   gender: string;
   practiceGroup?: string;
+  classYear?: string;
   usaMemberId?: string;
 }
 
@@ -15,6 +17,7 @@ const DEFAULT_MAPPING: CsvColumnMapping = {
   dateOfBirth: "date_of_birth",
   gender: "gender",
   practiceGroup: "practice_group",
+  classYear: "class_year",
   usaMemberId: "usa_member_id",
 };
 
@@ -68,12 +71,22 @@ export function parseRosterCsv(
     const lastName = get(map.lastName);
     if (!firstName && !lastName) continue;
 
+    const practiceGroup = map.practiceGroup
+      ? get(map.practiceGroup) || undefined
+      : undefined;
+    const explicitClass = map.classYear
+      ? parseClassYear(get(map.classYear))
+      : null;
+    const classFromGroup = practiceGroup ? parseClassYear(practiceGroup) : null;
+    const classYear = explicitClass ?? classFromGroup ?? undefined;
+
     rows.push({
       firstName,
       lastName,
       dateOfBirth: get(map.dateOfBirth),
       gender: parseGender(get(map.gender)),
-      practiceGroup: map.practiceGroup ? get(map.practiceGroup) : undefined,
+      practiceGroup: classFromGroup ? undefined : practiceGroup,
+      classYear: classYear ?? undefined,
       usaMemberId: map.usaMemberId ? get(map.usaMemberId) : undefined,
     });
   }
@@ -91,6 +104,7 @@ export function exportRosterCsv(
     "date_of_birth",
     "gender",
     "practice_group",
+    "class_year",
     "usa_member_id",
   ];
   const lines = [headers.join(delimiter)];
@@ -103,6 +117,7 @@ export function exportRosterCsv(
         row.dateOfBirth,
         row.gender,
         row.practiceGroup ?? "",
+        row.classYear ?? "",
         row.usaMemberId ?? "",
       ].join(delimiter),
     );

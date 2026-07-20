@@ -11,7 +11,7 @@ import {
 } from "@project-aqua/db/schema";
 import { sendSwimsSyncSummary } from "@project-aqua/emails";
 import { and, eq } from "drizzle-orm";
-import { createSwimsClient } from "./client.js";
+import { createSwimsClient } from "./client";
 
 function generateId(): string {
   return crypto.randomUUID();

@@ -1,6 +1,6 @@
-import { render } from "@react-email/components";
 import type { ReactElement } from "react";
-import { getEmailFrom, getResendClient } from "./client.js";
+import { render } from "react-email";
+import { getEmailFrom, getResendClient } from "./client";
 
 export type EmailType =
   | "verify-email"
@@ -121,36 +121,33 @@ type TemplateLoader = () => Promise<{
 }>;
 
 const TEMPLATE_LOADERS: Record<EmailType, TemplateLoader> = {
-  "verify-email": () => import("./templates/auth/verify-email.js"),
-  "reset-password": () => import("./templates/auth/reset-password.js"),
-  "password-changed": () => import("./templates/auth/password-changed.js"),
-  "coach-welcome": () => import("./templates/onboarding/coach-welcome.js"),
-  "team-welcome": () => import("./templates/onboarding/team-welcome.js"),
-  "coach-invitation": () => import("./templates/team/coach-invitation.js"),
-  "invitation-accepted": () =>
-    import("./templates/team/invitation-accepted.js"),
-  "role-changed": () => import("./templates/team/role-changed.js"),
-  "removed-from-team": () => import("./templates/team/removed-from-team.js"),
-  "member-joined": () => import("./templates/team/member-joined.js"),
+  "verify-email": () => import("./templates/auth/verify-email"),
+  "reset-password": () => import("./templates/auth/reset-password"),
+  "password-changed": () => import("./templates/auth/password-changed"),
+  "coach-welcome": () => import("./templates/onboarding/coach-welcome"),
+  "team-welcome": () => import("./templates/onboarding/team-welcome"),
+  "coach-invitation": () => import("./templates/team/coach-invitation"),
+  "invitation-accepted": () => import("./templates/team/invitation-accepted"),
+  "role-changed": () => import("./templates/team/role-changed"),
+  "removed-from-team": () => import("./templates/team/removed-from-team"),
+  "member-joined": () => import("./templates/team/member-joined"),
   "subscription-confirmed": () =>
-    import("./templates/billing/subscription-confirmed.js"),
-  "payment-failed": () => import("./templates/billing/payment-failed.js"),
+    import("./templates/billing/subscription-confirmed"),
+  "payment-failed": () => import("./templates/billing/payment-failed"),
   "subscription-renewed": () =>
-    import("./templates/billing/subscription-renewed.js"),
-  "plan-downgraded": () => import("./templates/billing/plan-downgraded.js"),
+    import("./templates/billing/subscription-renewed"),
+  "plan-downgraded": () => import("./templates/billing/plan-downgraded"),
   "roster-import-complete": () =>
-    import("./templates/ops/roster-import-complete.js"),
-  "roster-import-failed": () =>
-    import("./templates/ops/roster-import-failed.js"),
-  "meet-import-complete": () =>
-    import("./templates/ops/meet-import-complete.js"),
-  "swims-sync-summary": () => import("./templates/ops/swims-sync-summary.js"),
+    import("./templates/ops/roster-import-complete"),
+  "roster-import-failed": () => import("./templates/ops/roster-import-failed"),
+  "meet-import-complete": () => import("./templates/ops/meet-import-complete"),
+  "swims-sync-summary": () => import("./templates/ops/swims-sync-summary"),
   "maapp-acknowledgment-request": () =>
-    import("./templates/safesport/maapp-acknowledgment-request.js"),
+    import("./templates/safesport/maapp-acknowledgment-request"),
   "safesport-training-expiring": () =>
-    import("./templates/safesport/safesport-training-expiring.js"),
+    import("./templates/safesport/safesport-training-expiring"),
   "safesport-training-required": () =>
-    import("./templates/safesport/safesport-training-required.js"),
+    import("./templates/safesport/safesport-training-required"),
 };
 
 export type SendEmailOptions<T extends EmailType> = {
