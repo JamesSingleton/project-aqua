@@ -8,8 +8,7 @@ import {
   getAttendanceSeries,
   getVolumeSeries,
 } from "@project-aqua/db/queries/analytics";
-import { getSwimmerBestTimes } from "@project-aqua/db/queries/progression";
-import { getRoster } from "@project-aqua/db/queries/roster";
+import { getTeamBestTimes } from "@project-aqua/db/queries/progression";
 import {
   Card,
   CardContent,
@@ -17,10 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@project-aqua/ui/components/card";
-import {
-  AttendanceChart,
-  VolumeChart,
-} from "@/components/analytics-charts";
+import { AttendanceChart, VolumeChart } from "@/components/analytics-charts";
 import { PageHeader, TimingBoard } from "@/components/page-header";
 import { TeamTopTimes } from "@/components/team-top-times";
 import { formatBestTimeEventLabel } from "@/lib/format-event-label";
@@ -34,39 +30,29 @@ export default async function AnalyticsPage({
   const session = await getSession();
   await requireTeamMember(session?.user?.id, teamId);
 
-  const [summary, volumeSeries, attendanceSeries, roster, teamType] =
+  const [summary, volumeSeries, attendanceSeries, bestTimes, teamType] =
     await Promise.all([
       getAnalyticsSummary(teamId),
       getVolumeSeries(teamId, 30),
       getAttendanceSeries(teamId, 30),
-      getRoster(teamId),
+      getTeamBestTimes(teamId),
       getOrganizationTeamType(teamId),
     ]);
 
-  const swimmersWithTimes = await Promise.all(
-    roster.map(async (swimmer) => ({
-      ...swimmer,
-      bestTimes: await getSwimmerBestTimes(swimmer.swimmerId),
-    })),
-  );
-
-  const allTimes = swimmersWithTimes.flatMap((s) =>
-    s.bestTimes.map((bt) => ({
-      swimmerName: `${s.firstName} ${s.lastName}`,
-      swimmerId: s.swimmerId,
-      eventKey: bt.eventKey,
-      eventLabel: formatBestTimeEventLabel(
-        bt.eventLabel,
-        bt.course,
-        bt.eventGender,
-        teamType,
-      ),
-      course: bt.course,
-      timeMs: bt.timeMs,
-      achievedAt: bt.achievedAt.toISOString(),
-    })),
-  );
-  allTimes.sort((a, b) => a.timeMs - b.timeMs);
+  const allTimes = bestTimes.map((bt) => ({
+    swimmerName: `${bt.firstName} ${bt.lastName}`,
+    swimmerId: bt.swimmerId,
+    eventKey: bt.eventKey,
+    eventLabel: formatBestTimeEventLabel(
+      bt.eventLabel,
+      bt.course,
+      bt.eventGender,
+      teamType,
+    ),
+    course: bt.course,
+    timeMs: bt.timeMs,
+    achievedAt: bt.achievedAt.toISOString(),
+  }));
 
   return (
     <div className="flex flex-col gap-6">

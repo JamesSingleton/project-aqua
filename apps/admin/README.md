@@ -30,6 +30,20 @@ pnpm dev:admin
 
 Open http://localhost:3001
 
+### Dev memory / Turbopack cache
+
+Long `pnpm dev:admin` sessions with heavy HMR can grow `apps/admin/.next` (especially `.next/dev/cache/turbopack`) into multi‑GB on disk and push `next-server` RSS into the multi‑GB range. That is Turbopack cache retention, not an app-level leak.
+
+When RSS feels painful:
+
+```bash
+# Stop the admin dev server, then from repo root:
+pnpm clean:admin
+pnpm dev:admin
+```
+
+Or from `apps/admin`: `pnpm clean:next`.
+
 ## Architecture
 
 - **Auth:** Better Auth with organization plugin (team = organization)

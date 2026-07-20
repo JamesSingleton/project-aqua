@@ -6,6 +6,7 @@
   "scripts": {
     "build": "NODE_ENV=production next build",
     "clean": "git clean -xdf .next .turbo node_modules",
+    "clean:next": "rm -rf .next",
     "dev": "next dev -p 3001",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

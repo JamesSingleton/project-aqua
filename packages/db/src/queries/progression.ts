@@ -9,7 +9,7 @@ import {
   meets,
   swimmerBestTimes,
 } from "../schema/meets";
-import { teamSwimmerMemberships } from "../schema/swimmers";
+import { swimmers, teamSwimmerMemberships } from "../schema/swimmers";
 
 function generateId(): string {
   return crypto.randomUUID();
@@ -85,10 +85,11 @@ export async function getSwimmerBestTimes(swimmerId: string) {
     .orderBy(asc(swimmerBestTimes.eventKey));
 }
 
+/** Top 50 best times for active members of an organization. */
 export async function getTeamTopTimes(organizationId: string) {
-  const results = await db
+  return db
     .select({
-      swimmerId: meetResults.swimmerId,
+      swimmerId: swimmerBestTimes.swimmerId,
       eventKey: swimmerBestTimes.eventKey,
       eventLabel: swimEvents.label,
       eventGender: swimEvents.gender,
@@ -97,15 +98,45 @@ export async function getTeamTopTimes(organizationId: string) {
       achievedAt: swimmerBestTimes.achievedAt,
     })
     .from(swimmerBestTimes)
-    .leftJoin(swimEvents, eq(swimEvents.eventKey, swimmerBestTimes.eventKey))
     .innerJoin(
-      meetResults,
-      eq(meetResults.swimmerId, swimmerBestTimes.swimmerId),
+      teamSwimmerMemberships,
+      and(
+        eq(teamSwimmerMemberships.swimmerId, swimmerBestTimes.swimmerId),
+        eq(teamSwimmerMemberships.organizationId, organizationId),
+        eq(teamSwimmerMemberships.status, "active"),
+      ),
     )
+    .leftJoin(swimEvents, eq(swimEvents.eventKey, swimmerBestTimes.eventKey))
     .orderBy(asc(swimmerBestTimes.timeMs))
     .limit(50);
+}
 
-  return results;
+/** All best times for active members of an organization (analytics / exploration). */
+export async function getTeamBestTimes(organizationId: string) {
+  return db
+    .select({
+      swimmerId: swimmerBestTimes.swimmerId,
+      firstName: swimmers.firstName,
+      lastName: swimmers.lastName,
+      eventKey: swimmerBestTimes.eventKey,
+      eventLabel: swimEvents.label,
+      eventGender: swimEvents.gender,
+      course: swimmerBestTimes.course,
+      timeMs: swimmerBestTimes.timeMs,
+      achievedAt: swimmerBestTimes.achievedAt,
+    })
+    .from(swimmerBestTimes)
+    .innerJoin(
+      teamSwimmerMemberships,
+      and(
+        eq(teamSwimmerMemberships.swimmerId, swimmerBestTimes.swimmerId),
+        eq(teamSwimmerMemberships.organizationId, organizationId),
+        eq(teamSwimmerMemberships.status, "active"),
+      ),
+    )
+    .innerJoin(swimmers, eq(swimmers.id, swimmerBestTimes.swimmerId))
+    .leftJoin(swimEvents, eq(swimEvents.eventKey, swimmerBestTimes.eventKey))
+    .orderBy(asc(swimmerBestTimes.timeMs));
 }
 
 export async function getSwimmerMeetHistory(swimmerId: string) {

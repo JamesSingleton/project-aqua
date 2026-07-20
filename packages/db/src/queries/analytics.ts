@@ -14,73 +14,80 @@ export async function getAnalyticsSummary(organizationId: string) {
   const since7 = new Date();
   since7.setDate(since7.getDate() - 7);
 
-  const [volume7] = await db
-    .select({
-      totalDistance: sql<number>`coalesce(sum(${workouts.totalDistance}), 0)`,
-      workoutCount: sql<number>`count(${workouts.id})`,
-    })
-    .from(workouts)
-    .where(
-      and(
-        eq(workouts.organizationId, organizationId),
-        gte(workouts.createdAt, since7),
-      ),
-    );
+  const [volume7, volume30, attendance, sessionCount, bestTimes] =
+    await Promise.all([
+      db
+        .select({
+          totalDistance: sql<number>`coalesce(sum(${workouts.totalDistance}), 0)`,
+          workoutCount: sql<number>`count(${workouts.id})`,
+        })
+        .from(workouts)
+        .where(
+          and(
+            eq(workouts.organizationId, organizationId),
+            gte(workouts.createdAt, since7),
+          ),
+        )
+        .then((rows) => rows[0]),
+      db
+        .select({
+          totalDistance: sql<number>`coalesce(sum(${workouts.totalDistance}), 0)`,
+          workoutCount: sql<number>`count(${workouts.id})`,
+        })
+        .from(workouts)
+        .where(
+          and(
+            eq(workouts.organizationId, organizationId),
+            gte(workouts.createdAt, since30),
+          ),
+        )
+        .then((rows) => rows[0]),
+      db
+        .select({
+          total: sql<number>`count(*)`,
+          present: sql<number>`count(*) filter (where ${attendanceRecords.status} in ('present', 'late'))`,
+          rsvpAttending: sql<number>`count(*) filter (where ${attendanceRecords.rsvpStatus} = 'attending')`,
+        })
+        .from(attendanceRecords)
+        .innerJoin(
+          practiceSessions,
+          eq(attendanceRecords.practiceSessionId, practiceSessions.id),
+        )
+        .where(
+          and(
+            eq(practiceSessions.organizationId, organizationId),
+            gte(practiceSessions.date, since30),
+          ),
+        )
+        .then((rows) => rows[0]),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(practiceSessions)
+        .where(
+          and(
+            eq(practiceSessions.organizationId, organizationId),
+            gte(practiceSessions.date, since30),
+          ),
+        )
+        .then((rows) => rows[0]),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(swimmerBestTimes)
+        .innerJoin(
+          teamSwimmerMemberships,
+          eq(teamSwimmerMemberships.swimmerId, swimmerBestTimes.swimmerId),
+        )
+        .where(
+          and(
+            eq(teamSwimmerMemberships.organizationId, organizationId),
+            isNull(teamSwimmerMemberships.leftAt),
+          ),
+        )
+        .then((rows) => rows[0]),
+    ]);
 
-  const [volume30] = await db
-    .select({
-      totalDistance: sql<number>`coalesce(sum(${workouts.totalDistance}), 0)`,
-      workoutCount: sql<number>`count(${workouts.id})`,
-    })
-    .from(workouts)
-    .where(
-      and(
-        eq(workouts.organizationId, organizationId),
-        gte(workouts.createdAt, since30),
-      ),
-    );
-
-  const sessions = await db
-    .select({ id: practiceSessions.id })
-    .from(practiceSessions)
-    .where(
-      and(
-        eq(practiceSessions.organizationId, organizationId),
-        gte(practiceSessions.date, since30),
-      ),
-    );
-
-  let present = 0;
-  let total = 0;
-  let rsvpAttending = 0;
-  for (const session of sessions) {
-    const records = await db
-      .select({
-        status: attendanceRecords.status,
-        rsvpStatus: attendanceRecords.rsvpStatus,
-      })
-      .from(attendanceRecords)
-      .where(eq(attendanceRecords.practiceSessionId, session.id));
-    for (const r of records) {
-      total += 1;
-      if (r.status === "present" || r.status === "late") present += 1;
-      if (r.rsvpStatus === "attending") rsvpAttending += 1;
-    }
-  }
-
-  const [bestTimes] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(swimmerBestTimes)
-    .innerJoin(
-      teamSwimmerMemberships,
-      eq(teamSwimmerMemberships.swimmerId, swimmerBestTimes.swimmerId),
-    )
-    .where(
-      and(
-        eq(teamSwimmerMemberships.organizationId, organizationId),
-        isNull(teamSwimmerMemberships.leftAt),
-      ),
-    );
+  const total = Number(attendance?.total ?? 0);
+  const present = Number(attendance?.present ?? 0);
 
   return {
     volume7Days: Number(volume7?.totalDistance ?? 0),
@@ -88,8 +95,8 @@ export async function getAnalyticsSummary(organizationId: string) {
     volume30Days: Number(volume30?.totalDistance ?? 0),
     workouts30Days: Number(volume30?.workoutCount ?? 0),
     attendanceRate30: total > 0 ? Math.round((present / total) * 100) : null,
-    sessions30: sessions.length,
-    rsvpAttending,
+    sessions30: Number(sessionCount?.count ?? 0),
+    rsvpAttending: Number(attendance?.rsvpAttending ?? 0),
     bestTimeCount: Number(bestTimes?.count ?? 0),
   };
 }
@@ -118,9 +125,7 @@ export async function getVolumeSeries(
     .groupBy(sql`date_trunc('day', ${workouts.createdAt})`)
     .orderBy(sql`date_trunc('day', ${workouts.createdAt})`);
 
-  const byDate = new Map(
-    rows.map((r) => [r.date, Number(r.distance)]),
-  );
+  const byDate = new Map(rows.map((r) => [r.date, Number(r.distance)]));
 
   const series: Array<{ date: string; distance: number }> = [];
   for (let i = days - 1; i >= 0; i--) {
@@ -141,54 +146,48 @@ export async function getVolumeSeries(
 export async function getAttendanceSeries(
   organizationId: string,
   days = 30,
-): Promise<Array<{ date: string; rate: number; present: number; total: number }>> {
+): Promise<
+  Array<{ date: string; rate: number; present: number; total: number }>
+> {
   const since = new Date();
   since.setDate(since.getDate() - days);
 
-  const sessions = await db
+  const rows = await db
     .select({
-      id: practiceSessions.id,
       date: practiceSessions.date,
+      total: sql<number>`count(*)`,
+      present: sql<number>`count(*) filter (where ${attendanceRecords.status} in ('present', 'late'))`,
     })
     .from(practiceSessions)
+    .innerJoin(
+      attendanceRecords,
+      eq(attendanceRecords.practiceSessionId, practiceSessions.id),
+    )
     .where(
       and(
         eq(practiceSessions.organizationId, organizationId),
         gte(practiceSessions.date, since),
       ),
     )
+    .groupBy(practiceSessions.id, practiceSessions.date)
     .orderBy(asc(practiceSessions.date));
 
-  const series: Array<{
-    date: string;
-    rate: number;
-    present: number;
-    total: number;
-  }> = [];
-
-  for (const session of sessions) {
-    const records = await db
-      .select({ status: attendanceRecords.status })
-      .from(attendanceRecords)
-      .where(eq(attendanceRecords.practiceSessionId, session.id));
-
-    const total = records.length;
-    if (total === 0) continue;
-    const present = records.filter(
-      (r) => r.status === "present" || r.status === "late",
-    ).length;
-    const date = [
-      session.date.getFullYear(),
-      String(session.date.getMonth() + 1).padStart(2, "0"),
-      String(session.date.getDate()).padStart(2, "0"),
-    ].join("-");
-    series.push({
-      date,
-      present,
-      total,
-      rate: Math.round((present / total) * 100),
-    });
-  }
-
-  return series;
+  return rows
+    .map((row) => {
+      const total = Number(row.total);
+      if (total === 0) return null;
+      const present = Number(row.present);
+      const date = [
+        row.date.getFullYear(),
+        String(row.date.getMonth() + 1).padStart(2, "0"),
+        String(row.date.getDate()).padStart(2, "0"),
+      ].join("-");
+      return {
+        date,
+        present,
+        total,
+        rate: Math.round((present / total) * 100),
+      };
+    })
+    .filter((row): row is NonNullable<typeof row> => row != null);
 }

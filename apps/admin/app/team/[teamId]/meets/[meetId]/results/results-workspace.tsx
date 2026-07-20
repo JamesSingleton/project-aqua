@@ -321,6 +321,8 @@ export function ResultsWorkspace({
     label: `${set.name}${set.seasonLabel ? ` (${set.seasonLabel})` : ""}`,
   }));
 
+  const nameColumnLabel = groupMode === "event" ? "Swimmer" : "Event";
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap gap-3">
@@ -388,7 +390,7 @@ export function ResultsWorkspace({
             }
           />
           <Label htmlFor="by-swimmer" className="text-sm font-normal">
-            {groupMode === "swimmer" ? "By swimmer" : "By event"}
+            By swimmer
           </Label>
         </div>
         <div
@@ -470,12 +472,32 @@ export function ResultsWorkspace({
                 {group.rows.length === 1 ? "result" : "results"}
               </p>
             </div>
-            <Table>
+            <Table className="table-fixed [&_th]:px-4 [&_td]:px-4">
+              <colgroup>
+                {showStandards ? (
+                  <>
+                    <col style={{ width: "20%" }} />
+                    <col style={{ width: "7%" }} />
+                    <col style={{ width: "12%" }} />
+                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "12%" }} />
+                    <col style={{ width: "8%" }} />
+                    <col style={{ width: "27%" }} />
+                  </>
+                ) : (
+                  <>
+                    <col style={{ width: "22%" }} />
+                    <col style={{ width: "8%" }} />
+                    <col style={{ width: "14%" }} />
+                    <col style={{ width: "16%" }} />
+                    <col style={{ width: "10%" }} />
+                    <col style={{ width: "30%" }} />
+                  </>
+                )}
+              </colgroup>
               <TableHeader>
                 <TableRow>
-                  <TableHead>
-                    {groupMode === "event" ? "Swimmer" : "Event"}
-                  </TableHead>
+                  <TableHead>{nameColumnLabel}</TableHead>
                   <TableHead>Age</TableHead>
                   <TableHead>Time</TableHead>
                   <TableHead>Previous Best</TableHead>
@@ -502,6 +524,10 @@ export function ResultsWorkspace({
                     meetsCut &&
                     row.previousBestTimeMs != null &&
                     row.previousBestTimeMs > cutMs;
+                  const primaryLabel =
+                    groupMode === "event"
+                      ? `${row.firstName} ${row.lastName}`
+                      : eventLabel(row);
                   return (
                     <TableRow
                       key={row.id}
@@ -510,10 +536,10 @@ export function ResultsWorkspace({
                         meetsCut && !newlyQualifies && "bg-sky-500/5",
                       )}
                     >
-                      <TableCell className="font-medium">
-                        {groupMode === "event"
-                          ? `${row.firstName} ${row.lastName}`
-                          : eventLabel(row)}
+                      <TableCell className="max-w-0 font-medium">
+                        <span className="block truncate" title={primaryLabel}>
+                          {primaryLabel}
+                        </span>
                       </TableCell>
                       <TableCell className="tabular-nums">
                         {age ?? "—"}
@@ -559,7 +585,7 @@ export function ResultsWorkspace({
                         className={cn(
                           "font-timing tabular-nums",
                           faster && "text-emerald-600 dark:text-emerald-400",
-                          slower && "text-muted-foreground",
+                          slower && "text-red-600 dark:text-red-400",
                         )}
                       >
                         {formatImprovement(

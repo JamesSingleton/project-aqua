@@ -19,6 +19,7 @@
     "dev:web": "turbo dev --filter=@project-aqua/web",
     "start:admin": "turbo start --filter=@project-aqua/admin",
     "start:web": "turbo start --filter=@project-aqua/web",
+    "clean:admin": "rm -rf apps/admin/.next",
     "format": "biome format --write .",
     "lint": "turbo lint",
     "lint:fix": "turbo lint:fix",

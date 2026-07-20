@@ -10,7 +10,10 @@ const nextConfig = {
     "@project-aqua/swim-formats",
     "@project-aqua/usa-swimming",
   ],
-  serverExternalPackages: ["postgres"],
+  serverExternalPackages: ["postgres", "xlsx", "fflate", "@polar-sh/sdk"],
+  experimental: {
+    optimizePackageImports: ["lucide-react", "recharts"],
+  },
 };
 
 export default nextConfig;
