@@ -5,7 +5,7 @@ import { db } from "@project-aqua/db/client";
 import { getTeamMembers } from "@project-aqua/db/queries/members";
 import { getTeamUiPreferences } from "@project-aqua/db/queries/preferences";
 import { getRoster } from "@project-aqua/db/queries/roster";
-import { organization } from "@project-aqua/db/schema";
+import { organization, type TeamUiState } from "@project-aqua/db/schema";
 import {
   parseTeamType,
   supportsClassYear,
@@ -107,7 +107,7 @@ export default async function RosterPage({
       : Promise.resolve(null),
     session?.user?.id
       ? getTeamUiPreferences(session.user.id, teamId)
-      : Promise.resolve({}),
+      : Promise.resolve<TeamUiState>({}),
   ]);
 
   const swimmers = mapRosterToSwimmers(roster);

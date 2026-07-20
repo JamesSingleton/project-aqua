@@ -102,4 +102,3 @@ export function formatEventGenderLabel(
   // high_school + club
   return isFemale ? "Girls" : "Boys";
 }
-

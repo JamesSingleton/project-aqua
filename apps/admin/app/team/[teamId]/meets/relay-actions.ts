@@ -211,10 +211,9 @@ ${swimmerLines}`,
   }
 
   const nameById = new Map(
-    roster.map((r) => [
-      r.membershipId,
-      `${r.firstName} ${r.lastName}`,
-    ] as const),
+    roster.map(
+      (r) => [r.membershipId, `${r.firstName} ${r.lastName}`] as const,
+    ),
   );
   const eligibleIds = new Set(eligible.map((s) => s.membershipId));
   const used = new Set<string>();
@@ -222,8 +221,7 @@ ${swimmerLines}`,
   const usageCount = new Map<string, number>();
 
   parsed.teams.slice(0, numberOfRelays).forEach((team, teamIndex) => {
-    const letter =
-      team.letter?.toUpperCase() || TEAM_LETTERS[teamIndex] || "A";
+    const letter = team.letter?.toUpperCase() || TEAM_LETTERS[teamIndex] || "A";
     const order = (team.order ?? []).slice(0, 4);
     if (order.length < 4) {
       throw new Error(`Team ${letter} needs 4 swimmers`);

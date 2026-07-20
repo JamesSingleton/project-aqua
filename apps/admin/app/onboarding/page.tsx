@@ -540,9 +540,11 @@ export default function OnboardingPage() {
                       >
                         {PLAN_OPTIONS.map((option) => {
                           const selected = field.value === option.value;
+                          const inputId = `plan-${option.value}`;
                           return (
                             <label
                               key={option.value}
+                              htmlFor={inputId}
                               className={cn(
                                 "border-border hover:border-primary/40 flex cursor-pointer flex-col gap-3 rounded-lg border p-4 transition-colors",
                                 selected &&
@@ -558,7 +560,10 @@ export default function OnboardingPage() {
                                     {option.price}
                                   </p>
                                 </div>
-                                <RadioGroupItem value={option.value} />
+                                <RadioGroupItem
+                                  id={inputId}
+                                  value={option.value}
+                                />
                               </div>
                               <p className="text-muted-foreground text-sm text-pretty">
                                 {option.blurb}

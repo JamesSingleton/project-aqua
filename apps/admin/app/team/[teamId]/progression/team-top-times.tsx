@@ -213,10 +213,7 @@ export function TeamTopTimes({ times }: { times: TopTimeRow[] }) {
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="top-times-event">Event</Label>
           <Select
-            items={[
-              { value: "all", label: "All events" },
-              ...eventOptions,
-            ]}
+            items={[{ value: "all", label: "All events" }, ...eventOptions]}
             value={eventFilter}
             onValueChange={(value) => {
               if (value != null) setEventFilter(value);

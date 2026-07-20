@@ -18,9 +18,9 @@ import {
   upsertTimeStandardCut,
 } from "@project-aqua/db/queries/time-standards";
 import {
-  eventGenderFromCode,
   type Course,
   type EventGender,
+  eventGenderFromCode,
   type RelayStroke,
   type Stroke,
 } from "@project-aqua/swim-core/events";

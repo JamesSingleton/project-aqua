@@ -2,11 +2,11 @@
 
 import {
   createContext,
+  type ReactNode,
   use,
   useLayoutEffect,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 
 type BreadcrumbEntitiesContextValue = {

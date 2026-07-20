@@ -6,10 +6,7 @@ import {
   requireTeamRole,
 } from "@project-aqua/db/authz";
 import { assignMembershipGroup } from "@project-aqua/db/queries/groups";
-import {
-  getSwimmerById,
-  updateSwimmer,
-} from "@project-aqua/db/queries/roster";
+import { getSwimmerById, updateSwimmer } from "@project-aqua/db/queries/roster";
 import { isMinorSwimmer } from "@project-aqua/swim-core/age";
 import { rosterRowSchema } from "@project-aqua/swim-core/validators";
 import { revalidatePath } from "next/cache";

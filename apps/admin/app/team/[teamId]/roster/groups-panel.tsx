@@ -282,7 +282,8 @@ export function GroupsPanel({
                       startTransition(async () => {
                         await deleteGroupAction(teamId, g.id);
                         setSelectedIds(new Set());
-                        if (filterGroupId === g.id) setFilterGroupId(FILTER_ALL);
+                        if (filterGroupId === g.id)
+                          setFilterGroupId(FILTER_ALL);
                         if (targetGroupId === g.id) {
                           setTargetGroupId(
                             groups.find((group) => group.id !== g.id)?.id ??
@@ -463,7 +464,9 @@ export function GroupsPanel({
                               aria-label={`Select ${m.name}`}
                             />
                           </TableCell>
-                          <TableCell className="font-medium">{m.name}</TableCell>
+                          <TableCell className="font-medium">
+                            {m.name}
+                          </TableCell>
                           <TableCell>
                             {currentGroup ? (
                               <Badge variant="outline">{currentGroup}</Badge>

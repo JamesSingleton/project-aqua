@@ -39,10 +39,9 @@ export default async function MeetRegistrationPage({
   const { meet, events, entries, commitments, roster, bestTimes } = detail;
   const relayLegs = await getMeetRelayLegsAction(teamId, meetId);
   const nameByMembership = new Map(
-    roster.map((r) => [
-      r.membershipId,
-      `${r.firstName} ${r.lastName}`,
-    ] as const),
+    roster.map(
+      (r) => [r.membershipId, `${r.firstName} ${r.lastName}`] as const,
+    ),
   );
 
   const relayEvents = events.filter(isRelayEvent).map((event) => ({

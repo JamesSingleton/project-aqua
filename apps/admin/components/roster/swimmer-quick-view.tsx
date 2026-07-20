@@ -50,13 +50,7 @@ function statusVariant(status: string) {
   return "secondary" as const;
 }
 
-function DetailRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: ReactNode;
-}) {
+function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
       <dt className="text-muted-foreground shrink-0">{label}</dt>
@@ -97,7 +91,10 @@ export function SwimmerQuickView({
                 <SheetTitle className="truncate text-lg">
                   {athlete.name}
                 </SheetTitle>
-                <Badge variant={statusVariant(athlete.status)} className="capitalize">
+                <Badge
+                  variant={statusVariant(athlete.status)}
+                  className="capitalize"
+                >
                   {athlete.status}
                 </Badge>
               </div>
@@ -157,7 +154,10 @@ export function SwimmerQuickView({
                 <h3 className="text-sm font-medium">Parents / guardians</h3>
                 <ul className="flex flex-col gap-4">
                   {athlete.parents.map((parent) => (
-                    <li key={`${parent.name}-${parent.email}`} className="flex flex-col gap-1">
+                    <li
+                      key={`${parent.name}-${parent.email}`}
+                      className="flex flex-col gap-1"
+                    >
                       <p className="font-medium">{parent.name}</p>
                       {parent.email ? (
                         <a
@@ -220,9 +220,7 @@ export function SwimmerQuickView({
                     <DetailRow
                       key={record.event}
                       label={record.event}
-                      value={
-                        <span className="font-timing">{record.time}</span>
-                      }
+                      value={<span className="font-timing">{record.time}</span>}
                     />
                   ))}
                 </dl>
@@ -234,7 +232,10 @@ export function SwimmerQuickView({
         <SheetFooter className="border-t sm:flex-row">
           <Link
             href={editHref}
-            className={cn(buttonVariants({ variant: "outline" }), "w-full sm:w-auto")}
+            className={cn(
+              buttonVariants({ variant: "outline" }),
+              "w-full sm:w-auto",
+            )}
           >
             <PencilIcon data-icon="inline-start" />
             Edit

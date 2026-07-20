@@ -183,13 +183,16 @@ export function RelaySuggestPanel({
               </SelectContent>
             </Select>
           </Field>
-          <label className="flex items-center gap-2 pb-2 text-sm">
+          <Field orientation="horizontal" className="w-auto pb-2">
             <Checkbox
+              id="relay-allow-doubles"
               checked={allowDoubles}
               onCheckedChange={(checked) => setAllowDoubles(checked === true)}
             />
-            Allow doubles
-          </label>
+            <FieldLabel htmlFor="relay-allow-doubles" className="font-normal">
+              Allow doubles
+            </FieldLabel>
+          </Field>
         </CardContent>
       </Card>
 
