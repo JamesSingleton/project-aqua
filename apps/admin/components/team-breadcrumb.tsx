@@ -42,6 +42,7 @@ const DYNAMIC_PARENT_LABELS: Record<string, string> = {
   swimmers: "Swimmer",
   workouts: "Workout",
   attendance: "Session",
+  progression: "Swimmer",
 };
 
 function isDynamicSegment(segment: string) {

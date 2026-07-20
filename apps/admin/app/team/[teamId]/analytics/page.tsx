@@ -1,11 +1,15 @@
 import { getSession } from "@project-aqua/auth/session";
-import { requireTeamMember } from "@project-aqua/db/authz";
-import { getAnalyticsSummary } from "@project-aqua/db/queries/analytics";
 import {
-  getTeamResultSeries,
-  getTeamTopTimes,
-} from "@project-aqua/db/queries/progression";
-import { formatTime } from "@project-aqua/swim-core/times";
+  getOrganizationTeamType,
+  requireTeamMember,
+} from "@project-aqua/db/authz";
+import {
+  getAnalyticsSummary,
+  getAttendanceSeries,
+  getVolumeSeries,
+} from "@project-aqua/db/queries/analytics";
+import { getSwimmerBestTimes } from "@project-aqua/db/queries/progression";
+import { getRoster } from "@project-aqua/db/queries/roster";
 import {
   Card,
   CardContent,
@@ -14,16 +18,12 @@ import {
   CardTitle,
 } from "@project-aqua/ui/components/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@project-aqua/ui/components/table";
-import Link from "next/link";
+  AttendanceChart,
+  VolumeChart,
+} from "@/components/analytics-charts";
 import { PageHeader, TimingBoard } from "@/components/page-header";
-import { ProgressionChart } from "@/components/progression-chart";
+import { TeamTopTimes } from "@/components/team-top-times";
+import { formatBestTimeEventLabel } from "@/lib/format-event-label";
 
 export default async function AnalyticsPage({
   params,
@@ -34,41 +34,48 @@ export default async function AnalyticsPage({
   const session = await getSession();
   await requireTeamMember(session?.user?.id, teamId);
 
-  const [summary, topTimes, series] = await Promise.all([
-    getAnalyticsSummary(teamId),
-    getTeamTopTimes(teamId),
-    getTeamResultSeries(teamId),
-  ]);
+  const [summary, volumeSeries, attendanceSeries, roster, teamType] =
+    await Promise.all([
+      getAnalyticsSummary(teamId),
+      getVolumeSeries(teamId, 30),
+      getAttendanceSeries(teamId, 30),
+      getRoster(teamId),
+      getOrganizationTeamType(teamId),
+    ]);
 
-  const counts = new Map<string, number>();
-  for (const row of series) {
-    counts.set(row.eventKey, (counts.get(row.eventKey) ?? 0) + 1);
-  }
-  let topEvent = "";
-  let topCount = 0;
-  for (const [key, n] of counts) {
-    if (n > topCount) {
-      topEvent = key;
-      topCount = n;
-    }
-  }
+  const swimmersWithTimes = await Promise.all(
+    roster.map(async (swimmer) => ({
+      ...swimmer,
+      bestTimes: await getSwimmerBestTimes(swimmer.swimmerId),
+    })),
+  );
 
-  const chartPoints = series
-    .filter((r) => r.eventKey === topEvent)
-    .map((r) => ({
-      date: r.meetDate.toISOString().slice(0, 10),
-      timeMs: r.timeMs,
-      label: r.meetName,
-    }));
+  const allTimes = swimmersWithTimes.flatMap((s) =>
+    s.bestTimes.map((bt) => ({
+      swimmerName: `${s.firstName} ${s.lastName}`,
+      swimmerId: s.swimmerId,
+      eventKey: bt.eventKey,
+      eventLabel: formatBestTimeEventLabel(
+        bt.eventLabel,
+        bt.course,
+        bt.eventGender,
+        teamType,
+      ),
+      course: bt.course,
+      timeMs: bt.timeMs,
+      achievedAt: bt.achievedAt.toISOString(),
+    })),
+  );
+  allTimes.sort((a, b) => a.timeMs - b.timeMs);
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Analytics"
-        description="Training volume, attendance, and meet-result trends."
+        description="Training volume, attendance trends, and team top times."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <TimingBoard
           label="7-day volume"
           value={summary.volume7Days.toLocaleString()}
@@ -88,67 +95,40 @@ export default async function AnalyticsPage({
           }
           hint={`${summary.sessions30} sessions · ${summary.rsvpAttending} RSVP yes`}
         />
-        <TimingBoard
-          label="Best times"
-          value={summary.bestTimeCount}
-          hint="From meet results"
-        />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Training volume</CardTitle>
+            <CardDescription>Daily yardage · last 30 days</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <VolumeChart data={volumeSeries} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Attendance rate</CardTitle>
+            <CardDescription>
+              Present + late per session · last 30 days
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AttendanceChart data={attendanceSeries} />
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>
-            {topEvent ? `Result trend · ${topEvent}` : "Result trend"}
-          </CardTitle>
+          <CardTitle>Team Top Times</CardTitle>
           <CardDescription>
-            Lower is faster.{" "}
-            <Link
-              href={`/team/${teamId}/progression`}
-              className="text-primary underline"
-            >
-              Open progression
-            </Link>
+            Fastest best times — group and filter to explore the roster
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ProgressionChart points={chartPoints} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Top times sample</CardTitle>
-          <CardDescription>
-            Recent best times used for meet entry seeding
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {topTimes.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              Import meet results to populate best times.
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Event</TableHead>
-                  <TableHead>Course</TableHead>
-                  <TableHead>Time</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {topTimes.slice(0, 15).map((row, i) => (
-                  <TableRow key={`${row.swimmerId}-${row.eventKey}-${i}`}>
-                    <TableCell>{row.eventKey}</TableCell>
-                    <TableCell>{row.course}</TableCell>
-                    <TableCell className="font-timing">
-                      {formatTime(row.timeMs)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <TeamTopTimes times={allTimes} teamId={teamId} />
         </CardContent>
       </Card>
     </div>

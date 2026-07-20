@@ -1,6 +1,6 @@
 import type { Course } from "@project-aqua/swim-core/events";
 import { isFasterTime } from "@project-aqua/swim-core/times";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "../client";
 import { swimEvents } from "../schema/events";
 import {
@@ -91,6 +91,7 @@ export async function getTeamTopTimes(organizationId: string) {
       swimmerId: meetResults.swimmerId,
       eventKey: swimmerBestTimes.eventKey,
       eventLabel: swimEvents.label,
+      eventGender: swimEvents.gender,
       course: swimmerBestTimes.course,
       timeMs: swimmerBestTimes.timeMs,
       achievedAt: swimmerBestTimes.achievedAt,
@@ -109,10 +110,28 @@ export async function getTeamTopTimes(organizationId: string) {
 
 export async function getSwimmerMeetHistory(swimmerId: string) {
   return db
-    .select()
+    .select({
+      id: meetResults.id,
+      timeMs: meetResults.timeMs,
+      place: meetResults.place,
+      isDq: meetResults.isDq,
+      meetId: meets.id,
+      meetName: meets.name,
+      meetDate: meets.startDate,
+      course: meets.course,
+      eventKey: meetEvents.eventKey,
+      eventLabel: swimEvents.label,
+      eventGender: swimEvents.gender,
+      distance: meetEvents.distance,
+      stroke: meetEvents.stroke,
+      eventNumber: meetEvents.eventNumber,
+    })
     .from(meetResults)
+    .innerJoin(meets, eq(meetResults.meetId, meets.id))
+    .innerJoin(meetEvents, eq(meetResults.meetEventId, meetEvents.id))
+    .leftJoin(swimEvents, eq(swimEvents.eventKey, meetEvents.eventKey))
     .where(eq(meetResults.swimmerId, swimmerId))
-    .orderBy(asc(meetResults.createdAt));
+    .orderBy(desc(meets.startDate), asc(meetEvents.eventNumber));
 }
 
 /** Time series for charts: results for an org, optionally filtered by eventKey */
@@ -151,5 +170,28 @@ export async function getTeamResultSeries(
   if (eventKey) {
     return rows.filter((r) => r.eventKey === eventKey && !r.isDq);
   }
+  return rows.filter((r) => !r.isDq);
+}
+
+/** Time series for one swimmer across meets. */
+export async function getSwimmerResultSeries(swimmerId: string) {
+  const rows = await db
+    .select({
+      eventKey: meetEvents.eventKey,
+      eventLabel: swimEvents.label,
+      eventGender: swimEvents.gender,
+      course: meets.course,
+      timeMs: meetResults.timeMs,
+      meetDate: meets.startDate,
+      meetName: meets.name,
+      isDq: meetResults.isDq,
+    })
+    .from(meetResults)
+    .innerJoin(meets, eq(meetResults.meetId, meets.id))
+    .innerJoin(meetEvents, eq(meetResults.meetEventId, meetEvents.id))
+    .leftJoin(swimEvents, eq(swimEvents.eventKey, meetEvents.eventKey))
+    .where(eq(meetResults.swimmerId, swimmerId))
+    .orderBy(asc(meets.startDate));
+
   return rows.filter((r) => !r.isDq);
 }

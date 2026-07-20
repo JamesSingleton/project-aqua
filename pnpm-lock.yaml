@@ -55,6 +55,9 @@ catalogs:
       specifier: ^4.4.3
       version: 4.4.3
 
+overrides:
+  recharts: 3.9.2
+
 importers:
 
   .:
@@ -152,9 +155,6 @@ importers:
       react-qr-code:
         specifier: ^2.2.0
         version: 2.2.0(react@19.2.7)
-      recharts:
-        specifier: ^3.9.2
-        version: 3.9.2(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@16.13.1)(react@19.2.7)(redux@5.0.1)
       zod:
         specifier: 'catalog:'
         version: 4.4.3
@@ -473,6 +473,9 @@ importers:
       react-hook-form:
         specifier: ^7.82.0
         version: 7.82.0(react@19.2.7)
+      recharts:
+        specifier: 3.9.2
+        version: 3.9.2(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@16.13.1)(react@19.2.7)(redux@5.0.1)
       shadcn:
         specifier: ^4.13.1
         version: 4.13.1(typescript@6.0.3)

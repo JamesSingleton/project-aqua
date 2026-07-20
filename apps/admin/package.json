@@ -39,7 +39,6 @@
     "react-dom": "catalog:",
     "react-hook-form": "^7.82.0",
     "react-qr-code": "^2.2.0",
-    "recharts": "^3.9.2",
     "zod": "catalog:"
   },
   "devDependencies": {

@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@project-aqua/ui/components/table";
 import { XIcon } from "lucide-react";
+import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
 
 export type TopTimeRow = {
@@ -83,7 +84,13 @@ function groupLabelFor(row: TopTimeRow, groupBy: GroupBy): string {
   return "";
 }
 
-export function TeamTopTimes({ times }: { times: TopTimeRow[] }) {
+export function TeamTopTimes({
+  times,
+  teamId,
+}: {
+  times: TopTimeRow[];
+  teamId: string;
+}) {
   const [groupBy, setGroupBy] = useState<GroupBy>(DEFAULT_GROUP_BY);
   const [courseFilter, setCourseFilter] = useState<CourseFilter>(
     DEFAULT_COURSE_FILTER,
@@ -300,7 +307,14 @@ export function TeamTopTimes({ times }: { times: TopTimeRow[] }) {
                     key={`${group.key}-${row.swimmerId}-${row.eventKey}-${i}`}
                   >
                     {showSwimmer ? (
-                      <TableCell>{row.swimmerName}</TableCell>
+                      <TableCell>
+                        <Link
+                          href={`/team/${teamId}/swimmers/${row.swimmerId}/progression`}
+                          className="text-primary underline-offset-4 hover:underline"
+                        >
+                          {row.swimmerName}
+                        </Link>
+                      </TableCell>
                     ) : null}
                     {showEvent ? <TableCell>{row.eventLabel}</TableCell> : null}
                     {showCourse ? <TableCell>{row.course}</TableCell> : null}

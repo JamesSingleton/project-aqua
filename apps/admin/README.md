@@ -49,7 +49,8 @@ Open http://localhost:3001
 | `/team/[teamId]/roster` | Swimmer roster |
 | `/team/[teamId]/meets` | Meet management |
 | `/team/[teamId]/attendance` | Practice attendance |
-| `/team/[teamId]/progression` | Best times tracking |
+| `/team/[teamId]/progression` | Per-swimmer time trends and meet history |
+| `/team/[teamId]/analytics` | Team volume, attendance, and top times |
 | `/team/[teamId]/settings` | Team settings |
 | `/team/[teamId]/settings/billing` | Subscription management |
 | `/team/[teamId]/settings/usa-swimming` | SWIMS integration |

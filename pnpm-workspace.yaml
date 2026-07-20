@@ -24,3 +24,6 @@ catalog:
   stripe: "^18.0.0"
   typescript: "^6.0.3"
   zod: "^4.4.3"
+
+overrides:
+  recharts: 3.9.2
