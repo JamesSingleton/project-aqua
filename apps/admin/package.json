@@ -14,7 +14,7 @@
     "check:types": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^4.0.15",
+    "@ai-sdk/openai": "^4.0.16",
     "@hookform/resolvers": "^5.4.0",
     "@project-aqua/auth": "workspace:*",
     "@project-aqua/billing": "workspace:*",
@@ -28,16 +28,16 @@
     "@project-aqua/usa-swimming": "workspace:*",
     "@tanstack/react-query": "^5.101.2",
     "@tanstack/react-table": "^8.21.3",
-    "ai": "^7.0.29",
+    "ai": "^7.0.31",
     "better-auth": "catalog:",
     "geist": "^1.7.2",
     "lucide-react": "catalog:",
     "next": "catalog:",
     "next-themes": "catalog:",
-    "nuqs": "^2.9.0",
+    "nuqs": "^2.9.1",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-hook-form": "^7.81.0",
+    "react-hook-form": "^7.82.0",
     "react-qr-code": "^2.2.0",
     "recharts": "^3.9.2",
     "zod": "catalog:"
