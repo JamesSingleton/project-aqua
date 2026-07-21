@@ -42,7 +42,7 @@ function parseTimeParts(time: string): { hours: number; minutes: number } {
   return { hours: Number(match[1]), minutes: Number(match[2]) };
 }
 
-function parseLocalDateOnly(value: string): Date {
+function parseLocalDateOnlyStrict(value: string): Date {
   if (!DATE_RE.test(value)) {
     throw new Error(`Invalid date: ${value}`);
   }
@@ -77,8 +77,8 @@ export function expandWeeklyCalendarSlots(
     throw new Error("Add at least one weekly time slot");
   }
 
-  const rangeStart = parseLocalDateOnly(input.rangeStart);
-  const rangeEnd = parseLocalDateOnly(input.rangeEnd);
+  const rangeStart = parseLocalDateOnlyStrict(input.rangeStart);
+  const rangeEnd = parseLocalDateOnlyStrict(input.rangeEnd);
   if (rangeEnd < rangeStart) {
     throw new Error("End date must be on or after the start date");
   }
@@ -120,4 +120,40 @@ export function expandWeeklyCalendarSlots(
   }
 
   return events;
+}
+
+/**
+ * Count how many occurrences a weekly schedule would produce without building
+ * full event drafts. Returns null when the range is incomplete/invalid.
+ */
+export function countWeeklyCalendarOccurrences(input: {
+  rangeStart: string;
+  rangeEnd: string;
+  slots: Pick<WeeklyCalendarSlot, "weekdays">[];
+}): number | null {
+  if (
+    !input.rangeStart ||
+    !input.rangeEnd ||
+    input.rangeEnd < input.rangeStart
+  ) {
+    return null;
+  }
+  if (!DATE_RE.test(input.rangeStart) || !DATE_RE.test(input.rangeEnd)) {
+    return null;
+  }
+
+  const rangeStart = parseLocalDateOnlyStrict(input.rangeStart);
+  const rangeEnd = parseLocalDateOnlyStrict(input.rangeEnd);
+  const cursor = new Date(rangeStart);
+  let count = 0;
+
+  while (cursor <= rangeEnd) {
+    const weekday = cursor.getDay();
+    for (const slot of input.slots) {
+      if (slot.weekdays.includes(weekday)) count += 1;
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return count;
 }

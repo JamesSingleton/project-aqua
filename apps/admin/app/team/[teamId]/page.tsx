@@ -32,6 +32,7 @@ import {
   seasonTrainingPhase,
 } from "@project-aqua/swim-core/calendar-date";
 import {
+  formatBestTimeEventLabel,
   requiresSafeSportCompliance,
   supportsUsaSwimmingIntegration,
 } from "@project-aqua/swim-core/team-types";
@@ -63,7 +64,6 @@ import { RecentBestTimesCard } from "@/components/dashboard/recent-best-times-ca
 import { StatCard } from "@/components/dashboard/stat-card";
 import { SwimsConnectionWidget } from "@/components/dashboard/swims-connection-widget";
 import { PageHeader } from "@/components/page-header";
-import { formatBestTimeEventLabel } from "@/lib/format-event-label";
 
 export async function generateMetadata({
   params,
@@ -131,11 +131,7 @@ function dashboardDescription(
 ): string {
   if (!season) return weekLabel;
 
-  const phase = seasonTrainingPhase(
-    todayKey,
-    season.startsOn,
-    season.endsOn,
-  );
+  const phase = seasonTrainingPhase(todayKey, season.startsOn, season.endsOn);
   if (!phase) return weekLabel;
 
   if (phase.status === "before") {
@@ -575,8 +571,7 @@ export default async function TeamDashboardPage({
           <CardHeader>
             <CardTitle>Training volume</CardTitle>
             <CardDescription>
-              Daily{" "}
-              {volume30UnitLabel ?? "distance"} · last 30 days
+              Daily {volume30UnitLabel ?? "distance"} · last 30 days
             </CardDescription>
             <CardAction>
               <Button

@@ -70,6 +70,65 @@ export type RosterRow = z.infer<typeof rosterRowSchema>;
 export type SwimmerContactsInput = z.infer<typeof swimmerContactsSchema>;
 export type SwimmerMedicalInput = z.infer<typeof swimmerMedicalSchema>;
 
+function emptyToUndefined(value: string | undefined) {
+  return value?.trim() ? value.trim() : undefined;
+}
+
+function hasStringValues(
+  record: Record<string, string | boolean | undefined> | undefined,
+) {
+  if (!record) return false;
+  return Object.values(record).some((value) => {
+    if (typeof value === "boolean") return value;
+    return Boolean(value?.trim());
+  });
+}
+
+/** Trim empties and drop empty contact/medical blocks before persist. */
+export function normalizeCreateSwimmerFormValues(values: RosterRow): RosterRow {
+  const contacts = values.contacts
+    ? {
+        parentName: emptyToUndefined(values.contacts.parentName),
+        parentEmail: emptyToUndefined(values.contacts.parentEmail),
+        parentPhone: emptyToUndefined(values.contacts.parentPhone),
+        emergencyName: emptyToUndefined(values.contacts.emergencyName),
+        emergencyPhone: emptyToUndefined(values.contacts.emergencyPhone),
+        addressLine1: emptyToUndefined(values.contacts.addressLine1),
+        addressLine2: emptyToUndefined(values.contacts.addressLine2),
+        city: emptyToUndefined(values.contacts.city),
+        state: emptyToUndefined(values.contacts.state),
+        postalCode: emptyToUndefined(values.contacts.postalCode),
+        country: emptyToUndefined(values.contacts.country),
+        minorDirectContactConsent: values.contacts.minorDirectContactConsent,
+        minorDirectContactConsentedBy: emptyToUndefined(
+          values.contacts.minorDirectContactConsentedBy,
+        ),
+      }
+    : undefined;
+
+  const medical = values.medical
+    ? {
+        allergies: emptyToUndefined(values.medical.allergies),
+        medications: emptyToUndefined(values.medical.medications),
+        conditions: emptyToUndefined(values.medical.conditions),
+        notes: emptyToUndefined(values.medical.notes),
+      }
+    : undefined;
+
+  return {
+    ...values,
+    middleName: emptyToUndefined(values.middleName),
+    preferredName: emptyToUndefined(values.preferredName),
+    practiceGroup: emptyToUndefined(values.practiceGroup),
+    usaMemberId: emptyToUndefined(values.usaMemberId),
+    email: emptyToUndefined(values.email),
+    phone: emptyToUndefined(values.phone),
+    contacts: hasStringValues(contacts) ? contacts : undefined,
+    medical: hasStringValues(medical) ? medical : undefined,
+    linkExistingSwimmerId: emptyToUndefined(values.linkExistingSwimmerId),
+  };
+}
+
 export const meetEntryRowSchema = z.object({
   swimmerId: z.string().uuid(),
   eventKey: z.string().min(1),

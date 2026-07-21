@@ -1,5 +1,6 @@
 "use client";
 
+import { formatBestTimeEventLabel } from "@project-aqua/swim-core/team-types";
 import { formatTime } from "@project-aqua/swim-core/times";
 import {
   CartesianGrid,
@@ -22,7 +23,6 @@ import {
   SelectValue,
 } from "@project-aqua/ui/components/select";
 import { useMemo, useState } from "react";
-import { formatBestTimeEventLabel } from "@/lib/format-event-label";
 
 export type SwimmerSeriesPoint = {
   eventKey: string;
@@ -186,7 +186,9 @@ export function SwimmerEventChart({
         </p>
       ) : chartData.length === 1 && chartData[0] ? (
         <div className="rounded-lg border bg-muted/30 px-4 py-6 text-center">
-          <p className="text-muted-foreground text-sm">{chartData[0].meetName}</p>
+          <p className="text-muted-foreground text-sm">
+            {chartData[0].meetName}
+          </p>
           <p className="font-timing text-3xl tabular-nums mt-1">
             {chartData[0].display}
           </p>

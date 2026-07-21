@@ -1,6 +1,9 @@
 "use client";
 
-import { formatEventName } from "@project-aqua/swim-core/events";
+import {
+  formatEventName,
+  formatGenderShort,
+} from "@project-aqua/swim-core/events";
 import { Badge } from "@project-aqua/ui/components/badge";
 import { Button } from "@project-aqua/ui/components/button";
 import {
@@ -61,13 +64,6 @@ const GROUP_BY_OPTIONS: { value: GroupBy; label: string }[] = [
 
 function isGroupBy(value: string): value is GroupBy {
   return value === "swimmer" || value === "event";
-}
-
-function formatGenderShort(gender: string) {
-  if (gender === "female" || gender === "f") return "F";
-  if (gender === "mixed" || gender === "x") return "X";
-  if (gender === "male" || gender === "m") return "M";
-  return "";
 }
 
 function eventLabel(event: MatrixEvent) {
@@ -165,8 +161,8 @@ export function EntryMatrix({
 
       return swimmers
         .map((swimmer) => {
-          const rows = (byMembership.get(swimmer.membershipId) ?? []).toSorted(
-            (a, b) => {
+          const rows = [...(byMembership.get(swimmer.membershipId) ?? [])].sort(
+            (a: MatrixEntry, b: MatrixEntry) => {
               const ea = eventById.get(a.meetEventId);
               const eb = eventById.get(b.meetEventId);
               const an = ea?.eventNumber ?? Number.MAX_SAFE_INTEGER;
@@ -192,13 +188,15 @@ export function EntryMatrix({
 
     return sortedEvents
       .map((event) => {
-        const rows = (byEvent.get(event.id) ?? []).toSorted((a, b) => {
-          const sa = swimmerById.get(a.membershipId);
-          const sb = swimmerById.get(b.membershipId);
-          const na = sa ? `${sa.lastName} ${sa.firstName}` : "";
-          const nb = sb ? `${sb.lastName} ${sb.firstName}` : "";
-          return na.localeCompare(nb);
-        });
+        const rows = [...(byEvent.get(event.id) ?? [])].sort(
+          (a: MatrixEntry, b: MatrixEntry) => {
+            const sa = swimmerById.get(a.membershipId);
+            const sb = swimmerById.get(b.membershipId);
+            const na = sa ? `${sa.lastName} ${sa.firstName}` : "";
+            const nb = sb ? `${sb.lastName} ${sb.firstName}` : "";
+            return na.localeCompare(nb);
+          },
+        );
         return {
           key: event.id,
           label: eventLabel(event),

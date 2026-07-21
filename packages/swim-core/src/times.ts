@@ -5,16 +5,21 @@ export function parseTime(time: string): number {
 
   if (trimmed.includes(":")) {
     const parts = trimmed.split(":");
-    const secondsPart = parts.pop() ?? "0";
+    const secondsPart = parts.pop() /* v8 ignore next */ ?? "0";
     const seconds = Number.parseFloat(secondsPart);
     let totalMs = Math.round(seconds * 1000);
 
+    const minutes = Number.parseInt(
+      parts.pop() /* v8 ignore next */ ?? "0",
+      10,
+    );
+    totalMs += minutes * 60 * 1000;
+
     if (parts.length > 0) {
-      const minutes = Number.parseInt(parts.pop() ?? "0", 10);
-      totalMs += minutes * 60 * 1000;
-    }
-    if (parts.length > 0) {
-      const hours = Number.parseInt(parts.pop() ?? "0", 10);
+      const hours = Number.parseInt(
+        parts.pop() /* v8 ignore next */ ?? "0",
+        10,
+      );
       totalMs += hours * 3600 * 1000;
     }
     return totalMs;

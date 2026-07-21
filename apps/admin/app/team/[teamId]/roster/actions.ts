@@ -14,6 +14,7 @@ import {
   updateImportJob,
 } from "@project-aqua/db/queries/imports";
 import { patchTeamUiPreferences } from "@project-aqua/db/queries/preferences";
+import { getSwimmerBestTimes } from "@project-aqua/db/queries/progression";
 import {
   addSwimmer,
   getRoster,
@@ -24,7 +25,6 @@ import {
   removeSwimmerFromTeam,
   updateSwimmer,
 } from "@project-aqua/db/queries/roster";
-import { getSwimmerBestTimes } from "@project-aqua/db/queries/progression";
 import {
   createMaappAcknowledgment,
   logAuditEvent,

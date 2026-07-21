@@ -650,9 +650,7 @@ export async function getSwimmerTimeHistory(
     })),
   ];
 
-  return merged.sort(
-    (a, b) => b.achievedAt.getTime() - a.achievedAt.getTime(),
-  );
+  return merged.sort((a, b) => b.achievedAt.getTime() - a.achievedAt.getTime());
 }
 
 /** @deprecated Prefer getSwimmerTimeHistory */

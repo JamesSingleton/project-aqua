@@ -1,4 +1,5 @@
 import { formatDateOnly } from "@project-aqua/swim-core/calendar-date";
+import { MAX_BULK_CALENDAR_EVENTS } from "@project-aqua/swim-core/calendar-recurrence";
 import { and, asc, desc, eq, gte, isNull, lte } from "drizzle-orm";
 import { db } from "../client";
 import {
@@ -9,15 +10,7 @@ import {
   teamCalendarEvents,
 } from "../schema/calendar";
 import { getPracticeSessions } from "./attendance";
-import { MAX_BULK_CALENDAR_EVENTS } from "./calendar-recurrence";
 import { getMeets } from "./meets";
-
-export {
-  expandWeeklyCalendarSlots,
-  MAX_BULK_CALENDAR_EVENTS,
-  type RecurringCalendarScheduleInput,
-  type WeeklyCalendarSlot,
-} from "./calendar-recurrence";
 
 function generateId(): string {
   return crypto.randomUUID();

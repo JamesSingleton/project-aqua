@@ -133,9 +133,7 @@ function formatEventWhen(event: CalEvent): string | null {
   return `${startLabel}–${formatTimeLabel(asDate(event.endsAt))}`;
 }
 
-function eventTypeValue(
-  value: string,
-): CalendarEventFormValues["eventType"] {
+function eventTypeValue(value: string): CalendarEventFormValues["eventType"] {
   if (value === "practice" || value === "meet" || value === "other") {
     return value;
   }
@@ -405,7 +403,11 @@ export function CalendarBoard({
               </Field>
               <Field>
                 <FieldLabel htmlFor="location">Location</FieldLabel>
-                <Input id="location" maxLength={200} {...register("location")} />
+                <Input
+                  id="location"
+                  maxLength={200}
+                  {...register("location")}
+                />
               </Field>
               <Field data-invalid={!!errors.eventType}>
                 <FieldLabel htmlFor="eventType">Type</FieldLabel>
@@ -472,13 +474,7 @@ export function CalendarBoard({
   );
 }
 
-function EventChip({
-  teamId,
-  event,
-}: {
-  teamId: string;
-  event: CalEvent;
-}) {
+function EventChip({ teamId, event }: { teamId: string; event: CalEvent }) {
   const [editOpen, setEditOpen] = useState(false);
   const when = formatEventWhen(event);
   const location = event.location?.trim() || null;
@@ -504,7 +500,9 @@ function EventChip({
         </div>
       ) : null}
       {notes ? (
-        <div className="truncate text-[10px] text-muted-foreground">{notes}</div>
+        <div className="truncate text-[10px] text-muted-foreground">
+          {notes}
+        </div>
       ) : null}
     </div>
   );
@@ -621,10 +619,7 @@ function EditCalendarEventDialog({
         <DialogHeader>
           <DialogTitle>Edit event</DialogTitle>
         </DialogHeader>
-        <form
-          onSubmit={handleSubmit(onSave)}
-          className="flex flex-col gap-4"
-        >
+        <form onSubmit={handleSubmit(onSave)} className="flex flex-col gap-4">
           <FieldGroup>
             <Field data-invalid={!!errors.title}>
               <FieldLabel htmlFor={`edit-title-${event.id}`}>Title</FieldLabel>

@@ -3,8 +3,8 @@
 import { getSession } from "@project-aqua/auth/session";
 import { requireTeamRole } from "@project-aqua/db/authz";
 import {
-  commitSeasonRoll,
   type CommitSeasonRollInput,
+  commitSeasonRoll,
   listMembershipsNotInSeason,
   previewSeasonRoll,
 } from "@project-aqua/db/queries/seasons";

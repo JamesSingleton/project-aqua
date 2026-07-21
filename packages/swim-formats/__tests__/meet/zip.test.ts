@@ -1,11 +1,10 @@
-import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { strToU8, zipSync } from "fflate";
-import { parseEv3 } from "../ev3/parser.ts";
-import { extractMeetFileFromZip } from "./zip.ts";
+import { describe, expect, it } from "vitest";
+import { parseEv3 } from "../../src/ev3/parser";
+import { extractMeetFileFromZip } from "../../src/meet/zip";
 
 const fixturesDir = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -29,15 +28,15 @@ describe("extractMeetFileFromZip", () => {
       "meet.ev3": ev3,
     });
     const extracted = extractMeetFileFromZip(bytes);
-    assert.equal(extracted.format, "ev3");
-    assert.equal(extracted.filename, "meet.ev3");
+    expect(extracted.format).toBe("ev3");
+    expect(extracted.filename).toBe("meet.ev3");
   });
 
   it("falls back to HYV when EV3 is absent", () => {
     const hyv = readFileSync(join(fixturesDir, "charger-events.hyv"), "utf8");
     const bytes = zipOf({ "events.hyv": hyv });
     const extracted = extractMeetFileFromZip(bytes);
-    assert.equal(extracted.format, "hyv");
+    expect(extracted.format).toBe("hyv");
   });
 
   it("finds EV3 under a nested folder path", () => {
@@ -48,8 +47,8 @@ describe("extractMeetFileFromZip", () => {
       ".DS_Store": "junk",
     });
     const extracted = extractMeetFileFromZip(bytes);
-    assert.equal(extracted.format, "ev3");
-    assert.equal(extracted.filename, "foo.ev3");
+    expect(extracted.format).toBe("ev3");
+    expect(extracted.filename).toBe("foo.ev3");
   });
 
   it("rejects empty or junk-only archives", () => {
@@ -58,8 +57,7 @@ describe("extractMeetFileFromZip", () => {
       ".DS_Store": "y",
       "readme.txt": "not a meet file",
     });
-    assert.throws(
-      () => extractMeetFileFromZip(bytes),
+    expect(() => extractMeetFileFromZip(bytes)).toThrow(
       /No supported meet file/,
     );
   });
@@ -72,11 +70,11 @@ describe("extractMeetFileFromZip", () => {
       "pack.ev3": ev3,
     });
     const extracted = extractMeetFileFromZip(bytes);
-    assert.equal(extracted.format, "ev3");
+    expect(extracted.format).toBe("ev3");
     const text = new TextDecoder("utf-8").decode(extracted.bytes);
     const meet = parseEv3(text);
-    assert.match(meet.name, /Charger/);
+    expect(meet.name).toMatch(/Charger/);
     const e13 = meet.events.find((e) => e.eventNumber === 13);
-    assert.equal(e13?.qualifyingTimeMs, 6 * 60_000 + 30_000);
+    expect(e13?.qualifyingTimeMs).toBe(6 * 60_000 + 30_000);
   });
 });

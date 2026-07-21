@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  formatLocalDateOnly,
+  parseLocalDateOnly,
+} from "@project-aqua/swim-core/calendar-date";
 import { Button } from "@project-aqua/ui/components/button";
 import { Calendar } from "@project-aqua/ui/components/calendar";
 import { Input } from "@project-aqua/ui/components/input";
@@ -80,26 +84,14 @@ export function DataTableToolbar<TData>({
   );
 }
 
-function formatIsoDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function parseIsoDate(value: string | undefined): Date | undefined {
-  if (!value) return undefined;
-  const [year, month, day] = value.split("-").map(Number);
-  if (!year || !month || !day) return undefined;
-  return new Date(year, month - 1, day);
-}
-
 function formatRangeLabel(value: DateRangeFilterValue | undefined) {
   if (!value?.from && !value?.to) return null;
   const from = value.from
-    ? parseIsoDate(value.from)?.toLocaleDateString()
+    ? parseLocalDateOnly(value.from)?.toLocaleDateString()
     : "…";
-  const to = value.to ? parseIsoDate(value.to)?.toLocaleDateString() : "…";
+  const to = value.to
+    ? parseLocalDateOnly(value.to)?.toLocaleDateString()
+    : "…";
   return `${from} – ${to}`;
 }
 
@@ -113,8 +105,8 @@ function DataTableDateRangeFilter<TData>({
   const selected =
     raw?.from || raw?.to
       ? {
-          from: parseIsoDate(raw.from),
-          to: parseIsoDate(raw.to),
+          from: raw.from ? parseLocalDateOnly(raw.from) : undefined,
+          to: raw.to ? parseLocalDateOnly(raw.to) : undefined,
         }
       : undefined;
   const label = formatRangeLabel(raw);
@@ -150,8 +142,8 @@ function DataTableDateRangeFilter<TData>({
               return;
             }
             column.setFilterValue({
-              from: range.from ? formatIsoDate(range.from) : undefined,
-              to: range.to ? formatIsoDate(range.to) : undefined,
+              from: range.from ? formatLocalDateOnly(range.from) : undefined,
+              to: range.to ? formatLocalDateOnly(range.to) : undefined,
             } satisfies DateRangeFilterValue);
           }}
         />

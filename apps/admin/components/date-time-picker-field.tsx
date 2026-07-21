@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  formatDateTimeLocalLabel as formatDateTimeLabel,
+  formatDateTimeLocal,
+  parseDateTimeLocal,
+  toDateTimeLocalValue,
+} from "@project-aqua/swim-core/calendar-date";
 import { Button } from "@project-aqua/ui/components/button";
 import { Calendar } from "@project-aqua/ui/components/calendar";
 import { Field, FieldLabel } from "@project-aqua/ui/components/field";
@@ -20,58 +26,7 @@ import { useId, useState } from "react";
 /** `datetime-local`-compatible value: `YYYY-MM-DDTHH:mm`. */
 export type DateTimeLocalValue = string;
 
-function pad(n: number) {
-  return String(n).padStart(2, "0");
-}
-
-function parseDateTimeLocal(value: string): {
-  date: Date | undefined;
-  time: string;
-} {
-  if (!value) return { date: undefined, time: "" };
-  const [datePart, timePart = ""] = value.split("T");
-  const [year, month, day] = (datePart ?? "").split("-").map(Number);
-  if (!year || !month || !day) return { date: undefined, time: timePart };
-  const time = timePart.slice(0, 5);
-  return {
-    date: new Date(year, month - 1, day),
-    time: /^\d{2}:\d{2}$/.test(time) ? time : "",
-  };
-}
-
-function formatDateTimeLocal(date: Date, time: string): string {
-  const datePart = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-  const timePart = time || "00:00";
-  return `${datePart}T${timePart}`;
-}
-
-function formatDateTimeLabel(value: string): string | null {
-  const { date, time } = parseDateTimeLocal(value);
-  if (!date) return null;
-  const dateLabel = date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-  if (!time) return dateLabel;
-  const [hours, minutes] = time.split(":").map(Number);
-  const withTime = new Date(date);
-  withTime.setHours(hours ?? 0, minutes ?? 0, 0, 0);
-  const timeLabel = withTime.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-  return `${dateLabel} · ${timeLabel}`;
-}
-
-export function toDateTimeLocalValue(
-  date: Date = new Date(),
-): DateTimeLocalValue {
-  return formatDateTimeLocal(
-    date,
-    `${pad(date.getHours())}:${pad(date.getMinutes())}`,
-  );
-}
+export { toDateTimeLocalValue };
 
 export function DateTimePickerField({
   id,

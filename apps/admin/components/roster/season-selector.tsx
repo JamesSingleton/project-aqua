@@ -39,9 +39,7 @@ export function SeasonSelector({
   );
 
   const selectValue =
-    selectedSeasonId === "all" && allowAll
-      ? ALL_SEASONS
-      : selectedSeasonId;
+    selectedSeasonId === "all" && allowAll ? ALL_SEASONS : selectedSeasonId;
 
   const items = [
     ...(allowAll ? [{ value: ALL_SEASONS, label: "All seasons" }] : []),

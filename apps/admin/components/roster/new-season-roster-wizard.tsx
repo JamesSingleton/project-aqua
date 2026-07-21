@@ -1,6 +1,11 @@
 "use client";
 
 import {
+  formatLocalDateOnly,
+  formatLocalDateOnlyLabel,
+  parseLocalDateOnly,
+} from "@project-aqua/swim-core/calendar-date";
+import {
   ACADEMIC_STANDING_LABELS,
   type AcademicStanding,
   CLASS_YEAR_LABELS,
@@ -58,30 +63,6 @@ type EnrollmentDraft = {
   seasonsOfCompetitionUsed: number | null;
 };
 
-function parseIsoDate(value: string): Date | undefined {
-  if (!value) return undefined;
-  const [year, month, day] = value.split("-").map(Number);
-  if (!year || !month || !day) return undefined;
-  return new Date(year, month - 1, day);
-}
-
-function formatIsoDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function formatIsoDateLabel(value: string) {
-  const date = parseIsoDate(value);
-  if (!date) return null;
-  return date.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 function SeasonDatePicker({
   id,
   value,
@@ -94,8 +75,8 @@ function SeasonDatePicker({
   placeholder?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const selectedDate = parseIsoDate(value);
-  const label = formatIsoDateLabel(value);
+  const selectedDate = parseLocalDateOnly(value);
+  const label = formatLocalDateOnlyLabel(value, "long");
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -121,7 +102,7 @@ function SeasonDatePicker({
           selected={selectedDate}
           defaultMonth={selectedDate}
           onSelect={(date) => {
-            onChange(date ? formatIsoDate(date) : "");
+            onChange(date ? formatLocalDateOnly(date) : "");
             setOpen(false);
           }}
           captionLayout="dropdown"
@@ -276,9 +257,7 @@ export function NewSeasonRosterWizard({
         }
       }}
     >
-      <DialogTrigger
-        render={<Button type="button" variant="outline" />}
-      >
+      <DialogTrigger render={<Button type="button" variant="outline" />}>
         <CalendarPlusIcon data-icon="inline-start" />
         New season roster
       </DialogTrigger>
@@ -368,9 +347,7 @@ export function NewSeasonRosterWizard({
                         />
                       </TableHead>
                       <TableHead>Name</TableHead>
-                      {showClassYear ? (
-                        <TableHead>Class year</TableHead>
-                      ) : null}
+                      {showClassYear ? <TableHead>Class year</TableHead> : null}
                       {showCollegeEligibility ? (
                         <>
                           <TableHead>Standing</TableHead>

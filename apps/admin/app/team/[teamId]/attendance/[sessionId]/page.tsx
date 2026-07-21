@@ -25,9 +25,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { teamId, sessionId } = await params;
   const practice = await getPracticeSession(sessionId, teamId);
-  const dateLabel = practice
-    ? practice.date.toLocaleDateString()
-    : "Session";
+  const dateLabel = practice ? practice.date.toLocaleDateString() : "Session";
   return {
     title: `Attendance · ${dateLabel}`,
     description: "Take roll call and review RSVPs for this practice.",

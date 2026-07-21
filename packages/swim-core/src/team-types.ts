@@ -130,7 +130,9 @@ export function parseEligibilityStatus(
 }
 
 /** Advance HS class year for a new season; SR has no next year. */
-export function advanceClassYear(classYear: ClassYear | null): ClassYear | null {
+export function advanceClassYear(
+  classYear: ClassYear | null,
+): ClassYear | null {
   if (!classYear) return null;
   const idx = CLASS_YEARS.indexOf(classYear);
   if (idx < 0 || idx >= CLASS_YEARS.length - 1) return null;
@@ -190,4 +192,15 @@ export function formatEventGenderLabel(
   }
   // high_school + club
   return isFemale ? "Girls" : "Boys";
+}
+
+/** Distinct event display: "100 Backstroke - SCY - Girls" */
+export function formatBestTimeEventLabel(
+  label: string | null | undefined,
+  course: string,
+  gender: string | null | undefined,
+  teamType?: string | null,
+): string {
+  const base = label?.trim() || "Event";
+  return `${base} - ${course} - ${formatEventGenderLabel(gender, teamType)}`;
 }

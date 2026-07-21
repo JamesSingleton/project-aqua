@@ -23,6 +23,7 @@ catalog:
   resend: "^6.17.2"
   stripe: "^18.0.0"
   typescript: "^6.0.3"
+  vitest: "^3.2.4"
   zod: "^4.4.3"
 
 overrides:

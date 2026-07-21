@@ -270,31 +270,24 @@ export default async function RosterPage({
     listTeamSeasons(teamId),
   );
 
-  const [
-    orgRows,
-    members,
-    membership,
-    teamUi,
-    groups,
-    currentSeason,
-    seasons,
-  ] = await Promise.all([
-    db
-      .select()
-      .from(organization)
-      .where(eq(organization.id, teamId))
-      .limit(1),
-    getTeamMembers(teamId),
-    session?.user?.id
-      ? getMember(session.user.id, teamId)
-      : Promise.resolve(null),
-    session?.user?.id
-      ? getTeamUiPreferences(session.user.id, teamId)
-      : Promise.resolve<TeamUiState>({}),
-    listGroupsAction(teamId),
-    currentSeasonPromise,
-    seasonsPromise,
-  ]);
+  const [orgRows, members, membership, teamUi, groups, currentSeason, seasons] =
+    await Promise.all([
+      db
+        .select()
+        .from(organization)
+        .where(eq(organization.id, teamId))
+        .limit(1),
+      getTeamMembers(teamId),
+      session?.user?.id
+        ? getMember(session.user.id, teamId)
+        : Promise.resolve(null),
+      session?.user?.id
+        ? getTeamUiPreferences(session.user.id, teamId)
+        : Promise.resolve<TeamUiState>({}),
+      listGroupsAction(teamId),
+      currentSeasonPromise,
+      seasonsPromise,
+    ]);
 
   const selectedSeason =
     (parsedParams.season
@@ -428,9 +421,7 @@ export default async function RosterPage({
                 <CardTitle>Swimmers</CardTitle>
                 <CardDescription>
                   {facets.totalActive} active swimmers on roster
-                  {selectedSeason.label
-                    ? ` · ${selectedSeason.label}`
-                    : null}
+                  {selectedSeason.label ? ` · ${selectedSeason.label}` : null}
                 </CardDescription>
               </div>
               <SeasonSelector
@@ -444,9 +435,7 @@ export default async function RosterPage({
                 fallback={
                   <DataTableSkeleton
                     columnCount={
-                      (showClassYear ? 1 : 0) +
-                      (showUsaSwimmingId ? 1 : 0) +
-                      8
+                      (showClassYear ? 1 : 0) + (showUsaSwimmingId ? 1 : 0) + 8
                     }
                     filterCount={showClassYear ? 4 : 3}
                   />

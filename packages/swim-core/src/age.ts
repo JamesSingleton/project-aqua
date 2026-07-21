@@ -9,6 +9,26 @@ export function swimmerAge(
   return Math.floor((asOf.getTime() - dob.getTime()) / MS_PER_YEAR);
 }
 
+/**
+ * Calendar-year age on `asOf` (birthday not yet reached → subtract 1).
+ * Prefer this for meet age-group eligibility; use `swimmerAge` for approximate age.
+ */
+export function swimmerAgeOnDate(
+  dateOfBirth: string | Date | null | undefined,
+  asOf: Date,
+): number | null {
+  if (dateOfBirth == null) return null;
+  const birth =
+    typeof dateOfBirth === "string" ? new Date(dateOfBirth) : dateOfBirth;
+  if (Number.isNaN(birth.getTime())) return null;
+  let age = asOf.getFullYear() - birth.getFullYear();
+  const monthDiff = asOf.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && asOf.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+  return age;
+}
+
 export function isMinorSwimmer(
   dateOfBirth: string | Date,
   asOf: Date = new Date(),
@@ -52,11 +72,7 @@ export function seasonRangeFromLabel(label: string): SeasonDateRange | null {
 
 export function currentSeasonRange(asOf: Date = new Date()): SeasonDateRange {
   const label = currentSeasonYear(asOf);
-  const range = seasonRangeFromLabel(label);
-  if (!range) {
-    throw new Error(`Invalid current season label: ${label}`);
-  }
-  return range;
+  return seasonRangeFromLabel(label)!;
 }
 
 /** Next season after a label like "2025-2026" → "2026-2027". */

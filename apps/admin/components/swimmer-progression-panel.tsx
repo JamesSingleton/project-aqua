@@ -1,4 +1,5 @@
 import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
+import { formatBestTimeEventLabel } from "@project-aqua/swim-core/team-types";
 import { formatTime } from "@project-aqua/swim-core/times";
 import {
   Card,
@@ -20,7 +21,6 @@ import {
   SwimmerEventChart,
   type SwimmerSeriesPoint,
 } from "@/components/swimmer-event-chart";
-import { formatBestTimeEventLabel } from "@/lib/format-event-label";
 
 export type SwimmerBestTimeRow = BestTimeRow;
 

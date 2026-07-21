@@ -1,6 +1,6 @@
+import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
 import { getMeetDetailAction } from "../../actions";
 import { MeetInfoForm } from "../meet-info-form";
 

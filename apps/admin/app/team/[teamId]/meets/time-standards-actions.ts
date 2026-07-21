@@ -21,6 +21,7 @@ import {
   type Course,
   type EventGender,
   eventGenderFromCode,
+  parseEventKey,
   type RelayStroke,
   type Stroke,
 } from "@project-aqua/swim-core/events";
@@ -38,31 +39,6 @@ const manualCutSchema = z.object({
 function revalidateStandards(teamId: string) {
   revalidatePath(`/team/${teamId}/meets/time-standards`);
   revalidatePath(`/team/${teamId}/meets/results`);
-}
-
-function parseEventKeyParts(eventKey: string): {
-  distance: number;
-  stroke: string;
-  course: Course;
-  gender: EventGender;
-} | null {
-  const parts = eventKey.split("_");
-  if (parts.length < 4) return null;
-  const genderCode = parts[parts.length - 1] ?? "m";
-  const courseRaw = (parts[parts.length - 2] ?? "scy").toUpperCase();
-  if (courseRaw !== "SCY" && courseRaw !== "SCM" && courseRaw !== "LCM") {
-    return null;
-  }
-  const distance = Number.parseInt(parts[0] ?? "", 10);
-  if (!Number.isFinite(distance)) return null;
-  const stroke = parts.slice(1, -2).join("_");
-  if (!stroke) return null;
-  return {
-    distance,
-    stroke,
-    course: courseRaw,
-    gender: eventGenderFromCode(genderCode),
-  };
 }
 
 export async function listTimeStandardSetsAction(teamId: string) {
@@ -278,7 +254,7 @@ export async function uploadTimeStandardCutsAction(
       throw new Error(`Invalid time for ${eventKey}: ${timeRaw}`);
     }
 
-    const parts = parseEventKeyParts(eventKey);
+    const parts = parseEventKey(eventKey);
     if (parts) {
       await ensureSwimEvent({
         eventKey,

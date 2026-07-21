@@ -15,11 +15,11 @@ import {
 import { organization } from "@project-aqua/db/schema";
 import { sendMaappAcknowledgmentRequest } from "@project-aqua/emails";
 import { isMinorSwimmer } from "@project-aqua/swim-core/age";
+import { normalizeCreateSwimmerFormValues } from "@project-aqua/swim-core/validators";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import type { CreateSwimmerFormValues } from "@/schemas";
 import { createSwimmerFormSchema } from "@/schemas";
-import { normalizeCreateSwimmerFormValues } from "@/schemas/swimmer-create.utils";
 
 export async function createSwimmerAction(
   teamId: string,

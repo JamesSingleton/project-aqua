@@ -23,17 +23,20 @@ import {
   createFeedToken,
   deleteCalendarEvent,
   disconnectCalendarConnection,
-  expandWeeklyCalendarSlots,
   getActiveFeedToken,
   getCalendarConnections,
   getRecentSyncConflicts,
   getTeamCalendarProjection,
-  type RecurringCalendarScheduleInput,
   revokeFeedTokens,
   updateCalendarEvent,
   upsertCalendarConnection,
 } from "@project-aqua/db/queries/calendar";
 import { organization } from "@project-aqua/db/schema";
+import {
+  expandWeeklyCalendarSlots,
+  type RecurringCalendarScheduleInput,
+} from "@project-aqua/swim-core/calendar-recurrence";
+import { normalizeOptionalText } from "@project-aqua/swim-core/text";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
@@ -41,19 +44,6 @@ import { after } from "next/server";
 const MAX_LOCATION_LENGTH = 200;
 const MAX_DESCRIPTION_LENGTH = 2000;
 const MAX_TITLE_LENGTH = 200;
-
-function normalizeOptionalText(
-  value: string | null | undefined,
-  maxLength: number,
-): string | null {
-  if (value == null) return null;
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  if (trimmed.length > maxLength) {
-    throw new Error(`Must be ${maxLength} characters or fewer`);
-  }
-  return trimmed;
-}
 
 function normalizeRequiredTitle(value: string): string {
   const trimmed = value.trim();
@@ -116,7 +106,8 @@ export async function createCalendarEventAction(
     title: normalizeRequiredTitle(data.title),
     startsAt: new Date(data.startsAt),
     endsAt: data.endsAt ? new Date(data.endsAt) : undefined,
-    location: normalizeOptionalText(data.location, MAX_LOCATION_LENGTH) ?? undefined,
+    location:
+      normalizeOptionalText(data.location, MAX_LOCATION_LENGTH) ?? undefined,
     description:
       normalizeOptionalText(data.description, MAX_DESCRIPTION_LENGTH) ??
       undefined,
@@ -220,7 +211,8 @@ export async function updateCalendarEventAction(
   ]);
 
   await updateCalendarEvent(eventId, teamId, {
-    title: data.title === undefined ? undefined : normalizeRequiredTitle(data.title),
+    title:
+      data.title === undefined ? undefined : normalizeRequiredTitle(data.title),
     startsAt: data.startsAt ? new Date(data.startsAt) : undefined,
     endsAt:
       data.endsAt === undefined

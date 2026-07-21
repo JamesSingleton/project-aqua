@@ -1,7 +1,11 @@
 "use client";
 
+import { swimmerAgeOnDate } from "@project-aqua/swim-core/age";
 import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
-import { formatEventName } from "@project-aqua/swim-core/events";
+import {
+  formatEventName,
+  formatGenderShort,
+} from "@project-aqua/swim-core/events";
 import { formatTime } from "@project-aqua/swim-core/times";
 import { Label } from "@project-aqua/ui/components/label";
 import {
@@ -63,25 +67,6 @@ type StandardCut = {
 };
 
 type GroupMode = "event" | "swimmer";
-
-function ageAsOf(dob: Date | string | null, asOf: Date): number | null {
-  if (!dob) return null;
-  const birth = typeof dob === "string" ? new Date(dob) : dob;
-  if (Number.isNaN(birth.getTime())) return null;
-  let age = asOf.getFullYear() - birth.getFullYear();
-  const monthDiff = asOf.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && asOf.getDate() < birth.getDate())) {
-    age -= 1;
-  }
-  return age;
-}
-
-function formatGenderShort(gender: string) {
-  if (gender === "female" || gender === "f") return "F";
-  if (gender === "mixed" || gender === "x") return "X";
-  if (gender === "male" || gender === "m") return "M";
-  return "";
-}
 
 function eventLabel(row: ResultRow) {
   const gender = formatGenderShort(row.gender);
@@ -166,7 +151,7 @@ function findCutTime(
   meetStartDate: Date,
 ): number | null {
   if (cuts.length === 0) return null;
-  const age = ageAsOf(row.dateOfBirth, meetStartDate);
+  const age = swimmerAgeOnDate(row.dateOfBirth, meetStartDate);
   const candidates = ageGroupCandidates(age, row.ageGroup);
   const genderNorm =
     row.gender === "f" || row.gender === "female"
@@ -509,7 +494,7 @@ export function ResultsWorkspace({
               </TableHeader>
               <TableBody>
                 {group.rows.map((row) => {
-                  const age = ageAsOf(row.dateOfBirth, meetStartDate);
+                  const age = swimmerAgeOnDate(row.dateOfBirth, meetStartDate);
                   const delta = improvementSeconds(row);
                   const faster = delta != null && delta < 0;
                   const slower = delta != null && delta > 0;

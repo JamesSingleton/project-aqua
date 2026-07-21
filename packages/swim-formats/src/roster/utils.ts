@@ -133,7 +133,7 @@ export function parseLastFirstName(name: string): {
     .trim()
     .split(/\s+/);
   return {
-    firstName: nameParts[0] ?? "Unknown",
+    firstName: nameParts[0] || "Unknown",
     lastName,
     middleName: nameParts[1],
   };
@@ -183,9 +183,9 @@ export function mergeSwimmer(
 
   map.set(key, {
     ...existing,
-    practiceGroup: existing.practiceGroup ?? row.practiceGroup,
-    classYear: existing.classYear ?? row.classYear,
-    usaMemberId: existing.usaMemberId ?? row.usaMemberId,
+    practiceGroup: row.practiceGroup ?? existing.practiceGroup,
+    classYear: row.classYear ?? existing.classYear,
+    usaMemberId: row.usaMemberId ?? existing.usaMemberId,
   });
 }
 

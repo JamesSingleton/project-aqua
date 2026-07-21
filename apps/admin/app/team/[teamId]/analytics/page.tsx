@@ -9,6 +9,7 @@ import {
   getVolumeSeries,
 } from "@project-aqua/db/queries/analytics";
 import { getTeamBestTimes } from "@project-aqua/db/queries/progression";
+import { formatBestTimeEventLabel } from "@project-aqua/swim-core/team-types";
 import {
   Card,
   CardContent,
@@ -20,7 +21,6 @@ import type { Metadata } from "next";
 import { AttendanceChart, VolumeChart } from "@/components/analytics-charts";
 import { PageHeader, TimingBoard } from "@/components/page-header";
 import { TeamTopTimes } from "@/components/team-top-times";
-import { formatBestTimeEventLabel } from "@/lib/format-event-label";
 
 export async function generateMetadata({
   params,

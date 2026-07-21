@@ -28,12 +28,12 @@ import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
-  SeasonSelector,
   type SeasonOption,
+  SeasonSelector,
 } from "@/components/roster/season-selector";
 import {
-  type ProgressionSwimmer,
   formatSwimmerLastFirst,
+  type ProgressionSwimmer,
   sortProgressionSwimmers,
 } from "./progression-swimmers";
 
@@ -148,10 +148,7 @@ export function ProgressionSwimmerPicker({
           value={groupKey}
           onValueChange={onGroupChange}
         >
-          <SelectTrigger
-            id="progression-group"
-            className="w-full sm:w-[220px]"
-          >
+          <SelectTrigger id="progression-group" className="w-full sm:w-[220px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

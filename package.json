@@ -23,6 +23,8 @@
     "format": "biome format --write .",
     "lint": "turbo lint",
     "lint:fix": "turbo lint:fix",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e --filter=@project-aqua/admin",
     "check:types": "turbo check:types",
     "db:generate": "turbo db:generate",
     "db:migrate": "turbo db:migrate",

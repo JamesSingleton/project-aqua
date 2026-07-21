@@ -100,7 +100,10 @@ export function AppSidebar({
         { title: "All meets", url: `/team/${teamId}/meets` },
         { title: "Add meet", url: `/team/${teamId}/meets/create` },
         { title: "Results", url: `/team/${teamId}/meets/results` },
-        { title: "Time standards", url: `/team/${teamId}/meets/time-standards` },
+        {
+          title: "Time standards",
+          url: `/team/${teamId}/meets/time-standards`,
+        },
       ],
     },
     {

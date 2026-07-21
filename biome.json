@@ -6,11 +6,12 @@
       "**",
       "!**/dist",
       "!**/node_modules",
+      "!**/coverage",
       "!**/.turbo",
       "!**/.next",
       "!**/.react-email",
       "!**/*.svg"
-    ]
+    ],
   },
   "css": {
     "parser": {

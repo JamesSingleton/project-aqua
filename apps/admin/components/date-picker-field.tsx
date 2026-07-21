@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  formatLocalDateOnly as formatLocalDate,
+  formatLocalDateOnlyLabel as formatLocalDateLabel,
+  parseLocalDateOnly as parseLocalDate,
+} from "@project-aqua/swim-core/calendar-date";
 import { Button } from "@project-aqua/ui/components/button";
 import { Calendar } from "@project-aqua/ui/components/calendar";
 import {
@@ -10,33 +15,6 @@ import {
 import { cn } from "@project-aqua/ui/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
-
-function parseLocalDate(value: string): Date | undefined {
-  if (!value) return undefined;
-  const [year, month, day] = value.split("-").map(Number);
-  if (!year || !month || !day) return undefined;
-  return new Date(year, month - 1, day);
-}
-
-function formatLocalDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function formatLocalDateLabel(
-  value: string,
-  month: "short" | "long" = "short",
-): string | null {
-  const date = parseLocalDate(value);
-  if (!date) return null;
-  return date.toLocaleDateString("en-US", {
-    month,
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 export function DatePickerField({
   id,

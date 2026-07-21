@@ -27,18 +27,19 @@ import {
   updateMeetEntryStatus,
   upsertMeetCommitment,
 } from "@project-aqua/db/queries/meets";
+import { recomputeBestTimesForSwimmer } from "@project-aqua/db/queries/progression";
 import {
   findSwimmerByGoverningBodyId,
   getRoster,
 } from "@project-aqua/db/queries/roster";
-import { recomputeBestTimesForSwimmer } from "@project-aqua/db/queries/progression";
 import { sendMeetImportComplete } from "@project-aqua/emails";
+import { formatDateOnly } from "@project-aqua/swim-core/calendar-date";
 import {
   canAddMeetEntry,
   isRelayStroke,
 } from "@project-aqua/swim-core/entry-limits";
-import { formatDateOnly } from "@project-aqua/swim-core/calendar-date";
 import { isSwimmerEligibleForEvent } from "@project-aqua/swim-core/events";
+import { normalizePersonName } from "@project-aqua/swim-core/people";
 import { parseTime } from "@project-aqua/swim-core/times";
 import { createMeetSchema } from "@project-aqua/swim-core/validators";
 import type { ParsedMeet } from "@project-aqua/swim-formats";
@@ -67,14 +68,6 @@ function revalidateMeetPaths(teamId: string, meetId?: string) {
   }
 }
 
-function normalizeName(name: string) {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 async function resolveMembership(
   teamId: string,
   roster: Awaited<ReturnType<typeof getRoster>>,
@@ -94,11 +87,11 @@ async function resolveMembership(
     }
   }
 
-  const target = normalizeName(swimmerName);
+  const target = normalizePersonName(swimmerName);
   const match = roster.find((r) => {
-    const full = normalizeName(`${r.firstName} ${r.lastName}`);
+    const full = normalizePersonName(`${r.firstName} ${r.lastName}`);
     const preferred = r.preferredName
-      ? normalizeName(`${r.preferredName} ${r.lastName}`)
+      ? normalizePersonName(`${r.preferredName} ${r.lastName}`)
       : "";
     return full === target || preferred === target || full.includes(target);
   });
@@ -475,8 +468,7 @@ export async function importMeetFileAction(
       linkedExisting = true;
       await updateMeet(meetId, teamId, {
         name: review?.name ?? meet.name,
-        startDate:
-          review?.startDate ?? formatDateOnly(meet.startDate),
+        startDate: review?.startDate ?? formatDateOnly(meet.startDate),
         endDate:
           review?.endDate !== undefined
             ? review.endDate || undefined
@@ -703,13 +695,13 @@ function findMatchingMeetId(
   existingMeets: Awaited<ReturnType<typeof getMeets>>,
   parsed: ParsedMeet,
 ): string | null {
-  const parsedName = normalizeName(parsed.name);
+  const parsedName = normalizePersonName(parsed.name);
   if (!parsedName) return null;
 
   const parsedDate = parsed.startDate?.slice(0, 10);
 
   const matches = existingMeets.filter((meet) => {
-    const meetName = normalizeName(meet.name);
+    const meetName = normalizePersonName(meet.name);
     const nameMatch =
       meetName === parsedName ||
       meetName.includes(parsedName) ||

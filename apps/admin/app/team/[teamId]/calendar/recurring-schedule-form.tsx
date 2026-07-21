@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { countWeeklyCalendarOccurrences } from "@project-aqua/swim-core/calendar-recurrence";
 import { Button } from "@project-aqua/ui/components/button";
 import {
   Card,
@@ -82,33 +83,6 @@ const eventTypes = [
   { label: "Meet", value: "meet" },
   { label: "Other", value: "other" },
 ] as const;
-
-function countExpandedOccurrences(
-  values: RecurringScheduleValues,
-): number | null {
-  if (
-    !values.rangeStart ||
-    !values.rangeEnd ||
-    values.rangeEnd < values.rangeStart
-  ) {
-    return null;
-  }
-  const [sy, sm, sd] = values.rangeStart.split("-").map(Number);
-  const [ey, em, ed] = values.rangeEnd.split("-").map(Number);
-  if (!sy || !sm || !sd || !ey || !em || !ed) return null;
-
-  const cursor = new Date(sy, sm - 1, sd);
-  const end = new Date(ey, em - 1, ed);
-  let count = 0;
-  while (cursor <= end) {
-    const weekday = cursor.getDay();
-    for (const slot of values.slots) {
-      if (slot.weekdays.includes(weekday)) count += 1;
-    }
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return count;
-}
 
 function WeekdayPicker({
   value,
@@ -227,7 +201,12 @@ export function RecurringScheduleForm({
 
   const watched = watch();
   const previewCount = useMemo(
-    () => countExpandedOccurrences(watched),
+    () =>
+      countWeeklyCalendarOccurrences({
+        rangeStart: watched.rangeStart,
+        rangeEnd: watched.rangeEnd,
+        slots: watched.slots,
+      }),
     [watched],
   );
 

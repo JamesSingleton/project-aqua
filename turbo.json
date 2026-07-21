@@ -26,6 +26,14 @@
       "dependsOn": ["^topo"],
       "cache": false
     },
+    "test": {
+      "dependsOn": ["^topo"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md"]
+    },
+    "test:e2e": {
+      "dependsOn": ["^topo"],
+      "cache": false
+    },
     "db:generate": {
       "cache": false
     },

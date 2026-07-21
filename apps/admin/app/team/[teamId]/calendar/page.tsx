@@ -1,5 +1,8 @@
 import { getSession } from "@project-aqua/auth/session";
-import { getDefaultPracticeLocation, requireTeamMember } from "@project-aqua/db/authz";
+import {
+  getDefaultPracticeLocation,
+  requireTeamMember,
+} from "@project-aqua/db/authz";
 import {
   getActiveFeedToken,
   getCalendarConnections,

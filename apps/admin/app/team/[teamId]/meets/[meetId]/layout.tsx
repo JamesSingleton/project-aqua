@@ -1,5 +1,5 @@
-import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
 import { getMeetById } from "@project-aqua/db/queries/meets";
+import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SetBreadcrumbEntity } from "@/components/breadcrumb-entities";

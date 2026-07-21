@@ -1,9 +1,6 @@
 import { isCoachingRole } from "@project-aqua/auth/roles";
 import { getSession } from "@project-aqua/auth/session";
-import {
-  getMember,
-  getOrganizationTeamType,
-} from "@project-aqua/db/authz";
+import { getMember, getOrganizationTeamType } from "@project-aqua/db/authz";
 import {
   getSwimmerBestTimes,
   getSwimmerResultSeries,
@@ -103,8 +100,7 @@ export default async function ProgressionSwimmerPage({
   ]);
 
   const displayName =
-    swimmer.preferredName?.trim() ||
-    `${swimmer.firstName} ${swimmer.lastName}`;
+    swimmer.preferredName?.trim() || `${swimmer.firstName} ${swimmer.lastName}`;
 
   const listSwimmers = roster.map((s) => ({
     swimmerId: s.swimmerId,

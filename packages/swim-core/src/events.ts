@@ -117,6 +117,50 @@ export function formatEventLabel(
   return formatEventName(distance, stroke);
 }
 
+/** Inverse of `buildEventKey` — parse distance/stroke/course/gender from a key. */
+export function parseEventKey(eventKey: string): {
+  distance: number;
+  stroke: string;
+  course: Course;
+  gender: EventGender;
+} | null {
+  const parts = eventKey.split("_");
+  if (parts.length < 4) return null;
+  const genderCode = parts[parts.length - 1] /* v8 ignore next */ ?? "m";
+  const courseRaw = (
+    parts[parts.length - 2] /* v8 ignore next */ ?? "scy"
+  ).toUpperCase();
+  if (courseRaw !== "SCY" && courseRaw !== "SCM" && courseRaw !== "LCM") {
+    return null;
+  }
+  const distance = Number.parseInt(parts[0] /* v8 ignore next */ ?? "", 10);
+  if (!Number.isFinite(distance)) return null;
+  const stroke = parts.slice(1, -2).join("_");
+  if (!stroke) return null;
+  return {
+    distance,
+    stroke,
+    course: courseRaw,
+    gender: eventGenderFromCode(genderCode),
+  };
+}
+
+/** Compact gender letter for dense UI (F / M / X). */
+export function formatGenderShort(gender: string): string {
+  if (gender === "female" || gender === "f") return "F";
+  if (gender === "mixed" || gender === "x") return "X";
+  if (gender === "male" || gender === "m") return "M";
+  return "";
+}
+
+/** Neutral gender word (Female / Male / Mixed). */
+export function formatGenderLabel(gender: string): string {
+  if (gender === "female" || gender === "f") return "Female";
+  if (gender === "mixed" || gender === "x") return "Mixed";
+  if (gender === "male" || gender === "m") return "Male";
+  return gender;
+}
+
 export const COMMON_EVENTS: SwimEvent[] = [
   {
     distance: 50,

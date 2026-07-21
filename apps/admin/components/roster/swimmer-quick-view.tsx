@@ -1,12 +1,12 @@
 "use client";
 
-import { formatTime } from "@project-aqua/swim-core/times";
 import {
   ACADEMIC_STANDING_LABELS,
   type AcademicStanding,
   ELIGIBILITY_STATUS_LABELS,
   type EligibilityStatus,
 } from "@project-aqua/swim-core/team-types";
+import { formatTime } from "@project-aqua/swim-core/times";
 import { Avatar, AvatarFallback } from "@project-aqua/ui/components/avatar";
 import { Badge } from "@project-aqua/ui/components/badge";
 import { Button, buttonVariants } from "@project-aqua/ui/components/button";
@@ -276,13 +276,13 @@ export function SwimmerQuickView({
               {hasCollegeEligibility ? (
                 <>
                   {academicLabel ? (
-                    <DetailRow label="Academic standing" value={academicLabel} />
+                    <DetailRow
+                      label="Academic standing"
+                      value={academicLabel}
+                    />
                   ) : null}
                   {eligibilityDisplay ? (
-                    <DetailRow
-                      label="Eligibility"
-                      value={eligibilityDisplay}
-                    />
+                    <DetailRow label="Eligibility" value={eligibilityDisplay} />
                   ) : null}
                   {athlete.seasonsOfCompetitionUsed != null ? (
                     <DetailRow

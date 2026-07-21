@@ -3,8 +3,12 @@
 import {
   formatDateOnly,
   formatDateOnlyLabel,
+  formatLocalDateOnly,
+  formatLocalDateOnlyLabel,
+  parseLocalDateOnly,
 } from "@project-aqua/swim-core/calendar-date";
 import { EVENT_CATALOG } from "@project-aqua/swim-core/event-catalog";
+import { formatBestTimeEventLabel } from "@project-aqua/swim-core/team-types";
 import { formatTime } from "@project-aqua/swim-core/times";
 import { Button } from "@project-aqua/ui/components/button";
 import { Calendar } from "@project-aqua/ui/components/calendar";
@@ -55,7 +59,6 @@ import {
   deleteSwimmerBestTimeAction,
   setSwimmerBestTimeAction,
 } from "@/app/team/[teamId]/progression/best-times-actions";
-import { formatBestTimeEventLabel } from "@/lib/format-event-label";
 
 export type BestTimeRow = {
   id: string;
@@ -67,31 +70,6 @@ export type BestTimeRow = {
   achievedAt: Date;
 };
 
-function parseIsoDate(value: string): Date | undefined {
-  if (!value) return undefined;
-  const [year, month, day] = value.split("-").map(Number);
-  if (!year || !month || !day) return undefined;
-  return new Date(year, month - 1, day);
-}
-
-/** Local calendar day for "today" when adding a new time. */
-function formatLocalIsoDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function formatIsoDateLabel(value: string) {
-  const date = parseIsoDate(value);
-  if (!date) return null;
-  return date.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 function AchievedDatePicker({
   id,
   value,
@@ -102,8 +80,8 @@ function AchievedDatePicker({
   onChange: (value: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const selectedDate = parseIsoDate(value);
-  const label = formatIsoDateLabel(value);
+  const selectedDate = parseLocalDateOnly(value);
+  const label = formatLocalDateOnlyLabel(value, "long");
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -129,7 +107,7 @@ function AchievedDatePicker({
           selected={selectedDate}
           defaultMonth={selectedDate}
           onSelect={(date) => {
-            onChange(date ? formatLocalIsoDate(date) : "");
+            onChange(date ? formatLocalDateOnly(date) : "");
             setOpen(false);
           }}
           disabled={{ after: new Date() }}
@@ -166,7 +144,7 @@ export function BestTimesCard({
   const [eventKey, setEventKey] = useState("");
   const [time, setTime] = useState("");
   const [achievedOn, setAchievedOn] = useState(() =>
-    formatLocalIsoDate(new Date()),
+    formatLocalDateOnly(new Date()),
   );
   const [error, setError] = useState("");
 
@@ -183,7 +161,7 @@ export function BestTimesCard({
     setError("");
     setEventKey(eventOptions[0]?.value ?? "");
     setTime("");
-    setAchievedOn(formatLocalIsoDate(new Date()));
+    setAchievedOn(formatLocalDateOnly(new Date()));
     setMode({ kind: "add" });
   }
 

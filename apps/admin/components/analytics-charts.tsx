@@ -60,11 +60,7 @@ export function VolumeChart({
         ? "Yards"
         : "Distance";
   const unitSuffix =
-    distanceUnit === "meters"
-      ? "m"
-      : distanceUnit === "yards"
-        ? "yd"
-        : "";
+    distanceUnit === "meters" ? "m" : distanceUnit === "yards" ? "yd" : "";
 
   return (
     <ChartContainer

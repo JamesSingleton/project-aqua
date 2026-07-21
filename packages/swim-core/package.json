@@ -13,6 +13,9 @@
     "./entry-limits": "./src/entry-limits.ts",
     "./age": "./src/age.ts",
     "./calendar-date": "./src/calendar-date.ts",
+    "./calendar-recurrence": "./src/calendar-recurrence.ts",
+    "./people": "./src/people.ts",
+    "./text": "./src/text.ts",
     "./team-types": "./src/team-types.ts",
     "./workout-parser": "./src/workout-parser.ts"
   },
@@ -20,7 +23,8 @@
     "check:types": "tsc --noEmit",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "test": "node --test --experimental-strip-types src/**/*.test.ts"
+    "test": "vitest run --coverage",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "zod": "catalog:"
@@ -28,6 +32,8 @@
   "devDependencies": {
     "@project-aqua/typescript-config": "workspace:*",
     "@types/node": "catalog:",
-    "typescript": "catalog:"
+    "@vitest/coverage-v8": "^3.2.4",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

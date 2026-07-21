@@ -66,7 +66,7 @@ export function validateImageFile(input: ImageInput): {
     );
   }
 
-  const mimeType = input.mimeType.toLowerCase().split(";")[0]?.trim() ?? "";
+  const mimeType = input.mimeType.toLowerCase().split(";")[0]!.trim();
   if (!isAllowedImageMimeType(mimeType)) {
     throw new ImageValidationError(
       "Image must be JPEG, PNG, WebP, AVIF, or SVG",

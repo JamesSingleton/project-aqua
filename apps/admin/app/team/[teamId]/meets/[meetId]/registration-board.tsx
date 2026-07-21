@@ -1,5 +1,6 @@
 "use client";
 
+import { swimmerAgeOnDate } from "@project-aqua/swim-core/age";
 import {
   canAddMeetEntry,
   formatEntryLimitsSummary,
@@ -8,6 +9,7 @@ import {
 } from "@project-aqua/swim-core/entry-limits";
 import {
   formatEventName,
+  formatGenderLabel,
   isSwimmerEligibleForEvent,
 } from "@project-aqua/swim-core/events";
 import { formatTime, parseTime } from "@project-aqua/swim-core/times";
@@ -115,25 +117,6 @@ const COMMITMENT_ITEMS = [
   { value: "committed", label: "Committed" },
   { value: "declined", label: "Declined" },
 ] as const;
-
-function formatGenderLabel(gender: string) {
-  if (gender === "female" || gender === "f") return "Female";
-  if (gender === "mixed" || gender === "x") return "Mixed";
-  if (gender === "male" || gender === "m") return "Male";
-  return gender;
-}
-
-function ageAsOf(dob: Date | string | null, asOf: Date): number | null {
-  if (!dob) return null;
-  const birth = typeof dob === "string" ? new Date(dob) : dob;
-  if (Number.isNaN(birth.getTime())) return null;
-  let age = asOf.getFullYear() - birth.getFullYear();
-  const monthDiff = asOf.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && asOf.getDate() < birth.getDate())) {
-    age -= 1;
-  }
-  return age;
-}
 
 function formatEventLine(event: {
   eventNumber: number | null;
@@ -515,7 +498,7 @@ export function RegistrationBoard({
   }
 
   const age = selectedSwimmer
-    ? ageAsOf(selectedSwimmer.dateOfBirth, meetStartDate)
+    ? swimmerAgeOnDate(selectedSwimmer.dateOfBirth, meetStartDate)
     : null;
 
   return (
@@ -628,7 +611,7 @@ export function RegistrationBoard({
                 commitmentByMembership.get(row.membershipId) ?? "pending";
               const count = entryCountByMembership.get(row.membershipId) ?? 0;
               const active = row.membershipId === membershipId;
-              const rowAge = ageAsOf(row.dateOfBirth, meetStartDate);
+              const rowAge = swimmerAgeOnDate(row.dateOfBirth, meetStartDate);
 
               return (
                 <li key={row.membershipId} className="border-border border-b">

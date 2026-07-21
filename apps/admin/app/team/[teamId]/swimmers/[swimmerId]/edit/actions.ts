@@ -8,10 +8,12 @@ import {
 import { assignMembershipGroup } from "@project-aqua/db/queries/groups";
 import { getSwimmerById, updateSwimmer } from "@project-aqua/db/queries/roster";
 import { isMinorSwimmer } from "@project-aqua/swim-core/age";
-import { rosterRowSchema } from "@project-aqua/swim-core/validators";
+import {
+  normalizeCreateSwimmerFormValues,
+  rosterRowSchema,
+} from "@project-aqua/swim-core/validators";
 import { revalidatePath } from "next/cache";
 import type { CreateSwimmerFormValues } from "@/schemas";
-import { normalizeCreateSwimmerFormValues } from "@/schemas/swimmer-create.utils";
 
 export async function editSwimmerAction(
   teamId: string,

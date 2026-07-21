@@ -1,4 +1,8 @@
-import { formatDateOnly } from "@project-aqua/swim-core/calendar-date";
+import {
+  daysUntilDateOnly,
+  deadlineUrgencyLevel,
+  formatDateOnly,
+} from "@project-aqua/swim-core/calendar-date";
 import { Badge } from "@project-aqua/ui/components/badge";
 import { Button } from "@project-aqua/ui/components/button";
 import {
@@ -23,24 +27,6 @@ export type MeetEntryDeadlineItem = {
   athletesEntered: number;
   entryCount: number;
 };
-
-function daysUntil(dateOnly: string, todayKey: string): number {
-  const start = new Date(`${dateOnly}T12:00:00`);
-  const today = new Date(`${todayKey}T12:00:00`);
-  return Math.ceil((start.getTime() - today.getTime()) / 86_400_000);
-}
-
-function urgencyLevel(
-  days: number | null,
-  complete: boolean,
-): "done" | "urgent" | "soon" | "ok" {
-  if (complete) return "done";
-  if (days == null) return "ok";
-  if (days < 0) return "urgent";
-  if (days <= 7) return "urgent";
-  if (days <= 14) return "soon";
-  return "ok";
-}
 
 export function MeetEntryDeadlinesCard({
   teamId,
@@ -76,11 +62,11 @@ export function MeetEntryDeadlinesCard({
           meets.map((meet) => {
             const due = meet.entryDeadline ?? meet.startDate;
             const dueKey = formatDateOnly(due);
-            const days = daysUntil(dueKey, todayKey);
+            const days = daysUntilDateOnly(dueKey, todayKey);
             const complete =
               meet.committedCount > 0 &&
               meet.athletesEntered >= meet.committedCount;
-            const urgency = urgencyLevel(days, complete);
+            const urgency = deadlineUrgencyLevel(days, complete);
             const denominator = Math.max(meet.committedCount, 1);
             const fillPct = Math.min(
               100,

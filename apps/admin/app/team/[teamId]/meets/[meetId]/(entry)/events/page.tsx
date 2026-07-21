@@ -1,4 +1,7 @@
-import { formatEventName } from "@project-aqua/swim-core/events";
+import {
+  formatEventName,
+  formatGenderLabel,
+} from "@project-aqua/swim-core/events";
 import { formatTime } from "@project-aqua/swim-core/times";
 import {
   Card,
@@ -28,13 +31,6 @@ export async function generateMetadata({
   const detail = await getMeetDetailAction(teamId, meetId);
   if (!detail) return {};
   return { title: `${detail.meet.name} - Events` };
-}
-
-function formatGenderLabel(gender: string) {
-  if (gender === "female" || gender === "f") return "Female";
-  if (gender === "mixed" || gender === "x") return "Mixed";
-  if (gender === "male" || gender === "m") return "Male";
-  return gender;
 }
 
 export default async function MeetEventsPage({

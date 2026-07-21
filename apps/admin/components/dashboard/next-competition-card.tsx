@@ -1,13 +1,10 @@
-import { formatDateOnly } from "@project-aqua/swim-core/calendar-date";
+import {
+  daysUntilDateOnly,
+  formatDateOnly,
+} from "@project-aqua/swim-core/calendar-date";
 import { Button } from "@project-aqua/ui/components/button";
 import { ArrowRightIcon } from "lucide-react";
 import Link from "next/link";
-
-function daysUntil(dateOnly: string, todayKey: string): number {
-  const start = new Date(`${dateOnly}T12:00:00`);
-  const today = new Date(`${todayKey}T12:00:00`);
-  return Math.ceil((start.getTime() - today.getTime()) / 86_400_000);
-}
 
 export function NextCompetitionCard({
   teamId,
@@ -58,7 +55,7 @@ export function NextCompetitionCard({
   }
 
   const dateKey = formatDateOnly(meet.startDate);
-  const days = daysUntil(dateKey, todayKey);
+  const days = daysUntilDateOnly(dateKey, todayKey);
   const dateLabel = meet.startDate.toLocaleDateString(undefined, {
     month: "long",
     day: "numeric",
