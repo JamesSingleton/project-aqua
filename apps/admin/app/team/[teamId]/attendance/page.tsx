@@ -1,3 +1,4 @@
+import { getDefaultPracticeLocation } from "@project-aqua/db/authz";
 import { getPracticeSessions } from "@project-aqua/db/queries/attendance";
 import { getRoster } from "@project-aqua/db/queries/roster";
 import {
@@ -15,9 +16,23 @@ import {
   TableHeader,
   TableRow,
 } from "@project-aqua/ui/components/table";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { AttendanceForm } from "./attendance-form";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}): Promise<Metadata> {
+  const { teamId } = await params;
+  return {
+    title: "Attendance",
+    description: "Track practice attendance and RSVPs.",
+    alternates: { canonical: `/team/${teamId}/attendance` },
+  };
+}
 
 export default async function AttendancePage({
   params,
@@ -25,9 +40,10 @@ export default async function AttendancePage({
   params: Promise<{ teamId: string }>;
 }) {
   const { teamId } = await params;
-  const [sessions, roster] = await Promise.all([
+  const [sessions, roster, defaultLocation] = await Promise.all([
     getPracticeSessions(teamId),
     getRoster(teamId),
+    getDefaultPracticeLocation(teamId),
   ]);
 
   return (
@@ -37,7 +53,11 @@ export default async function AttendancePage({
         description="Take practice rolls. Gaps feed AI workout suggestions."
       />
 
-      <AttendanceForm teamId={teamId} rosterCount={roster.length} />
+      <AttendanceForm
+        teamId={teamId}
+        rosterCount={roster.length}
+        defaultLocation={defaultLocation ?? ""}
+      />
 
       <Card>
         <CardHeader>

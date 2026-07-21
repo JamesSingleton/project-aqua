@@ -7,9 +7,23 @@ import {
   requiresSafeSportCompliance,
   teamTypeLabel,
 } from "@project-aqua/swim-core/team-types";
+import type { Metadata } from "next";
 import { SettingsSection } from "../settings-section";
 import { getSafeSportDashboardAction } from "./actions";
 import { SafeSportSettingsClient } from "./safesport-settings";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}): Promise<Metadata> {
+  const { teamId } = await params;
+  return {
+    title: "SafeSport",
+    description: "SafeSport training and MAAPP compliance.",
+    alternates: { canonical: `/team/${teamId}/settings/safesport` },
+  };
+}
 
 export default async function SafeSportSettingsPage({
   params,

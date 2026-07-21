@@ -16,10 +16,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@project-aqua/ui/components/card";
+import type { Metadata } from "next";
 import { AttendanceChart, VolumeChart } from "@/components/analytics-charts";
 import { PageHeader, TimingBoard } from "@/components/page-header";
 import { TeamTopTimes } from "@/components/team-top-times";
 import { formatBestTimeEventLabel } from "@/lib/format-event-label";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}): Promise<Metadata> {
+  const { teamId } = await params;
+  return {
+    title: "Analytics",
+    description: "Volume, attendance, and top times for your team.",
+    alternates: { canonical: `/team/${teamId}/analytics` },
+  };
+}
 
 export default async function AnalyticsPage({
   params,
@@ -30,7 +44,7 @@ export default async function AnalyticsPage({
   const session = await getSession();
   await requireTeamMember(session?.user?.id, teamId);
 
-  const [summary, volumeSeries, attendanceSeries, bestTimes, teamType] =
+  const [summary, volumeSeriesResult, attendanceSeries, bestTimes, teamType] =
     await Promise.all([
       getAnalyticsSummary(teamId),
       getVolumeSeries(teamId, 30),
@@ -38,6 +52,15 @@ export default async function AnalyticsPage({
       getTeamBestTimes(teamId),
       getOrganizationTeamType(teamId),
     ]);
+
+  const volumeSeries = volumeSeriesResult.series;
+  const volumeUnit = volumeSeriesResult.distanceUnit;
+  const volumeUnitLabel =
+    volumeUnit === "meters"
+      ? "meters"
+      : volumeUnit === "yards"
+        ? "yards"
+        : "distance";
 
   const allTimes = bestTimes.map((bt) => ({
     swimmerName: `${bt.firstName} ${bt.lastName}`,
@@ -65,12 +88,16 @@ export default async function AnalyticsPage({
         <TimingBoard
           label="7-day volume"
           value={summary.volume7Days.toLocaleString()}
-          hint={`${summary.workouts7Days} workouts`}
+          hint={`${summary.workouts7Days} workouts${
+            summary.volumeUnit7Days ? ` · ${summary.volumeUnit7Days}` : ""
+          }`}
         />
         <TimingBoard
           label="30-day volume"
           value={summary.volume30Days.toLocaleString()}
-          hint={`${summary.workouts30Days} workouts`}
+          hint={`${summary.workouts30Days} workouts${
+            summary.volumeUnit30Days ? ` · ${summary.volumeUnit30Days}` : ""
+          }`}
         />
         <TimingBoard
           label="Attendance (30d)"
@@ -87,10 +114,12 @@ export default async function AnalyticsPage({
         <Card>
           <CardHeader>
             <CardTitle>Training volume</CardTitle>
-            <CardDescription>Daily yardage · last 30 days</CardDescription>
+            <CardDescription>
+              Daily {volumeUnitLabel} · last 30 days
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <VolumeChart data={volumeSeries} />
+            <VolumeChart data={volumeSeries} distanceUnit={volumeUnit} />
           </CardContent>
         </Card>
         <Card>

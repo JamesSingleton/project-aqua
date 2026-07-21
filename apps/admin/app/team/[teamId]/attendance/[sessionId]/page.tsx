@@ -2,6 +2,7 @@ import { getSession } from "@project-aqua/auth/session";
 import { requireTeamMember } from "@project-aqua/db/authz";
 import {
   getAttendanceForSession,
+  getPracticeSession,
   getPracticeSessions,
 } from "@project-aqua/db/queries/attendance";
 import { getRoster } from "@project-aqua/db/queries/roster";
@@ -12,9 +13,26 @@ import {
   CardHeader,
   CardTitle,
 } from "@project-aqua/ui/components/card";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AttendanceRoll } from "./attendance-roll";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string; sessionId: string }>;
+}): Promise<Metadata> {
+  const { teamId, sessionId } = await params;
+  const practice = await getPracticeSession(sessionId, teamId);
+  const dateLabel = practice
+    ? practice.date.toLocaleDateString()
+    : "Session";
+  return {
+    title: `Attendance · ${dateLabel}`,
+    description: "Take roll call and review RSVPs for this practice.",
+  };
+}
 
 export default async function AttendanceSessionPage({
   params,

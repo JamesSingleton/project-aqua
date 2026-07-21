@@ -12,8 +12,11 @@ export type MeetTableRow = {
   name: string;
   /** ISO date YYYY-MM-DD */
   startDate: string;
+  /** ISO date YYYY-MM-DD when present */
+  entryDeadline: string | null;
   course: "SCY" | "SCM" | "LCM";
   location: string | null;
+  seasonLabel: string | null;
 };
 
 const dateRangeFilterFn: FilterFn<MeetTableRow> = (
@@ -32,6 +35,7 @@ const dateRangeFilterFn: FilterFn<MeetTableRow> = (
 export function createMeetsColumns(
   teamId: string,
   courseOptions: Option[],
+  seasonOptions: Option[] = [],
 ): ColumnDef<MeetTableRow>[] {
   return [
     {
@@ -73,6 +77,55 @@ export function createMeetsColumns(
       meta: {
         label: "Date",
         variant: "dateRange",
+      },
+    },
+    {
+      id: "entryDeadline",
+      accessorKey: "entryDeadline",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Entries due" />
+      ),
+      cell: ({ row }) => {
+        const deadline = row.original.entryDeadline;
+        if (!deadline) return "—";
+        const [year, month, day] = deadline.split("-").map(Number);
+        if (!year || !month || !day) return deadline;
+        return new Date(year, month - 1, day).toLocaleDateString();
+      },
+      enableSorting: true,
+      enableColumnFilter: true,
+      filterFn: dateRangeFilterFn,
+      meta: {
+        label: "Entries due",
+        variant: "dateRange",
+      },
+      sortingFn: (rowA, rowB, columnId) => {
+        const a = rowA.getValue<string | null>(columnId) ?? "";
+        const b = rowB.getValue<string | null>(columnId) ?? "";
+        if (!a && !b) return 0;
+        if (!a) return 1;
+        if (!b) return -1;
+        return a.localeCompare(b);
+      },
+    },
+    {
+      id: "seasonLabel",
+      accessorKey: "seasonLabel",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Season" />
+      ),
+      cell: ({ row }) => row.original.seasonLabel ?? "—",
+      enableSorting: true,
+      enableColumnFilter: true,
+      filterFn: (row, columnId, filterValue: string[] | undefined) => {
+        if (!filterValue?.length) return true;
+        const value = row.getValue<string | null>(columnId) ?? "";
+        return filterValue.includes(value);
+      },
+      meta: {
+        label: "Season",
+        variant: "multiSelect",
+        options: seasonOptions,
       },
     },
     {

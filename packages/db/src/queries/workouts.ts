@@ -40,6 +40,7 @@ export async function getRecentWorkouts(organizationId: string, limit = 8) {
       title: workouts.title,
       rawText: workouts.rawText,
       totalDistance: workouts.totalDistance,
+      distanceUnit: workouts.distanceUnit,
       createdAt: workouts.createdAt,
     })
     .from(workouts)
@@ -73,12 +74,15 @@ export async function getWorkoutById(
   return { ...workout, sets };
 }
 
+export type WorkoutDistanceUnit = "yards" | "meters";
+
 export async function createWorkout(
   organizationId: string,
   data: {
     title: string;
     rawText: string;
     totalDistance?: number | null;
+    distanceUnit?: WorkoutDistanceUnit | null;
     practiceGroup?: string | null;
     wasAiGenerated?: boolean;
     aiPrompt?: string | null;
@@ -95,6 +99,7 @@ export async function createWorkout(
     title: data.title,
     rawText: data.rawText,
     totalDistance: data.totalDistance ?? null,
+    distanceUnit: data.distanceUnit ?? null,
     practiceGroup: data.practiceGroup ?? null,
     wasAiGenerated: data.wasAiGenerated ?? false,
     aiPrompt: data.aiPrompt ?? null,
@@ -131,6 +136,7 @@ export async function updateWorkout(
     title: string;
     rawText: string;
     totalDistance?: number | null;
+    distanceUnit?: WorkoutDistanceUnit | null;
     practiceGroup?: string | null;
     aiDraftText?: string | null;
     editDistance?: number | null;
@@ -146,6 +152,7 @@ export async function updateWorkout(
       title: data.title,
       rawText: data.rawText,
       totalDistance: data.totalDistance ?? null,
+      distanceUnit: data.distanceUnit ?? null,
       practiceGroup: data.practiceGroup ?? null,
       aiDraftText: data.aiDraftText ?? existing.aiDraftText,
       editDistance: data.editDistance ?? existing.editDistance,

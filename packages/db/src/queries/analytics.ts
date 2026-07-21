@@ -8,18 +8,31 @@ import {
   workouts,
 } from "../schema/index";
 
+export type WorkoutDistanceUnit = "yards" | "meters";
+
+function resolveDistanceUnit(
+  units: Array<WorkoutDistanceUnit | null>,
+): WorkoutDistanceUnit | null {
+  const known = units.filter((u): u is WorkoutDistanceUnit => u != null);
+  if (known.length === 0) return null;
+  const unique = new Set(known);
+  if (unique.size === 1) return known[0] ?? null;
+  return null;
+}
+
 export async function getAnalyticsSummary(organizationId: string) {
   const since30 = new Date();
   since30.setDate(since30.getDate() - 30);
   const since7 = new Date();
   since7.setDate(since7.getDate() - 7);
 
-  const [volume7, volume30, attendance, sessionCount, bestTimes] =
+  const [volume7Rows, volume30Rows, attendance, sessionCount, bestTimes] =
     await Promise.all([
       db
         .select({
           totalDistance: sql<number>`coalesce(sum(${workouts.totalDistance}), 0)`,
           workoutCount: sql<number>`count(${workouts.id})`,
+          distanceUnit: workouts.distanceUnit,
         })
         .from(workouts)
         .where(
@@ -28,11 +41,12 @@ export async function getAnalyticsSummary(organizationId: string) {
             gte(workouts.createdAt, since7),
           ),
         )
-        .then((rows) => rows[0]),
+        .groupBy(workouts.distanceUnit),
       db
         .select({
           totalDistance: sql<number>`coalesce(sum(${workouts.totalDistance}), 0)`,
           workoutCount: sql<number>`count(${workouts.id})`,
+          distanceUnit: workouts.distanceUnit,
         })
         .from(workouts)
         .where(
@@ -41,7 +55,7 @@ export async function getAnalyticsSummary(organizationId: string) {
             gte(workouts.createdAt, since30),
           ),
         )
-        .then((rows) => rows[0]),
+        .groupBy(workouts.distanceUnit),
       db
         .select({
           total: sql<number>`count(*)`,
@@ -86,14 +100,37 @@ export async function getAnalyticsSummary(organizationId: string) {
         .then((rows) => rows[0]),
     ]);
 
+  const volume7Days = volume7Rows.reduce(
+    (sum, row) => sum + Number(row.totalDistance ?? 0),
+    0,
+  );
+  const workouts7Days = volume7Rows.reduce(
+    (sum, row) => sum + Number(row.workoutCount ?? 0),
+    0,
+  );
+  const volume30Days = volume30Rows.reduce(
+    (sum, row) => sum + Number(row.totalDistance ?? 0),
+    0,
+  );
+  const workouts30Days = volume30Rows.reduce(
+    (sum, row) => sum + Number(row.workoutCount ?? 0),
+    0,
+  );
+
   const total = Number(attendance?.total ?? 0);
   const present = Number(attendance?.present ?? 0);
 
   return {
-    volume7Days: Number(volume7?.totalDistance ?? 0),
-    workouts7Days: Number(volume7?.workoutCount ?? 0),
-    volume30Days: Number(volume30?.totalDistance ?? 0),
-    workouts30Days: Number(volume30?.workoutCount ?? 0),
+    volume7Days,
+    workouts7Days,
+    volumeUnit7Days: resolveDistanceUnit(
+      volume7Rows.map((row) => row.distanceUnit),
+    ),
+    volume30Days,
+    workouts30Days,
+    volumeUnit30Days: resolveDistanceUnit(
+      volume30Rows.map((row) => row.distanceUnit),
+    ),
     attendanceRate30: total > 0 ? Math.round((present / total) * 100) : null,
     sessions30: Number(sessionCount?.count ?? 0),
     rsvpAttending: Number(attendance?.rsvpAttending ?? 0),
@@ -105,25 +142,39 @@ export async function getAnalyticsSummary(organizationId: string) {
 export async function getVolumeSeries(
   organizationId: string,
   days = 30,
-): Promise<Array<{ date: string; distance: number }>> {
+): Promise<{
+  series: Array<{ date: string; distance: number }>;
+  distanceUnit: WorkoutDistanceUnit | null;
+}> {
   const since = new Date();
   since.setDate(since.getDate() - days);
   since.setHours(0, 0, 0, 0);
 
-  const rows = await db
-    .select({
-      date: sql<string>`to_char(date_trunc('day', ${workouts.createdAt}), 'YYYY-MM-DD')`,
-      distance: sql<number>`coalesce(sum(${workouts.totalDistance}), 0)`,
-    })
-    .from(workouts)
-    .where(
-      and(
-        eq(workouts.organizationId, organizationId),
-        gte(workouts.createdAt, since),
+  const [rows, unitRows] = await Promise.all([
+    db
+      .select({
+        date: sql<string>`to_char(date_trunc('day', ${workouts.createdAt}), 'YYYY-MM-DD')`,
+        distance: sql<number>`coalesce(sum(${workouts.totalDistance}), 0)`,
+      })
+      .from(workouts)
+      .where(
+        and(
+          eq(workouts.organizationId, organizationId),
+          gte(workouts.createdAt, since),
+        ),
+      )
+      .groupBy(sql`date_trunc('day', ${workouts.createdAt})`)
+      .orderBy(sql`date_trunc('day', ${workouts.createdAt})`),
+    db
+      .select({ distanceUnit: workouts.distanceUnit })
+      .from(workouts)
+      .where(
+        and(
+          eq(workouts.organizationId, organizationId),
+          gte(workouts.createdAt, since),
+        ),
       ),
-    )
-    .groupBy(sql`date_trunc('day', ${workouts.createdAt})`)
-    .orderBy(sql`date_trunc('day', ${workouts.createdAt})`);
+  ]);
 
   const byDate = new Map(rows.map((r) => [r.date, Number(r.distance)]));
 
@@ -139,7 +190,11 @@ export async function getVolumeSeries(
     ].join("-");
     series.push({ date: key, distance: byDate.get(key) ?? 0 });
   }
-  return series;
+
+  return {
+    series,
+    distanceUnit: resolveDistanceUnit(unitRows.map((r) => r.distanceUnit)),
+  };
 }
 
 /** Per-session attendance rates for the last N days (default 30). */

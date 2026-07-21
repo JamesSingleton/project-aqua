@@ -151,6 +151,17 @@ export async function hasCurrentSafeSportTraining(memberId: string) {
   return Boolean(row);
 }
 
+export async function getOrganizationName(
+  organizationId: string,
+): Promise<string | null> {
+  const [org] = await db
+    .select({ name: organization.name })
+    .from(organization)
+    .where(eq(organization.id, organizationId))
+    .limit(1);
+  return org?.name ?? null;
+}
+
 export async function getOrganizationTeamType(
   organizationId: string,
 ): Promise<TeamType> {
@@ -166,6 +177,33 @@ export async function getOrganizationTeamType(
     return parseTeamType(parsed.teamType);
   } catch {
     return "club";
+  }
+}
+
+/** Default pool/venue for new practices and calendar events. */
+export async function getDefaultPracticeLocation(
+  organizationId: string,
+): Promise<string | null> {
+  const [org] = await db
+    .select({ metadata: organization.metadata })
+    .from(organization)
+    .where(eq(organization.id, organizationId))
+    .limit(1);
+
+  if (!org?.metadata) return null;
+  try {
+    const parsed = JSON.parse(org.metadata) as {
+      defaultPracticeLocation?: unknown;
+    };
+    if (
+      typeof parsed.defaultPracticeLocation === "string" &&
+      parsed.defaultPracticeLocation.trim()
+    ) {
+      return parsed.defaultPracticeLocation.trim();
+    }
+    return null;
+  } catch {
+    return null;
   }
 }
 

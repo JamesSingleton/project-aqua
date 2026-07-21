@@ -1,3 +1,4 @@
+import { formatDateOnly } from "@project-aqua/swim-core/calendar-date";
 import { and, asc, desc, eq, gte, isNull, lte } from "drizzle-orm";
 import { db } from "../client";
 import {
@@ -8,10 +9,25 @@ import {
   teamCalendarEvents,
 } from "../schema/calendar";
 import { getPracticeSessions } from "./attendance";
+import { MAX_BULK_CALENDAR_EVENTS } from "./calendar-recurrence";
 import { getMeets } from "./meets";
+
+export {
+  expandWeeklyCalendarSlots,
+  MAX_BULK_CALENDAR_EVENTS,
+  type RecurringCalendarScheduleInput,
+  type WeeklyCalendarSlot,
+} from "./calendar-recurrence";
 
 function generateId(): string {
   return crypto.randomUUID();
+}
+
+function localDateOnly(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export type CalendarEventInput = {
@@ -47,10 +63,48 @@ export async function createCalendarEvent(
   return id;
 }
 
+export async function createCalendarEventsBulk(
+  organizationId: string,
+  events: CalendarEventInput[],
+) {
+  if (events.length === 0) return [] as string[];
+  if (events.length > MAX_BULK_CALENDAR_EVENTS) {
+    throw new Error(
+      `Cannot create more than ${MAX_BULK_CALENDAR_EVENTS} events at once`,
+    );
+  }
+
+  const rows = events.map((data) => {
+    const id = generateId();
+    return {
+      id,
+      organizationId,
+      title: data.title,
+      description: data.description ?? null,
+      location: data.location ?? null,
+      startsAt: data.startsAt,
+      endsAt: data.endsAt ?? null,
+      eventType: data.eventType ?? "other",
+      practiceSessionId: data.practiceSessionId ?? null,
+      meetId: data.meetId ?? null,
+      createdByUserId: data.createdByUserId ?? null,
+    };
+  });
+
+  await db.insert(teamCalendarEvents).values(rows);
+  return rows.map((row) => row.id);
+}
+
 export async function updateCalendarEvent(
   eventId: string,
   organizationId: string,
-  data: Partial<CalendarEventInput>,
+  data: Partial<
+    Omit<CalendarEventInput, "endsAt" | "location" | "description">
+  > & {
+    endsAt?: Date | null;
+    location?: string | null;
+    description?: string | null;
+  },
 ) {
   const [existing] = await db
     .select()
@@ -147,6 +201,7 @@ export async function getTeamCalendarProjection(
       source: "custom" as const,
       title: e.title,
       location: e.location,
+      description: e.description,
       startsAt: e.startsAt,
       endsAt: e.endsAt,
       eventType: e.eventType,
@@ -162,6 +217,7 @@ export async function getTeamCalendarProjection(
         source: "practice" as const,
         title: "Practice",
         location: p.location,
+        description: p.notes,
         startsAt: p.date,
         endsAt: null as Date | null,
         eventType: "practice" as const,
@@ -170,13 +226,19 @@ export async function getTeamCalendarProjection(
         aquaVersion: 1,
       })),
     ...meets
-      .filter((m) => m.startDate >= range.from && m.startDate <= range.to)
+      .filter((m) => {
+        const key = formatDateOnly(m.startDate);
+        return (
+          key >= localDateOnly(range.from) && key <= localDateOnly(range.to)
+        );
+      })
       .filter((m) => !custom.some((c) => c.meetId === m.id))
       .map((m) => ({
         id: `meet:${m.id}`,
         source: "meet" as const,
         title: m.name,
         location: m.location,
+        description: null as string | null,
         startsAt: m.startDate,
         endsAt: m.endDate,
         eventType: "meet" as const,

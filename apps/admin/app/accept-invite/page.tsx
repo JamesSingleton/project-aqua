@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AcceptInviteContent } from "./accept-invite-content";
+
+export const metadata: Metadata = {
+  title: "Accept invitation",
+  description: "Join a swim team on Project Aqua.",
+};
 
 export default function AcceptInvitePage() {
   return (

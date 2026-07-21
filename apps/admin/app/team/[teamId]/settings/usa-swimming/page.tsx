@@ -6,8 +6,22 @@ import {
   teamTypeLabel,
 } from "@project-aqua/swim-core/team-types";
 import { eq } from "drizzle-orm";
+import type { Metadata } from "next";
 import { SettingsSection } from "../settings-section";
 import { UsaSwimmingSettings } from "./usa-swimming-settings";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}): Promise<Metadata> {
+  const { teamId } = await params;
+  return {
+    title: "USA Swimming",
+    description: "USA Swimming / SWIMS integration settings.",
+    alternates: { canonical: `/team/${teamId}/settings/usa-swimming` },
+  };
+}
 
 export default async function UsaSwimmingPage({
   params,

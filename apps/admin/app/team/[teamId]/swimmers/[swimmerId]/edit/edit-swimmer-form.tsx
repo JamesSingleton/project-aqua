@@ -35,6 +35,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { DatePickerField } from "@/components/date-picker-field";
 import {
   type CreateSwimmerFormValues,
   createSwimmerFormSchema,
@@ -140,12 +141,22 @@ export function EditSwimmerForm({
                 <FieldLabel htmlFor="preferredName">Preferred name</FieldLabel>
                 <Input id="preferredName" {...register("preferredName")} />
               </Field>
-              <Field>
+              <Field data-invalid={!!errors.dateOfBirth}>
                 <FieldLabel htmlFor="dateOfBirth">Date of birth</FieldLabel>
-                <Input
-                  id="dateOfBirth"
-                  type="date"
-                  {...register("dateOfBirth")}
+                <Controller
+                  control={control}
+                  name="dateOfBirth"
+                  render={({ field }) => (
+                    <DatePickerField
+                      id="dateOfBirth"
+                      value={field.value}
+                      onChange={field.onChange}
+                      disableFuture
+                      labelMonth="long"
+                      startMonth={new Date(1920, 0)}
+                      aria-invalid={!!errors.dateOfBirth}
+                    />
+                  )}
                 />
                 <FieldError>{errors.dateOfBirth?.message}</FieldError>
               </Field>

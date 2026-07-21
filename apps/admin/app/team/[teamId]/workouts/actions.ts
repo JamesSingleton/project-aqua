@@ -191,6 +191,7 @@ export async function saveWorkoutAction(
     title: string;
     rawText: string;
     practiceGroup?: string;
+    distanceUnit?: "yards" | "meters" | null;
     wasAiGenerated?: boolean;
     aiPrompt?: string | null;
     aiDraftText?: string | null;
@@ -214,6 +215,7 @@ export async function saveWorkoutAction(
     title: data.title.trim() || "Practice",
     rawText: data.rawText,
     totalDistance: parsed.totalDistance,
+    distanceUnit: data.distanceUnit ?? null,
     practiceGroup: data.practiceGroup ?? null,
     wasAiGenerated: data.wasAiGenerated ?? false,
     aiPrompt: data.aiPrompt ?? null,

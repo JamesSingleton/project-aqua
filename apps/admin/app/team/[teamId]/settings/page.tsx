@@ -10,11 +10,40 @@ import {
 } from "@project-aqua/ui/components/alert";
 import { eq } from "drizzle-orm";
 import { AlertCircle } from "lucide-react";
+import type { Metadata } from "next";
+import { PracticeDefaultsForm } from "./practice-defaults-form";
 import { SettingsSection } from "./settings-section";
 import { TeamDangerZone } from "./team-danger-zone";
 import { TeamLogoUploader } from "./team-logo-uploader";
 import { TeamProfileForm } from "./team-profile-form";
 import { TeamTypeForm } from "./team-type-form";
+
+function parseDefaultPracticeLocation(metadata: string | null | undefined) {
+  if (!metadata) return "";
+  try {
+    const parsed = JSON.parse(metadata) as {
+      defaultPracticeLocation?: unknown;
+    };
+    return typeof parsed.defaultPracticeLocation === "string"
+      ? parsed.defaultPracticeLocation
+      : "";
+  } catch {
+    return "";
+  }
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}): Promise<Metadata> {
+  const { teamId } = await params;
+  return {
+    title: "Team",
+    description: "Manage team profile, type, and danger zone.",
+    alternates: { canonical: `/team/${teamId}/settings` },
+  };
+}
 
 export default async function TeamSettingsPage({
   params,
@@ -67,6 +96,17 @@ export default async function TeamSettingsPage({
           <TeamProfileForm teamId={teamId} name={org?.name ?? ""} />
           <TeamLogoUploader teamId={teamId} logoUrl={org?.logo ?? null} />
         </div>
+      </SettingsSection>
+
+      <SettingsSection
+        title="Practice defaults"
+        description="Used when creating practice sessions and calendar events."
+        showSeparator
+      >
+        <PracticeDefaultsForm
+          teamId={teamId}
+          defaultLocation={parseDefaultPracticeLocation(org?.metadata)}
+        />
       </SettingsSection>
 
       <SettingsSection

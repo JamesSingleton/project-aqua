@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
 import { getMeetDetailAction } from "../../actions";
 import { MeetInfoForm } from "../meet-info-form";
 
@@ -13,7 +14,7 @@ export async function generateMetadata({
   if (!detail) return {};
   return {
     title: `${detail.meet.name} - Meet`,
-    description: `${detail.meet.startDate.toLocaleDateString()} · ${detail.meet.course}`,
+    description: `${formatDateOnlyLabel(detail.meet.startDate)} · ${detail.meet.course}`,
   };
 }
 
@@ -36,6 +37,7 @@ export default async function MeetInformationPage({
         name: meet.name,
         startDate: meet.startDate,
         endDate: meet.endDate,
+        entryDeadline: meet.entryDeadline,
         course: meet.course,
         location: meet.location,
         address: meet.address,

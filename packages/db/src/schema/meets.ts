@@ -10,6 +10,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { organization } from "./auth";
 import { courseEnum, eventGenderEnum, swimEvents } from "./events";
+import { teamSeasons } from "./seasons";
 import { swimmers, teamSwimmerMemberships } from "./swimmers";
 
 export type EntryLimitPackage = {
@@ -42,9 +43,14 @@ export const meets = pgTable("meets", {
   organizationId: text("organization_id")
     .notNull()
     .references(() => organization.id, { onDelete: "cascade" }),
+  seasonId: text("season_id")
+    .notNull()
+    .references(() => teamSeasons.id, { onDelete: "restrict" }),
   name: text("name").notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date"),
+  /** Deadline for entries to the meet host (from EV3 when imported). */
+  entryDeadline: timestamp("entry_deadline"),
   course: courseEnum("course").notNull().default("SCY"),
   location: text("location"),
   address: text("address"),
@@ -149,6 +155,30 @@ export const swimmerBestTimes = pgTable("swimmer_best_times", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+/** Coach-entered dated swims (club / mock / practice) for progression charts. */
+export const swimmerTimeEntrySourceEnum = pgEnum("swimmer_time_entry_source", [
+  "manual",
+]);
+
+export type SwimmerTimeEntrySource =
+  (typeof swimmerTimeEntrySourceEnum.enumValues)[number];
+
+export const swimmerTimeEntries = pgTable("swimmer_time_entries", {
+  id: text("id").primaryKey(),
+  swimmerId: text("swimmer_id")
+    .notNull()
+    .references(() => swimmers.id, { onDelete: "cascade" }),
+  eventKey: text("event_key")
+    .notNull()
+    .references(() => swimEvents.eventKey),
+  course: courseEnum("course").notNull(),
+  timeMs: integer("time_ms").notNull(),
+  achievedAt: timestamp("achieved_at").notNull(),
+  source: swimmerTimeEntrySourceEnum("source").notNull().default("manual"),
+  label: text("label"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const meetRelayLegs = pgTable("meet_relay_legs", {
   id: text("id").primaryKey(),
   meetId: text("meet_id")
@@ -196,6 +226,10 @@ export const meetsRelations = relations(meets, ({ many, one }) => ({
   organization: one(organization, {
     fields: [meets.organizationId],
     references: [organization.id],
+  }),
+  season: one(teamSeasons, {
+    fields: [meets.seasonId],
+    references: [teamSeasons.id],
   }),
   events: many(meetEvents),
   entries: many(meetEntries),
@@ -257,6 +291,20 @@ export const meetResultsRelations = relations(meetResults, ({ one }) => ({
     references: [swimmers.id],
   }),
 }));
+
+export const swimmerTimeEntriesRelations = relations(
+  swimmerTimeEntries,
+  ({ one }) => ({
+    swimmer: one(swimmers, {
+      fields: [swimmerTimeEntries.swimmerId],
+      references: [swimmers.id],
+    }),
+    event: one(swimEvents, {
+      fields: [swimmerTimeEntries.eventKey],
+      references: [swimEvents.eventKey],
+    }),
+  }),
+);
 
 export const meetRelayLegsRelations = relations(meetRelayLegs, ({ one }) => ({
   meet: one(meets, {

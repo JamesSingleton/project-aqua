@@ -16,14 +16,18 @@ import {
 } from "@project-aqua/ui/components/field";
 import { Input } from "@project-aqua/ui/components/input";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
+import {
+  DateTimePickerField,
+  toDateTimeLocalValue,
+} from "@/components/date-time-picker-field";
 import { createSessionAction } from "./actions";
 
 const attendanceFormSchema = z.object({
   date: z.string().min(1, "Date and time are required"),
-  location: z.string(),
-  notes: z.string(),
+  location: z.string().max(200),
+  notes: z.string().max(2000),
 });
 
 type AttendanceFormValues = z.infer<typeof attendanceFormSchema>;
@@ -31,20 +35,23 @@ type AttendanceFormValues = z.infer<typeof attendanceFormSchema>;
 export function AttendanceForm({
   teamId,
   rosterCount,
+  defaultLocation = "",
 }: {
   teamId: string;
   rosterCount: number;
+  defaultLocation?: string;
 }) {
   const router = useRouter();
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<AttendanceFormValues>({
     resolver: zodResolver(attendanceFormSchema),
     defaultValues: {
-      date: "",
-      location: "",
+      date: toDateTimeLocalValue(),
+      location: defaultLocation,
       notes: "",
     },
   });
@@ -69,11 +76,17 @@ export function AttendanceForm({
           <FieldGroup className="sm:flex-row sm:items-start">
             <Field data-invalid={!!errors.date}>
               <FieldLabel htmlFor="date">Date & time</FieldLabel>
-              <Input
-                id="date"
-                type="datetime-local"
-                aria-invalid={!!errors.date}
-                {...register("date")}
+              <Controller
+                name="date"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <DateTimePickerField
+                    id="date"
+                    value={field.value}
+                    onChange={field.onChange}
+                    aria-invalid={fieldState.invalid}
+                  />
+                )}
               />
               <FieldError errors={[errors.date]} />
             </Field>
@@ -82,12 +95,18 @@ export function AttendanceForm({
               <Input
                 id="location"
                 placeholder="Pool name"
+                maxLength={200}
                 {...register("location")}
               />
             </Field>
             <Field>
               <FieldLabel htmlFor="notes">Notes</FieldLabel>
-              <Input id="notes" placeholder="Optional" {...register("notes")} />
+              <Input
+                id="notes"
+                placeholder="Optional"
+                maxLength={2000}
+                {...register("notes")}
+              />
             </Field>
           </FieldGroup>
           <Button

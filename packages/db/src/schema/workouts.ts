@@ -19,6 +19,11 @@ export const workoutIntensityEnum = pgEnum("workout_intensity", [
   "unknown",
 ]);
 
+export const workoutDistanceUnitEnum = pgEnum("workout_distance_unit", [
+  "yards",
+  "meters",
+]);
+
 export const workouts = pgTable("workouts", {
   id: text("id").primaryKey(),
   organizationId: text("organization_id")
@@ -27,6 +32,7 @@ export const workouts = pgTable("workouts", {
   title: text("title").notNull(),
   rawText: text("raw_text").notNull(),
   totalDistance: integer("total_distance"),
+  distanceUnit: workoutDistanceUnitEnum("distance_unit"),
   practiceGroup: text("practice_group"),
   wasAiGenerated: boolean("was_ai_generated").notNull().default(false),
   aiPrompt: text("ai_prompt"),

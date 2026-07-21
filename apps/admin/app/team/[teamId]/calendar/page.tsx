@@ -1,14 +1,28 @@
 import { getSession } from "@project-aqua/auth/session";
-import { requireTeamMember } from "@project-aqua/db/authz";
+import { getDefaultPracticeLocation, requireTeamMember } from "@project-aqua/db/authz";
 import {
   getActiveFeedToken,
   getCalendarConnections,
   getRecentSyncConflicts,
   getTeamCalendarProjection,
 } from "@project-aqua/db/queries/calendar";
+import type { Metadata } from "next";
 import { completeCalendarConnectAction } from "./actions";
 import { CalendarBoard } from "./calendar-board";
 import { CalendarSyncPanel } from "./calendar-sync-panel";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}): Promise<Metadata> {
+  const { teamId } = await params;
+  return {
+    title: "Calendar",
+    description: "Team practices, meets, and synced calendar events.",
+    alternates: { canonical: `/team/${teamId}/calendar` },
+  };
+}
 
 export default async function CalendarPage({
   params,
@@ -37,14 +51,16 @@ export default async function CalendarPage({
   const from = new Date(year, month, 1);
   const to = new Date(year, month + 1, 0, 23, 59, 59);
 
-  const [events, feed, connections, conflicts] = await Promise.all([
-    getTeamCalendarProjection(teamId, { from, to }),
-    getActiveFeedToken(teamId),
-    session?.user?.id
-      ? getCalendarConnections(teamId, session.user.id)
-      : Promise.resolve([]),
-    getRecentSyncConflicts(teamId),
-  ]);
+  const [events, feed, connections, conflicts, defaultLocation] =
+    await Promise.all([
+      getTeamCalendarProjection(teamId, { from, to }),
+      getActiveFeedToken(teamId),
+      session?.user?.id
+        ? getCalendarConnections(teamId, session.user.id)
+        : Promise.resolve([]),
+      getRecentSyncConflicts(teamId),
+      getDefaultPracticeLocation(teamId),
+    ]);
 
   const baseUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3001";
 
@@ -67,6 +83,7 @@ export default async function CalendarPage({
         initialYear={year}
         initialMonth={month}
         events={events}
+        defaultLocation={defaultLocation ?? ""}
       />
 
       <CalendarSyncPanel

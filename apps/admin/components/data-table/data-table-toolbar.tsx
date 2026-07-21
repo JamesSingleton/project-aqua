@@ -49,12 +49,12 @@ export function DataTableToolbar<TData>({
       role="toolbar"
       aria-orientation="horizontal"
       className={cn(
-        "flex w-full items-start justify-between gap-2 p-1",
+        "flex w-full min-w-0 flex-wrap items-start justify-between gap-2 p-1",
         className,
       )}
       {...props}
     >
-      <div className="flex flex-1 flex-wrap items-center gap-2">
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
         {columns.map((column) => (
           <DataTableToolbarFilter key={column.id} column={column} />
         ))}
@@ -72,7 +72,7 @@ export function DataTableToolbar<TData>({
           </Button>
         ) : null}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
         {children}
         {showViewOptions ? <DataTableViewOptions table={table} /> : null}
       </div>

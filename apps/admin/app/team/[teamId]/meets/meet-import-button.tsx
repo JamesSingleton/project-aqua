@@ -20,7 +20,6 @@ import {
   AlertTitle,
 } from "@project-aqua/ui/components/alert";
 import { Button } from "@project-aqua/ui/components/button";
-import { Calendar } from "@project-aqua/ui/components/calendar";
 import {
   Dialog,
   DialogContent,
@@ -29,14 +28,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@project-aqua/ui/components/dialog";
-import { Field, FieldLabel } from "@project-aqua/ui/components/field";
+import {
+  Field,
+  FieldDescription,
+  FieldLabel,
+} from "@project-aqua/ui/components/field";
 import { Input } from "@project-aqua/ui/components/input";
 import { Label } from "@project-aqua/ui/components/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@project-aqua/ui/components/popover";
 import {
   Select,
   SelectContent,
@@ -46,9 +44,10 @@ import {
   SelectValue,
 } from "@project-aqua/ui/components/select";
 import { cn } from "@project-aqua/ui/lib/utils";
-import { AlertTriangleIcon, CalendarIcon, Loader, Upload } from "lucide-react";
+import { AlertTriangleIcon, Loader, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useRef, useState } from "react";
+import { DatePickerField } from "@/components/date-picker-field";
 import {
   importMeetFileAction,
   type MeetImportPreview,
@@ -72,6 +71,8 @@ export type MeetImportOption = {
 type ReviewState = {
   name: string;
   startDate: string;
+  endDate: string;
+  entryDeadline: string;
   course: "SCY" | "SCM" | "LCM";
   location: string;
   address: string;
@@ -92,71 +93,6 @@ function optionalLimit(raw: string): number | null {
   if (!trimmed) return null;
   const n = Number.parseInt(trimmed, 10);
   return Number.isFinite(n) ? n : null;
-}
-
-function parseDate(value: string) {
-  const [year, month, day] = value.split("-").map(Number);
-  if (!year || !month || !day) return undefined;
-  return new Date(year, month - 1, day);
-}
-
-function formatDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function MeetDatePicker({
-  id,
-  value,
-  onChange,
-}: {
-  id: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const selectedDate = parseDate(value);
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <Button
-            id={id}
-            type="button"
-            variant="outline"
-            className={cn(
-              "w-full justify-start font-normal",
-              !selectedDate && "text-muted-foreground",
-            )}
-          />
-        }
-      >
-        <CalendarIcon data-icon="inline-start" />
-        {selectedDate
-          ? selectedDate.toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })
-          : "Pick a date"}
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <Calendar
-          mode="single"
-          selected={selectedDate}
-          defaultMonth={selectedDate}
-          onSelect={(date) => {
-            if (!date) return;
-            onChange(formatDate(date));
-            setOpen(false);
-          }}
-        />
-      </PopoverContent>
-    </Popover>
-  );
 }
 
 function rebuildEventKey(
@@ -284,6 +220,8 @@ export function MeetImportButton({
       setReview({
         name: parsed.name,
         startDate: parsed.startDate?.slice(0, 10) ?? "",
+        endDate: parsed.endDate?.slice(0, 10) ?? "",
+        entryDeadline: parsed.entryDeadline?.slice(0, 10) ?? "",
         course: parsed.course,
         location: parsed.location ?? "",
         address: parsed.address ?? "",
@@ -324,6 +262,8 @@ export function MeetImportButton({
           review: {
             name: review.name,
             startDate: review.startDate || undefined,
+            endDate: review.endDate,
+            entryDeadline: review.entryDeadline,
             course: review.course,
             location: review.location || undefined,
             address: review.address || undefined,
@@ -583,7 +523,7 @@ export function MeetImportButton({
                   <FieldLabel htmlFor={`${inputId}-start`}>
                     Start date
                   </FieldLabel>
-                  <MeetDatePicker
+                  <DatePickerField
                     id={`${inputId}-start`}
                     value={review.startDate}
                     onChange={(startDate) =>
@@ -592,6 +532,40 @@ export function MeetImportButton({
                       )
                     }
                   />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor={`${inputId}-end`}>End date</FieldLabel>
+                  <DatePickerField
+                    id={`${inputId}-end`}
+                    value={review.endDate}
+                    onChange={(endDate) =>
+                      setReview((prev) => (prev ? { ...prev, endDate } : prev))
+                    }
+                    placeholder="Same as start (optional)"
+                    allowClear
+                  />
+                  <FieldDescription>
+                    Clear if the Hy-Tek file lists an extra day you don’t want.
+                  </FieldDescription>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor={`${inputId}-deadline`}>
+                    Entry deadline
+                  </FieldLabel>
+                  <DatePickerField
+                    id={`${inputId}-deadline`}
+                    value={review.entryDeadline}
+                    onChange={(entryDeadline) =>
+                      setReview((prev) =>
+                        prev ? { ...prev, entryDeadline } : prev,
+                      )
+                    }
+                    placeholder="Optional"
+                    allowClear
+                  />
+                  <FieldDescription>
+                    When entries are due to the meet host.
+                  </FieldDescription>
                 </Field>
                 <Field>
                   <FieldLabel htmlFor={`${inputId}-course`}>Course</FieldLabel>

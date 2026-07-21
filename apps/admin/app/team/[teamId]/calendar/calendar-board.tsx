@@ -1,6 +1,10 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  formatDateOnly,
+  isUtcCalendarDay,
+} from "@project-aqua/swim-core/calendar-date";
 import { Button } from "@project-aqua/ui/components/button";
 import {
   Card,
@@ -8,6 +12,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@project-aqua/ui/components/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@project-aqua/ui/components/dialog";
 import {
   Field,
   FieldError,
@@ -23,15 +34,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@project-aqua/ui/components/select";
+import { Textarea } from "@project-aqua/ui/components/textarea";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import {
+  DateTimePickerField,
+  toDateTimeLocalValue,
+} from "@/components/date-time-picker-field";
+import {
   createCalendarEventAction,
   deleteCalendarEventAction,
+  updateCalendarEventAction,
 } from "./actions";
+import { RecurringScheduleForm } from "./recurring-schedule-form";
 
 const eventTypes = [
   { label: "Other", value: "other" },
@@ -43,7 +61,8 @@ const calendarEventFormSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
   startsAt: z.string().min(1, "Start date and time are required"),
   endsAt: z.string(),
-  location: z.string(),
+  location: z.string().max(200),
+  notes: z.string().max(2000),
   eventType: z.enum(["other", "practice", "meet"]),
 });
 
@@ -54,12 +73,74 @@ type CalEvent = {
   source: string;
   title: string;
   location: string | null;
+  description: string | null;
   startsAt: Date | string;
   endsAt: Date | string | null;
   eventType: string;
   meetId: string | null;
   practiceSessionId: string | null;
 };
+
+function asDate(value: Date | string): Date {
+  return value instanceof Date ? value : new Date(value);
+}
+
+/** Meet rows are date-only (UTC midnight); match them by UTC calendar day. */
+function eventFallsOnLocalDay(
+  event: CalEvent,
+  year: number,
+  month: number,
+  day: number,
+): boolean {
+  const startsAt = asDate(event.startsAt);
+  if (event.source === "meet") {
+    return isUtcCalendarDay(startsAt, year, month, day);
+  }
+  return (
+    startsAt.getFullYear() === year &&
+    startsAt.getMonth() === month &&
+    startsAt.getDate() === day
+  );
+}
+
+function eventFallsOnDate(event: CalEvent, day: Date): boolean {
+  if (event.source === "meet") {
+    return formatDateOnly(asDate(event.startsAt)) === formatDateOnlyLocal(day);
+  }
+  return asDate(event.startsAt).toDateString() === day.toDateString();
+}
+
+function formatDateOnlyLocal(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatTimeLabel(date: Date): string {
+  return date.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+/** Meets are date-only; hide midnight. Practices/custom show start–end. */
+function formatEventWhen(event: CalEvent): string | null {
+  if (event.source === "meet") return null;
+  const start = asDate(event.startsAt);
+  const startLabel = formatTimeLabel(start);
+  if (!event.endsAt) return startLabel;
+  return `${startLabel}–${formatTimeLabel(asDate(event.endsAt))}`;
+}
+
+function eventTypeValue(
+  value: string,
+): CalendarEventFormValues["eventType"] {
+  if (value === "practice" || value === "meet" || value === "other") {
+    return value;
+  }
+  return "other";
+}
 
 function startOfMonth(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -74,11 +155,13 @@ export function CalendarBoard({
   initialYear,
   initialMonth,
   events,
+  defaultLocation = "",
 }: {
   teamId: string;
   initialYear: number;
   initialMonth: number;
   events: CalEvent[];
+  defaultLocation?: string;
 }) {
   const router = useRouter();
   const [anchor, setAnchor] = useState(new Date(initialYear, initialMonth, 1));
@@ -94,9 +177,10 @@ export function CalendarBoard({
     resolver: zodResolver(calendarEventFormSchema),
     defaultValues: {
       title: "",
-      startsAt: "",
+      startsAt: toDateTimeLocalValue(),
       endsAt: "",
-      location: "",
+      location: defaultLocation,
+      notes: "",
       eventType: "other",
     },
   });
@@ -126,10 +210,18 @@ export function CalendarBoard({
         startsAt: values.startsAt,
         endsAt: values.endsAt || undefined,
         location: values.location || undefined,
+        description: values.notes || undefined,
         eventType: values.eventType,
       });
       router.refresh();
-      reset();
+      reset({
+        title: "",
+        startsAt: toDateTimeLocalValue(),
+        endsAt: "",
+        location: defaultLocation,
+        notes: "",
+        eventType: "other",
+      });
     });
   }
 
@@ -196,14 +288,14 @@ export function CalendarBoard({
             const dayEvents =
               day == null
                 ? []
-                : monthEvents.filter((e) => {
-                    const d = e.startsAt;
-                    return (
-                      d.getFullYear() === anchor.getFullYear() &&
-                      d.getMonth() === anchor.getMonth() &&
-                      d.getDate() === day
-                    );
-                  });
+                : monthEvents.filter((e) =>
+                    eventFallsOnLocalDay(
+                      e,
+                      anchor.getFullYear(),
+                      anchor.getMonth(),
+                      day,
+                    ),
+                  );
             return (
               <div
                 key={`${idx}-${day}`}
@@ -231,8 +323,8 @@ export function CalendarBoard({
       ) : (
         <div className="grid gap-3 md:grid-cols-7">
           {weekDays.map((day) => {
-            const dayEvents = monthEvents.filter(
-              (e) => e.startsAt.toDateString() === day.toDateString(),
+            const dayEvents = monthEvents.filter((e) =>
+              eventFallsOnDate(e, day),
             );
             return (
               <Card key={day.toISOString()}>
@@ -281,25 +373,39 @@ export function CalendarBoard({
               </Field>
               <Field data-invalid={!!errors.startsAt}>
                 <FieldLabel htmlFor="startsAt">Starts</FieldLabel>
-                <Input
-                  id="startsAt"
-                  type="datetime-local"
-                  aria-invalid={!!errors.startsAt}
-                  {...register("startsAt")}
+                <Controller
+                  name="startsAt"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <DateTimePickerField
+                      id="startsAt"
+                      value={field.value}
+                      onChange={field.onChange}
+                      aria-invalid={fieldState.invalid}
+                    />
+                  )}
                 />
                 <FieldError errors={[errors.startsAt]} />
               </Field>
               <Field>
                 <FieldLabel htmlFor="endsAt">Ends</FieldLabel>
-                <Input
-                  id="endsAt"
-                  type="datetime-local"
-                  {...register("endsAt")}
+                <Controller
+                  name="endsAt"
+                  control={control}
+                  render={({ field }) => (
+                    <DateTimePickerField
+                      id="endsAt"
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Optional"
+                      allowClear
+                    />
+                  )}
                 />
               </Field>
               <Field>
                 <FieldLabel htmlFor="location">Location</FieldLabel>
-                <Input id="location" {...register("location")} />
+                <Input id="location" maxLength={200} {...register("location")} />
               </Field>
               <Field data-invalid={!!errors.eventType}>
                 <FieldLabel htmlFor="eventType">Type</FieldLabel>
@@ -339,12 +445,29 @@ export function CalendarBoard({
                 <FieldError errors={[errors.eventType]} />
               </Field>
             </FieldGroup>
+            <Field data-invalid={!!errors.notes}>
+              <FieldLabel htmlFor="notes">Notes</FieldLabel>
+              <Textarea
+                id="notes"
+                rows={2}
+                maxLength={2000}
+                placeholder="Optional"
+                aria-invalid={!!errors.notes}
+                {...register("notes")}
+              />
+              <FieldError errors={[errors.notes]} />
+            </Field>
             <Button type="submit" className="w-fit" disabled={pending}>
               {pending ? "Saving…" : "Add"}
             </Button>
           </form>
         </CardContent>
       </Card>
+
+      <RecurringScheduleForm
+        teamId={teamId}
+        defaultLocation={defaultLocation}
+      />
     </div>
   );
 }
@@ -354,46 +477,285 @@ function EventChip({
   event,
 }: {
   teamId: string;
-  event: {
-    id: string;
-    title: string;
-    eventType: string;
-    source: string;
-    meetId: string | null;
-    practiceSessionId: string | null;
-  };
+  event: CalEvent;
 }) {
-  const router = useRouter();
+  const [editOpen, setEditOpen] = useState(false);
+  const when = formatEventWhen(event);
+  const location = event.location?.trim() || null;
+  const notes = event.description?.trim() || null;
   const href = event.meetId
     ? `/team/${teamId}/meets/${event.meetId}`
     : event.practiceSessionId
       ? `/team/${teamId}/attendance/${event.practiceSessionId}`
       : null;
+  const isCustom = event.source === "custom";
+
+  const details = (
+    <div className="min-w-0 flex-1">
+      {when ? (
+        <div className="truncate text-[10px] font-medium text-primary/80">
+          {when}
+        </div>
+      ) : null}
+      <div className="truncate font-medium leading-tight">{event.title}</div>
+      {location ? (
+        <div className="truncate text-[10px] text-muted-foreground">
+          {location}
+        </div>
+      ) : null}
+      {notes ? (
+        <div className="truncate text-[10px] text-muted-foreground">{notes}</div>
+      ) : null}
+    </div>
+  );
 
   return (
-    <div className="rounded bg-primary/10 px-1 py-0.5">
-      {href ? (
-        <Link href={href} className="block truncate hover:underline">
-          {event.title}
-        </Link>
-      ) : (
-        <div className="flex items-center justify-between gap-1">
-          <span className="truncate">{event.title}</span>
-          {event.source === "custom" && (
-            <button
+    <>
+      <div className="flex items-start gap-1 rounded bg-primary/10 px-1.5 py-1 text-left">
+        {href ? (
+          <Link href={href} className="min-w-0 flex-1 hover:underline">
+            {details}
+          </Link>
+        ) : isCustom ? (
+          <button
+            type="button"
+            className="min-w-0 flex-1 text-left"
+            onClick={() => setEditOpen(true)}
+          >
+            {details}
+          </button>
+        ) : (
+          details
+        )}
+        {isCustom ? (
+          <button
+            type="button"
+            className="shrink-0 text-[10px] text-muted-foreground hover:text-foreground"
+            onClick={() => setEditOpen(true)}
+          >
+            Edit
+          </button>
+        ) : null}
+      </div>
+      {isCustom ? (
+        <EditCalendarEventDialog
+          teamId={teamId}
+          event={event}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function EditCalendarEventDialog({
+  teamId,
+  event,
+  open,
+  onOpenChange,
+}: {
+  teamId: string;
+  event: CalEvent;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CalendarEventFormValues>({
+    resolver: zodResolver(calendarEventFormSchema),
+    defaultValues: {
+      title: event.title,
+      startsAt: toDateTimeLocalValue(asDate(event.startsAt)),
+      endsAt: event.endsAt ? toDateTimeLocalValue(asDate(event.endsAt)) : "",
+      location: event.location ?? "",
+      notes: event.description ?? "",
+      eventType: eventTypeValue(event.eventType),
+    },
+  });
+
+  useEffect(() => {
+    if (!open) return;
+    reset({
+      title: event.title,
+      startsAt: toDateTimeLocalValue(asDate(event.startsAt)),
+      endsAt: event.endsAt ? toDateTimeLocalValue(asDate(event.endsAt)) : "",
+      location: event.location ?? "",
+      notes: event.description ?? "",
+      eventType: eventTypeValue(event.eventType),
+    });
+  }, [open, event, reset]);
+
+  function onSave(values: CalendarEventFormValues) {
+    startTransition(async () => {
+      await updateCalendarEventAction(teamId, event.id, {
+        title: values.title,
+        startsAt: values.startsAt,
+        endsAt: values.endsAt || null,
+        location: values.location.trim() || null,
+        description: values.notes.trim() || null,
+        eventType: values.eventType,
+      });
+      onOpenChange(false);
+      router.refresh();
+    });
+  }
+
+  function onDelete() {
+    startTransition(async () => {
+      await deleteCalendarEventAction(teamId, event.id);
+      onOpenChange(false);
+      router.refresh();
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg" showCloseButton>
+        <DialogHeader>
+          <DialogTitle>Edit event</DialogTitle>
+        </DialogHeader>
+        <form
+          onSubmit={handleSubmit(onSave)}
+          className="flex flex-col gap-4"
+        >
+          <FieldGroup>
+            <Field data-invalid={!!errors.title}>
+              <FieldLabel htmlFor={`edit-title-${event.id}`}>Title</FieldLabel>
+              <Input
+                id={`edit-title-${event.id}`}
+                aria-invalid={!!errors.title}
+                {...register("title")}
+              />
+              <FieldError errors={[errors.title]} />
+            </Field>
+            <Field data-invalid={!!errors.startsAt}>
+              <FieldLabel htmlFor={`edit-startsAt-${event.id}`}>
+                Starts
+              </FieldLabel>
+              <Controller
+                name="startsAt"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <DateTimePickerField
+                    id={`edit-startsAt-${event.id}`}
+                    value={field.value}
+                    onChange={field.onChange}
+                    aria-invalid={fieldState.invalid}
+                  />
+                )}
+              />
+              <FieldError errors={[errors.startsAt]} />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={`edit-endsAt-${event.id}`}>Ends</FieldLabel>
+              <Controller
+                name="endsAt"
+                control={control}
+                render={({ field }) => (
+                  <DateTimePickerField
+                    id={`edit-endsAt-${event.id}`}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Optional"
+                    allowClear
+                  />
+                )}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={`edit-location-${event.id}`}>
+                Location
+              </FieldLabel>
+              <Input
+                id={`edit-location-${event.id}`}
+                maxLength={200}
+                {...register("location")}
+              />
+            </Field>
+            <Field data-invalid={!!errors.notes}>
+              <FieldLabel htmlFor={`edit-notes-${event.id}`}>Notes</FieldLabel>
+              <Textarea
+                id={`edit-notes-${event.id}`}
+                rows={3}
+                maxLength={2000}
+                placeholder="Optional"
+                aria-invalid={!!errors.notes}
+                {...register("notes")}
+              />
+              <FieldError errors={[errors.notes]} />
+            </Field>
+            <Field data-invalid={!!errors.eventType}>
+              <FieldLabel htmlFor={`edit-eventType-${event.id}`}>
+                Type
+              </FieldLabel>
+              <Controller
+                name="eventType"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    items={eventTypes}
+                    value={field.value}
+                    onValueChange={(value) => {
+                      if (value != null) field.onChange(value);
+                    }}
+                  >
+                    <SelectTrigger
+                      id={`edit-eventType-${event.id}`}
+                      className="w-full"
+                      aria-invalid={!!errors.eventType}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {eventTypes.map((eventType) => (
+                          <SelectItem
+                            key={eventType.value}
+                            value={eventType.value}
+                          >
+                            {eventType.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <FieldError errors={[errors.eventType]} />
+            </Field>
+          </FieldGroup>
+          <DialogFooter className="sm:justify-between">
+            <Button
               type="button"
-              className="text-muted-foreground hover:text-destructive"
-              onClick={() => {
-                void deleteCalendarEventAction(teamId, event.id).then(() =>
-                  router.refresh(),
-                );
-              }}
+              variant="destructive"
+              disabled={pending}
+              onClick={onDelete}
             >
-              ×
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+              Delete
+            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={pending}
+                onClick={() => onOpenChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={pending}>
+                {pending ? "Saving…" : "Save"}
+              </Button>
+            </div>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

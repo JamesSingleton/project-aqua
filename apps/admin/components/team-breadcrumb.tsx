@@ -90,7 +90,11 @@ export function TeamBreadcrumb({
   const crumbs = [
     { label: teamName, href: teamRoot },
     ...segments.map((segment, index) => {
-      const href = `${teamRoot}/${segments.slice(0, index + 1).join("/")}`;
+      // Roster lives at /roster; /swimmers is only used for nested swimmer routes.
+      const href =
+        segment === "swimmers"
+          ? `${teamRoot}/roster`
+          : `${teamRoot}/${segments.slice(0, index + 1).join("/")}`;
       const parent = index > 0 ? segments[index - 1] : undefined;
       return {
         label: labelForSegment(segment, parent, entityLabels),

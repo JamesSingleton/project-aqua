@@ -20,6 +20,7 @@ import {
 import { db } from "../client";
 import { member, organization } from "../schema/auth";
 import { trainingGroups } from "../schema/groups";
+import { seasonEnrollments } from "../schema/seasons";
 import {
   swimmerClubRegistrations,
   swimmerContacts,
@@ -27,6 +28,12 @@ import {
   swimmers,
   teamSwimmerMemberships,
 } from "../schema/swimmers";
+import {
+  enrollMembershipInSeason,
+  ensureCurrentSeason,
+  getEnrollmentForMembershipInSeason,
+  updateSeasonEnrollment,
+} from "./seasons";
 
 export type RosterSortId =
   | "firstName"
@@ -39,6 +46,7 @@ export type RosterSortId =
   | "usaId";
 
 export type RosterPageInput = {
+  seasonId?: string;
   q?: string;
   status?: string[];
   gender?: string[];
@@ -51,6 +59,8 @@ export type RosterPageInput = {
 
 export type RosterRowResult = {
   membershipId: string;
+  enrollmentId: string;
+  seasonId: string;
   swimmerId: string;
   firstName: string;
   middleName: string | null;
@@ -64,12 +74,34 @@ export type RosterRowResult = {
   groupId: string | null;
   groupName: string | null;
   classYear: string | null;
+  academicStanding: string | null;
+  eligibilityStatus:
+    | "competing"
+    | "redshirt"
+    | "medical"
+    | "exhausted"
+    | "ineligible"
+    | "other"
+    | null;
+  seasonsOfCompetitionUsed: number | null;
+  eligibilityNotes: string | null;
   status: "active" | "inactive";
   joinedAt: Date;
 };
 
+export type UpdateSwimmerInput = Partial<RosterRow> & {
+  groupId?: string | null;
+  academicStanding?: string | null;
+  eligibilityStatus?: string | null;
+  seasonsOfCompetitionUsed?: number | null;
+  eligibilityNotes?: string | null;
+  seasonId?: string;
+};
+
 const rosterSelect = {
   membershipId: teamSwimmerMemberships.id,
+  enrollmentId: seasonEnrollments.id,
+  seasonId: seasonEnrollments.seasonId,
   swimmerId: swimmers.id,
   firstName: swimmers.firstName,
   middleName: swimmers.middleName,
@@ -80,31 +112,43 @@ const rosterSelect = {
   governingBodyId: swimmers.governingBodyId,
   practiceGroup: teamSwimmerMemberships.practiceGroup,
   trainingGroups: teamSwimmerMemberships.trainingGroups,
-  groupId: teamSwimmerMemberships.groupId,
+  groupId: seasonEnrollments.groupId,
   groupName: trainingGroups.name,
-  classYear: teamSwimmerMemberships.classYear,
-  status: teamSwimmerMemberships.status,
-  joinedAt: teamSwimmerMemberships.joinedAt,
+  classYear: seasonEnrollments.classYear,
+  academicStanding: seasonEnrollments.academicStanding,
+  eligibilityStatus: seasonEnrollments.eligibilityStatus,
+  seasonsOfCompetitionUsed: seasonEnrollments.seasonsOfCompetitionUsed,
+  eligibilityNotes: seasonEnrollments.eligibilityNotes,
+  status: seasonEnrollments.status,
+  joinedAt: seasonEnrollments.joinedAt,
 };
+
+async function resolveSeasonId(
+  organizationId: string,
+  seasonId?: string,
+): Promise<string> {
+  if (seasonId) return seasonId;
+  const season = await ensureCurrentSeason(organizationId);
+  return season.id;
+}
 
 function buildRosterWhere(
   organizationId: string,
+  seasonId: string,
   input: RosterPageInput = {},
 ): SQL | undefined {
   const conditions: SQL[] = [
     eq(teamSwimmerMemberships.organizationId, organizationId),
+    eq(seasonEnrollments.seasonId, seasonId),
   ];
 
   const statuses = input.status?.filter(Boolean);
   if (statuses && statuses.length > 0) {
     conditions.push(
-      inArray(
-        teamSwimmerMemberships.status,
-        statuses as ("active" | "inactive")[],
-      ),
+      inArray(seasonEnrollments.status, statuses as ("active" | "inactive")[]),
     );
   } else {
-    conditions.push(eq(teamSwimmerMemberships.status, "active"));
+    conditions.push(eq(seasonEnrollments.status, "active"));
   }
 
   const genders = input.gender?.filter(Boolean);
@@ -118,12 +162,10 @@ function buildRosterWhere(
     const realGroupIds = groupIds.filter((id) => id !== "none");
     const groupConditions: SQL[] = [];
     if (realGroupIds.length > 0) {
-      groupConditions.push(
-        inArray(teamSwimmerMemberships.groupId, realGroupIds),
-      );
+      groupConditions.push(inArray(seasonEnrollments.groupId, realGroupIds));
     }
     if (includeUnassigned) {
-      groupConditions.push(isNull(teamSwimmerMemberships.groupId));
+      groupConditions.push(isNull(seasonEnrollments.groupId));
     }
     if (groupConditions.length === 1) {
       conditions.push(groupConditions[0]!);
@@ -134,7 +176,7 @@ function buildRosterWhere(
 
   const classYears = input.classYear?.filter(Boolean);
   if (classYears && classYears.length > 0) {
-    conditions.push(inArray(teamSwimmerMemberships.classYear, classYears));
+    conditions.push(inArray(seasonEnrollments.classYear, classYears));
   }
 
   const q = input.q?.trim();
@@ -170,9 +212,9 @@ function buildRosterOrderBy(sort?: { id: string; desc: boolean }[]) {
       case "gender":
         return [direction(swimmers.gender)];
       case "status":
-        return [direction(teamSwimmerMemberships.status)];
+        return [direction(seasonEnrollments.status)];
       case "classYear":
-        return [direction(teamSwimmerMemberships.classYear)];
+        return [direction(seasonEnrollments.classYear)];
       case "groupId":
       case "groupName":
       case "trainingGroup":
@@ -199,6 +241,13 @@ function resolveGoverningBodyId(data: RosterRow): string | undefined {
 
 function resolveClassYear(data: RosterRow): string | null {
   return parseClassYear(data.classYear) ?? null;
+}
+
+function resolveGroupId(
+  data: RosterRow | UpdateSwimmerInput,
+): string | null | undefined {
+  if (!("groupId" in data)) return undefined;
+  return data.groupId ?? null;
 }
 
 async function upsertMembershipContacts(
@@ -271,19 +320,25 @@ export async function findSwimmerByGoverningBodyId(governingBodyId: string) {
   return row ?? null;
 }
 
-export async function getRoster(organizationId: string) {
+export async function getRoster(organizationId: string, seasonId?: string) {
+  const resolvedSeasonId = await resolveSeasonId(organizationId, seasonId);
+
   const rows = await db
     .select(rosterSelect)
     .from(teamSwimmerMemberships)
     .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
-    .leftJoin(
-      trainingGroups,
-      eq(teamSwimmerMemberships.groupId, trainingGroups.id),
+    .innerJoin(
+      seasonEnrollments,
+      and(
+        eq(seasonEnrollments.membershipId, teamSwimmerMemberships.id),
+        eq(seasonEnrollments.seasonId, resolvedSeasonId),
+      ),
     )
+    .leftJoin(trainingGroups, eq(seasonEnrollments.groupId, trainingGroups.id))
     .where(
       and(
         eq(teamSwimmerMemberships.organizationId, organizationId),
-        eq(teamSwimmerMemberships.status, "active"),
+        eq(seasonEnrollments.status, "active"),
       ),
     );
 
@@ -298,10 +353,14 @@ export async function getRosterPage(
   pageCount: number;
   total: number;
 }> {
+  const resolvedSeasonId = await resolveSeasonId(
+    organizationId,
+    input.seasonId,
+  );
   const page = Math.max(1, input.page ?? 1);
   const perPage = Math.min(100, Math.max(1, input.perPage ?? 10));
   const offset = (page - 1) * perPage;
-  const where = buildRosterWhere(organizationId, input);
+  const where = buildRosterWhere(organizationId, resolvedSeasonId, input);
   const orderBy = buildRosterOrderBy(input.sort);
 
   try {
@@ -310,9 +369,16 @@ export async function getRosterPage(
         .select(rosterSelect)
         .from(teamSwimmerMemberships)
         .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
+        .innerJoin(
+          seasonEnrollments,
+          and(
+            eq(seasonEnrollments.membershipId, teamSwimmerMemberships.id),
+            eq(seasonEnrollments.seasonId, resolvedSeasonId),
+          ),
+        )
         .leftJoin(
           trainingGroups,
-          eq(teamSwimmerMemberships.groupId, trainingGroups.id),
+          eq(seasonEnrollments.groupId, trainingGroups.id),
         )
         .where(where)
         .orderBy(...orderBy)
@@ -322,9 +388,16 @@ export async function getRosterPage(
         .select({ total: count() })
         .from(teamSwimmerMemberships)
         .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
+        .innerJoin(
+          seasonEnrollments,
+          and(
+            eq(seasonEnrollments.membershipId, teamSwimmerMemberships.id),
+            eq(seasonEnrollments.seasonId, resolvedSeasonId),
+          ),
+        )
         .leftJoin(
           trainingGroups,
-          eq(teamSwimmerMemberships.groupId, trainingGroups.id),
+          eq(seasonEnrollments.groupId, trainingGroups.id),
         )
         .where(where),
     ]);
@@ -340,54 +413,72 @@ export async function getRosterPage(
   }
 }
 
-export async function getRosterFacetCounts(organizationId: string) {
+export async function getRosterFacetCounts(
+  organizationId: string,
+  seasonId?: string,
+) {
+  const resolvedSeasonId = await resolveSeasonId(organizationId, seasonId);
   const baseWhere = and(
     eq(teamSwimmerMemberships.organizationId, organizationId),
+    eq(seasonEnrollments.seasonId, resolvedSeasonId),
   );
-  const activeWhere = and(
-    baseWhere,
-    eq(teamSwimmerMemberships.status, "active"),
-  );
+  const activeWhere = and(baseWhere, eq(seasonEnrollments.status, "active"));
 
   const [statusRows, genderRows, groupRows, classYearRows] = await Promise.all([
     db
       .select({
-        value: teamSwimmerMemberships.status,
+        value: seasonEnrollments.status,
         count: count(),
       })
-      .from(teamSwimmerMemberships)
+      .from(seasonEnrollments)
+      .innerJoin(
+        teamSwimmerMemberships,
+        eq(seasonEnrollments.membershipId, teamSwimmerMemberships.id),
+      )
       .where(baseWhere)
-      .groupBy(teamSwimmerMemberships.status),
+      .groupBy(seasonEnrollments.status),
     db
       .select({
         value: swimmers.gender,
         count: count(),
       })
-      .from(teamSwimmerMemberships)
+      .from(seasonEnrollments)
+      .innerJoin(
+        teamSwimmerMemberships,
+        eq(seasonEnrollments.membershipId, teamSwimmerMemberships.id),
+      )
       .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
       .where(activeWhere)
       .groupBy(swimmers.gender),
     db
       .select({
-        value: teamSwimmerMemberships.groupId,
+        value: seasonEnrollments.groupId,
         name: trainingGroups.name,
         count: count(),
       })
-      .from(teamSwimmerMemberships)
+      .from(seasonEnrollments)
+      .innerJoin(
+        teamSwimmerMemberships,
+        eq(seasonEnrollments.membershipId, teamSwimmerMemberships.id),
+      )
       .leftJoin(
         trainingGroups,
-        eq(teamSwimmerMemberships.groupId, trainingGroups.id),
+        eq(seasonEnrollments.groupId, trainingGroups.id),
       )
       .where(activeWhere)
-      .groupBy(teamSwimmerMemberships.groupId, trainingGroups.name),
+      .groupBy(seasonEnrollments.groupId, trainingGroups.name),
     db
       .select({
-        value: teamSwimmerMemberships.classYear,
+        value: seasonEnrollments.classYear,
         count: count(),
       })
-      .from(teamSwimmerMemberships)
+      .from(seasonEnrollments)
+      .innerJoin(
+        teamSwimmerMemberships,
+        eq(seasonEnrollments.membershipId, teamSwimmerMemberships.id),
+      )
       .where(activeWhere)
-      .groupBy(teamSwimmerMemberships.classYear),
+      .groupBy(seasonEnrollments.classYear),
   ]);
 
   const status: Record<string, number> = {};
@@ -405,6 +496,14 @@ export async function getRosterFacetCounts(organizationId: string) {
     groupId[row.value ?? "none"] = Number(row.count);
   }
 
+  const groups = groupRows
+    .map((row) => ({
+      id: row.value ?? "none",
+      name: row.name?.trim() || "Ungrouped",
+      count: Number(row.count),
+    }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+
   const classYear: Record<string, number> = {};
   for (const row of classYearRows) {
     if (row.value) classYear[row.value] = Number(row.count);
@@ -414,6 +513,7 @@ export async function getRosterFacetCounts(organizationId: string) {
     status,
     gender,
     groupId,
+    groups,
     classYear,
     totalActive: status.active ?? 0,
     maleActive: gender.male ?? 0,
@@ -425,7 +525,11 @@ export async function getRosterForExport(
   organizationId: string,
   input: RosterPageInput & { swimmerIds?: string[] } = {},
 ) {
-  const where = buildRosterWhere(organizationId, input);
+  const resolvedSeasonId = await resolveSeasonId(
+    organizationId,
+    input.seasonId,
+  );
+  const where = buildRosterWhere(organizationId, resolvedSeasonId, input);
   const conditions: SQL[] = where ? [where] : [];
   if (input.swimmerIds && input.swimmerIds.length > 0) {
     conditions.push(inArray(swimmers.id, input.swimmerIds));
@@ -435,10 +539,14 @@ export async function getRosterForExport(
     .select(rosterSelect)
     .from(teamSwimmerMemberships)
     .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
-    .leftJoin(
-      trainingGroups,
-      eq(teamSwimmerMemberships.groupId, trainingGroups.id),
+    .innerJoin(
+      seasonEnrollments,
+      and(
+        eq(seasonEnrollments.membershipId, teamSwimmerMemberships.id),
+        eq(seasonEnrollments.seasonId, resolvedSeasonId),
+      ),
     )
+    .leftJoin(trainingGroups, eq(seasonEnrollments.groupId, trainingGroups.id))
     .where(and(...conditions))
     .orderBy(...buildRosterOrderBy(input.sort));
 }
@@ -446,10 +554,15 @@ export async function getRosterForExport(
 export async function getSwimmerById(
   swimmerId: string,
   organizationId: string,
+  seasonId?: string,
 ) {
+  const resolvedSeasonId = await resolveSeasonId(organizationId, seasonId);
+
   const [row] = await db
     .select({
       membershipId: teamSwimmerMemberships.id,
+      enrollmentId: seasonEnrollments.id,
+      seasonId: seasonEnrollments.seasonId,
       swimmerId: swimmers.id,
       firstName: swimmers.firstName,
       middleName: swimmers.middleName,
@@ -463,17 +576,26 @@ export async function getSwimmerById(
       governingBodyId: swimmers.governingBodyId,
       practiceGroup: teamSwimmerMemberships.practiceGroup,
       trainingGroups: teamSwimmerMemberships.trainingGroups,
-      groupId: teamSwimmerMemberships.groupId,
+      groupId: seasonEnrollments.groupId,
       groupName: trainingGroups.name,
-      classYear: teamSwimmerMemberships.classYear,
-      status: teamSwimmerMemberships.status,
+      classYear: seasonEnrollments.classYear,
+      academicStanding: seasonEnrollments.academicStanding,
+      eligibilityStatus: seasonEnrollments.eligibilityStatus,
+      seasonsOfCompetitionUsed: seasonEnrollments.seasonsOfCompetitionUsed,
+      eligibilityNotes: seasonEnrollments.eligibilityNotes,
+      status: seasonEnrollments.status,
+      joinedAt: seasonEnrollments.joinedAt,
     })
     .from(teamSwimmerMemberships)
     .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
     .leftJoin(
-      trainingGroups,
-      eq(teamSwimmerMemberships.groupId, trainingGroups.id),
+      seasonEnrollments,
+      and(
+        eq(seasonEnrollments.membershipId, teamSwimmerMemberships.id),
+        eq(seasonEnrollments.seasonId, resolvedSeasonId),
+      ),
     )
+    .leftJoin(trainingGroups, eq(seasonEnrollments.groupId, trainingGroups.id))
     .where(
       and(
         eq(swimmers.id, swimmerId),
@@ -616,6 +738,107 @@ export async function getClubRegistrationForMembership(
   return row ?? null;
 }
 
+/** Aggregate SWIMS sync health for the team dashboard widget. */
+export async function getSwimsDashboardSummary(organizationId: string) {
+  const [usasMembers, notInCommit, inactiveInCommit, nonAthletes] =
+    await Promise.all([
+      db
+        .select({ count: count() })
+        .from(swimmerClubRegistrations)
+        .innerJoin(
+          teamSwimmerMemberships,
+          eq(swimmerClubRegistrations.membershipId, teamSwimmerMemberships.id),
+        )
+        .where(
+          and(
+            eq(teamSwimmerMemberships.organizationId, organizationId),
+            eq(teamSwimmerMemberships.status, "active"),
+            isNull(teamSwimmerMemberships.leftAt),
+          ),
+        )
+        .then((rows) => Number(rows[0]?.count ?? 0)),
+      db
+        .select({ count: count() })
+        .from(teamSwimmerMemberships)
+        .leftJoin(
+          swimmerClubRegistrations,
+          eq(swimmerClubRegistrations.membershipId, teamSwimmerMemberships.id),
+        )
+        .where(
+          and(
+            eq(teamSwimmerMemberships.organizationId, organizationId),
+            eq(teamSwimmerMemberships.status, "active"),
+            isNull(teamSwimmerMemberships.leftAt),
+            isNull(swimmerClubRegistrations.id),
+          ),
+        )
+        .then((rows) => Number(rows[0]?.count ?? 0)),
+      db
+        .select({ count: count() })
+        .from(swimmerClubRegistrations)
+        .innerJoin(
+          teamSwimmerMemberships,
+          eq(swimmerClubRegistrations.membershipId, teamSwimmerMemberships.id),
+        )
+        .where(
+          and(
+            eq(teamSwimmerMemberships.organizationId, organizationId),
+            eq(teamSwimmerMemberships.status, "inactive"),
+          ),
+        )
+        .then((rows) => Number(rows[0]?.count ?? 0)),
+      db
+        .select({ count: count() })
+        .from(member)
+        .where(eq(member.organizationId, organizationId))
+        .then((rows) => Number(rows[0]?.count ?? 0)),
+    ]);
+
+  const [latestSync] = await db
+    .select({ lastSyncedAt: swimmerClubRegistrations.lastSyncedAt })
+    .from(swimmerClubRegistrations)
+    .innerJoin(
+      teamSwimmerMemberships,
+      eq(swimmerClubRegistrations.membershipId, teamSwimmerMemberships.id),
+    )
+    .where(eq(teamSwimmerMemberships.organizationId, organizationId))
+    .orderBy(desc(swimmerClubRegistrations.lastSyncedAt))
+    .limit(1);
+
+  return {
+    usasMembers,
+    notInCommit,
+    inactiveInCommit,
+    nonAthletes,
+    lastSyncedAt: latestSync?.lastSyncedAt ?? null,
+  };
+}
+
+async function enrollInCurrentSeason(
+  organizationId: string,
+  membershipId: string,
+  data: RosterRow | UpdateSwimmerInput,
+) {
+  const season = await ensureCurrentSeason(organizationId);
+  const groupId = resolveGroupId(data);
+  await enrollMembershipInSeason(season.id, {
+    membershipId,
+    classYear: resolveClassYear(data as RosterRow),
+    groupId: groupId === undefined ? null : groupId,
+    academicStanding:
+      "academicStanding" in data ? (data.academicStanding ?? null) : null,
+    eligibilityStatus:
+      "eligibilityStatus" in data ? (data.eligibilityStatus ?? null) : null,
+    seasonsOfCompetitionUsed:
+      "seasonsOfCompetitionUsed" in data
+        ? (data.seasonsOfCompetitionUsed ?? null)
+        : null,
+    eligibilityNotes:
+      "eligibilityNotes" in data ? (data.eligibilityNotes ?? null) : null,
+  });
+  return season.id;
+}
+
 async function createMembershipForTeam(
   organizationId: string,
   swimmerId: string,
@@ -646,7 +869,6 @@ async function createMembershipForTeam(
       swimmerId,
       practiceGroup: data.practiceGroup ?? null,
       trainingGroups: data.trainingGroups ?? [],
-      classYear: resolveClassYear(data),
       status: "active",
     });
 
@@ -661,6 +883,8 @@ async function createMembershipForTeam(
     await upsertMembershipContacts(tx, membershipId, data.contacts);
     await upsertMembershipMedical(tx, membershipId, data.medical);
   });
+
+  await enrollInCurrentSeason(organizationId, membershipId, data);
 
   return { swimmerId, membershipId };
 }
@@ -725,7 +949,6 @@ export async function addSwimmer(organizationId: string, data: RosterRow) {
       swimmerId,
       practiceGroup: data.practiceGroup ?? null,
       trainingGroups: data.trainingGroups ?? [],
-      classYear: resolveClassYear(data),
       status: "active",
     });
 
@@ -741,15 +964,21 @@ export async function addSwimmer(organizationId: string, data: RosterRow) {
     await upsertMembershipMedical(tx, membershipId, data.medical);
   });
 
+  await enrollInCurrentSeason(organizationId, membershipId, data);
+
   return { swimmerId, membershipId };
 }
 
 export async function updateSwimmer(
   swimmerId: string,
   organizationId: string,
-  data: Partial<RosterRow>,
+  data: UpdateSwimmerInput,
 ) {
-  const membership = await getSwimmerById(swimmerId, organizationId);
+  const membership = await getSwimmerById(
+    swimmerId,
+    organizationId,
+    data.seasonId,
+  );
   if (!membership) return null;
 
   await db.transaction(async (tx) => {
@@ -783,11 +1012,7 @@ export async function updateSwimmer(
         .where(eq(swimmers.id, swimmerId));
     }
 
-    if (
-      data.practiceGroup !== undefined ||
-      data.trainingGroups !== undefined ||
-      data.classYear !== undefined
-    ) {
+    if (data.practiceGroup !== undefined || data.trainingGroups !== undefined) {
       await tx
         .update(teamSwimmerMemberships)
         .set({
@@ -796,9 +1021,6 @@ export async function updateSwimmer(
           }),
           ...(data.trainingGroups !== undefined && {
             trainingGroups: data.trainingGroups,
-          }),
-          ...(data.classYear !== undefined && {
-            classYear: parseClassYear(data.classYear),
           }),
           updatedAt: new Date(),
         })
@@ -818,15 +1040,79 @@ export async function updateSwimmer(
     }
   });
 
-  return getSwimmerById(swimmerId, organizationId);
+  const enrollmentFieldsChanged =
+    data.classYear !== undefined ||
+    data.groupId !== undefined ||
+    data.academicStanding !== undefined ||
+    data.eligibilityStatus !== undefined ||
+    data.seasonsOfCompetitionUsed !== undefined ||
+    data.eligibilityNotes !== undefined;
+
+  if (enrollmentFieldsChanged) {
+    const resolvedSeasonId = await resolveSeasonId(
+      organizationId,
+      data.seasonId,
+    );
+    let enrollmentId = membership.enrollmentId;
+
+    if (!enrollmentId) {
+      enrollmentId = await enrollMembershipInSeason(resolvedSeasonId, {
+        membershipId: membership.membershipId,
+        classYear: data.classYear ?? null,
+        groupId: data.groupId ?? null,
+        academicStanding: data.academicStanding ?? null,
+        eligibilityStatus: data.eligibilityStatus ?? null,
+        seasonsOfCompetitionUsed: data.seasonsOfCompetitionUsed ?? null,
+        eligibilityNotes: data.eligibilityNotes ?? null,
+      });
+    } else {
+      await updateSeasonEnrollment(enrollmentId, organizationId, {
+        ...(data.classYear !== undefined && {
+          classYear: parseClassYear(data.classYear),
+        }),
+        ...(data.groupId !== undefined && { groupId: data.groupId }),
+        ...(data.academicStanding !== undefined && {
+          academicStanding: data.academicStanding,
+        }),
+        ...(data.eligibilityStatus !== undefined && {
+          eligibilityStatus: data.eligibilityStatus,
+        }),
+        ...(data.seasonsOfCompetitionUsed !== undefined && {
+          seasonsOfCompetitionUsed: data.seasonsOfCompetitionUsed,
+        }),
+        ...(data.eligibilityNotes !== undefined && {
+          eligibilityNotes: data.eligibilityNotes,
+        }),
+      });
+    }
+  }
+
+  return getSwimmerById(swimmerId, organizationId, data.seasonId);
 }
 
 export async function removeSwimmerFromTeam(
   swimmerId: string,
   organizationId: string,
+  seasonId?: string,
 ) {
-  const membership = await getSwimmerById(swimmerId, organizationId);
+  const membership = await getSwimmerById(swimmerId, organizationId, seasonId);
   if (!membership) return false;
+
+  const resolvedSeasonId = await resolveSeasonId(organizationId, seasonId);
+  const enrollment =
+    membership.enrollmentId != null
+      ? { id: membership.enrollmentId }
+      : await getEnrollmentForMembershipInSeason(
+          membership.membershipId,
+          resolvedSeasonId,
+        );
+
+  if (enrollment) {
+    await updateSeasonEnrollment(enrollment.id, organizationId, {
+      status: "inactive",
+      leftAt: new Date(),
+    });
+  }
 
   await db
     .update(teamSwimmerMemberships)
@@ -836,8 +1122,11 @@ export async function removeSwimmerFromTeam(
   return true;
 }
 
-export async function getRosterStats(organizationId: string) {
-  const roster = await getRoster(organizationId);
+export async function getRosterStats(
+  organizationId: string,
+  seasonId?: string,
+) {
+  const roster = await getRoster(organizationId, seasonId);
   return {
     totalSwimmers: roster.length,
     minorSwimmers: roster.filter((r) => isMinorSwimmer(r.dateOfBirth)).length,

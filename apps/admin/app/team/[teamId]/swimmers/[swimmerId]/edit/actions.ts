@@ -38,7 +38,7 @@ export async function editSwimmerAction(
 
   const membership = await getSwimmerById(swimmerId, teamId);
   if (!membership) throw new Error("Swimmer not found");
-  await assignMembershipGroup(membership.membershipId, groupId);
+  await assignMembershipGroup(teamId, membership.membershipId, groupId);
 
   revalidatePath(`/team/${teamId}/roster`);
   revalidatePath(`/team/${teamId}/swimmers/${swimmerId}`);

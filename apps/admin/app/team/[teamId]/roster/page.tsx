@@ -10,6 +10,10 @@ import {
   getRosterPage,
   type RosterRowResult,
 } from "@project-aqua/db/queries/roster";
+import {
+  ensureCurrentSeason,
+  listTeamSeasons,
+} from "@project-aqua/db/queries/seasons";
 import { organization, type TeamUiState } from "@project-aqua/db/schema";
 import {
   CLASS_YEAR_LABELS,
@@ -17,6 +21,8 @@ import {
   type ClassYear,
   parseTeamType,
   supportsClassYear,
+  supportsCollegeEligibility,
+  supportsUsaSwimmingIntegration,
   teamTypeLabel,
 } from "@project-aqua/swim-core/team-types";
 import { buttonVariants } from "@project-aqua/ui/components/button";
@@ -41,7 +47,9 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { PageHeader } from "@/components/page-header";
+import { NewSeasonRosterWizard } from "@/components/roster/new-season-roster-wizard";
 import { RosterTable } from "@/components/roster/roster-table";
+import { SeasonSelector } from "@/components/roster/season-selector";
 import type { Swimmer } from "@/types";
 import type { Option } from "@/types/data-table";
 import { listGroupsAction } from "./groups-actions";
@@ -56,6 +64,8 @@ function mapRosterRowToSwimmer(row: RosterRowResult): Swimmer {
   return {
     id: row.swimmerId,
     membershipId: row.membershipId,
+    enrollmentId: row.enrollmentId,
+    seasonId: row.seasonId,
     firstName,
     lastName,
     preferredName: row.preferredName,
@@ -73,6 +83,10 @@ function mapRosterRowToSwimmer(row: RosterRowResult): Swimmer {
     practiceGroup: row.practiceGroup ?? "",
     groupId: row.groupId,
     classYear: row.classYear,
+    academicStanding: row.academicStanding,
+    eligibilityStatus: row.eligibilityStatus,
+    seasonsOfCompetitionUsed: row.seasonsOfCompetitionUsed,
+    eligibilityNotes: row.eligibilityNotes,
     usaId: row.governingBodyId,
     status: row.status ?? "active",
     personalRecords: [],
@@ -166,16 +180,22 @@ export async function generateMetadata({
 
 async function RosterSwimmersTable({
   teamId,
+  seasonId,
   searchParams,
   showClassYear,
+  showCollegeEligibility,
+  showUsaSwimmingId,
   groups,
   facetOptions,
   initialColumnVisibility,
   prefsSorting,
 }: {
   teamId: string;
+  seasonId: string;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
   showClassYear: boolean;
+  showCollegeEligibility: boolean;
+  showUsaSwimmingId: boolean;
   groups: { id: string; name: string }[];
   facetOptions: ReturnType<typeof buildFacetOptions>;
   initialColumnVisibility: VisibilityState;
@@ -193,6 +213,7 @@ async function RosterSwimmersTable({
       : parsed.sort;
 
   const pageResult = await getRosterPage(teamId, {
+    seasonId,
     q: parsed.firstName || undefined,
     status: parsed.status.length > 0 ? parsed.status : undefined,
     gender: parsed.gender.length > 0 ? parsed.gender : undefined,
@@ -208,11 +229,14 @@ async function RosterSwimmersTable({
   return (
     <RosterTable
       teamId={teamId}
+      seasonId={seasonId}
       data={swimmers}
       pageCount={pageResult.pageCount}
       groups={groups}
       facetOptions={facetOptions}
       showClassYear={showClassYear}
+      showCollegeEligibility={showCollegeEligibility}
+      showUsaSwimmingId={showUsaSwimmingId}
       initialColumnVisibility={initialColumnVisibility}
       initialSorting={sort}
     />
@@ -231,6 +255,7 @@ export default async function RosterPage({
   await requireTeamMember(session?.user?.id, teamId);
 
   const rawParams = await searchParams;
+  const parsedParams = rosterSearchParamsCache.parse(rawParams);
   const tabParam =
     typeof rawParams.tab === "string" ? rawParams.tab : undefined;
   const defaultTab =
@@ -240,29 +265,57 @@ export default async function RosterPage({
         ? "groups"
         : "swimmers";
 
-  const [orgRows, members, membership, teamUi, facets, groups, fullRoster] =
-    await Promise.all([
-      db
-        .select()
-        .from(organization)
-        .where(eq(organization.id, teamId))
-        .limit(1),
-      getTeamMembers(teamId),
-      session?.user?.id
-        ? getMember(session.user.id, teamId)
-        : Promise.resolve(null),
-      session?.user?.id
-        ? getTeamUiPreferences(session.user.id, teamId)
-        : Promise.resolve<TeamUiState>({}),
-      getRosterFacetCounts(teamId),
-      listGroupsAction(teamId),
-      defaultTab === "groups" ? getRoster(teamId) : Promise.resolve([]),
-    ]);
+  const currentSeasonPromise = ensureCurrentSeason(teamId);
+  const seasonsPromise = currentSeasonPromise.then(() =>
+    listTeamSeasons(teamId),
+  );
+
+  const [
+    orgRows,
+    members,
+    membership,
+    teamUi,
+    groups,
+    currentSeason,
+    seasons,
+  ] = await Promise.all([
+    db
+      .select()
+      .from(organization)
+      .where(eq(organization.id, teamId))
+      .limit(1),
+    getTeamMembers(teamId),
+    session?.user?.id
+      ? getMember(session.user.id, teamId)
+      : Promise.resolve(null),
+    session?.user?.id
+      ? getTeamUiPreferences(session.user.id, teamId)
+      : Promise.resolve<TeamUiState>({}),
+    listGroupsAction(teamId),
+    currentSeasonPromise,
+    seasonsPromise,
+  ]);
+
+  const selectedSeason =
+    (parsedParams.season
+      ? seasons.find((s) => s.id === parsedParams.season)
+      : null) ??
+    seasons.find((s) => s.isCurrent) ??
+    currentSeason;
+
+  const [facets, fullRoster] = await Promise.all([
+    getRosterFacetCounts(teamId, selectedSeason.id),
+    defaultTab === "groups"
+      ? getRoster(teamId, selectedSeason.id)
+      : Promise.resolve([]),
+  ]);
 
   const org = orgRows[0];
   const metadata = org?.metadata ? JSON.parse(org.metadata) : {};
   const teamType = parseTeamType(metadata.teamType);
   const showClassYear = supportsClassYear(teamType);
+  const showCollegeEligibility = supportsCollegeEligibility(teamType);
+  const showUsaSwimmingId = supportsUsaSwimmingIntegration(teamType);
   const coaches = members.filter((m) => isCoachingRole(m.role));
   const canManage =
     membership?.role === "owner" ||
@@ -276,6 +329,12 @@ export default async function RosterPage({
   const rosterSorting =
     (teamUi.roster?.sorting as SortingState | undefined) ?? [];
 
+  const seasonOptions = seasons.map((s) => ({
+    id: s.id,
+    label: s.label,
+    isCurrent: s.isCurrent,
+  }));
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -283,13 +342,23 @@ export default async function RosterPage({
         description={`Manage swimmers, groups, and coaches · ${teamTypeLabel(teamType)}`}
         actions={
           defaultTab === "swimmers" ? (
-            <Link
-              href={`/team/${teamId}/swimmers/create`}
-              className={buttonVariants()}
-            >
-              <UserPlusIcon data-icon="inline-start" />
-              Add swimmer
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              {canManage ? (
+                <NewSeasonRosterWizard
+                  teamId={teamId}
+                  sourceSeasonId={selectedSeason.id}
+                  showClassYear={showClassYear}
+                  showCollegeEligibility={showCollegeEligibility}
+                />
+              ) : null}
+              <Link
+                href={`/team/${teamId}/swimmers/create`}
+                className={buttonVariants()}
+              >
+                <UserPlusIcon data-icon="inline-start" />
+                Add swimmer
+              </Link>
+            </div>
           ) : null
         }
       />
@@ -354,25 +423,42 @@ export default async function RosterPage({
           </div>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Swimmers</CardTitle>
-              <CardDescription>
-                {facets.totalActive} active swimmers on roster
-              </CardDescription>
+            <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
+              <div className="flex flex-col gap-1.5">
+                <CardTitle>Swimmers</CardTitle>
+                <CardDescription>
+                  {facets.totalActive} active swimmers on roster
+                  {selectedSeason.label
+                    ? ` · ${selectedSeason.label}`
+                    : null}
+                </CardDescription>
+              </div>
+              <SeasonSelector
+                teamId={teamId}
+                seasons={seasonOptions}
+                selectedSeasonId={selectedSeason.id}
+              />
             </CardHeader>
             <CardContent>
               <Suspense
                 fallback={
                   <DataTableSkeleton
-                    columnCount={showClassYear ? 10 : 9}
+                    columnCount={
+                      (showClassYear ? 1 : 0) +
+                      (showUsaSwimmingId ? 1 : 0) +
+                      8
+                    }
                     filterCount={showClassYear ? 4 : 3}
                   />
                 }
               >
                 <RosterSwimmersTable
                   teamId={teamId}
+                  seasonId={selectedSeason.id}
                   searchParams={searchParams}
                   showClassYear={showClassYear}
+                  showCollegeEligibility={showCollegeEligibility}
+                  showUsaSwimmingId={showUsaSwimmingId}
                   groups={groupOptions}
                   facetOptions={facetOptions}
                   initialColumnVisibility={rosterColumnVisibility}

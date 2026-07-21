@@ -27,6 +27,7 @@ describe("parseEv3", () => {
     assert.equal(meet.events.length, 22);
     assert.equal(meet.location, "Copper Sky Aquatic Center");
     assert.equal(meet.address, "44345 M.L.K Jr. Blvd, Maricopa, AZ 85138, USA");
+    assert.equal(meet.entryDeadline, "2025-10-15");
     assert.deepEqual(meet.entryLimits, {
       maxIndividualEntries: 2,
       maxRelayEntries: 3,
@@ -170,6 +171,7 @@ describe("parseEv3 qualifying times", () => {
       "utf8",
     );
     const meet = parseEv3(content);
+    assert.equal(meet.entryDeadline, "2025-10-15");
     const e13 = byEventNumber(meet.events, 13);
     const e14 = byEventNumber(meet.events, 14);
     const e7 = byEventNumber(meet.events, 7);

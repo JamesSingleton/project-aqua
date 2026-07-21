@@ -1,4 +1,3 @@
-import { currentSeasonYear } from "@project-aqua/swim-core/age";
 import { and, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "../client";
 import {
@@ -6,13 +5,34 @@ import {
   maappAcknowledgments,
   member,
   safesportReports,
+  seasonEnrollments,
   staffCredentials,
   swimmers,
   teamSwimmerMemberships,
 } from "../schema/index";
+import { ensureCurrentSeason } from "./seasons";
 
 function generateId(): string {
   return crypto.randomUUID();
+}
+
+async function resolveSeasonIdForMembership(
+  membershipId: string,
+  seasonId?: string,
+): Promise<string> {
+  if (seasonId) return seasonId;
+
+  const [membership] = await db
+    .select({ organizationId: teamSwimmerMemberships.organizationId })
+    .from(teamSwimmerMemberships)
+    .where(eq(teamSwimmerMemberships.id, membershipId))
+    .limit(1);
+
+  if (!membership) {
+    throw new Error(`Membership not found: ${membershipId}`);
+  }
+
+  return (await ensureCurrentSeason(membership.organizationId)).id;
 }
 
 const SAFESPORT_TYPES = [
@@ -94,7 +114,7 @@ export async function upsertStaffCredential(data: {
 }
 
 export async function getComplianceSummary(organizationId: string) {
-  const seasonYear = currentSeasonYear();
+  const season = await ensureCurrentSeason(organizationId);
   const now = new Date();
 
   const credentials = await getStaffCredentials(organizationId);
@@ -120,19 +140,24 @@ export async function getComplianceSummary(organizationId: string) {
       total: sql<number>`count(distinct ${teamSwimmerMemberships.id})::int`,
       acknowledged: sql<number>`count(distinct case when ${maappAcknowledgments.id} is not null then ${teamSwimmerMemberships.id} end)::int`,
     })
-    .from(teamSwimmerMemberships)
+    .from(seasonEnrollments)
+    .innerJoin(
+      teamSwimmerMemberships,
+      eq(seasonEnrollments.membershipId, teamSwimmerMemberships.id),
+    )
     .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
     .leftJoin(
       maappAcknowledgments,
       and(
         eq(maappAcknowledgments.membershipId, teamSwimmerMemberships.id),
-        eq(maappAcknowledgments.seasonYear, seasonYear),
+        eq(maappAcknowledgments.seasonId, season.id),
       ),
     )
     .where(
       and(
         eq(teamSwimmerMemberships.organizationId, organizationId),
-        eq(teamSwimmerMemberships.status, "active"),
+        eq(seasonEnrollments.seasonId, season.id),
+        eq(seasonEnrollments.status, "active"),
         sql`date_part('year', age(${swimmers.dateOfBirth})) < 18`,
       ),
     );
@@ -148,7 +173,8 @@ export async function getComplianceSummary(organizationId: string) {
     );
 
   return {
-    seasonYear,
+    seasonId: season.id,
+    seasonYear: season.label,
     coachesNeedingTraining: membersWithoutTraining.length,
     minorAckTotal: ackStats?.total ?? 0,
     minorAckCompleted: ackStats?.acknowledged ?? 0,
@@ -162,19 +188,23 @@ export async function createMaappAcknowledgment(data: {
   acknowledgedBy: "parent_guardian" | "athlete" | "adult_athlete";
   signerName: string;
   signerEmail: string;
-  seasonYear?: string;
+  seasonId?: string;
   documentVersion?: string;
   ipAddress?: string;
   userAgent?: string;
 }) {
+  const seasonId = await resolveSeasonIdForMembership(
+    data.membershipId,
+    data.seasonId,
+  );
   const id = generateId();
   await db.insert(maappAcknowledgments).values({
     id,
     membershipId: data.membershipId,
+    seasonId,
     acknowledgedBy: data.acknowledgedBy,
     signerName: data.signerName,
     signerEmail: data.signerEmail,
-    seasonYear: data.seasonYear ?? currentSeasonYear(),
     documentVersion: data.documentVersion ?? "2025",
     ipAddress: data.ipAddress ?? null,
     userAgent: data.userAgent ?? null,
@@ -184,16 +214,19 @@ export async function createMaappAcknowledgment(data: {
 
 export async function getMaappAcknowledgment(
   membershipId: string,
-  seasonYear?: string,
+  seasonId?: string,
 ) {
-  const season = seasonYear ?? currentSeasonYear();
+  const resolvedSeasonId = await resolveSeasonIdForMembership(
+    membershipId,
+    seasonId,
+  );
   const [row] = await db
     .select()
     .from(maappAcknowledgments)
     .where(
       and(
         eq(maappAcknowledgments.membershipId, membershipId),
-        eq(maappAcknowledgments.seasonYear, season),
+        eq(maappAcknowledgments.seasonId, resolvedSeasonId),
       ),
     )
     .limit(1);

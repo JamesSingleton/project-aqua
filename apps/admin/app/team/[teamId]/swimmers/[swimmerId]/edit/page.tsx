@@ -10,8 +10,22 @@ import {
   getSwimmerMedicalForMembership,
 } from "@project-aqua/db/queries/roster";
 import { supportsClassYear } from "@project-aqua/swim-core/team-types";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { EditSwimmerForm } from "./edit-swimmer-form";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string; swimmerId: string }>;
+}): Promise<Metadata> {
+  const { teamId, swimmerId } = await params;
+  const swimmer = await getSwimmerById(swimmerId, teamId);
+  const name = swimmer
+    ? (swimmer.preferredName ?? `${swimmer.firstName} ${swimmer.lastName}`)
+    : "Swimmer";
+  return { title: `Edit · ${name}` };
+}
 
 export default async function EditSwimmerPage({
   params,

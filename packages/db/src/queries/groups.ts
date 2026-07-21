@@ -1,7 +1,13 @@
 import { and, count, desc, eq, gte, inArray } from "drizzle-orm";
 import { db } from "../client";
 import { aiGenerations, trainingGroups } from "../schema/groups";
+import { seasonEnrollments } from "../schema/seasons";
 import { teamSwimmerMemberships } from "../schema/swimmers";
+import {
+  enrollMembershipInSeason,
+  ensureCurrentSeason,
+  getEnrollmentForMembershipInSeason,
+} from "./seasons";
 
 function id() {
   return crypto.randomUUID();
@@ -31,14 +37,10 @@ export async function deleteTrainingGroup(
   groupId: string,
 ) {
   await db
-    .update(teamSwimmerMemberships)
+    .update(seasonEnrollments)
     .set({ groupId: null, updatedAt: new Date() })
-    .where(
-      and(
-        eq(teamSwimmerMemberships.organizationId, organizationId),
-        eq(teamSwimmerMemberships.groupId, groupId),
-      ),
-    );
+    .where(eq(seasonEnrollments.groupId, groupId));
+
   await db
     .delete(trainingGroups)
     .where(
@@ -49,40 +51,83 @@ export async function deleteTrainingGroup(
     );
 }
 
-export async function assignMembershipGroup(
+async function setEnrollmentGroup(
+  seasonId: string,
   membershipId: string,
   groupId: string | null,
 ) {
-  await db
-    .update(teamSwimmerMemberships)
-    .set({
-      groupId,
-      practiceGroup: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(teamSwimmerMemberships.id, membershipId));
+  const existing = await getEnrollmentForMembershipInSeason(
+    membershipId,
+    seasonId,
+  );
+  if (existing) {
+    await db
+      .update(seasonEnrollments)
+      .set({ groupId, updatedAt: new Date() })
+      .where(eq(seasonEnrollments.id, existing.id));
+    return;
+  }
+
+  await enrollMembershipInSeason(seasonId, {
+    membershipId,
+    groupId,
+  });
+}
+
+export async function assignMembershipGroup(
+  organizationId: string,
+  membershipId: string,
+  groupId: string | null,
+  seasonId?: string,
+) {
+  const [membership] = await db
+    .select({ id: teamSwimmerMemberships.id })
+    .from(teamSwimmerMemberships)
+    .where(
+      and(
+        eq(teamSwimmerMemberships.id, membershipId),
+        eq(teamSwimmerMemberships.organizationId, organizationId),
+      ),
+    )
+    .limit(1);
+
+  if (!membership) {
+    throw new Error(`Membership not found: ${membershipId}`);
+  }
+
+  const season = seasonId
+    ? { id: seasonId }
+    : await ensureCurrentSeason(organizationId);
+  await setEnrollmentGroup(season.id, membershipId, groupId);
 }
 
 export async function assignMembershipGroupsBulk(
   organizationId: string,
   membershipIds: string[],
   groupId: string | null,
+  seasonId?: string,
 ) {
   if (membershipIds.length === 0) return;
 
-  await db
-    .update(teamSwimmerMemberships)
-    .set({
-      groupId,
-      practiceGroup: null,
-      updatedAt: new Date(),
-    })
+  const memberships = await db
+    .select({ id: teamSwimmerMemberships.id })
+    .from(teamSwimmerMemberships)
     .where(
       and(
         eq(teamSwimmerMemberships.organizationId, organizationId),
         inArray(teamSwimmerMemberships.id, membershipIds),
       ),
     );
+
+  if (memberships.length === 0) return;
+
+  const season = seasonId
+    ? { id: seasonId }
+    : await ensureCurrentSeason(organizationId);
+
+  for (const membership of memberships) {
+    await setEnrollmentGroup(season.id, membership.id, groupId);
+  }
 }
 
 export async function recordAiGeneration(input: {

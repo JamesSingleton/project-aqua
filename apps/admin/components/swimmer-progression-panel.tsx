@@ -1,3 +1,4 @@
+import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
 import { formatTime } from "@project-aqua/swim-core/times";
 import {
   Card,
@@ -14,44 +15,46 @@ import {
   TableHeader,
   TableRow,
 } from "@project-aqua/ui/components/table";
+import { type BestTimeRow, BestTimesCard } from "@/components/best-times-card";
 import {
   SwimmerEventChart,
   type SwimmerSeriesPoint,
 } from "@/components/swimmer-event-chart";
 import { formatBestTimeEventLabel } from "@/lib/format-event-label";
 
-export type SwimmerBestTimeRow = {
-  id: string;
-  eventKey: string;
-  eventLabel: string | null;
-  eventGender: string | null;
-  course: string;
-  timeMs: number;
-  achievedAt: Date;
-};
+export type SwimmerBestTimeRow = BestTimeRow;
 
-export type SwimmerMeetHistoryRow = {
+export type SwimmerTimeHistoryRow = {
   id: string;
+  source: "meet" | "manual";
   timeMs: number;
   place: number | null;
   isDq: boolean;
-  meetName: string;
-  meetDate: Date;
+  label: string;
+  achievedAt: Date;
   course: string;
   eventLabel: string | null;
   eventGender: string | null;
 };
 
 export function SwimmerProgressionPanel({
+  teamId,
+  swimmerId,
+  swimmerGender,
   series,
   bestTimes,
-  meetHistory,
+  timeHistory,
   teamType,
+  canEditBestTimes = false,
 }: {
+  teamId: string;
+  swimmerId: string;
+  swimmerGender: "male" | "female";
   series: SwimmerSeriesPoint[];
   bestTimes: SwimmerBestTimeRow[];
-  meetHistory: SwimmerMeetHistoryRow[];
+  timeHistory: SwimmerTimeHistoryRow[];
   teamType?: string | null;
+  canEditBestTimes?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -59,7 +62,8 @@ export function SwimmerProgressionPanel({
         <CardHeader>
           <CardTitle>Time trend</CardTitle>
           <CardDescription>
-            Select an event to see times across meets (lower is faster).
+            Select an event to see times over meets and coach-entered swims
+            (lower is faster).
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -67,62 +71,34 @@ export function SwimmerProgressionPanel({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Best times</CardTitle>
-          <CardDescription>Personal records</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {bestTimes.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No times recorded.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Event</TableHead>
-                  <TableHead>Course</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {bestTimes.map((bt) => (
-                  <TableRow key={bt.id}>
-                    <TableCell>
-                      {formatBestTimeEventLabel(
-                        bt.eventLabel,
-                        bt.course,
-                        bt.eventGender,
-                        teamType,
-                      )}
-                    </TableCell>
-                    <TableCell>{bt.course}</TableCell>
-                    <TableCell className="font-mono font-timing">
-                      {formatTime(bt.timeMs)}
-                    </TableCell>
-                    <TableCell>{bt.achievedAt.toLocaleDateString()}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <BestTimesCard
+        teamId={teamId}
+        swimmerId={swimmerId}
+        swimmerGender={swimmerGender}
+        bestTimes={bestTimes}
+        teamType={teamType}
+        canEdit={canEditBestTimes}
+      />
 
       <Card>
         <CardHeader>
-          <CardTitle>Meet history</CardTitle>
-          <CardDescription>{meetHistory.length} results</CardDescription>
+          <CardTitle>Time history</CardTitle>
+          <CardDescription>
+            {timeHistory.length}{" "}
+            {timeHistory.length === 1 ? "result" : "results"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {meetHistory.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No meet results.</p>
+          {timeHistory.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              No times yet. Import meet results or add a best time.
+            </p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
-                  <TableHead>Meet</TableHead>
+                  <TableHead>Source</TableHead>
                   <TableHead>Event</TableHead>
                   <TableHead>Time</TableHead>
                   <TableHead>Place</TableHead>
@@ -130,12 +106,19 @@ export function SwimmerProgressionPanel({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {meetHistory.map((result) => (
-                  <TableRow key={result.id}>
+                {timeHistory.map((result) => (
+                  <TableRow key={`${result.source}-${result.id}`}>
                     <TableCell>
-                      {result.meetDate.toLocaleDateString()}
+                      {formatDateOnlyLabel(result.achievedAt)}
                     </TableCell>
-                    <TableCell>{result.meetName}</TableCell>
+                    <TableCell>
+                      <span className="block">
+                        {result.source === "meet" ? "Meet" : "Manual"}
+                      </span>
+                      <span className="text-muted-foreground block truncate text-xs">
+                        {result.label}
+                      </span>
+                    </TableCell>
                     <TableCell>
                       {formatBestTimeEventLabel(
                         result.eventLabel,

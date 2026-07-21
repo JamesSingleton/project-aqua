@@ -13,13 +13,16 @@ import {
   XAxis,
   YAxis,
 } from "@project-aqua/ui/components/chart";
+import { cn } from "@project-aqua/ui/lib/utils";
 
-const volumeConfig = {
-  distance: {
-    label: "Yards",
-    color: "var(--chart-1)",
-  },
-} satisfies ChartConfig;
+function volumeChartConfig(unitLabel: string) {
+  return {
+    distance: {
+      label: unitLabel,
+      color: "var(--chart-1)",
+    },
+  } satisfies ChartConfig;
+}
 
 const attendanceConfig = {
   rate: {
@@ -35,8 +38,12 @@ function shortDate(value: string) {
 
 export function VolumeChart({
   data,
+  className,
+  distanceUnit,
 }: {
   data: Array<{ date: string; distance: number }>;
+  className?: string;
+  distanceUnit?: "yards" | "meters" | null;
 }) {
   if (data.every((d) => d.distance === 0)) {
     return (
@@ -46,10 +53,23 @@ export function VolumeChart({
     );
   }
 
+  const unitLabel =
+    distanceUnit === "meters"
+      ? "Meters"
+      : distanceUnit === "yards"
+        ? "Yards"
+        : "Distance";
+  const unitSuffix =
+    distanceUnit === "meters"
+      ? "m"
+      : distanceUnit === "yards"
+        ? "yd"
+        : "";
+
   return (
     <ChartContainer
-      config={volumeConfig}
-      className="aspect-auto h-64 min-h-[256px] w-full"
+      config={volumeChartConfig(unitLabel)}
+      className={cn("aspect-auto h-64 min-h-[256px] w-full", className)}
     >
       <BarChart accessibilityLayer data={data} margin={{ left: 8, right: 8 }}>
         <CartesianGrid vertical={false} />
@@ -75,7 +95,8 @@ export function VolumeChart({
               labelFormatter={(value) => String(value)}
               formatter={(value) => (
                 <span className="font-mono">
-                  {Number(value).toLocaleString()} yd
+                  {Number(value).toLocaleString()}
+                  {unitSuffix ? ` ${unitSuffix}` : ""}
                 </span>
               )}
             />
@@ -93,8 +114,10 @@ export function VolumeChart({
 
 export function AttendanceChart({
   data,
+  className,
 }: {
   data: Array<{ date: string; rate: number; present: number; total: number }>;
+  className?: string;
 }) {
   if (data.length === 0) {
     return (
@@ -107,7 +130,7 @@ export function AttendanceChart({
   return (
     <ChartContainer
       config={attendanceConfig}
-      className="aspect-auto h-64 min-h-[256px] w-full"
+      className={cn("aspect-auto h-64 min-h-[256px] w-full", className)}
     >
       <LineChart accessibilityLayer data={data} margin={{ left: 8, right: 8 }}>
         <CartesianGrid vertical={false} />
@@ -120,10 +143,10 @@ export function AttendanceChart({
           tickFormatter={shortDate}
         />
         <YAxis
-          domain={[0, 100]}
           tickLine={false}
           axisLine={false}
           width={40}
+          domain={[0, 100]}
           tickFormatter={(v) => `${v}%`}
         />
         <ChartTooltip
@@ -131,14 +154,15 @@ export function AttendanceChart({
             <ChartTooltipContent
               labelFormatter={(value) => String(value)}
               formatter={(value, _name, item) => {
-                const payload = item?.payload as
-                  | { present?: number; total?: number }
-                  | undefined;
+                const row = item.payload as {
+                  present?: number;
+                  total?: number;
+                };
                 return (
-                  <span>
+                  <span className="font-mono">
                     {Number(value)}%
-                    {payload?.total != null
-                      ? ` (${payload.present}/${payload.total})`
+                    {row.present != null && row.total != null
+                      ? ` (${row.present}/${row.total})`
                       : ""}
                   </span>
                 );
@@ -151,7 +175,7 @@ export function AttendanceChart({
           dataKey="rate"
           stroke="var(--color-rate)"
           strokeWidth={2}
-          dot={{ r: 3, fill: "var(--color-rate)" }}
+          dot={false}
         />
       </LineChart>
     </ChartContainer>

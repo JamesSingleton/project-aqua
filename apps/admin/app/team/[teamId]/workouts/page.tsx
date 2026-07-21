@@ -14,9 +14,23 @@ import {
   TableHeader,
   TableRow,
 } from "@project-aqua/ui/components/table";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { listWorkoutsAction } from "./actions";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}): Promise<Metadata> {
+  const { teamId } = await params;
+  return {
+    title: "Workouts",
+    description: "Practice workouts and training volume.",
+    alternates: { canonical: `/team/${teamId}/workouts` },
+  };
+}
 
 export default async function WorkoutsPage({
   params,
@@ -72,7 +86,17 @@ export default async function WorkoutsPage({
                         {w.title}
                       </Link>
                     </TableCell>
-                    <TableCell>{w.totalDistance ?? "—"}</TableCell>
+                    <TableCell>
+                      {w.totalDistance != null
+                        ? `${w.totalDistance.toLocaleString()}${
+                            w.distanceUnit === "meters"
+                              ? " m"
+                              : w.distanceUnit === "yards"
+                                ? " yd"
+                                : ""
+                          }`
+                        : "—"}
+                    </TableCell>
                     <TableCell>{w.wasAiGenerated ? "Yes" : "—"}</TableCell>
                     <TableCell>{w.createdAt.toLocaleDateString()}</TableCell>
                   </TableRow>

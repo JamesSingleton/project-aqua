@@ -32,6 +32,7 @@ export type SwimmerSeriesPoint = {
   timeMs: number;
   meetDate: Date | string;
   meetName: string;
+  source?: "meet" | "manual";
 };
 
 function toDateKey(value: Date | string) {
@@ -39,23 +40,24 @@ function toDateKey(value: Date | string) {
   return value.toISOString().slice(0, 10);
 }
 
-/** Fastest swim per meet for one event. */
-function pointsByMeet(rows: SwimmerSeriesPoint[]) {
-  const byMeet = new Map<
+/** Fastest swim per date+label for one event. */
+function pointsBySwim(rows: SwimmerSeriesPoint[]) {
+  const byKey = new Map<
     string,
     { date: string; timeMs: number; meetName: string }
   >();
 
   for (const row of rows) {
     const date = toDateKey(row.meetDate);
-    const key = `${date}::${row.meetName}`;
-    const existing = byMeet.get(key);
+    const source = row.source ?? "meet";
+    const key = `${date}::${source}::${row.meetName}`;
+    const existing = byKey.get(key);
     if (!existing || row.timeMs < existing.timeMs) {
-      byMeet.set(key, { date, timeMs: row.timeMs, meetName: row.meetName });
+      byKey.set(key, { date, timeMs: row.timeMs, meetName: row.meetName });
     }
   }
 
-  return [...byMeet.values()]
+  return [...byKey.values()]
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((p) => ({
       ...p,
@@ -114,7 +116,7 @@ export function SwimmerEventChart({
     events.find((e) => e.eventKey === activeEvent)?.label ?? "Event";
 
   const chartData = useMemo(
-    () => pointsByMeet(series.filter((r) => r.eventKey === activeEvent)),
+    () => pointsBySwim(series.filter((r) => r.eventKey === activeEvent)),
     [series, activeEvent],
   );
 
@@ -142,7 +144,7 @@ export function SwimmerEventChart({
   if (series.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
-        No meet results yet. Import results to see progression.
+        No times yet. Import meet results or add a best time to see progression.
       </p>
     );
   }
@@ -189,7 +191,7 @@ export function SwimmerEventChart({
             {chartData[0].display}
           </p>
           <p className="text-muted-foreground text-xs mt-2">
-            Add more meets to see a trend line
+            Add more times to see a trend line
           </p>
         </div>
       ) : (

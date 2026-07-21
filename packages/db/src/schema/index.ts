@@ -8,5 +8,6 @@ export * from "./meets";
 export * from "./notifications";
 export * from "./preferences";
 export * from "./safesport";
+export * from "./seasons";
 export * from "./swimmers";
 export * from "./workouts";

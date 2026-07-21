@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { formatDateOnly } from "@project-aqua/swim-core/calendar-date";
 import { Badge } from "@project-aqua/ui/components/badge";
 import { Button } from "@project-aqua/ui/components/button";
 import {
@@ -32,6 +33,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
+import { DatePickerField } from "@/components/date-picker-field";
 import { updateMeetAction } from "../actions";
 
 const optionalLimitSchema = z.string().refine(
@@ -68,6 +70,11 @@ const meetInfoSchema = z
       .refine((value) => value === "" || isValidDateInput(value), {
         message: "Enter a valid end date",
       }),
+    entryDeadline: z
+      .string()
+      .refine((value) => value === "" || isValidDateInput(value), {
+        message: "Enter a valid entry deadline",
+      }),
     course: z.enum(["SCY", "SCM", "LCM"]),
     location: z.string(),
     address: z.string(),
@@ -81,13 +88,6 @@ const meetInfoSchema = z
   });
 
 type MeetInfoValues = z.infer<typeof meetInfoSchema>;
-
-function toDateInputValue(date: Date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
 
 function optionalNumberDefault(value: number | null | undefined) {
   return value != null ? String(value) : "";
@@ -104,6 +104,7 @@ export function MeetInfoForm({
     name: string;
     startDate: Date;
     endDate: Date | null;
+    entryDeadline: Date | null;
     course: string;
     location: string | null;
     address: string | null;
@@ -126,8 +127,11 @@ export function MeetInfoForm({
     resolver: zodResolver(meetInfoSchema),
     defaultValues: {
       name: meet.name,
-      startDate: toDateInputValue(meet.startDate),
-      endDate: meet.endDate ? toDateInputValue(meet.endDate) : "",
+      startDate: formatDateOnly(meet.startDate),
+      endDate: meet.endDate ? formatDateOnly(meet.endDate) : "",
+      entryDeadline: meet.entryDeadline
+        ? formatDateOnly(meet.entryDeadline)
+        : "",
       course: meet.course as MeetInfoValues["course"],
       location: meet.location ?? "",
       address: meet.address ?? "",
@@ -179,26 +183,66 @@ export function MeetInfoForm({
               />
               <FieldError errors={[errors.name]} />
             </Field>
-            <Field data-invalid={!!errors.startDate}>
-              <FieldLabel htmlFor="meet-start">Start date</FieldLabel>
-              <Input
-                id="meet-start"
-                type="date"
-                aria-invalid={!!errors.startDate}
-                {...register("startDate")}
-              />
-              <FieldError errors={[errors.startDate]} />
-            </Field>
-            <Field data-invalid={!!errors.endDate}>
-              <FieldLabel htmlFor="meet-end">End date</FieldLabel>
-              <Input
-                id="meet-end"
-                type="date"
-                aria-invalid={!!errors.endDate}
-                {...register("endDate")}
-              />
-              <FieldError errors={[errors.endDate]} />
-            </Field>
+            <Controller
+              name="startDate"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="meet-start">Start date</FieldLabel>
+                  <DatePickerField
+                    id="meet-start"
+                    value={field.value}
+                    onChange={field.onChange}
+                    aria-invalid={fieldState.invalid}
+                  />
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
+              )}
+            />
+            <Controller
+              name="endDate"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="meet-end">End date</FieldLabel>
+                  <DatePickerField
+                    id="meet-end"
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Same as start (optional)"
+                    allowClear
+                    aria-invalid={fieldState.invalid}
+                  />
+                  <FieldDescription>
+                    Leave blank for a single-day meet.
+                  </FieldDescription>
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
+              )}
+            />
+            <Controller
+              name="entryDeadline"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="meet-entry-deadline">
+                    Entry deadline
+                  </FieldLabel>
+                  <DatePickerField
+                    id="meet-entry-deadline"
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Optional"
+                    allowClear
+                    aria-invalid={fieldState.invalid}
+                  />
+                  <FieldDescription>
+                    When entries are due to the meet host.
+                  </FieldDescription>
+                  <FieldError errors={[fieldState.error]} />
+                </Field>
+              )}
+            />
             <Controller
               name="course"
               control={control}

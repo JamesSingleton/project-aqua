@@ -10,6 +10,13 @@ import {
 } from "@project-aqua/ui/components/card";
 import { Input } from "@project-aqua/ui/components/input";
 import { Label } from "@project-aqua/ui/components/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@project-aqua/ui/components/select";
 import { Textarea } from "@project-aqua/ui/components/textarea";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -30,12 +37,15 @@ type ParsedSet = {
   rawLine: string;
 };
 
+type DistanceUnit = "yards" | "meters";
+
 export function WorkoutEditor({
   teamId,
   workoutId,
   initialTitle = "",
   initialRawText = "",
   initialPracticeGroup = "",
+  initialDistanceUnit = "yards",
   practiceSessionId,
 }: {
   teamId: string;
@@ -43,6 +53,7 @@ export function WorkoutEditor({
   initialTitle?: string;
   initialRawText?: string;
   initialPracticeGroup?: string;
+  initialDistanceUnit?: DistanceUnit | null;
   practiceSessionId?: string;
 }) {
   const router = useRouter();
@@ -50,6 +61,9 @@ export function WorkoutEditor({
   const [title, setTitle] = useState(initialTitle);
   const [rawText, setRawText] = useState(initialRawText);
   const [practiceGroup, setPracticeGroup] = useState(initialPracticeGroup);
+  const [distanceUnit, setDistanceUnit] = useState<DistanceUnit>(
+    initialDistanceUnit ?? "yards",
+  );
   const [focus, setFocus] = useState("");
   const [durationMinutes, setDurationMinutes] = useState("90");
   const [sets, setSets] = useState<ParsedSet[]>([]);
@@ -104,6 +118,7 @@ export function WorkoutEditor({
           title,
           rawText,
           practiceGroup: practiceGroup || undefined,
+          distanceUnit,
           wasAiGenerated,
           aiPrompt,
           aiDraftText,
@@ -136,14 +151,39 @@ export function WorkoutEditor({
               placeholder="Tuesday AM · Age Group"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="group">Practice group</Label>
-            <Input
-              id="group"
-              value={practiceGroup}
-              onChange={(e) => setPracticeGroup(e.target.value)}
-              placeholder="Optional"
-            />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="group">Practice group</Label>
+              <Input
+                id="group"
+                value={practiceGroup}
+                onChange={(e) => setPracticeGroup(e.target.value)}
+                placeholder="Optional"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="distance-unit">Distance unit</Label>
+              <Select
+                items={[
+                  { value: "yards", label: "Yards" },
+                  { value: "meters", label: "Meters" },
+                ]}
+                value={distanceUnit}
+                onValueChange={(value) => {
+                  if (value === "yards" || value === "meters") {
+                    setDistanceUnit(value);
+                  }
+                }}
+              >
+                <SelectTrigger id="distance-unit" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="yards">Yards</SelectItem>
+                  <SelectItem value="meters">Meters</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="bg-muted/40 space-y-3 rounded-lg border p-3">
@@ -212,7 +252,8 @@ export function WorkoutEditor({
         <CardHeader>
           <CardTitle>Parsed sets</CardTitle>
           <CardDescription>
-            Total distance: {totalDistance || "—"} · {sets.length} sets
+            Total distance: {totalDistance || "—"} {distanceUnit} ·{" "}
+            {sets.length} sets
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">

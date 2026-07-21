@@ -15,6 +15,7 @@ export const rosterSearchParamsCache = createSearchParamsCache({
   gender: parseAsArrayOf(parseAsString, ",").withDefault([]),
   groupId: parseAsArrayOf(parseAsString, ",").withDefault([]),
   classYear: parseAsArrayOf(parseAsString, ",").withDefault([]),
+  season: parseAsString.withDefault(""),
   tab: parseAsString.withDefault("swimmers"),
 });
 

@@ -28,6 +28,10 @@ import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
+  SeasonSelector,
+  type SeasonOption,
+} from "@/components/roster/season-selector";
+import {
   type ProgressionSwimmer,
   formatSwimmerLastFirst,
   sortProgressionSwimmers,
@@ -51,16 +55,32 @@ export function ProgressionSwimmerPicker({
   teamId,
   swimmers,
   selectedId,
+  seasonParam,
+  seasons,
+  selectedSeasonId,
 }: {
   teamId: string;
   swimmers: ProgressionSwimmer[];
   selectedId?: string;
+  /** Preserve `?season=` when switching swimmers. */
+  seasonParam?: string;
+  seasons: SeasonOption[];
+  selectedSeasonId: string;
 }) {
   const router = useRouter();
   const [groupKey, setGroupKey] = useState(ALL_GROUPS);
   const [swimmerOpen, setSwimmerOpen] = useState(false);
 
   const sorted = useMemo(() => sortProgressionSwimmers(swimmers), [swimmers]);
+
+  const seasonQuery =
+    seasonParam && seasonParam.length > 0
+      ? `?season=${encodeURIComponent(seasonParam)}`
+      : "";
+
+  function progressionHref(swimmerId: string) {
+    return `/team/${teamId}/progression/${swimmerId}${seasonQuery}`;
+  }
 
   const groupOptions = useMemo(() => {
     const names = new Set<string>();
@@ -94,13 +114,13 @@ export function ProgressionSwimmerPicker({
     if (selectedId && filtered.some((s) => s.swimmerId === selectedId)) return;
     const first = filtered[0];
     if (!first || first.swimmerId === selectedId) return;
-    router.replace(`/team/${teamId}/progression/${first.swimmerId}`);
-  }, [filtered, selectedId, teamId, router]);
+    router.replace(progressionHref(first.swimmerId));
+  }, [filtered, selectedId, teamId, router, seasonQuery]);
 
   function goToSwimmer(swimmerId: string) {
     setSwimmerOpen(false);
     if (swimmerId === selectedId) return;
-    router.push(`/team/${teamId}/progression/${swimmerId}`);
+    router.push(progressionHref(swimmerId));
   }
 
   function onGroupChange(value: string | null) {
@@ -109,7 +129,18 @@ export function ProgressionSwimmerPicker({
   }
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="progression-season">Season</Label>
+        <SeasonSelector
+          teamId={teamId}
+          seasons={seasons}
+          selectedSeasonId={selectedSeasonId}
+          allowAll
+          triggerId="progression-season"
+        />
+      </div>
+
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="progression-group">Group</Label>
         <Select

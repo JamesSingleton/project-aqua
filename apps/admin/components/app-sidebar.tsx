@@ -15,7 +15,10 @@ import {
 import {
   BarChart3,
   Calendar,
+  CalendarPlus,
+  ClipboardCheck,
   ClipboardList,
+  ClipboardPlus,
   LayoutDashboard,
   Settings2,
   TrendingUp,
@@ -95,7 +98,9 @@ export function AppSidebar({
       icon: Trophy,
       items: [
         { title: "All meets", url: `/team/${teamId}/meets` },
-        { title: "Import results", url: `/team/${teamId}/meets/import` },
+        { title: "Add meet", url: `/team/${teamId}/meets/create` },
+        { title: "Results", url: `/team/${teamId}/meets/results` },
+        { title: "Time standards", url: `/team/${teamId}/meets/time-standards` },
       ],
     },
     {
@@ -121,6 +126,21 @@ export function AppSidebar({
       name: "Add swimmer",
       url: `/team/${teamId}/swimmers/create`,
       icon: UserPlus,
+    },
+    {
+      name: "Add meet",
+      url: `/team/${teamId}/meets/create`,
+      icon: CalendarPlus,
+    },
+    {
+      name: "Create workout",
+      url: `/team/${teamId}/workouts/create`,
+      icon: ClipboardPlus,
+    },
+    {
+      name: "Take attendance",
+      url: `/team/${teamId}/attendance`,
+      icon: ClipboardCheck,
     },
   ];
 

@@ -19,13 +19,16 @@ import { requireTeamRole } from "@project-aqua/db/authz";
 import { db } from "@project-aqua/db/client";
 import {
   createCalendarEvent,
+  createCalendarEventsBulk,
   createFeedToken,
   deleteCalendarEvent,
   disconnectCalendarConnection,
+  expandWeeklyCalendarSlots,
   getActiveFeedToken,
   getCalendarConnections,
   getRecentSyncConflicts,
   getTeamCalendarProjection,
+  type RecurringCalendarScheduleInput,
   revokeFeedTokens,
   updateCalendarEvent,
   upsertCalendarConnection,
@@ -34,6 +37,32 @@ import { organization } from "@project-aqua/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
+
+const MAX_LOCATION_LENGTH = 200;
+const MAX_DESCRIPTION_LENGTH = 2000;
+const MAX_TITLE_LENGTH = 200;
+
+function normalizeOptionalText(
+  value: string | null | undefined,
+  maxLength: number,
+): string | null {
+  if (value == null) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (trimmed.length > maxLength) {
+    throw new Error(`Must be ${maxLength} characters or fewer`);
+  }
+  return trimmed;
+}
+
+function normalizeRequiredTitle(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) throw new Error("Title is required");
+  if (trimmed.length > MAX_TITLE_LENGTH) {
+    throw new Error(`Title must be ${MAX_TITLE_LENGTH} characters or fewer`);
+  }
+  return trimmed;
+}
 
 function monthRange(anchor: Date) {
   const from = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
@@ -84,11 +113,13 @@ export async function createCalendarEventAction(
   ]);
 
   const id = await createCalendarEvent(teamId, {
-    title: data.title,
+    title: normalizeRequiredTitle(data.title),
     startsAt: new Date(data.startsAt),
     endsAt: data.endsAt ? new Date(data.endsAt) : undefined,
-    location: data.location,
-    description: data.description,
+    location: normalizeOptionalText(data.location, MAX_LOCATION_LENGTH) ?? undefined,
+    description:
+      normalizeOptionalText(data.description, MAX_DESCRIPTION_LENGTH) ??
+      undefined,
     eventType: data.eventType ?? "other",
     createdByUserId: session?.user?.id,
   });
@@ -108,15 +139,77 @@ export async function createCalendarEventAction(
   return id;
 }
 
+export async function createRecurringCalendarEventsAction(
+  teamId: string,
+  data: {
+    title: string;
+    location?: string;
+    description?: string;
+    eventType?: "practice" | "meet" | "other";
+    rangeStart: string;
+    rangeEnd: string;
+    slots: Array<{
+      weekdays: number[];
+      startTime: string;
+      endTime: string;
+    }>;
+  },
+) {
+  const session = await getSession();
+  await requireTeamRole(session?.user?.id, teamId, [
+    "owner",
+    "head_coach",
+    "assistant_coach",
+  ]);
+
+  const location = normalizeOptionalText(data.location, MAX_LOCATION_LENGTH);
+  const description = normalizeOptionalText(
+    data.description,
+    MAX_DESCRIPTION_LENGTH,
+  );
+
+  const schedule: RecurringCalendarScheduleInput = {
+    title: normalizeRequiredTitle(data.title),
+    location: location ?? undefined,
+    description: description ?? undefined,
+    eventType: data.eventType ?? "practice",
+    rangeStart: data.rangeStart,
+    rangeEnd: data.rangeEnd,
+    slots: data.slots,
+    createdByUserId: session?.user?.id,
+  };
+
+  const expanded = expandWeeklyCalendarSlots(schedule);
+  const ids = await createCalendarEventsBulk(teamId, expanded);
+
+  after(async () => {
+    const connections = await getCalendarConnections(teamId);
+    const active = connections.filter((c) => c.status === "active");
+    for (const id of ids) {
+      for (const connection of active) {
+        try {
+          await pushAquaEventToConnection(connection.id, id);
+        } catch {
+          // best-effort outbound sync
+        }
+      }
+    }
+  });
+
+  revalidatePath(`/team/${teamId}/calendar`);
+  return { count: ids.length, ids };
+}
+
 export async function updateCalendarEventAction(
   teamId: string,
   eventId: string,
   data: {
     title?: string;
     startsAt?: string;
-    endsAt?: string;
-    location?: string;
-    description?: string;
+    endsAt?: string | null;
+    location?: string | null;
+    description?: string | null;
+    eventType?: "practice" | "meet" | "other";
   },
 ) {
   const session = await getSession();
@@ -127,11 +220,23 @@ export async function updateCalendarEventAction(
   ]);
 
   await updateCalendarEvent(eventId, teamId, {
-    title: data.title,
+    title: data.title === undefined ? undefined : normalizeRequiredTitle(data.title),
     startsAt: data.startsAt ? new Date(data.startsAt) : undefined,
-    endsAt: data.endsAt ? new Date(data.endsAt) : undefined,
-    location: data.location,
-    description: data.description,
+    endsAt:
+      data.endsAt === undefined
+        ? undefined
+        : data.endsAt
+          ? new Date(data.endsAt)
+          : null,
+    location:
+      data.location === undefined
+        ? undefined
+        : normalizeOptionalText(data.location, MAX_LOCATION_LENGTH),
+    description:
+      data.description === undefined
+        ? undefined
+        : normalizeOptionalText(data.description, MAX_DESCRIPTION_LENGTH),
+    eventType: data.eventType,
   });
 
   after(async () => {

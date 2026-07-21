@@ -48,6 +48,9 @@ export function buildIcsCalendar(
     if (event.location) {
       lines.push(`LOCATION:${escapeText(event.location)}`);
     }
+    if (event.description?.trim()) {
+      lines.push(`DESCRIPTION:${escapeText(event.description.trim())}`);
+    }
     lines.push(`CATEGORIES:${event.eventType.toUpperCase()}`);
     lines.push("END:VEVENT");
   }

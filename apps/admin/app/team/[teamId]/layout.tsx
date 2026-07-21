@@ -1,5 +1,6 @@
 import { getSession } from "@project-aqua/auth/session";
 import {
+  getOrganizationName,
   getOrganizationTeamType,
   getUserTeams,
   requireTeamMember,
@@ -11,10 +12,26 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@project-aqua/ui/components/sidebar";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { BreadcrumbEntitiesProvider } from "@/components/breadcrumb-entities";
 import { TeamBreadcrumb } from "@/components/team-breadcrumb";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}): Promise<Metadata> {
+  const { teamId } = await params;
+  const name = (await getOrganizationName(teamId)) ?? "Team";
+  return {
+    title: {
+      default: name,
+      template: `%s | ${name}`,
+    },
+  };
+}
 
 export default async function TeamIdLayout({
   children,

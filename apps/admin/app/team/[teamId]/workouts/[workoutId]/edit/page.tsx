@@ -1,6 +1,21 @@
+import { getWorkoutById } from "@project-aqua/db/queries/workouts";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getWorkoutAction } from "../../actions";
 import { WorkoutEditor } from "../../workout-editor";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string; workoutId: string }>;
+}): Promise<Metadata> {
+  const { teamId, workoutId } = await params;
+  const workout = await getWorkoutById(workoutId, teamId);
+  const title = workout?.title ?? "Workout";
+  return {
+    title: `Edit · ${title}`,
+  };
+}
 
 export default async function EditWorkoutPage({
   params,
@@ -20,6 +35,7 @@ export default async function EditWorkoutPage({
         initialTitle={workout.title}
         initialRawText={workout.rawText}
         initialPracticeGroup={workout.practiceGroup ?? ""}
+        initialDistanceUnit={workout.distanceUnit}
       />
     </div>
   );

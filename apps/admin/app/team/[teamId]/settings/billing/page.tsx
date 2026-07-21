@@ -12,8 +12,22 @@ import {
 import { Progress } from "@project-aqua/ui/components/progress";
 import { Separator } from "@project-aqua/ui/components/separator";
 import { Sparkles } from "lucide-react";
+import type { Metadata } from "next";
 import { SettingsSection } from "../settings-section";
 import { BillingActions } from "./billing-actions";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}): Promise<Metadata> {
+  const { teamId } = await params;
+  return {
+    title: "Billing",
+    description: "Plan, subscription, and AI usage.",
+    alternates: { canonical: `/team/${teamId}/settings/billing` },
+  };
+}
 
 export default async function BillingSettingsPage({
   params,

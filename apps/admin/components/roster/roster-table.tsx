@@ -25,20 +25,26 @@ export type RosterFacetOptions = {
 
 export function RosterTable({
   teamId,
+  seasonId,
   data,
   pageCount,
   groups = [],
   facetOptions,
   showClassYear = false,
+  showCollegeEligibility: _showCollegeEligibility = false,
+  showUsaSwimmingId = true,
   initialColumnVisibility = {},
   initialSorting = [{ id: "lastName", desc: false }],
 }: {
   teamId: string;
+  seasonId?: string;
   data: Athlete[];
   pageCount: number;
   groups?: { id: string; name: string }[];
   facetOptions: RosterFacetOptions;
   showClassYear?: boolean;
+  showCollegeEligibility?: boolean;
+  showUsaSwimmingId?: boolean;
   initialColumnVisibility?: VisibilityState;
   initialSorting?: SortingState;
 }) {
@@ -51,12 +57,13 @@ export function RosterTable({
     () =>
       columns(teamId, {
         showClassYear,
+        showUsaSwimmingId,
         statusOptions: facetOptions.status,
         genderOptions: facetOptions.gender,
         groupOptions: facetOptions.groupId,
         classYearOptions: facetOptions.classYear,
       }),
-    [teamId, showClassYear, facetOptions],
+    [teamId, showClassYear, showUsaSwimmingId, facetOptions],
   );
 
   const { table } = useDataTable({
@@ -97,7 +104,7 @@ export function RosterTable({
     setExporting(true);
     setExportMessage("");
     try {
-      const csv = await exportRosterCsvAction(teamId);
+      const csv = await exportRosterCsvAction(teamId, { seasonId });
       const blob = new Blob([csv], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -118,7 +125,12 @@ export function RosterTable({
       <DataTable
         table={table}
         actionBar={
-          <RosterActionBar table={table} teamId={teamId} groups={groups} />
+          <RosterActionBar
+            table={table}
+            teamId={teamId}
+            seasonId={seasonId}
+            groups={groups}
+          />
         }
       >
         <DataTableToolbar table={table}>

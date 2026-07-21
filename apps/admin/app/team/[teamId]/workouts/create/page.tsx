@@ -1,4 +1,17 @@
+import type { Metadata } from "next";
 import { WorkoutEditor } from "../workout-editor";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}): Promise<Metadata> {
+  const { teamId } = await params;
+  return {
+    title: "Create workout",
+    alternates: { canonical: `/team/${teamId}/workouts/create` },
+  };
+}
 
 export default async function CreateWorkoutPage({
   params,

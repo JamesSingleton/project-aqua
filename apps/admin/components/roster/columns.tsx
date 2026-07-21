@@ -1,12 +1,17 @@
 "use client";
 
-import {
-  CLASS_YEAR_LABELS,
-  type ClassYear,
-} from "@project-aqua/swim-core/team-types";
 import { Badge } from "@project-aqua/ui/components/badge";
 import { Button } from "@project-aqua/ui/components/button";
 import { Checkbox } from "@project-aqua/ui/components/checkbox";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@project-aqua/ui/components/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +41,7 @@ import { removeSwimmerAction } from "@/app/team/[teamId]/roster/actions";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import type { Athlete } from "@/types";
 import type { Option } from "@/types/data-table";
+import { ClassYearDisplay } from "./class-year-display";
 import { SwimmerQuickView } from "./swimmer-quick-view";
 
 function statusVariant(status: string) {
@@ -45,21 +51,35 @@ function statusVariant(status: string) {
   return "secondary" as const;
 }
 
-function RowActions({ teamId, athlete }: { teamId: string; athlete: Athlete }) {
+function RowActions({
+  teamId,
+  athlete,
+  showUsaSwimmingId,
+}: {
+  teamId: string;
+  athlete: Athlete;
+  showUsaSwimmingId: boolean;
+}) {
   const router = useRouter();
   const [quickViewOpen, setQuickViewOpen] = useState(false);
+  const [removeOpen, setRemoveOpen] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState("");
   const profileHref = `/team/${teamId}/swimmers/${athlete.id}`;
   const editHref = `${profileHref}/edit`;
 
-  function handleRemove() {
-    const confirmed = window.confirm(
-      `Remove ${athlete.name} from this team's roster?`,
-    );
-    if (!confirmed) return;
+  function confirmRemove() {
+    setError("");
     startTransition(async () => {
-      await removeSwimmerAction(teamId, athlete.id);
-      router.refresh();
+      try {
+        await removeSwimmerAction(teamId, athlete.id);
+        setRemoveOpen(false);
+        router.refresh();
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to remove swimmer",
+        );
+      }
     });
   }
 
@@ -75,7 +95,7 @@ function RowActions({ teamId, athlete }: { teamId: string; athlete: Athlete }) {
                 size="icon"
                 aria-label="Remove from roster"
                 disabled={pending}
-                onClick={handleRemove}
+                onClick={() => setRemoveOpen(true)}
               />
             }
           >
@@ -146,7 +166,7 @@ function RowActions({ teamId, athlete }: { teamId: string; athlete: Athlete }) {
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant="destructive"
-                onClick={handleRemove}
+                onClick={() => setRemoveOpen(true)}
                 disabled={pending}
               >
                 <Trash2Icon />
@@ -157,11 +177,43 @@ function RowActions({ teamId, athlete }: { teamId: string; athlete: Athlete }) {
         </DropdownMenu>
       </div>
 
+      <Dialog open={removeOpen} onOpenChange={setRemoveOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove from roster?</DialogTitle>
+            <DialogDescription>
+              Remove <strong>{athlete.name}</strong> from this team&apos;s
+              roster? Their profile and times stay in the system; they just
+              won&apos;t appear on this season&apos;s roster.
+            </DialogDescription>
+          </DialogHeader>
+          {error ? (
+            <p className="text-destructive text-sm" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <DialogFooter>
+            <DialogClose render={<Button type="button" variant="outline" />}>
+              Cancel
+            </DialogClose>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={pending}
+              onClick={confirmRemove}
+            >
+              {pending ? "Removing…" : "Remove from roster"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <SwimmerQuickView
         teamId={teamId}
         athlete={athlete}
         open={quickViewOpen}
         onOpenChange={setQuickViewOpen}
+        showUsaSwimmingId={showUsaSwimmingId}
       />
     </>
   );
@@ -169,6 +221,7 @@ function RowActions({ teamId, athlete }: { teamId: string; athlete: Athlete }) {
 
 export type RosterColumnOptions = {
   showClassYear?: boolean;
+  showUsaSwimmingId?: boolean;
   statusOptions?: Option[];
   genderOptions?: Option[];
   groupOptions?: Option[];
@@ -181,6 +234,7 @@ export function columns(
 ): ColumnDef<Athlete>[] {
   const {
     showClassYear = false,
+    showUsaSwimmingId = true,
     statusOptions = [],
     genderOptions = [],
     groupOptions = [],
@@ -302,8 +356,7 @@ export function columns(
             cell: ({ row }) => {
               const year = row.original.classYear;
               if (!year) return "—";
-              const label = CLASS_YEAR_LABELS[year as ClassYear];
-              return label ? `${year} · ${label}` : year;
+              return <ClassYearDisplay value={year} />;
             },
             enableColumnFilter: true,
           } satisfies ColumnDef<Athlete>,
@@ -324,17 +377,23 @@ export function columns(
       enableColumnFilter: true,
       enableSorting: true,
     },
-    {
-      id: "usaId",
-      accessorKey: "usaId",
-      meta: { label: "USA ID" },
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="USA ID" />
-      ),
-      cell: ({ row }) => (
-        <span className="font-mono text-xs">{row.original.usaId || "—"}</span>
-      ),
-    },
+    ...(showUsaSwimmingId
+      ? [
+          {
+            id: "usaId",
+            accessorKey: "usaId",
+            meta: { label: "USA ID" },
+            header: ({ column }) => (
+              <DataTableColumnHeader column={column} title="USA ID" />
+            ),
+            cell: ({ row }) => (
+              <span className="font-mono text-xs">
+                {row.original.usaId || "—"}
+              </span>
+            ),
+          } satisfies ColumnDef<Athlete>,
+        ]
+      : []),
     {
       id: "status",
       accessorKey: "status",
@@ -359,7 +418,13 @@ export function columns(
     {
       id: "actions",
       header: "Actions",
-      cell: ({ row }) => <RowActions teamId={teamId} athlete={row.original} />,
+      cell: ({ row }) => (
+        <RowActions
+          teamId={teamId}
+          athlete={row.original}
+          showUsaSwimmingId={showUsaSwimmingId}
+        />
+      ),
       enableSorting: false,
       enableHiding: false,
       size: 120,

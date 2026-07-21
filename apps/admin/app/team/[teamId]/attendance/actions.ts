@@ -15,6 +15,22 @@ import type {
 } from "@project-aqua/swim-core/validators";
 import { revalidatePath } from "next/cache";
 
+const MAX_LOCATION_LENGTH = 200;
+const MAX_NOTES_LENGTH = 2000;
+
+function normalizeOptionalText(
+  value: string | null | undefined,
+  maxLength: number,
+): string | undefined {
+  if (value == null) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  if (trimmed.length > maxLength) {
+    throw new Error(`Must be ${maxLength} characters or fewer`);
+  }
+  return trimmed;
+}
+
 export async function createSessionAction(
   teamId: string,
   data: { date: string; location?: string; notes?: string },
@@ -29,8 +45,8 @@ export async function createSessionAction(
 
   const id = await createPracticeSession(teamId, {
     date: new Date(data.date),
-    location: data.location,
-    notes: data.notes,
+    location: normalizeOptionalText(data.location, MAX_LOCATION_LENGTH),
+    notes: normalizeOptionalText(data.notes, MAX_NOTES_LENGTH),
   });
 
   revalidatePath(`/team/${teamId}/attendance`);

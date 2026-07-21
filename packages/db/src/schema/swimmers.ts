@@ -50,13 +50,14 @@ export const teamSwimmerMemberships = pgTable(
     swimmerId: text("swimmer_id")
       .notNull()
       .references(() => swimmers.id, { onDelete: "cascade" }),
+    /** @deprecated Prefer season_enrollments.group_id */
     groupId: text("group_id").references(() => trainingGroups.id, {
       onDelete: "set null",
     }),
     /** @deprecated Prefer groupId */ practiceGroup: text("practice_group"),
     /** @deprecated Prefer groupId */ trainingGroups:
       text("training_groups").array(),
-    /** High school class year: FR, SO, JR, SR */
+    /** @deprecated Prefer season_enrollments.class_year */
     classYear: text("class_year"),
     status: membershipStatusEnum("status").notNull().default("active"),
     joinedAt: timestamp("joined_at").notNull().defaultNow(),

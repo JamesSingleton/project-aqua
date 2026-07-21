@@ -6,10 +6,18 @@ import {
 } from "../../time-standards-actions";
 import { TimeStandardsManager } from "./time-standards-manager";
 
-export const metadata: Metadata = {
-  title: "Time Standards",
-  description: "Manage cut times for meet results comparison.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}): Promise<Metadata> {
+  const { teamId } = await params;
+  return {
+    title: "Time Standards",
+    description: "Manage cut times for meet results comparison.",
+    alternates: { canonical: `/team/${teamId}/meets/time-standards` },
+  };
+}
 
 export default async function TimeStandardsPage({
   params,

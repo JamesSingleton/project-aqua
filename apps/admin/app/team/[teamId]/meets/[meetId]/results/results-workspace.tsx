@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
 import { formatEventName } from "@project-aqua/swim-core/events";
 import { formatTime } from "@project-aqua/swim-core/times";
 import { Label } from "@project-aqua/ui/components/label";
@@ -604,7 +605,7 @@ export function ResultsWorkspace({
       )}
 
       <p className="text-muted-foreground sr-only">
-        Results for {meetName} on {meetStartDate.toLocaleDateString()}
+        Results for {meetName} on {formatDateOnlyLabel(meetStartDate)}
       </p>
     </div>
   );

@@ -12,13 +12,15 @@
     "./event-catalog": "./src/event-catalog.ts",
     "./entry-limits": "./src/entry-limits.ts",
     "./age": "./src/age.ts",
+    "./calendar-date": "./src/calendar-date.ts",
     "./team-types": "./src/team-types.ts",
     "./workout-parser": "./src/workout-parser.ts"
   },
   "scripts": {
     "check:types": "tsc --noEmit",
     "lint": "biome check .",
-    "lint:fix": "biome check --write ."
+    "lint:fix": "biome check --write .",
+    "test": "node --test --experimental-strip-types src/**/*.test.ts"
   },
   "dependencies": {
     "zod": "catalog:"

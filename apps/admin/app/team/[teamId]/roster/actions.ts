@@ -24,6 +24,7 @@ import {
   removeSwimmerFromTeam,
   updateSwimmer,
 } from "@project-aqua/db/queries/roster";
+import { getSwimmerBestTimes } from "@project-aqua/db/queries/progression";
 import {
   createMaappAcknowledgment,
   logAuditEvent,
@@ -33,6 +34,7 @@ import {
   sendRosterImportFailed,
 } from "@project-aqua/emails";
 import { isMinorSwimmer } from "@project-aqua/swim-core/age";
+import { parseClassYear } from "@project-aqua/swim-core/team-types";
 import { rosterRowSchema } from "@project-aqua/swim-core/validators";
 import { parseRosterCsv } from "@project-aqua/swim-formats/csv";
 import {
@@ -165,6 +167,61 @@ export async function fetchSwimmerPiiAction(
   return { contacts, medical };
 }
 
+/** Contacts, medical, and best times for the roster quick-view sheet. */
+export async function fetchSwimmerQuickViewAction(
+  teamId: string,
+  swimmerId: string,
+  membershipId: string,
+) {
+  const session = await getSession();
+  await requireTeamMember(session?.user?.id, teamId);
+
+  const headerStore = await headers();
+  const ip =
+    headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    headerStore.get("x-real-ip") ??
+    undefined;
+
+  const bestTimesPromise = getSwimmerBestTimes(swimmerId);
+
+  let contacts: Awaited<
+    ReturnType<typeof getSwimmerContactsForMembership>
+  > | null = null;
+  let medical: Awaited<
+    ReturnType<typeof getSwimmerMedicalForMembership>
+  > | null = null;
+  let piiDenied = false;
+
+  try {
+    await requireMinorPiiAccess(session?.user?.id, teamId, membershipId, {
+      ipAddress: ip,
+    });
+    const [c, m] = await Promise.all([
+      getSwimmerContactsForMembership(membershipId, teamId),
+      getSwimmerMedicalForMembership(membershipId, teamId),
+    ]);
+    contacts = c;
+    medical = m;
+  } catch {
+    piiDenied = true;
+  }
+
+  const bestTimes = await bestTimesPromise;
+
+  return {
+    contacts,
+    medical,
+    piiDenied,
+    bestTimes: bestTimes.map((t) => ({
+      eventKey: t.eventKey,
+      eventLabel: t.eventLabel ?? t.eventKey,
+      course: t.course,
+      timeMs: t.timeMs,
+      achievedAt: t.achievedAt,
+    })),
+  };
+}
+
 export async function exportRosterCsvAction(
   teamId: string,
   options?: RosterPageInput & { swimmerIds?: string[] },
@@ -178,24 +235,26 @@ export async function exportRosterCsvAction(
 
   await canExportRoster(session?.user?.id, teamId);
 
-  const roster =
+  const hasFilters =
     options &&
     (options.swimmerIds?.length ||
       options.q ||
       options.status?.length ||
       options.gender?.length ||
       options.groupId?.length ||
-      options.classYear?.length)
-      ? await getRosterForExport(teamId, {
-          ...options,
-          // Selection export should include inactive rows when ids are explicit
-          status: options.swimmerIds?.length
-            ? options.status?.length
-              ? options.status
-              : ["active", "inactive"]
-            : options.status,
-        })
-      : await getRoster(teamId);
+      options.classYear?.length);
+
+  const roster = hasFilters
+    ? await getRosterForExport(teamId, {
+        ...options,
+        // Selection export should include inactive rows when ids are explicit
+        status: options.swimmerIds?.length
+          ? options.status?.length
+            ? options.status
+            : ["active", "inactive"]
+          : options.status,
+      })
+    : await getRoster(teamId, options?.seasonId);
   const lines = [
     "first_name,last_name,middle_name,preferred_name,date_of_birth,gender,practice_group,class_year,usa_member_id",
     ...roster.map((r) =>
@@ -290,7 +349,15 @@ async function importRosterRows(
   try {
     let added = 0;
     for (const row of rows) {
-      await addSwimmer(teamId, row);
+      await addSwimmer(teamId, {
+        firstName: row.firstName,
+        lastName: row.lastName,
+        dateOfBirth: row.dateOfBirth,
+        gender: row.gender,
+        practiceGroup: row.practiceGroup,
+        classYear: parseClassYear(row.classYear) ?? undefined,
+        usaMemberId: row.usaMemberId,
+      });
       added++;
     }
 

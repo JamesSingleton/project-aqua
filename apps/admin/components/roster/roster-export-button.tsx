@@ -16,9 +16,17 @@ export function RosterExportButton({
       variant="outline"
       disabled={loading}
       onClick={onExport}
+      aria-label={loading ? "Exporting roster" : "Export roster"}
     >
       <Download data-icon="inline-start" />
-      {loading ? "Exporting…" : "Export roster"}
+      {loading ? (
+        "Exporting…"
+      ) : (
+        <>
+          <span className="sm:hidden">Export</span>
+          <span className="hidden sm:inline">Export roster</span>
+        </>
+      )}
     </Button>
   );
 }

@@ -34,6 +34,37 @@ export const CLASS_YEAR_LABELS: Record<ClassYear, string> = {
   SR: "Senior",
 };
 
+/** College academic standing (includes graduate). */
+export const ACADEMIC_STANDINGS = ["FR", "SO", "JR", "SR", "GR"] as const;
+export type AcademicStanding = (typeof ACADEMIC_STANDINGS)[number];
+
+export const ACADEMIC_STANDING_LABELS: Record<AcademicStanding, string> = {
+  FR: "Freshman",
+  SO: "Sophomore",
+  JR: "Junior",
+  SR: "Senior",
+  GR: "Graduate",
+};
+
+export const ELIGIBILITY_STATUSES = [
+  "competing",
+  "redshirt",
+  "medical",
+  "exhausted",
+  "ineligible",
+  "other",
+] as const;
+export type EligibilityStatus = (typeof ELIGIBILITY_STATUSES)[number];
+
+export const ELIGIBILITY_STATUS_LABELS: Record<EligibilityStatus, string> = {
+  competing: "Competing",
+  redshirt: "Redshirt",
+  medical: "Medical",
+  exhausted: "Exhausted",
+  ineligible: "Ineligible",
+  other: "Other",
+};
+
 const USA_SWIMMING_COMPLIANCE_TYPES = new Set<string>(["club", "national"]);
 
 /**
@@ -60,6 +91,13 @@ export function supportsClassYear(
   return teamType === "high_school";
 }
 
+/** College eligibility tracking applies to college teams. */
+export function supportsCollegeEligibility(
+  teamType: string | null | undefined,
+): boolean {
+  return teamType === "college";
+}
+
 export function parseTeamType(value: unknown): TeamType {
   const match = TEAM_TYPES.find((t) => t.value === value);
   return match?.value ?? "club";
@@ -71,6 +109,57 @@ export function parseClassYear(value: unknown): ClassYear | null {
   return (CLASS_YEARS as readonly string[]).includes(normalized)
     ? (normalized as ClassYear)
     : null;
+}
+
+export function parseAcademicStanding(value: unknown): AcademicStanding | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toUpperCase();
+  return (ACADEMIC_STANDINGS as readonly string[]).includes(normalized)
+    ? (normalized as AcademicStanding)
+    : null;
+}
+
+export function parseEligibilityStatus(
+  value: unknown,
+): EligibilityStatus | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase();
+  return (ELIGIBILITY_STATUSES as readonly string[]).includes(normalized)
+    ? (normalized as EligibilityStatus)
+    : null;
+}
+
+/** Advance HS class year for a new season; SR has no next year. */
+export function advanceClassYear(classYear: ClassYear | null): ClassYear | null {
+  if (!classYear) return null;
+  const idx = CLASS_YEARS.indexOf(classYear);
+  if (idx < 0 || idx >= CLASS_YEARS.length - 1) return null;
+  return CLASS_YEARS[idx + 1]!;
+}
+
+/** Advance college academic standing; GR stays GR. */
+export function advanceAcademicStanding(
+  standing: AcademicStanding | null,
+): AcademicStanding | null {
+  if (!standing) return null;
+  if (standing === "GR") return "GR";
+  const idx = ACADEMIC_STANDINGS.indexOf(standing);
+  if (idx < 0 || idx >= ACADEMIC_STANDINGS.length - 1) return standing;
+  return ACADEMIC_STANDINGS[idx + 1]!;
+}
+
+/**
+ * Proposed seasons-of-competition for next season.
+ * Bumps +1 only when prior status was competing.
+ */
+export function advanceSeasonsOfCompetitionUsed(
+  used: number | null | undefined,
+  priorStatus: EligibilityStatus | null | undefined,
+): number | null {
+  if (used == null && priorStatus !== "competing") return used ?? null;
+  const base = used ?? 0;
+  if (priorStatus === "competing") return base + 1;
+  return base;
 }
 
 export function teamTypeLabel(teamType: string | null | undefined): string {

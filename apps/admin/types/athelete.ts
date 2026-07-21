@@ -19,6 +19,8 @@ interface EmergencyContact extends BaseContact {
 export interface Athlete {
   id: string;
   membershipId: string;
+  enrollmentId?: string;
+  seasonId?: string;
   firstName: string;
   lastName: string;
   preferredName?: string | null;
@@ -32,6 +34,10 @@ export interface Athlete {
   practiceGroup: string;
   groupId?: string | null;
   classYear?: string | null;
+  academicStanding?: string | null;
+  eligibilityStatus?: string | null;
+  seasonsOfCompetitionUsed?: number | null;
+  eligibilityNotes?: string | null;
   usaId?: string | null;
   status: string;
   personalRecords: PersonalRecord[];

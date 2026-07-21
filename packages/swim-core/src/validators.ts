@@ -83,6 +83,8 @@ export const createMeetSchema = z.object({
   name: z.string().min(1),
   startDate: z.string().min(1),
   endDate: z.string().optional(),
+  /** Host entry deadline (YYYY-MM-DD). Empty clears. */
+  entryDeadline: z.string().optional(),
   course: z.enum(COURSES),
   location: z.string().optional(),
   address: z.string().optional(),

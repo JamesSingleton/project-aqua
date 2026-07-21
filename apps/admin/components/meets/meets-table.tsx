@@ -37,9 +37,20 @@ export function MeetsTable({
     pageSize: 10,
   });
 
+  const seasonOptions = useMemo(() => {
+    const labels = [
+      ...new Set(
+        meets
+          .map((meet) => meet.seasonLabel)
+          .filter((label): label is string => Boolean(label)),
+      ),
+    ].sort();
+    return labels.map((label) => ({ label, value: label }));
+  }, [meets]);
+
   const columns = useMemo(
-    () => createMeetsColumns(teamId, COURSE_OPTIONS),
-    [teamId],
+    () => createMeetsColumns(teamId, COURSE_OPTIONS, seasonOptions),
+    [teamId, seasonOptions],
   );
 
   const table = useReactTable({

@@ -4,6 +4,8 @@ export interface ParsedMeet {
   name: string;
   startDate?: string;
   endDate?: string;
+  /** Host entry deadline (YYYY-MM-DD) when present in EV3. */
+  entryDeadline?: string;
   course: "SCY" | "SCM" | "LCM";
   location?: string;
   address?: string;

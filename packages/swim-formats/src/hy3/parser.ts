@@ -1,3 +1,4 @@
+import { normalizeMeetEndDate } from "@project-aqua/swim-core/calendar-date";
 import {
   buildEventKey,
   type Course,
@@ -543,7 +544,7 @@ function flatten(state: ParseState): ParsedMeet {
   return {
     name: state.meet.name,
     startDate: state.meet.startDate,
-    endDate: state.endDate,
+    endDate: normalizeMeetEndDate(state.meet.startDate, state.endDate),
     course: state.meet.course,
     location: state.meet.location,
     altitude: state.altitude,

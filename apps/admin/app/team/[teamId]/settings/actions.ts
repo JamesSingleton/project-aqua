@@ -49,6 +49,19 @@ export async function updateTeamProfileAction(
   }
 }
 
+const MAX_PRACTICE_LOCATION_LENGTH = 200;
+
+function parseOrganizationMetadata(
+  raw: string | null | undefined,
+): Record<string, unknown> {
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
 export async function updateTeamTypeAction(
   teamId: string,
   teamTypeInput: string,
@@ -64,15 +77,7 @@ export async function updateTeamTypeAction(
     .where(eq(organization.id, teamId))
     .limit(1);
 
-  let metadata: Record<string, unknown> = {};
-  if (org?.metadata) {
-    try {
-      metadata = JSON.parse(org.metadata) as Record<string, unknown>;
-    } catch {
-      metadata = {};
-    }
-  }
-
+  const metadata = parseOrganizationMetadata(org?.metadata);
   metadata.teamType = teamType;
 
   await db
@@ -85,6 +90,60 @@ export async function updateTeamTypeAction(
   revalidatePath(`/team/${teamId}/settings/safesport`);
   revalidatePath(`/team/${teamId}/settings/usa-swimming`);
   revalidatePath(`/team/${teamId}/roster`);
+}
+
+export async function updateDefaultPracticeLocationAction(
+  teamId: string,
+  input: { location: string },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const session = await getSession();
+    await requireTeamRole(session?.user?.id, teamId, [
+      "owner",
+      "admin",
+      "head_coach",
+    ]);
+
+    const location = input.location.trim();
+    if (location.length > MAX_PRACTICE_LOCATION_LENGTH) {
+      return {
+        ok: false,
+        error: `Location must be ${MAX_PRACTICE_LOCATION_LENGTH} characters or fewer`,
+      };
+    }
+
+    const [org] = await db
+      .select({ metadata: organization.metadata })
+      .from(organization)
+      .where(eq(organization.id, teamId))
+      .limit(1);
+
+    const metadata = parseOrganizationMetadata(org?.metadata);
+    if (location) {
+      metadata.defaultPracticeLocation = location;
+    } else {
+      delete metadata.defaultPracticeLocation;
+    }
+
+    await db
+      .update(organization)
+      .set({ metadata: JSON.stringify(metadata) })
+      .where(eq(organization.id, teamId));
+
+    revalidatePath(`/team/${teamId}`);
+    revalidatePath(`/team/${teamId}/settings`);
+    revalidatePath(`/team/${teamId}/attendance`);
+    revalidatePath(`/team/${teamId}/calendar`);
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error:
+        err instanceof Error
+          ? err.message
+          : "Failed to update practice location",
+    };
+  }
 }
 
 async function fileFromFormData(formData: FormData): Promise<{

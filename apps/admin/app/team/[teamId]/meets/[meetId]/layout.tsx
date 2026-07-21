@@ -1,3 +1,4 @@
+import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
 import { getMeetById } from "@project-aqua/db/queries/meets";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -20,9 +21,12 @@ export default async function MeetDetailLayout({
   if (!meet) notFound();
 
   const endLabel = meet.endDate
-    ? ` – ${meet.endDate.toLocaleDateString()}`
+    ? ` – ${formatDateOnlyLabel(meet.endDate)}`
     : "";
-  const description = `${meet.startDate.toLocaleDateString()}${endLabel} · ${meet.course}${meet.location ? ` · ${meet.location}` : ""}${meet.address ? ` · ${meet.address}` : ""}`;
+  const deadlineLabel = meet.entryDeadline
+    ? ` · Entries due ${formatDateOnlyLabel(meet.entryDeadline)}`
+    : "";
+  const description = `${formatDateOnlyLabel(meet.startDate)}${endLabel} · ${meet.course}${deadlineLabel}${meet.location ? ` · ${meet.location}` : ""}${meet.address ? ` · ${meet.address}` : ""}`;
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -51,7 +55,7 @@ export default async function MeetDetailLayout({
                 {
                   id: meet.id,
                   name: meet.name,
-                  startDateLabel: meet.startDate.toLocaleDateString(),
+                  startDateLabel: formatDateOnlyLabel(meet.startDate),
                 },
               ]}
               triggerLabel="Import file"

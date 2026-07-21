@@ -4,8 +4,22 @@ import {
   getTeamInvitations,
   getTeamMembers,
 } from "@project-aqua/db/queries/members";
+import type { Metadata } from "next";
 import { SettingsSection } from "../settings-section";
 import { MembersPanel } from "./members-panel";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}): Promise<Metadata> {
+  const { teamId } = await params;
+  return {
+    title: "Members",
+    description: "Manage team members and invitations.",
+    alternates: { canonical: `/team/${teamId}/settings/members` },
+  };
+}
 
 export default async function MembersSettingsPage({
   params,

@@ -1,3 +1,4 @@
+import { normalizeMeetEndDate } from "@project-aqua/swim-core/calendar-date";
 import {
   buildEventKey,
   type Course,
@@ -145,6 +146,11 @@ export function parseEv3(content: string): ParsedMeet {
   meet.address = formatAddress(header);
   const start = parseMmDdYyyy(header[2] ?? "");
   if (start) meet.startDate = start;
+  const end = normalizeMeetEndDate(start, parseMmDdYyyy(header[3] ?? ""));
+  if (end) meet.endDate = end;
+  // EV3 meet header: [23]=host entry deadline (entries due to meet host).
+  const entryDeadline = parseMmDdYyyy(header[23] ?? "");
+  if (entryDeadline) meet.entryDeadline = entryDeadline;
   // EV3 meet header: [18]=combined, [19]=individual, [20]=relay.
   const maxCombinedEntries = positiveInt(header[18]);
   const maxIndividualEntries = positiveInt(header[19]);
@@ -223,7 +229,7 @@ export function parseHyv(content: string): ParsedMeet {
   meet.name = header[0]?.trim() || meet.name;
   const start = parseMmDdYyyy(header[1] ?? "");
   if (start) meet.startDate = start;
-  const end = parseMmDdYyyy(header[2] ?? "");
+  const end = normalizeMeetEndDate(start, parseMmDdYyyy(header[2] ?? ""));
   if (end) meet.endDate = end;
 
   const courseCode = (header[4] ?? "").trim().toUpperCase();

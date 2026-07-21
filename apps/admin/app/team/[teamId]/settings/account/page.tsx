@@ -5,11 +5,25 @@ import { getNotificationPreferences } from "@project-aqua/db/queries/notificatio
 import { getUserPreferences } from "@project-aqua/db/queries/preferences";
 import { user } from "@project-aqua/db/schema";
 import { eq } from "drizzle-orm";
+import type { Metadata } from "next";
 import { SettingsSection } from "../settings-section";
 import { AccountAppearanceForm } from "./account-appearance-form";
 import { AccountNotificationsForm } from "./account-notifications-form";
 import { AccountProfileForm } from "./account-profile-form";
 import { AccountSecurityForm } from "./account-security-form";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}): Promise<Metadata> {
+  const { teamId } = await params;
+  return {
+    title: "Account",
+    description: "Profile, security, notifications, and appearance.",
+    alternates: { canonical: `/team/${teamId}/settings/account` },
+  };
+}
 
 export default async function AccountSettingsPage({
   params,

@@ -31,11 +31,13 @@ import {
   findSwimmerByGoverningBodyId,
   getRoster,
 } from "@project-aqua/db/queries/roster";
+import { recomputeBestTimesForSwimmer } from "@project-aqua/db/queries/progression";
 import { sendMeetImportComplete } from "@project-aqua/emails";
 import {
   canAddMeetEntry,
   isRelayStroke,
 } from "@project-aqua/swim-core/entry-limits";
+import { formatDateOnly } from "@project-aqua/swim-core/calendar-date";
 import { isSwimmerEligibleForEvent } from "@project-aqua/swim-core/events";
 import { parseTime } from "@project-aqua/swim-core/times";
 import { createMeetSchema } from "@project-aqua/swim-core/validators";
@@ -55,6 +57,8 @@ import { revalidatePath } from "next/cache";
 function revalidateMeetPaths(teamId: string, meetId?: string) {
   revalidatePath(`/team/${teamId}/meets`);
   revalidatePath(`/team/${teamId}/meets/results`);
+  revalidatePath(`/team/${teamId}/progression`);
+  revalidatePath(`/team/${teamId}/roster`);
   if (meetId) {
     revalidatePath(`/team/${teamId}/meets/${meetId}`);
     revalidatePath(`/team/${teamId}/meets/${meetId}/events`);
@@ -111,13 +115,14 @@ export async function createMeetAction(teamId: string, formData: FormData) {
     name: formData.get("name"),
     startDate: formData.get("startDate"),
     endDate: formData.get("endDate") || undefined,
+    entryDeadline: formData.get("entryDeadline") || undefined,
     course: formData.get("course"),
     location: formData.get("location") || undefined,
     address: formData.get("address") || undefined,
   });
 
   const id = await createMeet(teamId, parsed);
-  revalidateMeetPaths(teamId);
+  revalidateMeetPaths(teamId, id);
   return id;
 }
 
@@ -148,6 +153,7 @@ export async function updateMeetAction(
     name: formData.get("name"),
     startDate: formData.get("startDate"),
     endDate: formData.get("endDate") || undefined,
+    entryDeadline: String(formData.get("entryDeadline") ?? ""),
     course: formData.get("course"),
     location: formData.get("location") || undefined,
     address: formData.get("address") || undefined,
@@ -178,6 +184,8 @@ export async function updateMeetAction(
 export type MeetImportPreview = {
   name: string;
   startDate?: string;
+  endDate?: string;
+  entryDeadline?: string;
   course: "SCY" | "SCM" | "LCM";
   location?: string;
   address?: string;
@@ -296,6 +304,8 @@ export async function parseMeetFilePreviewAction(
   return {
     name: parsed.name,
     startDate: parsed.startDate,
+    endDate: parsed.endDate,
+    entryDeadline: parsed.entryDeadline,
     course: parsed.course,
     location: parsed.location,
     address: parsed.address,
@@ -321,6 +331,10 @@ export async function parseMeetFilePreviewAction(
 export type MeetImportReviewOverrides = {
   name?: string;
   startDate?: string;
+  /** Empty string clears an imported end date. */
+  endDate?: string;
+  /** Empty string clears an imported host entry deadline. */
+  entryDeadline?: string;
   course?: "SCY" | "SCM" | "LCM";
   location?: string;
   address?: string;
@@ -427,6 +441,12 @@ export async function importMeetFileAction(
     const review = options?.review;
     if (review?.name) parsed.name = review.name;
     if (review?.startDate) parsed.startDate = review.startDate;
+    if (review?.endDate !== undefined) {
+      parsed.endDate = review.endDate || undefined;
+    }
+    if (review?.entryDeadline !== undefined) {
+      parsed.entryDeadline = review.entryDeadline || undefined;
+    }
     if (review?.course) parsed.course = review.course;
     if (review?.location !== undefined) parsed.location = review.location;
     if (review?.address !== undefined) parsed.address = review.address;
@@ -456,10 +476,19 @@ export async function importMeetFileAction(
       await updateMeet(meetId, teamId, {
         name: review?.name ?? meet.name,
         startDate:
-          review?.startDate ?? meet.startDate.toISOString().slice(0, 10),
-        endDate: meet.endDate
-          ? meet.endDate.toISOString().slice(0, 10)
-          : undefined,
+          review?.startDate ?? formatDateOnly(meet.startDate),
+        endDate:
+          review?.endDate !== undefined
+            ? review.endDate || undefined
+            : meet.endDate
+              ? formatDateOnly(meet.endDate)
+              : undefined,
+        entryDeadline:
+          review?.entryDeadline !== undefined
+            ? review.entryDeadline
+            : meet.entryDeadline
+              ? formatDateOnly(meet.entryDeadline)
+              : undefined,
         course: review?.course ?? meet.course,
         location:
           review?.location !== undefined
@@ -474,7 +503,9 @@ export async function importMeetFileAction(
     } else if (target === "new") {
       meetId = await createMeet(teamId, {
         name: parsed.name,
-        startDate: parsed.startDate ?? new Date().toISOString(),
+        startDate: parsed.startDate ?? new Date().toISOString().slice(0, 10),
+        endDate: parsed.endDate,
+        entryDeadline: parsed.entryDeadline,
         course: parsed.course,
         location: parsed.location,
         address: parsed.address,
@@ -496,9 +527,12 @@ export async function importMeetFileAction(
             if (meet) {
               await updateMeet(meetId, teamId, {
                 name: meet.name,
-                startDate: meet.startDate.toISOString().slice(0, 10),
+                startDate: formatDateOnly(meet.startDate),
                 endDate: meet.endDate
-                  ? meet.endDate.toISOString().slice(0, 10)
+                  ? formatDateOnly(meet.endDate)
+                  : undefined,
+                entryDeadline: meet.entryDeadline
+                  ? formatDateOnly(meet.entryDeadline)
                   : undefined,
                 course: meet.course,
                 location: meet.location ?? undefined,
@@ -513,7 +547,9 @@ export async function importMeetFileAction(
       if (!meetId) {
         meetId = await createMeet(teamId, {
           name: parsed.name,
-          startDate: parsed.startDate ?? new Date().toISOString(),
+          startDate: parsed.startDate ?? new Date().toISOString().slice(0, 10),
+          endDate: parsed.endDate,
+          entryDeadline: parsed.entryDeadline,
           course: parsed.course,
           location: parsed.location,
           address: parsed.address,
@@ -553,6 +589,7 @@ export async function importMeetFileAction(
     let entriesAdded = 0;
     let resultsAdded = 0;
     let unmatched = 0;
+    const resultSwimmerIds = new Set<string>();
 
     async function eventIdFor(num?: number) {
       if (num != null && eventIdByNumber.has(num)) {
@@ -612,7 +649,12 @@ export async function importMeetFileAction(
         place: result.place,
         isDq: result.isDq,
       });
+      resultSwimmerIds.add(resolved.swimmerId);
       resultsAdded++;
+    }
+
+    for (const swimmerId of resultSwimmerIds) {
+      await recomputeBestTimesForSwimmer(swimmerId);
     }
 
     revalidateMeetPaths(teamId, meetId);
@@ -674,12 +716,7 @@ function findMatchingMeetId(
       parsedName.includes(meetName);
     if (!nameMatch) return false;
     if (!parsedDate) return true;
-    const meetDate = [
-      meet.startDate.getFullYear(),
-      String(meet.startDate.getMonth() + 1).padStart(2, "0"),
-      String(meet.startDate.getDate()).padStart(2, "0"),
-    ].join("-");
-    return meetDate === parsedDate;
+    return formatDateOnly(meet.startDate) === parsedDate;
   });
 
   return matches[0]?.id ?? null;
@@ -718,7 +755,7 @@ export async function exportMeetAction(
 
   const payload: ParsedMeet = {
     name: meet.name,
-    startDate: meet.startDate.toISOString().slice(0, 10),
+    startDate: formatDateOnly(meet.startDate),
     course: meet.course,
     location: meet.location ?? undefined,
     events: events.map((e) => ({
@@ -1011,6 +1048,8 @@ export async function addResultAction(
 
   const timeMs = parseTime(time);
   await addMeetResult(meetId, meetEventId, swimmerId, timeMs);
+  await recomputeBestTimesForSwimmer(swimmerId);
   revalidateMeetPaths(teamId, meetId);
-  revalidatePath(`/team/${teamId}/progression`);
+  revalidatePath(`/team/${teamId}/progression/${swimmerId}`);
+  revalidatePath(`/team/${teamId}/swimmers/${swimmerId}/progression`);
 }

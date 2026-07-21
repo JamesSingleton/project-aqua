@@ -47,10 +47,11 @@ export async function assignGroupAction(
   teamId: string,
   membershipId: string,
   groupId: string | null,
+  seasonId?: string,
 ) {
   const session = await getSession();
   await requireTeamRole(session?.user?.id, teamId, [...MUTATE]);
-  await assignMembershipGroup(membershipId, groupId);
+  await assignMembershipGroup(teamId, membershipId, groupId, seasonId);
   revalidatePath(`/team/${teamId}/roster`);
 }
 
@@ -58,6 +59,7 @@ export async function assignGroupsBulkAction(
   teamId: string,
   membershipIds: string[],
   groupId: string | null,
+  seasonId?: string,
 ) {
   const session = await getSession();
   await requireTeamRole(session?.user?.id, teamId, [...MUTATE]);
@@ -65,6 +67,6 @@ export async function assignGroupsBulkAction(
   if (uniqueIds.length === 0) {
     throw new Error("Select at least one swimmer");
   }
-  await assignMembershipGroupsBulk(teamId, uniqueIds, groupId);
+  await assignMembershipGroupsBulk(teamId, uniqueIds, groupId, seasonId);
   revalidatePath(`/team/${teamId}/roster`);
 }

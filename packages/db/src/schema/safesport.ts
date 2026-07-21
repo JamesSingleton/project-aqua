@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import { jsonb, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { member, organization } from "./auth";
+import { teamSeasons } from "./seasons";
 import { teamSwimmerMemberships } from "./swimmers";
 
 export const credentialTypeEnum = pgEnum("credential_type", [
@@ -70,10 +71,12 @@ export const maappAcknowledgments = pgTable("maapp_acknowledgments", {
   membershipId: text("membership_id")
     .notNull()
     .references(() => teamSwimmerMemberships.id, { onDelete: "cascade" }),
+  seasonId: text("season_id")
+    .notNull()
+    .references(() => teamSeasons.id, { onDelete: "restrict" }),
   acknowledgedBy: acknowledgmentByEnum("acknowledged_by").notNull(),
   signerName: text("signer_name").notNull(),
   signerEmail: text("signer_email").notNull(),
-  seasonYear: text("season_year").notNull(),
   acknowledgedAt: timestamp("acknowledged_at").notNull().defaultNow(),
   documentVersion: text("document_version").notNull().default("2025"),
   ipAddress: text("ip_address"),
@@ -126,6 +129,10 @@ export const maappAcknowledgmentsRelations = relations(
     membership: one(teamSwimmerMemberships, {
       fields: [maappAcknowledgments.membershipId],
       references: [teamSwimmerMemberships.id],
+    }),
+    season: one(teamSeasons, {
+      fields: [maappAcknowledgments.seasonId],
+      references: [teamSeasons.id],
     }),
   }),
 );

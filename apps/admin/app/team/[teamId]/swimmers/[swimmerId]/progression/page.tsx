@@ -1,34 +1,105 @@
+import { isCoachingRole } from "@project-aqua/auth/roles";
 import { getSession } from "@project-aqua/auth/session";
 import {
+  getMember,
   getOrganizationTeamType,
   requireSwimmerTeamAccess,
 } from "@project-aqua/db/authz";
 import {
   getSwimmerBestTimes,
-  getSwimmerMeetHistory,
   getSwimmerResultSeries,
+  getSwimmerTimeHistory,
 } from "@project-aqua/db/queries/progression";
+import { getSwimmerById } from "@project-aqua/db/queries/roster";
+import {
+  ensureCurrentSeason,
+  listTeamSeasons,
+} from "@project-aqua/db/queries/seasons";
+import { Label } from "@project-aqua/ui/components/label";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { SeasonSelector } from "@/components/roster/season-selector";
 import { SwimmerProgressionPanel } from "@/components/swimmer-progression-panel";
 
-export async function generateMetadata(): Promise<Metadata> {
-  return { title: "Progression" };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string; swimmerId: string }>;
+}): Promise<Metadata> {
+  const { teamId, swimmerId } = await params;
+  const swimmer = await getSwimmerById(swimmerId, teamId);
+  const name = swimmer
+    ? (swimmer.preferredName ?? `${swimmer.firstName} ${swimmer.lastName}`)
+    : "Progression";
+  return {
+    title: `${name} · Progression`,
+    description: "Swimmer time trends and history.",
+  };
+}
+
+function resolveSeasonParam(
+  seasonParam: string | undefined,
+  seasons: Awaited<ReturnType<typeof listTeamSeasons>>,
+  currentSeason: Awaited<ReturnType<typeof ensureCurrentSeason>>,
+): {
+  selectedId: string;
+  range?: { startsOn: string; endsOn: string };
+} {
+  if (seasonParam === "all") {
+    return { selectedId: "all" };
+  }
+  const selected =
+    (seasonParam ? seasons.find((s) => s.id === seasonParam) : null) ??
+    seasons.find((s) => s.isCurrent) ??
+    currentSeason;
+  return {
+    selectedId: selected.id,
+    range: { startsOn: selected.startsOn, endsOn: selected.endsOn },
+  };
 }
 
 export default async function SwimmerProgressionPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ teamId: string; swimmerId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { teamId, swimmerId } = await params;
+  const rawParams = await searchParams;
+  const seasonParam =
+    typeof rawParams.season === "string" ? rawParams.season : undefined;
   const session = await getSession();
   await requireSwimmerTeamAccess(session?.user?.id, swimmerId, teamId);
 
-  const [teamType, series, bestTimes, meetHistory] = await Promise.all([
-    getOrganizationTeamType(teamId),
-    getSwimmerResultSeries(swimmerId),
+  const currentSeasonPromise = ensureCurrentSeason(teamId);
+  const seasonsPromise = currentSeasonPromise.then(() =>
+    listTeamSeasons(teamId),
+  );
+
+  const [teamType, swimmer, membership, currentSeason, seasons] =
+    await Promise.all([
+      getOrganizationTeamType(teamId),
+      getSwimmerById(swimmerId, teamId),
+      session?.user?.id
+        ? getMember(session.user.id, teamId)
+        : Promise.resolve(null),
+      currentSeasonPromise,
+      seasonsPromise,
+    ]);
+
+  if (!swimmer) notFound();
+
+  const { selectedId: selectedSeasonId, range } = resolveSeasonParam(
+    seasonParam,
+    seasons,
+    currentSeason,
+  );
+
+  const [series, bestTimes, timeHistory] = await Promise.all([
+    getSwimmerResultSeries(swimmerId, range),
     getSwimmerBestTimes(swimmerId),
-    getSwimmerMeetHistory(swimmerId),
+    getSwimmerTimeHistory(swimmerId, range),
   ]);
 
   const chartSeries = series.map((row) => ({
@@ -39,14 +110,35 @@ export default async function SwimmerProgressionPage({
     timeMs: row.timeMs,
     meetDate: row.meetDate.toISOString().slice(0, 10),
     meetName: row.meetName,
+    source: row.source,
   }));
 
   return (
-    <SwimmerProgressionPanel
-      series={chartSeries}
-      bestTimes={bestTimes}
-      meetHistory={meetHistory}
-      teamType={teamType}
-    />
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1.5 self-start">
+        <Label htmlFor="swimmer-progression-season">Season</Label>
+        <SeasonSelector
+          teamId={teamId}
+          seasons={seasons.map((s) => ({
+            id: s.id,
+            label: s.label,
+            isCurrent: s.isCurrent,
+          }))}
+          selectedSeasonId={selectedSeasonId}
+          allowAll
+          triggerId="swimmer-progression-season"
+        />
+      </div>
+      <SwimmerProgressionPanel
+        teamId={teamId}
+        swimmerId={swimmerId}
+        swimmerGender={swimmer.gender}
+        series={chartSeries}
+        bestTimes={bestTimes}
+        timeHistory={timeHistory}
+        teamType={teamType}
+        canEditBestTimes={isCoachingRole(membership?.role ?? "")}
+      />
+    </div>
   );
 }

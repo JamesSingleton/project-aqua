@@ -1,8 +1,11 @@
 "use client";
 
+import { formatTime } from "@project-aqua/swim-core/times";
 import {
-  CLASS_YEAR_LABELS,
-  type ClassYear,
+  ACADEMIC_STANDING_LABELS,
+  type AcademicStanding,
+  ELIGIBILITY_STATUS_LABELS,
+  type EligibilityStatus,
 } from "@project-aqua/swim-core/team-types";
 import { Avatar, AvatarFallback } from "@project-aqua/ui/components/avatar";
 import { Badge } from "@project-aqua/ui/components/badge";
@@ -17,10 +20,30 @@ import {
   SheetTitle,
 } from "@project-aqua/ui/components/sheet";
 import { cn } from "@project-aqua/ui/lib/utils";
-import { CopyIcon, PencilIcon } from "lucide-react";
+import { CheckIcon, CopyIcon, PencilIcon } from "lucide-react";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import {
+  type ReactNode,
+  useEffect,
+  useEffectEvent,
+  useState,
+  useTransition,
+} from "react";
+import { fetchSwimmerQuickViewAction } from "@/app/team/[teamId]/roster/actions";
 import type { Athlete } from "@/types";
+import { ClassYearDisplay } from "./class-year-display";
+
+type QuickViewDetails = Awaited<ReturnType<typeof fetchSwimmerQuickViewAction>>;
+
+function standingLabel(value: string | null | undefined) {
+  if (!value) return null;
+  return ACADEMIC_STANDING_LABELS[value as AcademicStanding] ?? value;
+}
+
+function eligibilityLabel(value: string | null | undefined) {
+  if (!value) return null;
+  return ELIGIBILITY_STATUS_LABELS[value as EligibilityStatus] ?? value;
+}
 
 function initials(athlete: Athlete) {
   const first = (athlete.preferredName || athlete.firstName || "?").charAt(0);
@@ -35,12 +58,6 @@ function formatBirthday(value: string) {
     month: "long",
     day: "numeric",
   });
-}
-
-function classYearLabel(value: string | null | undefined) {
-  if (!value) return null;
-  const label = CLASS_YEAR_LABELS[value as ClassYear];
-  return label ? `${value} · ${label}` : value;
 }
 
 function statusVariant(status: string) {
@@ -59,24 +76,140 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
+function hasContactValue(
+  contacts: QuickViewDetails["contacts"],
+): contacts is NonNullable<QuickViewDetails["contacts"]> {
+  if (!contacts) return false;
+  return Boolean(
+    contacts.parentName ||
+      contacts.parentEmail ||
+      contacts.parentPhone ||
+      contacts.emergencyName ||
+      contacts.emergencyPhone,
+  );
+}
+
+function hasMedicalValue(
+  medical: QuickViewDetails["medical"],
+): medical is NonNullable<QuickViewDetails["medical"]> {
+  if (!medical) return false;
+  return Boolean(
+    medical.allergies ||
+      medical.medications ||
+      medical.conditions ||
+      medical.notes,
+  );
+}
+
+function SwimmerIdCopy({ swimmerId }: { swimmerId: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(swimmerId);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  return (
+    <div className="bg-muted/40 flex flex-col gap-1.5 rounded-lg border px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          Swimmer ID
+        </p>
+        <Button
+          type="button"
+          size="xs"
+          variant={copied ? "secondary" : "ghost"}
+          onClick={handleCopy}
+          aria-label={copied ? "Swimmer ID copied" : "Copy swimmer ID"}
+        >
+          {copied ? <CheckIcon /> : <CopyIcon />}
+          {copied ? "Copied" : "Copy"}
+        </Button>
+      </div>
+      <p className="font-mono text-xs break-all" title={swimmerId}>
+        {swimmerId}
+      </p>
+      <p className="text-muted-foreground text-xs">
+        Internal ID used for imports, support, and linking records.
+      </p>
+    </div>
+  );
+}
+
 export function SwimmerQuickView({
   teamId,
   athlete,
   open,
   onOpenChange,
+  showUsaSwimmingId = true,
 }: {
   teamId: string;
   athlete: Athlete;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  showUsaSwimmingId?: boolean;
 }) {
   const profileHref = `/team/${teamId}/swimmers/${athlete.id}`;
   const editHref = `${profileHref}/edit`;
-  const classLabel = classYearLabel(athlete.classYear);
+  const legalName = `${athlete.firstName} ${athlete.lastName}`.trim();
+  const usesPreferred =
+    Boolean(athlete.preferredName) &&
+    athlete.preferredName !== athlete.firstName;
   const groups =
     athlete.trainingGroups.length > 0
       ? athlete.trainingGroups.join(", ")
       : athlete.trainingGroup || athlete.practiceGroup || "—";
+  const classDisplay = athlete.classYear ? (
+    <ClassYearDisplay value={athlete.classYear} />
+  ) : null;
+  const academicLabel = standingLabel(athlete.academicStanding);
+  const eligibilityDisplay = eligibilityLabel(athlete.eligibilityStatus);
+  const hasCollegeEligibility =
+    Boolean(academicLabel) ||
+    Boolean(eligibilityDisplay) ||
+    athlete.seasonsOfCompetitionUsed != null ||
+    Boolean(athlete.eligibilityNotes);
+
+  const [details, setDetails] = useState<QuickViewDetails | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  const loadDetails = useEffectEvent(() => {
+    setLoadError("");
+    startTransition(async () => {
+      try {
+        const data = await fetchSwimmerQuickViewAction(
+          teamId,
+          athlete.id,
+          athlete.membershipId,
+        );
+        setDetails(data);
+      } catch (err) {
+        setDetails(null);
+        setLoadError(
+          err instanceof Error ? err.message : "Could not load details",
+        );
+      }
+    });
+  });
+
+  useEffect(() => {
+    if (!open) {
+      setDetails(null);
+      setLoadError("");
+      return;
+    }
+    loadDetails();
+  }, [open, athlete.id, athlete.membershipId, teamId]);
+
+  const contacts = details?.contacts ?? null;
+  const medical = details?.medical ?? null;
+  const bestTimes = details?.bestTimes ?? [];
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -99,30 +232,36 @@ export function SwimmerQuickView({
                 </Badge>
               </div>
               <SheetDescription>
-                {athlete.gender} · Age {athlete.age}
-              </SheetDescription>
-              <div className="flex items-center gap-1.5 pt-0.5">
-                <span className="text-muted-foreground font-mono text-xs">
-                  {athlete.id.slice(0, 8)}…
+                <span className="inline-flex flex-wrap items-center gap-x-1.5">
+                  <span>{athlete.gender}</span>
+                  {athlete.age ? (
+                    <>
+                      <span aria-hidden="true">·</span>
+                      <span>Age {athlete.age}</span>
+                    </>
+                  ) : null}
+                  {classDisplay ? (
+                    <>
+                      <span aria-hidden="true">·</span>
+                      {classDisplay}
+                    </>
+                  ) : null}
                 </span>
-                <Button
-                  type="button"
-                  size="icon-xs"
-                  variant="ghost"
-                  title="Copy swimmer ID"
-                  onClick={() => navigator.clipboard.writeText(athlete.id)}
-                >
-                  <CopyIcon />
-                  <span className="sr-only">Copy swimmer ID</span>
-                </Button>
-              </div>
+              </SheetDescription>
+              {usesPreferred ? (
+                <p className="text-muted-foreground text-xs">
+                  Legal name {legalName}
+                </p>
+              ) : null}
             </div>
           </div>
         </SheetHeader>
 
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4">
+          <SwimmerIdCopy swimmerId={athlete.id} />
+
           <section className="flex flex-col gap-3">
-            <h3 className="text-sm font-medium">Profile</h3>
+            <h3 className="text-sm font-medium">Roster</h3>
             <dl className="flex flex-col gap-3 text-sm">
               <DetailRow
                 label="Birthday"
@@ -131,101 +270,187 @@ export function SwimmerQuickView({
               <DetailRow label="Gender" value={athlete.gender} />
               <DetailRow label="Age" value={athlete.age || "—"} />
               <DetailRow label="Training group" value={groups} />
-              {classLabel ? (
-                <DetailRow label="Class" value={classLabel} />
+              {classDisplay ? (
+                <DetailRow label="Class" value={classDisplay} />
+              ) : null}
+              {hasCollegeEligibility ? (
+                <>
+                  {academicLabel ? (
+                    <DetailRow label="Academic standing" value={academicLabel} />
+                  ) : null}
+                  {eligibilityDisplay ? (
+                    <DetailRow
+                      label="Eligibility"
+                      value={eligibilityDisplay}
+                    />
+                  ) : null}
+                  {athlete.seasonsOfCompetitionUsed != null ? (
+                    <DetailRow
+                      label="Seasons used"
+                      value={athlete.seasonsOfCompetitionUsed}
+                    />
+                  ) : null}
+                  {athlete.eligibilityNotes ? (
+                    <DetailRow
+                      label="Eligibility notes"
+                      value={athlete.eligibilityNotes}
+                    />
+                  ) : null}
+                </>
               ) : null}
               <DetailRow
-                label="USA Swimming ID"
-                value={
-                  athlete.usaId ? (
-                    <span className="font-mono text-xs">{athlete.usaId}</span>
-                  ) : (
-                    "—"
-                  )
-                }
+                label="Status"
+                value={<span className="capitalize">{athlete.status}</span>}
               />
+              {showUsaSwimmingId ? (
+                <DetailRow
+                  label="USA Swimming ID"
+                  value={
+                    athlete.usaId ? (
+                      <span className="font-mono text-xs">{athlete.usaId}</span>
+                    ) : (
+                      "—"
+                    )
+                  }
+                />
+              ) : null}
             </dl>
           </section>
 
-          {athlete.parents.length > 0 ? (
-            <>
-              <Separator />
-              <section className="flex flex-col gap-3">
-                <h3 className="text-sm font-medium">Parents / guardians</h3>
-                <ul className="flex flex-col gap-4">
-                  {athlete.parents.map((parent) => (
-                    <li
-                      key={`${parent.name}-${parent.email}`}
-                      className="flex flex-col gap-1"
-                    >
-                      <p className="font-medium">{parent.name}</p>
-                      {parent.email ? (
-                        <a
-                          href={`mailto:${parent.email}`}
-                          className="text-muted-foreground text-sm hover:underline"
-                        >
-                          {parent.email}
-                        </a>
-                      ) : null}
-                      {parent.phone_number ? (
-                        <a
-                          href={`tel:${parent.phone_number}`}
-                          className="text-muted-foreground text-sm hover:underline"
-                        >
-                          {parent.phone_number}
-                        </a>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            </>
-          ) : null}
+          <Separator />
 
-          {athlete.emergencyContacts.length > 0 ? (
-            <>
-              <Separator />
-              <section className="flex flex-col gap-3">
-                <h3 className="text-sm font-medium">Emergency contacts</h3>
-                <ul className="flex flex-col gap-4">
-                  {athlete.emergencyContacts.map((contact) => (
-                    <li
-                      key={`${contact.name}_${contact.phone_number}`}
-                      className="flex flex-col gap-1"
-                    >
-                      <p className="font-medium">{contact.name}</p>
-                      <p className="text-muted-foreground text-sm">
-                        {contact.relationship}
-                      </p>
+          <section className="flex flex-col gap-3">
+            <h3 className="text-sm font-medium">Contacts</h3>
+            {pending && !details ? (
+              <p className="text-muted-foreground text-sm">Loading…</p>
+            ) : details?.piiDenied ? (
+              <p className="text-muted-foreground text-sm">
+                Contact details require additional access for minors.
+              </p>
+            ) : hasContactValue(contacts) ? (
+              <div className="flex flex-col gap-4 text-sm">
+                {contacts.parentName ||
+                contacts.parentEmail ||
+                contacts.parentPhone ? (
+                  <div className="flex flex-col gap-1">
+                    <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                      Parent / guardian
+                    </p>
+                    {contacts.parentName ? (
+                      <p className="font-medium">{contacts.parentName}</p>
+                    ) : null}
+                    {contacts.parentEmail ? (
                       <a
-                        href={`tel:${contact.phone_number}`}
-                        className="text-muted-foreground text-sm hover:underline"
+                        href={`mailto:${contacts.parentEmail}`}
+                        className="text-muted-foreground hover:underline"
                       >
-                        {contact.phone_number}
+                        {contacts.parentEmail}
                       </a>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            </>
-          ) : null}
+                    ) : null}
+                    {contacts.parentPhone ? (
+                      <a
+                        href={`tel:${contacts.parentPhone}`}
+                        className="text-muted-foreground hover:underline"
+                      >
+                        {contacts.parentPhone}
+                      </a>
+                    ) : null}
+                  </div>
+                ) : null}
+                {contacts.emergencyName || contacts.emergencyPhone ? (
+                  <div className="flex flex-col gap-1">
+                    <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                      Emergency
+                    </p>
+                    {contacts.emergencyName ? (
+                      <p className="font-medium">{contacts.emergencyName}</p>
+                    ) : null}
+                    {contacts.emergencyPhone ? (
+                      <a
+                        href={`tel:${contacts.emergencyPhone}`}
+                        className="text-muted-foreground hover:underline"
+                      >
+                        {contacts.emergencyPhone}
+                      </a>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                No contacts on file.
+              </p>
+            )}
+          </section>
 
-          {athlete.personalRecords.length > 0 ? (
+          {hasMedicalValue(medical) ? (
             <>
               <Separator />
               <section className="flex flex-col gap-3">
-                <h3 className="text-sm font-medium">Personal records</h3>
+                <h3 className="text-sm font-medium">Medical notes</h3>
                 <dl className="flex flex-col gap-3 text-sm">
-                  {athlete.personalRecords.map((record) => (
+                  {medical.allergies ? (
+                    <DetailRow label="Allergies" value={medical.allergies} />
+                  ) : null}
+                  {medical.medications ? (
                     <DetailRow
-                      key={record.event}
-                      label={record.event}
-                      value={<span className="font-timing">{record.time}</span>}
+                      label="Medications"
+                      value={medical.medications}
                     />
-                  ))}
+                  ) : null}
+                  {medical.conditions ? (
+                    <DetailRow label="Conditions" value={medical.conditions} />
+                  ) : null}
+                  {medical.notes ? (
+                    <DetailRow label="Notes" value={medical.notes} />
+                  ) : null}
                 </dl>
               </section>
             </>
+          ) : null}
+
+          <Separator />
+
+          <section className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-medium">Best times</h3>
+              {bestTimes.length > 0 ? (
+                <Link
+                  href={`${profileHref}/progression`}
+                  className="text-muted-foreground text-xs hover:underline"
+                  onClick={() => onOpenChange(false)}
+                >
+                  View all
+                </Link>
+              ) : null}
+            </div>
+            {pending && !details ? (
+              <p className="text-muted-foreground text-sm">Loading…</p>
+            ) : bestTimes.length > 0 ? (
+              <dl className="flex flex-col gap-3 text-sm">
+                {bestTimes.slice(0, 8).map((record) => (
+                  <DetailRow
+                    key={`${record.eventKey}-${record.course}`}
+                    label={`${record.eventLabel} · ${record.course}`}
+                    value={
+                      <span className="font-timing">
+                        {formatTime(record.timeMs)}
+                      </span>
+                    }
+                  />
+                ))}
+              </dl>
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                No best times recorded yet.
+              </p>
+            )}
+          </section>
+
+          {loadError ? (
+            <p className="text-destructive text-sm" role="alert">
+              {loadError}
+            </p>
           ) : null}
         </div>
 

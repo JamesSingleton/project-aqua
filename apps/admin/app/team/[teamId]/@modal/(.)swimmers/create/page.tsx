@@ -4,8 +4,13 @@ import {
   requireTeamMember,
 } from "@project-aqua/db/authz";
 import { supportsClassYear } from "@project-aqua/swim-core/team-types";
+import type { Metadata } from "next";
 import CreateSwimmerForm from "@/app/team/[teamId]/swimmers/create/create-swimmer-form";
 import { Modal } from "./modal";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: "Add swimmer" };
+}
 
 export default async function CreateSwimmerModal({
   params,

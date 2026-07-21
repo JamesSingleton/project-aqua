@@ -1,12 +1,21 @@
 import { getMeetsWithResultStats } from "@project-aqua/db/queries/meets";
+import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
 import { Badge } from "@project-aqua/ui/components/badge";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Meet results",
-  description: "Review times imported or entered for each meet.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}): Promise<Metadata> {
+  const { teamId } = await params;
+  return {
+    title: "Meet results",
+    description: "Review times imported or entered for each meet.",
+    alternates: { canonical: `/team/${teamId}/meets/results` },
+  };
+}
 
 export default async function MeetsResultsHubPage({
   params,
@@ -27,7 +36,7 @@ export default async function MeetsResultsHubPage({
         <ul className="divide-border divide-y rounded-lg border">
           {withResults.map((meet) => {
             const endLabel = meet.endDate
-              ? ` – ${meet.endDate.toLocaleDateString()}`
+              ? ` – ${formatDateOnlyLabel(meet.endDate)}`
               : "";
             return (
               <li key={meet.id}>
@@ -38,7 +47,7 @@ export default async function MeetsResultsHubPage({
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{meet.name}</p>
                     <p className="text-muted-foreground text-sm">
-                      {meet.startDate.toLocaleDateString()}
+                      {formatDateOnlyLabel(meet.startDate)}
                       {endLabel}
                     </p>
                   </div>

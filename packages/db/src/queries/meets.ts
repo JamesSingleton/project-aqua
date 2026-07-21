@@ -1,4 +1,8 @@
 import {
+  normalizeMeetEndDate,
+  parseDateOnly,
+} from "@project-aqua/swim-core/calendar-date";
+import {
   formatEventName,
   parseEventGender,
 } from "@project-aqua/swim-core/events";
@@ -17,12 +21,40 @@ import {
   swimEvents,
   swimmerBestTimes,
   swimmers,
+  teamSeasons,
   teamSwimmerMemberships,
 } from "../schema/index";
-import { upsertBestTime } from "./progression";
+import { findSwimmerBestTime, upsertBestTime } from "./progression";
+import { ensureCurrentSeason } from "./seasons";
 
 function generateId(): string {
   return crypto.randomUUID();
+}
+
+/** Meet dates are calendar days; store as UTC midnight. */
+function toMeetDate(value: string): Date {
+  const parsed = parseDateOnly(value.slice(0, 10));
+  if (!parsed) {
+    throw new Error(`Invalid meet date: ${value}`);
+  }
+  return parsed;
+}
+
+/** Optional calendar date; empty/null clears, undefined leaves unchanged. */
+function toOptionalMeetDate(
+  value: string | null | undefined,
+): Date | null | undefined {
+  if (value === undefined) return undefined;
+  if (value == null || value === "") return null;
+  return toMeetDate(value);
+}
+
+function toOptionalMeetEndDate(
+  startDate: string,
+  endDate: string | undefined,
+): Date | null {
+  const normalized = normalizeMeetEndDate(startDate, endDate);
+  return normalized ? toMeetDate(normalized) : null;
 }
 
 export async function ensureSwimEvent(event: {
@@ -55,11 +87,41 @@ export async function ensureSwimEvent(event: {
   });
 }
 
-export async function getMeets(organizationId: string) {
+export async function getMeets(
+  organizationId: string,
+  options?: { seasonId?: string },
+) {
+  const conditions = [eq(meets.organizationId, organizationId)];
+  if (options?.seasonId) {
+    conditions.push(eq(meets.seasonId, options.seasonId));
+  }
+
   return db
-    .select()
+    .select({
+      id: meets.id,
+      organizationId: meets.organizationId,
+      seasonId: meets.seasonId,
+      seasonLabel: teamSeasons.label,
+      name: meets.name,
+      startDate: meets.startDate,
+      endDate: meets.endDate,
+      entryDeadline: meets.entryDeadline,
+      course: meets.course,
+      location: meets.location,
+      address: meets.address,
+      importSource: meets.importSource,
+      rawFilePath: meets.rawFilePath,
+      maxIndividualEntries: meets.maxIndividualEntries,
+      maxRelayEntries: meets.maxRelayEntries,
+      maxCombinedEntries: meets.maxCombinedEntries,
+      entryLimitPackages: meets.entryLimitPackages,
+      entryLimitsSource: meets.entryLimitsSource,
+      createdAt: meets.createdAt,
+      updatedAt: meets.updatedAt,
+    })
     .from(meets)
-    .where(eq(meets.organizationId, organizationId))
+    .leftJoin(teamSeasons, eq(meets.seasonId, teamSeasons.id))
+    .where(and(...conditions))
     .orderBy(desc(meets.startDate));
 }
 
@@ -77,6 +139,7 @@ export async function getMeetById(meetId: string, organizationId: string) {
 export async function createMeet(
   organizationId: string,
   data: CreateMeetInput & {
+    seasonId?: string;
     importSource?: string;
     maxIndividualEntries?: number | null;
     maxRelayEntries?: number | null;
@@ -85,13 +148,17 @@ export async function createMeet(
     entryLimitsSource?: string | null;
   },
 ) {
+  const seasonId =
+    data.seasonId ?? (await ensureCurrentSeason(organizationId)).id;
   const id = generateId();
   await db.insert(meets).values({
     id,
     organizationId,
+    seasonId,
     name: data.name,
-    startDate: new Date(data.startDate),
-    endDate: data.endDate ? new Date(data.endDate) : null,
+    startDate: toMeetDate(data.startDate),
+    endDate: toOptionalMeetEndDate(data.startDate, data.endDate),
+    entryDeadline: toOptionalMeetDate(data.entryDeadline) ?? null,
     course: data.course,
     location: data.location ?? null,
     address: data.address ?? null,
@@ -109,6 +176,7 @@ export async function updateMeet(
   meetId: string,
   organizationId: string,
   data: CreateMeetInput & {
+    seasonId?: string;
     maxIndividualEntries?: number | null;
     maxRelayEntries?: number | null;
     maxCombinedEntries?: number | null;
@@ -123,11 +191,15 @@ export async function updateMeet(
     .update(meets)
     .set({
       name: data.name,
-      startDate: new Date(data.startDate),
-      endDate: data.endDate ? new Date(data.endDate) : null,
+      startDate: toMeetDate(data.startDate),
+      endDate: toOptionalMeetEndDate(data.startDate, data.endDate),
+      ...(data.entryDeadline !== undefined
+        ? { entryDeadline: toOptionalMeetDate(data.entryDeadline) ?? null }
+        : {}),
       course: data.course,
       location: data.location ?? null,
       address: data.address ?? null,
+      ...(data.seasonId !== undefined ? { seasonId: data.seasonId } : {}),
       ...(data.maxIndividualEntries !== undefined
         ? { maxIndividualEntries: data.maxIndividualEntries }
         : {}),
@@ -313,6 +385,65 @@ export async function getMeetCommitments(meetId: string) {
     .where(eq(meetCommitments.meetId, meetId));
 }
 
+/** Batch commitment counts for dashboard meet cards. */
+export async function getMeetCommitmentCounts(meetIds: string[]) {
+  if (meetIds.length === 0) {
+    return new Map<
+      string,
+      { committed: number; pending: number; declined: number }
+    >();
+  }
+
+  const rows = await db
+    .select({
+      meetId: meetCommitments.meetId,
+      committed: sql<number>`count(*) filter (where ${meetCommitments.status} = 'committed')::int`,
+      pending: sql<number>`count(*) filter (where ${meetCommitments.status} = 'pending')::int`,
+      declined: sql<number>`count(*) filter (where ${meetCommitments.status} = 'declined')::int`,
+    })
+    .from(meetCommitments)
+    .where(inArray(meetCommitments.meetId, meetIds))
+    .groupBy(meetCommitments.meetId);
+
+  return new Map(
+    rows.map((row) => [
+      row.meetId,
+      {
+        committed: Number(row.committed ?? 0),
+        pending: Number(row.pending ?? 0),
+        declined: Number(row.declined ?? 0),
+      },
+    ]),
+  );
+}
+
+/** Entry fill progress for dashboard deadline cards. */
+export async function getMeetEntryProgressCounts(meetIds: string[]) {
+  if (meetIds.length === 0) {
+    return new Map<string, { entryCount: number; athletesEntered: number }>();
+  }
+
+  const rows = await db
+    .select({
+      meetId: meetEntries.meetId,
+      entryCount: sql<number>`count(*) filter (where ${meetEntries.status} <> 'scratched')::int`,
+      athletesEntered: sql<number>`count(distinct ${meetEntries.membershipId}) filter (where ${meetEntries.status} <> 'scratched')::int`,
+    })
+    .from(meetEntries)
+    .where(inArray(meetEntries.meetId, meetIds))
+    .groupBy(meetEntries.meetId);
+
+  return new Map(
+    rows.map((row) => [
+      row.meetId,
+      {
+        entryCount: Number(row.entryCount ?? 0),
+        athletesEntered: Number(row.athletesEntered ?? 0),
+      },
+    ]),
+  );
+}
+
 export async function getMeetEntriesDetailed(meetId: string) {
   return db
     .select({
@@ -376,28 +507,30 @@ export async function addMeetResult(
   },
 ) {
   const id = generateId();
-  const meet = await db
+  const [meet] = await db
     .select()
     .from(meets)
     .where(eq(meets.id, meetId))
     .limit(1);
 
-  const course = meet[0]?.course ?? "SCY";
-  const event = await db
-    .select()
+  const [event] = await db
+    .select({
+      id: meetEvents.id,
+      eventKey: meetEvents.eventKey,
+      course: swimEvents.course,
+    })
     .from(meetEvents)
+    .leftJoin(swimEvents, eq(swimEvents.eventKey, meetEvents.eventKey))
     .where(eq(meetEvents.id, meetEventId))
     .limit(1);
+
+  const course = event?.course ?? meet?.course ?? "SCY";
 
   let previousBestTimeMs: number | null = null;
   if (options && "previousBestTimeMs" in options) {
     previousBestTimeMs = options.previousBestTimeMs ?? null;
-  } else if (event[0]) {
-    previousBestTimeMs = await getBestTimeMs(
-      swimmerId,
-      event[0].eventKey,
-      course,
-    );
+  } else if (event) {
+    previousBestTimeMs = await getBestTimeMs(swimmerId, event.eventKey, course);
   }
 
   await db.insert(meetResults).values({
@@ -411,13 +544,13 @@ export async function addMeetResult(
     isDq: options?.isDq ?? false,
   });
 
-  if (event[0] && !options?.isDq) {
+  if (event && !options?.isDq) {
     await upsertBestTime({
       swimmerId,
-      eventKey: event[0].eventKey,
+      eventKey: event.eventKey,
       course,
       timeMs,
-      achievedAt: new Date(),
+      achievedAt: meet?.startDate ?? new Date(),
       meetId,
     });
   }
@@ -428,19 +561,9 @@ export async function addMeetResult(
 export async function getBestTimeMs(
   swimmerId: string,
   eventKey: string,
-  course: "SCY" | "SCM" | "LCM",
+  _course?: "SCY" | "SCM" | "LCM",
 ): Promise<number | null> {
-  const [best] = await db
-    .select({ timeMs: swimmerBestTimes.timeMs })
-    .from(swimmerBestTimes)
-    .where(
-      and(
-        eq(swimmerBestTimes.swimmerId, swimmerId),
-        eq(swimmerBestTimes.eventKey, eventKey),
-        eq(swimmerBestTimes.course, course),
-      ),
-    )
-    .limit(1);
+  const best = await findSwimmerBestTime(swimmerId, eventKey);
   return best?.timeMs ?? null;
 }
 

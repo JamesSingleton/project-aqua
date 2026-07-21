@@ -8,7 +8,6 @@ import {
   type ClassYear,
 } from "@project-aqua/swim-core/team-types";
 import { Button } from "@project-aqua/ui/components/button";
-import { Calendar } from "@project-aqua/ui/components/calendar";
 import {
   Field,
   FieldDescription,
@@ -20,11 +19,6 @@ import {
 } from "@project-aqua/ui/components/field";
 import { Input } from "@project-aqua/ui/components/input";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@project-aqua/ui/components/popover";
-import {
   Select,
   SelectContent,
   SelectGroup,
@@ -34,11 +28,12 @@ import {
 } from "@project-aqua/ui/components/select";
 import { Textarea } from "@project-aqua/ui/components/textarea";
 import { cn } from "@project-aqua/ui/lib/utils";
-import { CalendarIcon, CheckIcon } from "lucide-react";
+import { CheckIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { DatePickerField } from "@/components/date-picker-field";
 import {
   type CreateSwimmerFormValues,
   createSwimmerFormSchema,
@@ -92,86 +87,6 @@ const CONTACT_FIELDS = [
   "contacts.emergencyName",
   "contacts.emergencyPhone",
 ] as const;
-
-function parseDateOfBirth(value: string) {
-  if (!value) return undefined;
-  const [year, month, day] = value.split("-").map(Number);
-  if (!year || !month || !day) return undefined;
-  return new Date(year, month - 1, day);
-}
-
-function formatDateOfBirth(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function formatDateOfBirthLabel(value: string) {
-  const date = parseDateOfBirth(value);
-  if (!date) return null;
-  return date.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function DateOfBirthPicker({
-  id,
-  value,
-  onChange,
-  disabled,
-  invalid,
-}: {
-  id: string;
-  value: string;
-  onChange: (value: string) => void;
-  disabled?: boolean;
-  invalid?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const selectedDate = parseDateOfBirth(value);
-  const label = formatDateOfBirthLabel(value);
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <Button
-            type="button"
-            variant="outline"
-            id={id}
-            disabled={disabled}
-            aria-invalid={invalid}
-            className={cn(
-              "w-full justify-start font-normal",
-              !value && "text-muted-foreground",
-            )}
-          />
-        }
-      >
-        <CalendarIcon data-icon="inline-start" />
-        {label ?? "Pick a date"}
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <Calendar
-          mode="single"
-          selected={selectedDate}
-          defaultMonth={selectedDate ?? new Date(2010, 0)}
-          onSelect={(date) => {
-            onChange(date ? formatDateOfBirth(date) : "");
-            setOpen(false);
-          }}
-          disabled={{ after: new Date() }}
-          captionLayout="dropdown"
-          startMonth={new Date(1920, 0)}
-          endMonth={new Date()}
-        />
-      </PopoverContent>
-    </Popover>
-  );
-}
 
 function StepIndicator({
   currentStep,
@@ -505,12 +420,15 @@ export default function CreateSwimmerForm({
                     name="dateOfBirth"
                     control={control}
                     render={({ field }) => (
-                      <DateOfBirthPicker
+                      <DatePickerField
                         id="dateOfBirth"
                         value={field.value}
                         onChange={field.onChange}
                         disabled={linkExisting}
-                        invalid={!!errors.dateOfBirth}
+                        disableFuture
+                        labelMonth="long"
+                        startMonth={new Date(1920, 0)}
+                        aria-invalid={!!errors.dateOfBirth}
                       />
                     )}
                   />
