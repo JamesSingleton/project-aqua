@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createSwimmerFormSchema } from "../../schemas/swimmer-create";
 import {
   BILLING_STEP_FIELDS,
   COACH_STEP_FIELDS,
   TEAM_STEP_FIELDS,
 } from "../../schemas";
+import { createSwimmerFormSchema } from "../../schemas/swimmer-create";
 
 describe("schemas barrel / swimmer-create re-exports", () => {
   it("re-exports step field constants", () => {

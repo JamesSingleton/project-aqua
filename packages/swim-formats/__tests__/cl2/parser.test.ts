@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
-import * as cl2Roster from "../../src/roster/cl2";
 import { parseCl2Meet } from "../../src/cl2/parser";
+import * as cl2Roster from "../../src/roster/cl2";
 
 const fixturesDir = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -46,10 +46,7 @@ describe("parseCl2Meet", () => {
   });
 
   it("parses meet results title from azsi-results.cl2", () => {
-    const content = readFileSync(
-      join(fixturesDir, "azsi-results.cl2"),
-      "utf8",
-    );
+    const content = readFileSync(join(fixturesDir, "azsi-results.cl2"), "utf8");
     const meet = parseCl2Meet(content);
 
     expect(meet.name).toMatch(/AZSI 2025 Short Course Regiona/);
@@ -109,7 +106,9 @@ describe("parseCl2Meet", () => {
       place: 2,
       isDq: false,
     });
-    expect(meet.results.find((r) => r.swimmerName.includes("Pat"))).toMatchObject({
+    expect(
+      meet.results.find((r) => r.swimmerName.includes("Pat")),
+    ).toMatchObject({
       isDq: true,
     });
   });
@@ -137,7 +136,9 @@ describe("parseCl2Meet", () => {
       },
     ]);
 
-    const meet = parseCl2Meet("A01V3      02Meet Entries                  Hy-Tek");
+    const meet = parseCl2Meet(
+      "A01V3      02Meet Entries                  Hy-Tek",
+    );
     expect(meet.entries).toEqual([
       { swimmerName: "Ada Lovelace", usaMemberId: "USA123" },
     ]);

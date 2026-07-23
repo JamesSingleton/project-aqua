@@ -9,7 +9,12 @@ export default defineConfig({
       reporter: ["text", "html", "lcov"],
       // Pure validation only — Supabase client/upload modules need network mocks.
       include: ["src/validate.ts"],
-      exclude: ["src/client.ts", "src/index.ts", "src/team-logo.ts", "src/user-avatar.ts"],
+      exclude: [
+        "src/client.ts",
+        "src/index.ts",
+        "src/team-logo.ts",
+        "src/user-avatar.ts",
+      ],
       thresholds: {
         lines: 100,
         functions: 100,

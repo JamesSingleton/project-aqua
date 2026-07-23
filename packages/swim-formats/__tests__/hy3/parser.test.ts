@@ -79,7 +79,9 @@ describe("parseHy3", () => {
 
     expect(meet.results.some((r) => r.resultType === "prelim")).toBe(true);
     expect(meet.results.some((r) => r.resultType === "finals")).toBe(true);
-    expect(meet.results.some((r) => r.swimmerName.includes("Bailey"))).toBe(true);
+    expect(meet.results.some((r) => r.swimmerName.includes("Bailey"))).toBe(
+      true,
+    );
     expect(meet.sanctionNumber).toMatch(/AZ24-75/);
   });
 
@@ -96,7 +98,10 @@ describe("parseHy3", () => {
   });
 
   it("covers nickName, split-only G1, H1/H2, and age-group branches", () => {
-    const azsi = readFileSync(join(fixturesDir, "azsi-results.hy3"), "utf8").split("\n");
+    const azsi = readFileSync(
+      join(fixturesDir, "azsi-results.hy3"),
+      "utf8",
+    ).split("\n");
 
     function e1(ageMin: string, ageMax: string, eventNum: string): string {
       const line = Array.from({ length: 120 }, () => " ");
@@ -145,9 +150,11 @@ describe("parseHy3", () => {
     const content = readFileSync(join(fixturesDir, "azsi-results.hy3"), "utf8");
     const meet = parseHy3(content);
     expect(meet.relays?.length).toBeGreaterThan(0);
-    expect(meet.results.some((r) => r.resultType === "swimoff" || r.resultType === "finals")).toBe(
-      true,
-    );
+    expect(
+      meet.results.some(
+        (r) => r.resultType === "swimoff" || r.resultType === "finals",
+      ),
+    ).toBe(true);
   });
 
   it("covers swimoff-best results, invalid kinds, and sparse record branches", () => {
@@ -374,7 +381,9 @@ describe("parseHy3", () => {
     put(e2, 4, "        "); // no time
     put(e2, 13, "D"); // DQ code without time still emits result
 
-    const meet = parseHy3(["A1", d1.join(""), e1.join(""), e2.join("")].join("\n"));
+    const meet = parseHy3(
+      ["A1", d1.join(""), e1.join(""), e2.join("")].join("\n"),
+    );
     expect(meet.events[0]?.ageGroup).toBe("12&U");
     expect(meet.results[0]).toMatchObject({ time: "DQ", isDq: true });
   });

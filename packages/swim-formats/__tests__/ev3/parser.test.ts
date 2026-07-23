@@ -207,7 +207,9 @@ describe("parseEv3 edge cases", () => {
     expect(partial.events[0]?.ageGroup).toBeUndefined();
 
     header[5] = "LCM";
-    expect(parseEv3(`${header.join(";")}\n1;F;F;I;0;0;0;0;50;1;`).course).toBe("LCM");
+    expect(parseEv3(`${header.join(";")}\n1;F;F;I;0;0;0;0;50;1;`).course).toBe(
+      "LCM",
+    );
   });
 
   it("formats single-sided EV3 age groups", () => {
@@ -239,28 +241,30 @@ describe("parseEv3 edge cases", () => {
     expect(scm.name).toBe("Imported Events");
     expect(scm.course).toBe("SCM");
     expect(scm.startDate).toBeUndefined();
-    expect(scm.events.some((e) => e.eventNumber === 1 && e.ageGroup === undefined)).toBe(
-      true,
-    );
+    expect(
+      scm.events.some((e) => e.eventNumber === 1 && e.ageGroup === undefined),
+    ).toBe(true);
     expect(scm.events.find((e) => e.eventNumber === 2)?.stroke).toBe("free");
     expect(scm.events.find((e) => e.eventNumber === 3)?.qualifyingTimeMs).toBe(
       65_000,
     );
-    expect(scm.events.find((e) => e.eventNumber === 4)?.qualifyingTimeMs).toBeUndefined();
+    expect(
+      scm.events.find((e) => e.eventNumber === 4)?.qualifyingTimeMs,
+    ).toBeUndefined();
 
     const lOnly = Array(6).fill("");
     lOnly[0] = "L Meet";
     lOnly[5] = "L";
-    expect(parseEv3(`${lOnly.join(";")}\n1;F;F;I;0;G;0;18;50;1;;;;;;;`).course).toBe(
-      "LCM",
-    );
+    expect(
+      parseEv3(`${lOnly.join(";")}\n1;F;F;I;0;G;0;18;50;1;;;;;;;`).course,
+    ).toBe("LCM");
 
     const scyWithM = Array(6).fill("");
     scyWithM[0] = "Y Meet";
     scyWithM[5] = "MY";
-    expect(parseEv3(`${scyWithM.join(";")}\n1;F;F;I;0;G;0;18;50;1;;;;;;;`).course).toBe(
-      "SCY",
-    );
+    expect(
+      parseEv3(`${scyWithM.join(";")}\n1;F;F;I;0;G;0;18;50;1;;;;;;;`).course,
+    ).toBe("SCY");
   });
 });
 
@@ -285,10 +289,16 @@ describe("parseHyv edge cases", () => {
     expect(bare.course).toBe("SCY");
     expect(bare.location).toBeUndefined();
     expect(bare.startDate).toBeUndefined();
-    expect(bare.events.find((e) => e.eventNumber === 3)?.roundType).toBe("finals");
+    expect(bare.events.find((e) => e.eventNumber === 3)?.roundType).toBe(
+      "finals",
+    );
     expect(bare.events.find((e) => e.eventNumber === 3)?.stroke).toBe("free");
-    expect(bare.events.find((e) => e.eventNumber === 4)?.roundType).toBe("prelim");
-    expect(bare.events.find((e) => e.eventNumber === 4)?.stroke).toBe("medley_relay");
+    expect(bare.events.find((e) => e.eventNumber === 4)?.roundType).toBe(
+      "prelim",
+    );
+    expect(bare.events.find((e) => e.eventNumber === 4)?.stroke).toBe(
+      "medley_relay",
+    );
     expect(bare.events.find((e) => e.eventNumber === 4)?.qualifyingTimeMs).toBe(
       70_000,
     );
@@ -297,14 +307,18 @@ describe("parseHyv edge cases", () => {
     const lcmBare = parseHyv(";;;;LCM\n1A;F;F;I;0;18;50;1");
     expect(lcmBare.course).toBe("LCM");
 
-    const letterL = parseHyv("Meet;1/1/2025;1/1/2025;;L;Pool\n1A;F;M;I;0;18;50;1");
+    const letterL = parseHyv(
+      "Meet;1/1/2025;1/1/2025;;L;Pool\n1A;F;M;I;0;18;50;1",
+    );
     expect(letterL.course).toBe("LCM");
 
     const letterM = parseHyv("Meet;1/1/2025;1/1/2025;;M;\n1A;F;M;I;;;50;1");
     expect(letterM.course).toBe("SCM");
     expect(letterM.location).toBeUndefined();
 
-    const open109 = parseHyv("Meet;1/1/2025;1/1/2025;;Y;Pool\n1A;F;F;I;0;109;50;1");
+    const open109 = parseHyv(
+      "Meet;1/1/2025;1/1/2025;;Y;Pool\n1A;F;F;I;0;109;50;1",
+    );
     expect(open109.events[0]?.ageGroup).toBeUndefined();
   });
 });

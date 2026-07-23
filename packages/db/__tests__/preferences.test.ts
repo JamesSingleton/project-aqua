@@ -147,7 +147,9 @@ describe("team UI preferences", () => {
   });
 
   it("patches without roster key leaves existing ui unchanged shape", async () => {
-    limit.mockResolvedValueOnce([{ ui: { roster: { columnVisibility: { name: true } } } }]);
+    limit.mockResolvedValueOnce([
+      { ui: { roster: { columnVisibility: { name: true } } } },
+    ]);
     onConflictDoUpdate.mockResolvedValueOnce(undefined);
 
     const result = await patchTeamUiPreferences("user-1", "org-1", {});

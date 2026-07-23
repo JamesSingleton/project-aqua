@@ -25,19 +25,22 @@ describe("detectRosterFileFormat", () => {
     const hy3 = readFileSync(join(fixturesDir, "roster-only.hy3"), "utf8");
     expect(detectRosterFileFormat("upload.txt", hy3)).toBe("hy3");
     expect(
-      detectRosterFileFormat("upload.txt", "A103Rosters Only             Hy-Tek"),
+      detectRosterFileFormat(
+        "upload.txt",
+        "A103Rosters Only             Hy-Tek",
+      ),
     ).toBe("hy3");
-    expect(detectRosterFileFormat("upload.txt", "D1M   21Smith               John")).toBe(
-      "hy3",
-    );
+    expect(
+      detectRosterFileFormat("upload.txt", "D1M   21Smith               John"),
+    ).toBe("hy3");
   });
 
   it("sniffs CL2 roster content", () => {
     const cl2 = readFileSync(join(fixturesDir, "roster-swimmers.cl2"), "utf8");
     expect(detectRosterFileFormat("upload.txt", cl2)).toBe("cl2");
-    expect(detectRosterFileFormat("upload.txt", "A01V3      20Swimmers Only")).toBe(
-      "cl2",
-    );
+    expect(
+      detectRosterFileFormat("upload.txt", "A01V3      20Swimmers Only"),
+    ).toBe("cl2");
   });
 
   it("returns null for meet event files and unknown content", () => {
@@ -53,7 +56,8 @@ describe("detectRosterFileFormat", () => {
 
 describe("parseRosterFile", () => {
   it("parses each supported format", () => {
-    const csv = "first_name,last_name,date_of_birth,gender\nAda,Lovelace,2012-04-15,female";
+    const csv =
+      "first_name,last_name,date_of_birth,gender\nAda,Lovelace,2012-04-15,female";
     expect(parseRosterFile(csv, "csv").length).toBe(1);
 
     const cl2 = readFileSync(join(fixturesDir, "roster-swimmers.cl2"), "utf8");
@@ -72,7 +76,9 @@ describe("parseRosterFile", () => {
 describe("rosterImportErrorForFile", () => {
   it("rejects meet event files", () => {
     const ev3 = readFileSync(join(fixturesDir, "sonoran-events.ev3"), "utf8");
-    expect(rosterImportErrorForFile("events.ev3", ev3)).toMatch(/meet events file/);
+    expect(rosterImportErrorForFile("events.ev3", ev3)).toMatch(
+      /meet events file/,
+    );
   });
 
   it("rejects unsupported files", () => {

@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { strToU8, zipSync } from "fflate";
-import * as XLSX from "xlsx";
 import { describe, expect, it } from "vitest";
+import * as XLSX from "xlsx";
 import {
   detectMeetFileFormat,
   parseMeetFile,
@@ -23,7 +23,10 @@ function zipOf(files: Record<string, string>): Uint8Array {
   return zipSync(entries);
 }
 
-function makeEventXls(rows: unknown[][], bookType: XLSX.BookType = "xlsx"): Uint8Array {
+function makeEventXls(
+  rows: unknown[][],
+  bookType: XLSX.BookType = "xlsx",
+): Uint8Array {
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Results");

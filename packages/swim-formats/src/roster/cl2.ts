@@ -60,9 +60,7 @@ function parseCl2D01Line(
   );
   const eventGender =
     line.match(/(FF|MM)\s+\d/) ?? line.match(/\d{2}(FF|MM)\s/);
-  const gender = eventGender
-    ? genderFromEventCode(eventGender[1]!)
-    : undefined;
+  const gender = eventGender ? genderFromEventCode(eventGender[1]!) : undefined;
   const dateOfBirth = parseAusaBirthDate(line);
   const usaMemberId = parseUsaMemberIdFromLine(line);
 

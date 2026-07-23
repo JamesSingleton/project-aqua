@@ -42,16 +42,45 @@ describe("parseSdif", () => {
         name: "unused",
         course: "SCY",
         events: [
-          { eventNumber: 1, distance: 50, stroke: "free", gender: "female", eventKey: "x" },
-          { eventNumber: 2, distance: 100, stroke: "back", gender: "male", eventKey: "x" },
+          {
+            eventNumber: 1,
+            distance: 50,
+            stroke: "free",
+            gender: "female",
+            eventKey: "x",
+          },
+          {
+            eventNumber: 2,
+            distance: 100,
+            stroke: "back",
+            gender: "male",
+            eventKey: "x",
+          },
         ],
         entries: [
-          { eventNumber: 1, swimmerName: "Ada Lovelace", seedTime: "1:05.00", usaMemberId: "MEMBER123456" },
+          {
+            eventNumber: 1,
+            swimmerName: "Ada Lovelace",
+            seedTime: "1:05.00",
+            usaMemberId: "MEMBER123456",
+          },
           { eventNumber: 2, swimmerName: "Bob Smith", seedTime: "1:06.00" },
         ],
         results: [
-          { eventNumber: 1, swimmerName: "Ada Lovelace", time: "DQ", place: 1, isDq: true },
-          { eventNumber: 2, swimmerName: "Bob Smith", time: "1:03.00", place: 2, isDq: false },
+          {
+            eventNumber: 1,
+            swimmerName: "Ada Lovelace",
+            time: "DQ",
+            place: 1,
+            isDq: true,
+          },
+          {
+            eventNumber: 2,
+            swimmerName: "Bob Smith",
+            time: "1:03.00",
+            place: 2,
+            isDq: false,
+          },
         ],
       })
         .split("\r\n")
@@ -84,7 +113,9 @@ describe("parseSdif", () => {
   });
 
   it("detects SCM course from B1 line", () => {
-    const meet = parseSdif("B1        SCM Meet                        Pool                          SCM");
+    const meet = parseSdif(
+      "B1        SCM Meet                        Pool                          SCM",
+    );
     expect(meet.course).toBe("SCM");
   });
 

@@ -1,9 +1,6 @@
-import * as XLSX from "xlsx";
 import { describe, expect, it, vi } from "vitest";
-import {
-  ExportXlsParseError,
-  parseEventExportXls,
-} from "../../src/xls/parser";
+import * as XLSX from "xlsx";
+import { ExportXlsParseError, parseEventExportXls } from "../../src/xls/parser";
 
 vi.mock("xlsx", async (importOriginal) => {
   const actual = await importOriginal<typeof import("xlsx")>();
@@ -21,7 +18,10 @@ vi.mock("xlsx", async (importOriginal) => {
   };
 });
 
-function makeWorkbook(rows: unknown[][], bookType: XLSX.BookType = "xlsx"): Uint8Array {
+function makeWorkbook(
+  rows: unknown[][],
+  bookType: XLSX.BookType = "xlsx",
+): Uint8Array {
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
@@ -183,25 +183,20 @@ describe("parseEventExportXls", () => {
       ExportXlsParseError,
     );
 
-    expect(() => parseEventExportXls(new Uint8Array([0x99]))).toThrow(/no sheets/i);
+    expect(() => parseEventExportXls(new Uint8Array([0x99]))).toThrow(
+      /no sheets/i,
+    );
     expect(() => parseEventExportXls(new Uint8Array([0x98]))).toThrow(
       /Missing first sheet/i,
     );
 
-    const noHeader = makeWorkbook([
-      ["meta"],
-      ["Event"],
-      ["place", "swimmer"],
-    ]);
+    const noHeader = makeWorkbook([["meta"], ["Event"], ["place", "swimmer"]]);
     expect(() => parseEventExportXls(noHeader)).toThrow(/header row/i);
 
-    const badOffset = makeWorkbook([
-      ["meta"],
-      ["Event"],
-      ["name"],
-      ["1"],
-    ]);
-    expect(() => parseEventExportXls(badOffset)).toThrow(/Invalid header row offset/);
+    const badOffset = makeWorkbook([["meta"], ["Event"], ["name"], ["1"]]);
+    expect(() => parseEventExportXls(badOffset)).toThrow(
+      /Invalid header row offset/,
+    );
   });
 
   it("uses seed time when prelim and finals columns are empty", () => {
@@ -315,7 +310,9 @@ describe("parseEventExportXls", () => {
         "",
       ],
     ];
-    expect(parseEventExportXls(makeWorkbook(seedFallback)).results[0]).toMatchObject({
+    expect(
+      parseEventExportXls(makeWorkbook(seedFallback)).results[0],
+    ).toMatchObject({
       swimmerName: "Seed Path",
       time: "29.00",
     });
@@ -328,7 +325,8 @@ describe("parseEventExportXls", () => {
       ["1", "No Times", "14", "TST"],
     ];
     expect(
-      parseEventExportXls(makeWorkbook(noTimes), ["name", "age", "team"]).results,
+      parseEventExportXls(makeWorkbook(noTimes), ["name", "age", "team"])
+        .results,
     ).toEqual([]);
 
     // Header is last row → empty sampleRow fallback.

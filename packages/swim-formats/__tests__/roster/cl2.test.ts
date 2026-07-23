@@ -58,7 +58,11 @@ describe("parseCl2Roster", () => {
   });
 
   it("skips D01 lines without gender or DOB", () => {
-    expect(parseCl2Roster("D01AZ  FR  NoGender, Pat                                      0 X   N33")).toEqual([]);
+    expect(
+      parseCl2Roster(
+        "D01AZ  FR  NoGender, Pat                                      0 X   N33",
+      ),
+    ).toEqual([]);
     expect(
       parseCl2Roster(
         "D01AZ      NoDob, Pat                                          MM 1001  1 UNOV   N33",

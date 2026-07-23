@@ -45,7 +45,8 @@ describe("parseHy3Roster", () => {
   });
 
   it("skips blank D1 name lines", () => {
-    const content = "D1M                                                                                                    77\n";
+    const content =
+      "D1M                                                                                                    77\n";
     expect(parseHy3Roster(content)).toEqual([]);
   });
 

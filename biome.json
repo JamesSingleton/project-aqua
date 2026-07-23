@@ -11,7 +11,7 @@
       "!**/.next",
       "!**/.react-email",
       "!**/*.svg"
-    ],
+    ]
   },
   "css": {
     "parser": {
