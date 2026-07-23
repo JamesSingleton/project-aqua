@@ -1,4 +1,6 @@
 import { unzipSync } from "fflate";
+import { detectCl2FileKind } from "../cl2/kind";
+import type { ParsedMeet } from "../types";
 
 export type MeetZipFormat = "sdif" | "hy3" | "ev3" | "hyv" | "cl2" | "xls";
 
@@ -13,10 +15,29 @@ const MEET_EXT_PRIORITY: Array<{ ext: string; format: MeetZipFormat }> = [
   { ext: ".xlsx", format: "xls" },
 ];
 
+/** Prefer these as the primary meet file when multiple formats exist. */
+const PRIMARY_FORMAT_RANK: MeetZipFormat[] = [
+  "ev3",
+  "hyv",
+  "hy3",
+  "sdif",
+  "cl2",
+  "xls",
+];
+
 export type ExtractedMeetFile = {
   filename: string;
   bytes: Uint8Array;
   format: MeetZipFormat;
+  /** 0 = top-level zip entry; nested zips increment depth. */
+  depth: number;
+};
+
+export type MeetZipBundle = {
+  files: ExtractedMeetFile[];
+  primary: ExtractedMeetFile;
+  /** True when top-level files are roster-only (Swimmers Only / Rosters Only). */
+  isRosterOnly: boolean;
 };
 
 export function isZipFilename(filename: string): boolean {
@@ -55,8 +76,45 @@ function formatForFilename(filename: string): MeetZipFormat | null {
   return null;
 }
 
-/** Prefer EV3, then HYV, then other known meet formats inside a ZIP. */
-export function extractMeetFileFromZip(bytes: Uint8Array): ExtractedMeetFile {
+function decodeText(bytes: Uint8Array): string {
+  return new TextDecoder("utf-8").decode(bytes);
+}
+
+function isRosterOnlyContent(filename: string, bytes: Uint8Array): boolean {
+  const lower = filename.toLowerCase();
+  if (
+    lower.endsWith(".cl2") ||
+    lower.endsWith(".sd3") ||
+    lower.endsWith(".sdif")
+  ) {
+    return detectCl2FileKind(decodeText(bytes)) === "swimmers_only";
+  }
+  if (lower.endsWith(".hy3")) {
+    const head = decodeText(bytes).slice(0, 120).toUpperCase();
+    return head.includes("ROSTERS ONLY");
+  }
+  return false;
+}
+
+function isMeetContentFile(file: ExtractedMeetFile): boolean {
+  if (file.format === "ev3" || file.format === "hyv" || file.format === "xls") {
+    return true;
+  }
+  if (isRosterOnlyContent(file.filename, file.bytes)) return false;
+  if (file.format === "cl2") {
+    const kind = detectCl2FileKind(decodeText(file.bytes));
+    return kind === "meet_results" || kind === "meet_entries";
+  }
+  if (file.format === "hy3") return true;
+  return file.format === "sdif";
+}
+
+function collectFromZip(
+  bytes: Uint8Array,
+  depth: number,
+  maxDepth: number,
+  out: ExtractedMeetFile[],
+): void {
   if (!isZipBytes(bytes)) {
     throw new Error("Not a valid ZIP archive.");
   }
@@ -68,26 +126,173 @@ export function extractMeetFileFromZip(bytes: Uint8Array): ExtractedMeetFile {
     throw new Error("Could not read ZIP archive.");
   }
 
-  const candidates: ExtractedMeetFile[] = [];
   for (const [path, fileBytes] of Object.entries(entries)) {
     if (isJunkPath(path)) continue;
     if (!fileBytes || fileBytes.length === 0) continue;
     const filename = basename(path);
+
+    if (isZipFilename(filename) && depth < maxDepth) {
+      collectFromZip(fileBytes, depth + 1, maxDepth, out);
+      continue;
+    }
+
     const format = formatForFilename(filename);
     if (!format) continue;
-    candidates.push({ filename, bytes: fileBytes, format });
+    out.push({ filename, bytes: fileBytes, format, depth });
+  }
+}
+
+function pickPrimary(files: ExtractedMeetFile[]): ExtractedMeetFile {
+  for (const format of PRIMARY_FORMAT_RANK) {
+    const match = files.find((f) => f.format === format);
+    if (match) return match;
+  }
+  return files[0]!;
+}
+
+/**
+ * Extract all supported meet files from a ZIP (including nested ZIPs).
+ */
+export function extractAllMeetFilesFromZip(
+  bytes: Uint8Array,
+  options?: { maxDepth?: number },
+): MeetZipBundle {
+  const maxDepth = options?.maxDepth ?? 2;
+  const files: ExtractedMeetFile[] = [];
+  collectFromZip(bytes, 0, maxDepth, files);
+
+  if (files.length === 0) {
+    throw new Error(
+      "No supported meet file in ZIP. Expected EV3, HYV, HY3, SD3/SDIF, CL2, or XLS.",
+    );
   }
 
-  for (const { ext, format } of MEET_EXT_PRIORITY) {
-    const match = candidates.find((c) =>
-      c.filename.toLowerCase().endsWith(ext),
+  const seen = new Set<string>();
+  const unique: ExtractedMeetFile[] = [];
+  for (const file of files) {
+    const key = `${file.depth}:${file.format}:${file.filename.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(file);
+  }
+
+  const topLevel = unique.filter((f) => f.depth === 0);
+  const topLevelRoster =
+    topLevel.length > 0 &&
+    topLevel.every((f) => isRosterOnlyContent(f.filename, f.bytes));
+  const topLevelHasMeet = topLevel.some(isMeetContentFile);
+  // Team Manager "Roster" zips often nest an entries pack — still roster-only
+  // when every *top-level* file is Swimmers Only / Rosters Only.
+  const isRosterOnly = topLevelRoster && !topLevelHasMeet;
+
+  const pool = isRosterOnly
+    ? unique.filter((f) => f.depth === 0)
+    : unique.filter((f) => !isRosterOnlyContent(f.filename, f.bytes));
+  const primaryPool = pool.length > 0 ? pool : unique;
+
+  return {
+    files: unique,
+    primary: pickPrimary(primaryPool),
+    isRosterOnly,
+  };
+}
+
+/** Prefer EV3, then HYV, then other known meet formats inside a ZIP (single file). */
+export function extractMeetFileFromZip(bytes: Uint8Array): ExtractedMeetFile {
+  return extractAllMeetFilesFromZip(bytes).primary;
+}
+
+function indexKey(name: string, eventNumber?: number): string {
+  return `${(eventNumber ?? "").toString()}|${name.trim().toLowerCase()}`;
+}
+
+/**
+ * Merge supplemental ParsedMeet data into a primary meet.
+ * Primary wins for conflicts; supplements fill missing athlete IDs / entries / events.
+ */
+export function mergeParsedMeets(
+  primary: ParsedMeet,
+  supplements: ParsedMeet[],
+): ParsedMeet {
+  const merged: ParsedMeet = {
+    ...primary,
+    events: [...primary.events],
+    entries: [...primary.entries],
+    results: [...primary.results],
+    relays: primary.relays ? [...primary.relays] : undefined,
+  };
+
+  for (const extra of supplements) {
+    if (!merged.startDate && extra.startDate)
+      merged.startDate = extra.startDate;
+    if (!merged.endDate && extra.endDate) merged.endDate = extra.endDate;
+    if (!merged.location && extra.location) merged.location = extra.location;
+    if (!merged.address && extra.address) merged.address = extra.address;
+    if (!merged.entryDeadline && extra.entryDeadline) {
+      merged.entryDeadline = extra.entryDeadline;
+    }
+    if (!merged.entryLimits && extra.entryLimits) {
+      merged.entryLimits = extra.entryLimits;
+    }
+    if (
+      (merged.skippedDiveEvents == null || merged.skippedDiveEvents === 0) &&
+      extra.skippedDiveEvents
+    ) {
+      merged.skippedDiveEvents = extra.skippedDiveEvents;
+    }
+
+    for (const event of extra.events) {
+      const exists = merged.events.some(
+        (e) =>
+          (event.eventNumber != null && e.eventNumber === event.eventNumber) ||
+          e.eventKey === event.eventKey,
+      );
+      if (!exists) merged.events.push(event);
+    }
+
+    const entryKeys = new Set(
+      merged.entries.map((e) => indexKey(e.swimmerName, e.eventNumber)),
     );
-    if (match) {
-      return { ...match, format };
+    for (const entry of extra.entries) {
+      const key = indexKey(entry.swimmerName, entry.eventNumber);
+      if (entryKeys.has(key)) {
+        const existing = merged.entries.find(
+          (e) => indexKey(e.swimmerName, e.eventNumber) === key,
+        );
+        if (existing && !existing.usaMemberId && entry.usaMemberId) {
+          existing.usaMemberId = entry.usaMemberId;
+        }
+        if (existing && !existing.seedTime && entry.seedTime) {
+          existing.seedTime = entry.seedTime;
+        }
+        continue;
+      }
+      entryKeys.add(key);
+      merged.entries.push(entry);
+    }
+
+    const resultKeys = new Set(
+      merged.results.map((r) => indexKey(r.swimmerName, r.eventNumber)),
+    );
+    for (const result of extra.results) {
+      const key = indexKey(result.swimmerName, result.eventNumber);
+      if (resultKeys.has(key)) continue;
+      resultKeys.add(key);
+      merged.results.push(result);
+    }
+
+    if (extra.relays?.length) {
+      merged.relays = [...(merged.relays ?? []), ...extra.relays];
+    }
+
+    // Prefer results/entries kind from any member of the zip pack
+    if (
+      extra.importKind === "results" ||
+      (merged.importKind == null && extra.importKind)
+    ) {
+      merged.importKind = extra.importKind;
     }
   }
 
-  throw new Error(
-    "No supported meet file in ZIP. Expected EV3, HYV, HY3, SD3/SDIF, CL2, or XLS.",
-  );
+  return merged;
 }

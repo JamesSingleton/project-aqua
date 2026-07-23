@@ -26,6 +26,7 @@ import {
   TableRow,
 } from "@project-aqua/ui/components/table";
 import { cn } from "@project-aqua/ui/lib/utils";
+import { RabbitIcon, TargetIcon, TurtleIcon } from "lucide-react";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { getTimeStandardCutsAction } from "../../time-standards-actions";
 import { AddResultForm } from "../add-result-form";
@@ -178,6 +179,62 @@ function findCutTime(
       /open|senior/i.test(c.ageGroup),
   );
   return open?.timeMs ?? null;
+}
+
+/** Swim times: lower is faster. */
+type StandardCompare = "faster" | "equal" | "slower";
+
+function compareToStandard(
+  timeMs: number,
+  cutMs: number,
+  isDq: boolean,
+): StandardCompare | null {
+  if (isDq || timeMs <= 0 || cutMs <= 0) return null;
+  if (timeMs < cutMs) return "faster";
+  if (timeMs === cutMs) return "equal";
+  return "slower";
+}
+
+function StandardCompareIndicator({
+  compare,
+}: {
+  compare: StandardCompare | null;
+}) {
+  if (!compare) return null;
+
+  if (compare === "faster") {
+    return (
+      <span
+        className="inline-flex items-center gap-0.5 text-emerald-700 dark:text-emerald-400"
+        title="Faster than standard"
+      >
+        <RabbitIcon className="size-3.5 shrink-0" aria-hidden />
+        <span className="sr-only">Faster than standard</span>
+      </span>
+    );
+  }
+
+  if (compare === "equal") {
+    return (
+      <span
+        className="text-muted-foreground inline-flex items-center gap-0.5"
+        title="Exactly at standard"
+      >
+        <TargetIcon className="size-3.5 shrink-0" aria-hidden />
+        <span className="sr-only">Exactly at standard</span>
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className="inline-flex items-center gap-0.5 text-amber-700 dark:text-amber-400"
+      title="Slower than standard"
+    >
+      <TurtleIcon className="size-3.5 shrink-0" aria-hidden />
+      <span className="sr-only">Slower than standard</span>
+    </span>
+  );
 }
 
 export function ResultsWorkspace({
@@ -427,6 +484,19 @@ export function ResultsWorkspace({
           {cutsPending ? (
             <span className="text-muted-foreground text-xs">Loading…</span>
           ) : null}
+          {showStandards && hasSets && !cutsPending ? (
+            <p className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+              <span className="inline-flex items-center gap-0.5">
+                <RabbitIcon className="size-3" aria-hidden /> Under = faster
+              </span>
+              <span className="inline-flex items-center gap-0.5">
+                <TargetIcon className="size-3" aria-hidden /> At = equal
+              </span>
+              <span className="inline-flex items-center gap-0.5">
+                <TurtleIcon className="size-3" aria-hidden /> Over = slower
+              </span>
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -501,14 +571,16 @@ export function ResultsWorkspace({
                   const cutMs = showStandards
                     ? findCutTime(cuts, row, meetStartDate)
                     : null;
+                  const standardCompare =
+                    cutMs != null
+                      ? compareToStandard(row.timeMs, cutMs, row.isDq)
+                      : null;
                   const meetsCut =
-                    cutMs != null &&
-                    !row.isDq &&
-                    row.timeMs > 0 &&
-                    row.timeMs <= cutMs;
+                    standardCompare === "faster" || standardCompare === "equal";
                   const newlyQualifies =
                     meetsCut &&
                     row.previousBestTimeMs != null &&
+                    cutMs != null &&
                     row.previousBestTimeMs > cutMs;
                   const primaryLabel =
                     groupMode === "event"
@@ -549,19 +621,36 @@ export function ResultsWorkspace({
                       {showStandards ? (
                         <TableCell
                           className={cn(
-                            "font-timing tabular-nums",
-                            meetsCut &&
+                            "font-timing",
+                            standardCompare === "faster" &&
                               "text-emerald-700 dark:text-emerald-400",
+                            standardCompare === "slower" &&
+                              "text-amber-800 dark:text-amber-400",
                           )}
                           title={
                             newlyQualifies
                               ? "Newly qualifies vs previous best"
-                              : meetsCut
-                                ? "Meets standard"
-                                : undefined
+                              : standardCompare === "faster"
+                                ? "Faster than standard"
+                                : standardCompare === "equal"
+                                  ? "Exactly at standard"
+                                  : standardCompare === "slower"
+                                    ? "Slower than standard"
+                                    : undefined
                           }
                         >
-                          {cutMs != null ? formatTime(cutMs) : "—"}
+                          {cutMs != null ? (
+                            <span className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+                              <span className="tabular-nums font-semibold">
+                                {formatTime(cutMs)}
+                              </span>
+                              <StandardCompareIndicator
+                                compare={standardCompare}
+                              />
+                            </span>
+                          ) : (
+                            "—"
+                          )}
                         </TableCell>
                       ) : null}
                       <TableCell className="tabular-nums">

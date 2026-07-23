@@ -1,3 +1,4 @@
+export { type Cl2FileKind, detectCl2FileKind } from "./cl2/kind";
 export { parseCl2Meet } from "./cl2/parser";
 export { exportRosterCsv, parseRosterCsv } from "./csv/parser";
 export { parseEv3, parseHyv } from "./ev3/parser";
@@ -6,10 +7,13 @@ export { parseHy3 } from "./hy3/parser";
 export {
   detectMeetFileFormat,
   type ExtractedMeetFile,
+  extractAllMeetFilesFromZip,
   extractMeetFileFromZip,
   isZipBytes,
   isZipFilename,
   type MeetFileFormat,
+  type MeetZipBundle,
+  mergeParsedMeets,
   parseMeetFile,
   parseMeetFileFromBytes,
 } from "./meet/parser";
@@ -18,6 +22,7 @@ export { parseHy3Roster } from "./roster/hy3-style";
 export {
   detectRosterFileFormat,
   parseRosterFile,
+  parseRosterFileFromBytes,
   type RosterFileFormat,
   rosterImportErrorForFile,
 } from "./roster/parser";

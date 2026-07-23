@@ -1,8 +1,9 @@
-import { getMeetsWithResultStats } from "@project-aqua/db/queries/meets";
+import { getMeets, getMeetsWithResultStats } from "@project-aqua/db/queries/meets";
 import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
 import { Badge } from "@project-aqua/ui/components/badge";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { MeetImportButton } from "../../meet-import-button";
 
 export async function generateMetadata({
   params,
@@ -23,14 +24,33 @@ export default async function MeetsResultsHubPage({
   params: Promise<{ teamId: string }>;
 }) {
   const { teamId } = await params;
-  const meets = await getMeetsWithResultStats(teamId);
-  const withResults = meets.filter((m) => m.resultCount > 0);
+  const [meetsWithStats, meets] = await Promise.all([
+    getMeetsWithResultStats(teamId),
+    getMeets(teamId),
+  ]);
+  const withResults = meetsWithStats.filter((m) => m.resultCount > 0);
+  const meetOptions = meets.map((meet) => ({
+    id: meet.id,
+    name: meet.name,
+    startDateLabel: formatDateOnlyLabel(meet.startDate),
+  }));
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <MeetImportButton
+          teamId={teamId}
+          meets={meetOptions}
+          triggerLabel="Import results file"
+          triggerVariant="default"
+          triggerSize="default"
+        />
+      </div>
+
       {withResults.length === 0 ? (
         <p className="text-muted-foreground text-sm">
-          No meet results yet. Import a results file or add times from a meet.
+          No meet results yet. Import a CL2, HY3, or SD3 results file (or ZIP),
+          or add times from a meet.
         </p>
       ) : (
         <ul className="divide-border divide-y rounded-lg border">

@@ -7,6 +7,7 @@ import {
   parseAusaBirthDate,
   parseGenderCode,
   parseLastFirstName,
+  parseSdifBirthDate,
   parseUsaMemberIdFromLine,
 } from "./utils";
 
@@ -60,8 +61,18 @@ function parseCl2D01Line(
   );
   const eventGender =
     line.match(/(FF|MM)\s+\d/) ?? line.match(/\d{2}(FF|MM)\s/);
-  const gender = eventGender ? genderFromEventCode(eventGender[1]!) : undefined;
-  const dateOfBirth = parseAusaBirthDate(line);
+  const plainGender = line.match(/\d{8}\d?\s+([MF])\b/);
+  const gender = eventGender
+    ? genderFromEventCode(eventGender[1]!)
+    : plainGender
+      ? parseGenderCode(plainGender[1]!)
+      : undefined;
+  const dateOfBirth =
+    parseAusaBirthDate(line) ??
+    (() => {
+      const m = line.match(/\b(\d{8})\d?\s+[MF]\b/);
+      return m ? parseSdifBirthDate(m[1]!) : undefined;
+    })();
   const usaMemberId = parseUsaMemberIdFromLine(line);
 
   if (!gender || !dateOfBirth) return null;

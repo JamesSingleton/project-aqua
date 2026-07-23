@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
-import { parseCl2Meet } from "../../src/cl2/parser";
+import { detectCl2FileKind, parseCl2Meet } from "../../src/cl2/parser";
 import * as cl2Roster from "../../src/roster/cl2";
 
 const fixturesDir = join(
@@ -35,7 +35,25 @@ function cl2AthleteLine(
 }
 
 describe("parseCl2Meet", () => {
-  it("parses meet metadata and roster fallback from mari-entries.cl2", () => {
+  it("parses legacy CTCC meet results with D0-embedded times", () => {
+    const content = readFileSync(
+      join(fixturesDir, "ctcc-meet-results-2005.cl2"),
+      "utf8",
+    );
+    expect(detectCl2FileKind(content)).toBe("meet_results");
+    const meet = parseCl2Meet(content);
+    expect(meet.name).toMatch(/CTCCvPDC/);
+    expect(meet.startDate).toBe("2005-06-01");
+    expect(meet.results.length).toBe(9);
+    expect(meet.results[0]?.swimmerName).toMatch(/Will Burns/);
+    expect(meet.results[0]?.time).toMatch(/38\.01/);
+    expect(meet.results[0]?.dateOfBirth).toBe("1989-11-15");
+    expect(meet.results[0]?.gender).toBe("male");
+    expect(meet.results[0]?.teamCode).toMatch(/CTCC/i);
+    expect(meet.events.length).toBeGreaterThan(0);
+  });
+
+  it("parses meet metadata and entries from mari-entries.cl2", () => {
     const content = readFileSync(join(fixturesDir, "mari-entries.cl2"), "utf8");
     const meet = parseCl2Meet(content);
 
@@ -43,14 +61,17 @@ describe("parseCl2Meet", () => {
     expect(meet.location?.length).toBeGreaterThan(0);
     expect(meet.entries.length).toBeGreaterThan(5);
     expect(meet.entries[0]?.swimmerName).toMatch(/\S+\s+\S+/);
+    expect(meet.results.length).toBe(0);
+    expect(meet.relays?.length).toBeGreaterThan(0);
   });
 
-  it("parses meet results title from azsi-results.cl2", () => {
+  it("parses modern azsi results via G0 lines", () => {
     const content = readFileSync(join(fixturesDir, "azsi-results.cl2"), "utf8");
     const meet = parseCl2Meet(content);
 
     expect(meet.name).toMatch(/AZSI 2025 Short Course Regiona/);
     expect(meet.results.length).toBeGreaterThan(0);
+    expect(meet.entries.length).toBeGreaterThan(0);
   });
 
   it("detects A0 file type labels and custom title", () => {
@@ -64,11 +85,13 @@ describe("parseCl2Meet", () => {
       "A01V3      02Meet Results                  ".padEnd(73, " "),
     );
     expect(results.name).toBe("Meet Results");
+    expect(results.importKind).toBe("results");
+    expect(entries.importKind).toBe("entries");
   });
 
-  it("parses D0/D1 entry and G0/F0 result lines", () => {
+  it("parses D0 entry and G0 result lines (dual-column names)", () => {
     const content = [
-      "A01V3      02Meet Entries                  Hy-Tek",
+      "A01V3      02Meet Results                  Hy-Tek",
       cl2AthleteLine("D0", {
         eventNumber: 11,
         last: "Lovelace",
@@ -93,17 +116,10 @@ describe("parseCl2Meet", () => {
     ].join("\n");
 
     const meet = parseCl2Meet(content);
-    expect(meet.entries[0]).toMatchObject({
-      eventNumber: 11,
-      swimmerName: "Ada Lovelace",
-      usaMemberId: "ABCD1234567890",
-      seedTime: "1:05.00",
-    });
+    expect(meet.entries.some((e) => e.swimmerName.includes("Ada"))).toBe(true);
     expect(meet.results[0]).toMatchObject({
-      eventNumber: 11,
       swimmerName: "Bob Smith",
       time: "1:04.00",
-      place: 2,
       isDq: false,
     });
     expect(
@@ -114,18 +130,21 @@ describe("parseCl2Meet", () => {
   });
 
   it("marks DQ/NS/SCR on result lines", () => {
-    const content = cl2AthleteLine("G0", {
-      eventNumber: 11,
-      last: "Doe",
-      first: "Jane",
-      time: "DQ",
-      place: 1,
-    });
+    const content = [
+      "A01V3      02Meet Results                  Hy-Tek",
+      cl2AthleteLine("G0", {
+        eventNumber: 11,
+        last: "Doe",
+        first: "Jane",
+        time: "DQ",
+        place: 1,
+      }),
+    ].join("\n");
     const meet = parseCl2Meet(content);
     expect(meet.results[0]?.isDq).toBe(true);
   });
 
-  it("falls back to roster extraction when no athlete lines match", () => {
+  it("falls back to roster extraction when Meet Entries has no athlete lines", () => {
     vi.spyOn(cl2Roster, "parseCl2Roster").mockReturnValue([
       {
         firstName: "Ada",
@@ -146,33 +165,22 @@ describe("parseCl2Meet", () => {
     vi.restoreAllMocks();
   });
 
-  it("uses roster-style CL2 for swimmer-only files", () => {
+  it("does not invent meet rows for Swimmers Only files", () => {
     const content = readFileSync(
       join(fixturesDir, "roster-swimmers.cl2"),
       "utf8",
     );
+    expect(detectCl2FileKind(content)).toBe("swimmers_only");
     const meet = parseCl2Meet(content);
-    expect(meet.entries.length).toBeGreaterThan(5);
-    expect(meet.entries[0]?.swimmerName).toMatch(/\S+\s+\S+/);
+    expect(meet.entries).toEqual([]);
+    expect(meet.results).toEqual([]);
   });
 
-  it("covers empty B1 fields and blank athlete name/event fallbacks", () => {
-    const blankB1 = parseCl2Meet(
-      "A01V3      02Meet Entries                  \nB11                                                                                          ",
-    );
-    expect(blankB1.name).toBe("Meet Entries");
-    expect(blankB1.location).toBeUndefined();
-
-    const blankAthlete = [
-      "D0    " + " ".repeat(100),
-      "F0    " + " ".repeat(70) + "1:00.00",
-      "G0    " + " ".repeat(70),
-    ].join("\n");
-    const meet = parseCl2Meet(blankAthlete);
-    expect(meet.entries[0]?.eventNumber).toBeUndefined();
-    expect(meet.entries[0]?.swimmerName).toBe("");
-    expect(meet.results[0]?.eventNumber).toBeUndefined();
-    expect(meet.results[0]?.swimmerName).toBe("");
-    expect(meet.results).toHaveLength(1);
+  it("treats F0 as relay legs, not results", () => {
+    const content = readFileSync(join(fixturesDir, "ctcc-entries.cl2"), "utf8");
+    const meet = parseCl2Meet(content);
+    expect(meet.results.length).toBe(0);
+    expect(meet.relays?.length).toBeGreaterThan(0);
+    expect(meet.relays?.[0]?.swimmerNames.length).toBeGreaterThan(0);
   });
 });

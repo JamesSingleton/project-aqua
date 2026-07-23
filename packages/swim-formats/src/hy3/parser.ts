@@ -8,6 +8,7 @@ import {
   type Stroke,
 } from "@project-aqua/swim-core/events";
 import { formatTime as formatMs } from "@project-aqua/swim-core/times";
+import { parseDobFromUsaMemberId } from "../roster/utils";
 import type {
   ParsedEntry,
   ParsedEvent,
@@ -223,8 +224,12 @@ function bestResult(entry: Hy3Entry): {
   return null;
 }
 
-function parseA1(_line: string, _state: ParseState): void {
-  // File metadata not needed for ParsedMeet flatten.
+function parseA1(line: string, state: ParseState): void {
+  const title = extract(line, 3, 30).toLowerCase();
+  if (title.includes("result")) state.meet.importKind = "results";
+  else if (title.includes("entries") || title.includes("entry")) {
+    state.meet.importKind = "entries";
+  } else if (title.includes("roster")) state.meet.importKind = "roster";
 }
 
 function parseB1(line: string, state: ParseState): void {
@@ -532,11 +537,25 @@ function flatten(state: ParseState): ParsedMeet {
       place: best.result.overallPlace,
       isDq,
       usaMemberId: swimmer.usaMemberId,
+      dateOfBirth: swimmer.usaMemberId
+        ? parseDobFromUsaMemberId(swimmer.usaMemberId)
+        : undefined,
+      gender:
+        swimmer.gender === "male" || swimmer.gender === "female"
+          ? swimmer.gender
+          : undefined,
+      teamCode: swimmer.teamCode,
       resultType: best.kind,
       heat: best.result.heat,
       lane: best.result.lane,
       dqCode: best.result.dqCode,
       exhibition: entry.exhibition,
+      splitsMs:
+        best.result.splits.size > 0
+          ? [...best.result.splits.entries()]
+              .sort((a, b) => a[0] - b[0])
+              .map(([, seconds]) => Math.round(seconds * 1000))
+          : undefined,
     });
   }
 
@@ -549,6 +568,7 @@ function flatten(state: ParseState): ParsedMeet {
     altitude: state.altitude,
     sanctionNumber: state.sanctionNumber,
     notes: state.notes,
+    importKind: state.meet.importKind,
     events,
     entries,
     results,

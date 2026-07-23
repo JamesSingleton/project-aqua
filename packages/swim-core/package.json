@@ -15,6 +15,7 @@
     "./calendar-date": "./src/calendar-date.ts",
     "./calendar-recurrence": "./src/calendar-recurrence.ts",
     "./people": "./src/people.ts",
+    "./meet-athlete-match": "./src/meet-athlete-match.ts",
     "./text": "./src/text.ts",
     "./team-types": "./src/team-types.ts",
     "./workout-parser": "./src/workout-parser.ts"

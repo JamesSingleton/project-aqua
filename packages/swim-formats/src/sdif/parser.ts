@@ -9,6 +9,7 @@ import type {
   ParsedEntry,
   ParsedEvent,
   ParsedMeet,
+  ParsedRelayEntry,
   ParsedResult,
 } from "../types";
 
@@ -22,6 +23,9 @@ const STROKE_MAP: Record<string, string> = {
   FL: "fly",
   FLY: "fly",
   IM: "im",
+  FRR: "free_relay",
+  MR: "medley_relay",
+  MEDLEY: "medley_relay",
 };
 
 function parseStroke(code: string): string {
@@ -36,6 +40,27 @@ function parseSdifDate(raw: string): string | undefined {
   return undefined;
 }
 
+function swimmerNameFromLine(line: string): string {
+  return (
+    `${line.substring(48, 68).trim()} ${line.substring(68, 88).trim()}`.trim() ||
+    `${line.substring(31, 51).trim()} ${line.substring(11, 31).trim()}`.trim()
+  );
+}
+
+function usaIdFromLine(line: string): string | undefined {
+  const a =
+    line.substring(16, 28).trim() || line.substring(51, 65).trim() || undefined;
+  return a || undefined;
+}
+
+function eventNumberFromLine(line: string): number | undefined {
+  return (
+    Number.parseInt(line.substring(9, 13).trim(), 10) ||
+    Number.parseInt(line.substring(2, 6).trim(), 10) ||
+    undefined
+  );
+}
+
 /** Parse SDIF/SD3 file content into structured meet data */
 export function parseSdif(content: string): ParsedMeet {
   const lines = content.split(/\r?\n/).filter((l) => l.trim());
@@ -45,8 +70,8 @@ export function parseSdif(content: string): ParsedMeet {
     events: [],
     entries: [],
     results: [],
-    // entryLimits: not present in typical SDIF meet records
   };
+  const relays: ParsedRelayEntry[] = [];
 
   for (const line of lines) {
     const recordType = line.substring(0, 2);
@@ -64,6 +89,12 @@ export function parseSdif(content: string): ParsedMeet {
         if (loc) meet.location = loc;
         const start = parseSdifDate(line.substring(71, 79));
         if (start) meet.startDate = start;
+        const end = parseSdifDate(line.substring(79, 87));
+        if (end) meet.endDate = end;
+        const sanction = line.substring(87, 102)?.trim();
+        if (sanction && /[A-Z0-9]/i.test(sanction)) {
+          meet.sanctionNumber = sanction;
+        }
         if (line.includes("LCM")) meet.course = "LCM";
         else if (line.includes("SCM")) meet.course = "SCM";
         else meet.course = "SCY";
@@ -81,10 +112,7 @@ export function parseSdif(content: string): ParsedMeet {
           line.substring(30, 33).trim() || line.substring(21, 24).trim(),
         );
         const event: ParsedEvent = {
-          eventNumber:
-            Number.parseInt(line.substring(9, 13).trim(), 10) ||
-            Number.parseInt(line.substring(2, 6).trim(), 10) ||
-            undefined,
+          eventNumber: eventNumberFromLine(line),
           distance,
           stroke,
           gender,
@@ -100,47 +128,59 @@ export function parseSdif(content: string): ParsedMeet {
       }
       case "D0": {
         const entry: ParsedEntry = {
-          eventNumber:
-            Number.parseInt(line.substring(9, 13).trim(), 10) ||
-            Number.parseInt(line.substring(2, 6).trim(), 10) ||
-            undefined,
-          swimmerName:
-            `${line.substring(48, 68).trim()} ${line.substring(68, 88).trim()}`.trim() ||
-            `${line.substring(31, 51).trim()} ${line.substring(11, 31).trim()}`.trim(),
+          eventNumber: eventNumberFromLine(line),
+          swimmerName: swimmerNameFromLine(line),
           seedTime:
             line.substring(99, 107).trim() ||
             line.substring(72, 82).trim() ||
             undefined,
-          usaMemberId:
-            line.substring(16, 28).trim() ||
-            line.substring(51, 65).trim() ||
-            undefined,
+          usaMemberId: usaIdFromLine(line),
         };
         meet.entries.push(entry);
         break;
       }
+      case "F0": {
+        // Relay entry / result — team name region varies by vendor
+        const teamCode =
+          line.substring(11, 16).trim() ||
+          line.substring(2, 8).trim() ||
+          undefined;
+        const seedTime =
+          line.substring(99, 107).trim() ||
+          line.substring(72, 82).trim() ||
+          undefined;
+        relays.push({
+          eventNumber: eventNumberFromLine(line),
+          swimmerNames: [],
+          seedTime: seedTime || undefined,
+          teamCode,
+        });
+        break;
+      }
       case "G0": {
+        const time =
+          line.substring(99, 107).trim() || line.substring(72, 82).trim();
+        if (!time) break;
+        const dqFlag = line.substring(117, 118).trim();
         const result: ParsedResult = {
-          eventNumber:
-            Number.parseInt(line.substring(9, 13).trim(), 10) ||
-            Number.parseInt(line.substring(2, 6).trim(), 10) ||
-            undefined,
-          swimmerName:
-            `${line.substring(48, 68).trim()} ${line.substring(68, 88).trim()}`.trim() ||
-            `${line.substring(31, 51).trim()} ${line.substring(11, 31).trim()}`.trim(),
-          time: line.substring(99, 107).trim() || line.substring(72, 82).trim(),
+          eventNumber: eventNumberFromLine(line),
+          swimmerName: swimmerNameFromLine(line),
+          time,
           place:
             Number.parseInt(line.substring(113, 117).trim(), 10) ||
             Number.parseInt(line.substring(82, 86).trim(), 10) ||
             undefined,
-          isDq: line.substring(117, 118).trim() === "D" || /DQ/i.test(line),
+          isDq: dqFlag === "D" || /DQ|NS|SCR/i.test(line),
+          usaMemberId: usaIdFromLine(line),
+          dqCode: dqFlag && dqFlag !== "" ? dqFlag : undefined,
         };
-        if (result.time) meet.results.push(result);
+        meet.results.push(result);
         break;
       }
     }
   }
 
+  if (relays.length > 0) meet.relays = relays;
   return meet;
 }
 

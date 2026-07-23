@@ -1,7 +1,13 @@
 import { parseRosterCsv } from "../csv/parser";
+import {
+  extractAllMeetFilesFromZip,
+  isZipBytes,
+  isZipFilename,
+} from "../meet/zip";
 import type { ParsedRosterRow } from "../types";
 import { parseCl2Roster } from "./cl2";
 import { parseHy3Roster } from "./hy3-style";
+import { swimmerKey } from "./utils";
 
 export type RosterFileFormat = "csv" | "sdif" | "hy3" | "cl2";
 
@@ -90,4 +96,45 @@ export function rosterImportErrorForFile(
     return `Unsupported file type: ${filename}`;
   }
   return null;
+}
+
+/** Parse roster rows from a ZIP (CL2/HY3 Swimmers Only / Rosters Only packs). */
+export function parseRosterFileFromBytes(
+  bytes: Uint8Array,
+  filename: string,
+): ParsedRosterRow[] {
+  if (!(isZipFilename(filename) || isZipBytes(bytes))) {
+    const content = new TextDecoder("utf-8").decode(bytes);
+    const format = detectRosterFileFormat(filename, content);
+    if (!format) {
+      throw new Error(
+        "Unsupported file type. Use CSV, SD3, CL2, HY3, or a roster ZIP.",
+      );
+    }
+    return parseRosterFile(content, format);
+  }
+
+  const bundle = extractAllMeetFilesFromZip(bytes);
+  const byKey = new Map<string, ParsedRosterRow>();
+  for (const file of bundle.files) {
+    if (
+      file.format !== "cl2" &&
+      file.format !== "hy3" &&
+      file.format !== "sdif"
+    ) {
+      continue;
+    }
+    const content = new TextDecoder("utf-8").decode(file.bytes);
+    const format: RosterFileFormat =
+      file.format === "hy3" ? "hy3" : file.format === "sdif" ? "sdif" : "cl2";
+    for (const row of parseRosterFile(content, format)) {
+      byKey.set(swimmerKey(row), row);
+    }
+  }
+  if (byKey.size === 0) {
+    throw new Error(
+      "No roster swimmers found in ZIP. Export Swimmers Only / Rosters Only from Team Manager.",
+    );
+  }
+  return [...byKey.values()];
 }

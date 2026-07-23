@@ -29,6 +29,10 @@ export interface ParsedMeet {
    * and surfaces the count so coaches know what was omitted.
    */
   skippedDiveEvents?: number;
+  /**
+   * When set, guides admin import (e.g. skip draft entries for results files).
+   */
+  importKind?: "results" | "entries" | "events" | "roster";
 }
 
 export interface ParsedEvent {
@@ -63,11 +67,18 @@ export interface ParsedResult {
   place?: number;
   isDq?: boolean;
   usaMemberId?: string;
+  /** When present (e.g. Hy-Tek D0), used to match/create roster athletes. */
+  dateOfBirth?: string;
+  gender?: "male" | "female";
+  /** Hy-Tek team abbreviation when present (C1 / D1 context). */
+  teamCode?: string;
   resultType?: "prelim" | "swimoff" | "finals";
   heat?: number;
   lane?: number;
   dqCode?: string;
   exhibition?: boolean;
+  /** Split times in milliseconds when present (e.g. HY3 G1). */
+  splitsMs?: number[];
 }
 
 export interface ParsedRelayEntry {

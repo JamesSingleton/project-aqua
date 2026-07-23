@@ -51,7 +51,7 @@ Or from `apps/admin`: `pnpm clean:next`.
 - **Email:** React Email + Resend (`packages/emails`)
 - **Billing:** Stripe per-team subscriptions (`packages/billing`)
 - **USA Swimming:** SWIMS vendor API (`packages/usa-swimming`)
-- **File formats:** SDIF/CSV/HY3 parsers (`packages/swim-formats`)
+- **File formats:** Hy-Tek / SDIF meet & roster parsers (`packages/swim-formats`) — Meet Events (EV3/HYV), Results (CL2/HY3/SD3), Entries/Roster (CL2+HY3), ZIP packs
 
 ## Routes
 

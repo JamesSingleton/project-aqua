@@ -4,19 +4,31 @@ import { parseHy3 } from "../hy3/parser";
 import { parseSdif } from "../sdif/parser";
 import type { ParsedMeet } from "../types";
 import { parseEventExportXls } from "../xls/parser";
-import { extractMeetFileFromZip, isZipBytes, isZipFilename } from "./zip";
+import {
+  type ExtractedMeetFile,
+  extractAllMeetFilesFromZip,
+  isZipBytes,
+  isZipFilename,
+  mergeParsedMeets,
+} from "./zip";
 
 export type MeetFileFormat = "sdif" | "hy3" | "ev3" | "hyv" | "cl2" | "xls";
 
 export {
   type ExtractedMeetFile,
+  extractAllMeetFilesFromZip,
   extractMeetFileFromZip,
   isZipBytes,
   isZipFilename,
+  type MeetZipBundle,
+  mergeParsedMeets,
 } from "./zip";
 
 const UNSUPPORTED_MEET_FILE =
   "Unsupported meet file. Use SD3/SDIF, HY3, EV3, HYV, CL2, XLS, or ZIP.";
+
+const ROSTER_ONLY_ZIP_ERROR =
+  "This ZIP looks like a Team Manager roster export (Swimmers Only / Rosters Only). Import it from Roster, not Meet import.";
 
 export function detectMeetFileFormat(
   filename: string,
@@ -63,13 +75,50 @@ export function parseMeetFile(
   }
 }
 
+function parseExtractedFile(file: ExtractedMeetFile): ParsedMeet {
+  if (file.format === "xls") {
+    return parseEventExportXls(file.bytes);
+  }
+  const content = new TextDecoder("utf-8").decode(file.bytes);
+  return parseMeetFile(content, file.format);
+}
+
+export type ParseMeetBytesResult = ParsedMeet & {
+  sourceFiles?: string[];
+  zipFormat?: MeetFileFormat;
+};
+
 export function parseMeetFileFromBytes(
   bytes: Uint8Array,
   filename: string,
 ): ParsedMeet {
   if (isZipFilename(filename) || isZipBytes(bytes)) {
-    const extracted = extractMeetFileFromZip(bytes);
-    return parseMeetFileFromBytes(extracted.bytes, extracted.filename);
+    const bundle = extractAllMeetFilesFromZip(bytes);
+    if (bundle.isRosterOnly) {
+      throw new Error(ROSTER_ONLY_ZIP_ERROR);
+    }
+
+    // Meet Events: EV3 primary is enough (HYV is alternate representation).
+    // Entries/results: merge companion CL2/HY3/SD3 files.
+    const primary = parseExtractedFile(bundle.primary);
+    const supplements = bundle.files
+      .filter((f) => f !== bundle.primary)
+      .filter((f) => {
+        // Skip alternate event template when EV3 already chosen
+        if (bundle.primary.format === "ev3" && f.format === "hyv") return false;
+        if (bundle.primary.format === "hyv" && f.format === "ev3") return false;
+        return true;
+      })
+      .map(parseExtractedFile);
+
+    const merged =
+      supplements.length > 0 ? mergeParsedMeets(primary, supplements) : primary;
+
+    (merged as ParseMeetBytesResult).sourceFiles = bundle.files.map(
+      (f) => f.filename,
+    );
+    (merged as ParseMeetBytesResult).zipFormat = bundle.primary.format;
+    return merged;
   }
 
   const format = detectMeetFileFormat(filename);

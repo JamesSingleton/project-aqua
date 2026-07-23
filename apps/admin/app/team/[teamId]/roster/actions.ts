@@ -40,6 +40,7 @@ import { parseRosterCsv } from "@project-aqua/swim-formats/csv";
 import {
   detectRosterFileFormat,
   parseRosterFile,
+  parseRosterFileFromBytes,
   rosterImportErrorForFile,
 } from "@project-aqua/swim-formats/roster";
 import { revalidatePath } from "next/cache";
@@ -401,20 +402,35 @@ export async function importRosterFileAction(
   teamId: string,
   filename: string,
   content: string,
+  encoding: "utf8" | "base64" = "utf8",
 ) {
-  const importError = rosterImportErrorForFile(filename, content);
+  if (filename.toLowerCase().endsWith(".zip")) {
+    if (encoding !== "base64") {
+      throw new Error("ZIP roster packs must be uploaded as binary files.");
+    }
+    const bytes = Uint8Array.from(Buffer.from(content, "base64"));
+    const rows = parseRosterFileFromBytes(bytes, filename);
+    return importRosterRows(teamId, rows, "roster_zip");
+  }
+
+  const text =
+    encoding === "base64"
+      ? Buffer.from(content, "base64").toString("utf8")
+      : content;
+
+  const importError = rosterImportErrorForFile(filename, text);
   if (importError) {
     throw new Error(importError);
   }
 
-  const format = detectRosterFileFormat(filename, content);
+  const format = detectRosterFileFormat(filename, text);
   if (!format) {
     throw new Error(
-      "Unsupported file type. Use CSV, SD3, CL2, or HY3 roster exports.",
+      "Unsupported file type. Use CSV, SD3, CL2, HY3, or a roster ZIP.",
     );
   }
 
-  const rows = parseRosterFile(content, format);
+  const rows = parseRosterFile(text, format);
   return importRosterRows(teamId, rows, `roster_${format}`);
 }
 

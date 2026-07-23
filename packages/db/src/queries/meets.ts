@@ -504,6 +504,7 @@ export async function addMeetResult(
     place?: number;
     isDq?: boolean;
     previousBestTimeMs?: number | null;
+    splitTimes?: number[] | null;
   },
 ) {
   const id = generateId();
@@ -542,6 +543,7 @@ export async function addMeetResult(
     previousBestTimeMs,
     place: options?.place ?? null,
     isDq: options?.isDq ?? false,
+    splitTimes: options?.splitTimes ?? null,
   });
 
   if (event && !options?.isDq) {

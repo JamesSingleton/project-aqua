@@ -2,7 +2,10 @@
 
 import { getSession } from "@project-aqua/auth/session";
 import { assertFeature } from "@project-aqua/billing/features";
-import { requireTeamRole } from "@project-aqua/db/authz";
+import {
+  requireCoachSafeSportCurrent,
+  requireTeamRole,
+} from "@project-aqua/db/authz";
 import {
   createImportJob,
   updateImportJob,
@@ -23,22 +26,31 @@ import {
   getMeetResults,
   getMeets,
   getRosterBestTimesForEvents,
+  replaceMeetRelayLegs,
   updateMeet,
   updateMeetEntryStatus,
   upsertMeetCommitment,
 } from "@project-aqua/db/queries/meets";
 import { recomputeBestTimesForSwimmer } from "@project-aqua/db/queries/progression";
 import {
+  addSwimmer,
   findSwimmerByGoverningBodyId,
   getRoster,
 } from "@project-aqua/db/queries/roster";
 import { sendMeetImportComplete } from "@project-aqua/emails";
+import { isMinorSwimmer } from "@project-aqua/swim-core/age";
 import { formatDateOnly } from "@project-aqua/swim-core/calendar-date";
 import {
   canAddMeetEntry,
   isRelayStroke,
 } from "@project-aqua/swim-core/entry-limits";
 import { isSwimmerEligibleForEvent } from "@project-aqua/swim-core/events";
+import {
+  fileAthleteKey,
+  type FileAthleteMatch,
+  matchResultAthletes,
+  type MatchRosterAthlete,
+} from "@project-aqua/swim-core/meet-athlete-match";
 import { normalizePersonName } from "@project-aqua/swim-core/people";
 import { parseTime } from "@project-aqua/swim-core/times";
 import { createMeetSchema } from "@project-aqua/swim-core/validators";
@@ -46,7 +58,6 @@ import type { ParsedMeet } from "@project-aqua/swim-formats";
 import { exportHy3 } from "@project-aqua/swim-formats/hy3";
 import {
   detectMeetFileFormat,
-  extractMeetFileFromZip,
   isZipFilename,
   type MeetFileFormat,
   parseMeetFile,
@@ -98,6 +109,114 @@ async function resolveMembership(
 
   if (!match) return null;
   return { membershipId: match.membershipId, swimmerId: match.swimmerId };
+}
+
+function splitDisplayName(name: string): {
+  firstName: string;
+  lastName: string;
+} {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { firstName: "Unknown", lastName: "Swimmer" };
+  if (parts.length === 1) return { firstName: parts[0]!, lastName: parts[0]! };
+  return {
+    firstName: parts.slice(0, -1).join(" "),
+    lastName: parts[parts.length - 1]!,
+  };
+}
+
+function toMatchRoster(
+  roster: Awaited<ReturnType<typeof getRoster>>,
+): MatchRosterAthlete[] {
+  return roster.map((r) => ({
+    membershipId: r.membershipId,
+    swimmerId: r.swimmerId,
+    firstName: r.firstName,
+    lastName: r.lastName,
+    preferredName: r.preferredName,
+    dateOfBirth: r.dateOfBirth,
+    governingBodyId: r.governingBodyId,
+  }));
+}
+
+export type AthleteMapAction = string | "skip" | "create";
+
+async function createAthleteFromFile(
+  teamId: string,
+  userId: string | undefined,
+  roster: Awaited<ReturnType<typeof getRoster>>,
+  athlete: {
+    swimmerName: string;
+    usaMemberId?: string;
+    dateOfBirth?: string;
+    gender?: "male" | "female";
+  },
+  createdKeys: Set<string>,
+): Promise<{ membershipId: string; swimmerId: string } | null> {
+  if (!athlete.dateOfBirth || !athlete.gender) return null;
+
+  const { firstName, lastName } = splitDisplayName(athlete.swimmerName);
+  const dedupeKey = [
+    normalizePersonName(firstName),
+    normalizePersonName(lastName),
+    athlete.dateOfBirth,
+  ].join("|");
+  if (createdKeys.has(dedupeKey)) {
+    const cached = roster.find(
+      (r) =>
+        normalizePersonName(r.firstName) === normalizePersonName(firstName) &&
+        normalizePersonName(r.lastName) === normalizePersonName(lastName) &&
+        r.dateOfBirth === athlete.dateOfBirth,
+    );
+    if (cached) {
+      return {
+        membershipId: cached.membershipId,
+        swimmerId: cached.swimmerId,
+      };
+    }
+  }
+
+  if (isMinorSwimmer(athlete.dateOfBirth)) {
+    await requireCoachSafeSportCurrent(userId, teamId);
+  }
+
+  const added = await addSwimmer(teamId, {
+    firstName,
+    lastName,
+    dateOfBirth: athlete.dateOfBirth,
+    gender: athlete.gender,
+    usaMemberId: athlete.usaMemberId,
+  });
+
+  createdKeys.add(dedupeKey);
+  roster.push({
+    membershipId: added.membershipId,
+    enrollmentId: "",
+    seasonId: "",
+    swimmerId: added.swimmerId,
+    firstName,
+    middleName: null,
+    lastName,
+    preferredName: null,
+    dateOfBirth: athlete.dateOfBirth,
+    gender: athlete.gender,
+    governingBodyId: athlete.usaMemberId ?? null,
+    practiceGroup: null,
+    trainingGroups: null,
+    groupId: null,
+    groupName: null,
+    classYear: null,
+    academicStanding: null,
+    eligibilityStatus: null,
+    seasonsOfCompetitionUsed: null,
+    eligibilityNotes: null,
+    status: "active",
+    joinedAt: new Date(),
+  });
+
+  return {
+    membershipId: added.membershipId,
+    swimmerId: added.swimmerId,
+  };
 }
 
 export async function createMeetAction(teamId: string, formData: FormData) {
@@ -203,8 +322,20 @@ export type MeetImportPreview = {
     packages?: Array<{ individual: number; relay: number }>;
   };
   format: MeetFileFormat;
-  /** Inner filename when the upload was a ZIP container. */
+  /** Inner filename(s) when the upload was a ZIP container. */
   sourceFilename?: string;
+  sourceFiles?: string[];
+  /** Present when the file has results — Team Manager–style roster matching. */
+  athleteMatch?: {
+    matchedCount: number;
+    reviewCount: number;
+    unmatchedResultCount: number;
+    reviewAthletes: FileAthleteMatch[];
+    rosterOptions: Array<{
+      membershipId: string;
+      displayName: string;
+    }>;
+  };
 };
 
 function decodeMeetFilePayload(
@@ -216,27 +347,28 @@ function decodeMeetFilePayload(
   parsed: ParsedMeet;
   textContent: string;
   sourceFilename?: string;
+  sourceFiles?: string[];
 } {
   if (isZipFilename(filename)) {
     if (encoding !== "base64") {
       throw new Error("ZIP meet packs must be uploaded as binary files.");
     }
     const bytes = Uint8Array.from(Buffer.from(content, "base64"));
-    const extracted = extractMeetFileFromZip(bytes);
-    if (extracted.format === "xls") {
-      return {
-        format: extracted.format,
-        parsed: parseMeetFileFromBytes(extracted.bytes, extracted.filename),
-        textContent: content,
-        sourceFilename: extracted.filename,
-      };
-    }
-    const text = new TextDecoder("utf-8").decode(extracted.bytes);
+    const parsed = parseMeetFileFromBytes(bytes, filename) as ParsedMeet & {
+      sourceFiles?: string[];
+      zipFormat?: MeetFileFormat;
+    };
+    const sourceFiles = parsed.sourceFiles;
+    const format =
+      parsed.zipFormat ??
+      (detectMeetFileFormat(sourceFiles?.[0] ?? filename) as MeetFileFormat) ??
+      "cl2";
     return {
-      format: extracted.format,
-      parsed: parseMeetFile(text, extracted.format),
-      textContent: text,
-      sourceFilename: extracted.filename,
+      format,
+      parsed,
+      textContent: content,
+      sourceFilename: sourceFiles?.join(" + "),
+      sourceFiles,
     };
   }
 
@@ -289,11 +421,18 @@ export async function parseMeetFilePreviewAction(
   await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
   await assertFeature(teamId, "meet_import");
 
-  const { format, parsed, sourceFilename } = decodeMeetFilePayload(
+  const { format, parsed, sourceFilename, sourceFiles } = decodeMeetFilePayload(
     content,
     filename,
     encoding,
   );
+
+  const roster = await getRoster(teamId);
+  const matchBundle =
+    parsed.results.length > 0
+      ? matchResultAthletes(toMatchRoster(roster), parsed.results)
+      : null;
+
   return {
     name: parsed.name,
     startDate: parsed.startDate,
@@ -318,6 +457,29 @@ export async function parseMeetFilePreviewAction(
     entryLimits: parsed.entryLimits,
     format,
     sourceFilename,
+    sourceFiles,
+    athleteMatch: matchBundle
+      ? {
+          matchedCount: matchBundle.matched.length,
+          reviewCount:
+            matchBundle.ambiguous.length + matchBundle.unmatched.length,
+          unmatchedResultCount: matchBundle.unmatched.reduce(
+            (sum, a) => sum + a.resultCount,
+            0,
+          ),
+          reviewAthletes: [
+            ...matchBundle.ambiguous,
+            ...matchBundle.unmatched,
+          ].slice(0, 100),
+          rosterOptions: [...roster]
+            .map((r) => ({
+              membershipId: r.membershipId,
+              displayName:
+                `${r.preferredName?.trim() || r.firstName} ${r.lastName}`.trim(),
+            }))
+            .sort((a, b) => a.displayName.localeCompare(b.displayName)),
+        }
+      : undefined,
   };
 }
 
@@ -401,6 +563,16 @@ export async function importMeetFileAction(
     review?: MeetImportReviewOverrides;
     /** File payload encoding. XLS uploads use base64. */
     encoding?: "utf8" | "base64";
+    /**
+     * Per file-athlete resolution from the review step.
+     * Values: roster membershipId | "skip" | "create".
+     */
+    athleteMaps?: Record<string, AthleteMapAction>;
+    /**
+     * When true, create roster athletes for unmatched results that include
+     * DOB+gender (Team Manager “Add New Teams/Athletes”). Default false.
+     */
+    addNewAthletes?: boolean;
   },
 ) {
   const session = await getSession();
@@ -421,10 +593,15 @@ export async function importMeetFileAction(
 
   // Peek at content to choose job type before processing
   const looksLikeResults =
-    peek.results.length > 0 &&
-    peek.results.length >= peek.events.length &&
-    peek.entries.length === 0;
+    peek.importKind === "results" ||
+    (peek.importKind !== "entries" && peek.results.length > 0);
   const jobType = looksLikeResults ? "meet_results" : "meet_events";
+  const shouldImportEntries =
+    peek.importKind === "entries" ||
+    (!looksLikeResults && peek.entries.length > 0) ||
+    (peek.importKind == null &&
+      peek.results.length === 0 &&
+      peek.entries.length > 0);
 
   const jobId = await createImportJob(teamId, jobType);
   await updateImportJob(jobId, { status: "processing" });
@@ -506,10 +683,7 @@ export async function importMeetFileAction(
       });
     } else {
       // auto: prefer linking results onto an existing meet when we can match
-      const looksLikeResultsImport =
-        parsed.results.length > 0 && parsed.events.length === 0;
-
-      if (looksLikeResultsImport) {
+      if (looksLikeResults) {
         const matchId = findMatchingMeetId(existingMeets, parsed);
         if (matchId) {
           meetId = matchId;
@@ -553,11 +727,15 @@ export async function importMeetFileAction(
 
     const existingEvents = await getMeetEvents(meetId);
     const eventIdByNumber = new Map<number, string>();
+    const eventIdByKey = new Map<string, string>();
     let fallbackEventId: string | undefined;
 
     for (const event of existingEvents) {
       if (event.eventNumber != null) {
         eventIdByNumber.set(event.eventNumber, event.id);
+      }
+      if (!eventIdByKey.has(event.eventKey)) {
+        eventIdByKey.set(event.eventKey, event.id);
       }
       fallbackEventId ??= event.id;
     }
@@ -567,6 +745,15 @@ export async function importMeetFileAction(
       if (event.eventNumber != null && eventIdByNumber.has(event.eventNumber)) {
         continue;
       }
+      // Prefer matching an existing meet event by stroke/distance/course/gender
+      // so results files with Hy-Tek event codes (e.g. 501) attach to EV3 events (e.g. #3).
+      if (eventIdByKey.has(event.eventKey)) {
+        const existingId = eventIdByKey.get(event.eventKey)!;
+        if (event.eventNumber != null) {
+          eventIdByNumber.set(event.eventNumber, existingId);
+        }
+        continue;
+      }
       const eventId = await addMeetEvent(meetId, {
         ...event,
         course: parsed.course,
@@ -574,6 +761,7 @@ export async function importMeetFileAction(
       if (event.eventNumber != null) {
         eventIdByNumber.set(event.eventNumber, eventId);
       }
+      eventIdByKey.set(event.eventKey, eventId);
       fallbackEventId ??= eventId;
       eventsAdded++;
     }
@@ -581,11 +769,94 @@ export async function importMeetFileAction(
     let entriesAdded = 0;
     let resultsAdded = 0;
     let unmatched = 0;
+    let swimmersCreated = 0;
+    let resultsSkipped = 0;
     const resultSwimmerIds = new Set<string>();
+    const createdAthleteKeys = new Set<string>();
+    const athleteMaps = options?.athleteMaps ?? {};
+    const addNewAthletes = options?.addNewAthletes === true;
+
+    const matchBundle =
+      parsed.results.length > 0
+        ? matchResultAthletes(toMatchRoster(roster), parsed.results)
+        : null;
+    const resolvedByKey = new Map<
+      string,
+      { membershipId: string; swimmerId: string; created: boolean }
+    >();
+
+    if (matchBundle) {
+      for (const athlete of matchBundle.athletes) {
+        const mapAction = athleteMaps[athlete.key];
+
+        if (mapAction === "skip") continue;
+
+        if (
+          mapAction &&
+          mapAction !== "create" &&
+          mapAction !== "skip"
+        ) {
+          const member = roster.find((r) => r.membershipId === mapAction);
+          if (member) {
+            resolvedByKey.set(athlete.key, {
+              membershipId: member.membershipId,
+              swimmerId: member.swimmerId,
+              created: false,
+            });
+          }
+          continue;
+        }
+
+        if (athlete.status === "matched" && athlete.matched) {
+          resolvedByKey.set(athlete.key, {
+            membershipId: athlete.matched.membershipId,
+            swimmerId: athlete.matched.swimmerId,
+            created: false,
+          });
+          continue;
+        }
+
+        const shouldCreate =
+          mapAction === "create" ||
+          (addNewAthletes && athlete.status === "unmatched");
+        if (!shouldCreate) continue;
+
+        const created = await createAthleteFromFile(
+          teamId,
+          session?.user?.id,
+          roster,
+          athlete,
+          createdAthleteKeys,
+        );
+        if (created) {
+          resolvedByKey.set(athlete.key, { ...created, created: true });
+          swimmersCreated++;
+        }
+      }
+    }
 
     async function eventIdFor(num?: number) {
       if (num != null && eventIdByNumber.has(num)) {
         return eventIdByNumber.get(num)!;
+      }
+      const fromParsed =
+        num != null
+          ? parsed.events.find((e) => e.eventNumber === num)
+          : undefined;
+      if (fromParsed && eventIdByKey.has(fromParsed.eventKey)) {
+        const id = eventIdByKey.get(fromParsed.eventKey)!;
+        if (num != null) eventIdByNumber.set(num, id);
+        return id;
+      }
+      if (fromParsed) {
+        const eventId = await addMeetEvent(meetId!, {
+          ...fromParsed,
+          course: parsed.course,
+        });
+        if (num != null) eventIdByNumber.set(num, eventId);
+        eventIdByKey.set(fromParsed.eventKey, eventId);
+        fallbackEventId ??= eventId;
+        return eventId;
       }
       if (fallbackEventId) return fallbackEventId;
       return addMeetEvent(meetId!, {
@@ -598,7 +869,7 @@ export async function importMeetFileAction(
       });
     }
 
-    for (const entry of parsed.entries) {
+    for (const entry of shouldImportEntries ? parsed.entries : []) {
       const resolved = await resolveMembership(
         teamId,
         roster,
@@ -624,25 +895,78 @@ export async function importMeetFileAction(
     }
 
     for (const result of parsed.results) {
-      const resolved = await resolveMembership(
-        teamId,
-        roster,
-        result.swimmerName,
-        result.usaMemberId,
-      );
+      const key = fileAthleteKey(result);
+      let resolved = resolvedByKey.get(key) ?? null;
+
+      if (!resolved && !looksLikeResults) {
+        const membership = await resolveMembership(
+          teamId,
+          roster,
+          result.swimmerName,
+          result.usaMemberId,
+        );
+        if (membership) {
+          resolved = { ...membership, created: false };
+        }
+      }
+
       if (!resolved) {
+        resultsSkipped++;
         unmatched++;
         continue;
       }
+
       const meetEventId = await eventIdFor(result.eventNumber);
-      const timeMs = parseTime(result.time);
-      if (!Number.isFinite(timeMs) || timeMs <= 0) continue;
+      const parsedMs = parseTime(result.time);
+      const timeMs =
+        Number.isFinite(parsedMs) && parsedMs > 0
+          ? parsedMs
+          : result.isDq
+            ? 0
+            : Number.NaN;
+      if (!Number.isFinite(timeMs)) continue;
+      if (timeMs <= 0 && !result.isDq) continue;
+
       await addMeetResult(meetId, meetEventId, resolved.swimmerId, timeMs, {
         place: result.place,
         isDq: result.isDq,
+        splitTimes: result.splitsMs,
       });
       resultSwimmerIds.add(resolved.swimmerId);
       resultsAdded++;
+    }
+
+    let importWarning: string | undefined;
+    if (looksLikeResults && parsed.results.length > 0 && resultsAdded === 0) {
+      importWarning = `Parsed ${parsed.results.length} results but none matched your roster. Map athletes in the review step, or enable “Add unmatched athletes” when identity (DOB/gender) is present.`;
+    }
+
+    let relaysAdded = 0;
+    for (const relay of parsed.relays ?? []) {
+      const meetEventId = await eventIdFor(relay.eventNumber);
+      const legs: Array<{
+        membershipId: string;
+        legOrder: number;
+      }> = [];
+      for (let i = 0; i < relay.swimmerNames.length; i++) {
+        const name = relay.swimmerNames[i]!;
+        const resolved = await resolveMembership(teamId, roster, name);
+        if (!resolved) {
+          unmatched++;
+          continue;
+        }
+        legs.push({
+          membershipId: resolved.membershipId,
+          legOrder: i + 1,
+        });
+      }
+      if (legs.length === 0) continue;
+      await replaceMeetRelayLegs({
+        meetId,
+        meetEventId,
+        legs,
+      });
+      relaysAdded++;
     }
 
     for (const swimmerId of resultSwimmerIds) {
@@ -658,7 +982,10 @@ export async function importMeetFileAction(
         events: eventsAdded,
         entries: entriesAdded,
         results: resultsAdded,
+        relays: relaysAdded,
         unmatched,
+        resultsSkipped,
+        swimmersCreated,
         format,
         jobType,
       }),
@@ -680,6 +1007,9 @@ export async function importMeetFileAction(
       entries: entriesAdded,
       results: resultsAdded,
       unmatched,
+      resultsSkipped,
+      swimmersCreated,
+      warning: importWarning,
       format: format as MeetFileFormat,
     };
   } catch (error) {

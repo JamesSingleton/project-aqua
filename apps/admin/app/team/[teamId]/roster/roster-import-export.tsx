@@ -26,8 +26,8 @@ import { useId, useRef, useState } from "react";
 import { importRosterFileAction } from "./actions";
 
 const ROSTER_ACCEPT =
-  ".csv,.sd3,.sdif,.cl2,.hy3,.ev3,application/vnd.ms-excel,text/csv,text/plain";
-const MAX_FILE_BYTES = 5 * 1024 * 1024;
+  ".csv,.sd3,.sdif,.cl2,.hy3,.zip,application/vnd.ms-excel,text/csv,text/plain";
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 type ImportEntry = {
   id: string;
@@ -99,23 +99,36 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
     ]);
 
     try {
-      const content = await file.text();
-      const format = detectRosterFileFormat(file.name, content);
-      if (!format) {
-        setEntries((prev) =>
-          prev.map((entry) =>
-            entry.id === id
-              ? {
-                  ...entry,
-                  status: "failed",
-                  progress: 100,
-                  message:
-                    "Not a roster file. Use Team Manager Swimmers Only (CL2/HY3) or CSV.",
-                }
-              : entry,
-          ),
+      const isZip = file.name.toLowerCase().endsWith(".zip");
+      let content: string;
+      let encoding: "utf8" | "base64" = "utf8";
+      if (isZip) {
+        const buffer = await file.arrayBuffer();
+        content = btoa(
+          Array.from(new Uint8Array(buffer), (b) =>
+            String.fromCharCode(b),
+          ).join(""),
         );
-        return;
+        encoding = "base64";
+      } else {
+        content = await file.text();
+        const format = detectRosterFileFormat(file.name, content);
+        if (!format) {
+          setEntries((prev) =>
+            prev.map((entry) =>
+              entry.id === id
+                ? {
+                    ...entry,
+                    status: "failed",
+                    progress: 100,
+                    message:
+                      "Not a roster file. Use Team Manager Swimmers Only (CL2/HY3), CSV, or a roster ZIP.",
+                  }
+                : entry,
+            ),
+          );
+          return;
+        }
       }
 
       setEntries((prev) =>
@@ -124,7 +137,12 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
         ),
       );
 
-      const result = await importRosterFileAction(teamId, file.name, content);
+      const result = await importRosterFileAction(
+        teamId,
+        file.name,
+        content,
+        encoding,
+      );
       setEntries((prev) =>
         prev.map((entry) =>
           entry.id === id

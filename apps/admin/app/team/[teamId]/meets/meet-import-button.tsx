@@ -43,12 +43,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@project-aqua/ui/components/select";
+import { Checkbox } from "@project-aqua/ui/components/checkbox";
 import { cn } from "@project-aqua/ui/lib/utils";
 import { AlertTriangleIcon, Loader, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useRef, useState } from "react";
 import { DatePickerField } from "@/components/date-picker-field";
 import {
+  type AthleteMapAction,
   importMeetFileAction,
   type MeetImportPreview,
   parseMeetFilePreviewAction,
@@ -146,6 +148,10 @@ export function MeetImportButton({
   const [target, setTarget] = useState<string>(
     defaultMeetId ? defaultMeetId : "auto",
   );
+  const [addNewAthletes, setAddNewAthletes] = useState(false);
+  const [athleteMaps, setAthleteMaps] = useState<
+    Record<string, AthleteMapAction>
+  >({});
 
   function resetFlow() {
     setStep("upload");
@@ -156,6 +162,8 @@ export function MeetImportButton({
     setReview(null);
     setResultMessage(null);
     setResultMeetId(null);
+    setAddNewAthletes(false);
+    setAthleteMaps({});
   }
 
   async function handleFiles(fileList: FileList | File[]) {
@@ -232,6 +240,8 @@ export function MeetImportButton({
           parsed.entryLimits?.maxCombinedEntries?.toString() ?? "",
         events: parsed.events.map((e) => ({ ...e })),
       });
+      setAddNewAthletes(false);
+      setAthleteMaps({});
       setStep("review");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to parse file");
@@ -259,6 +269,8 @@ export function MeetImportButton({
         {
           ...options,
           encoding: fileMeta.encoding,
+          athleteMaps,
+          addNewAthletes,
           review: {
             name: review.name,
             startDate: review.startDate || undefined,
@@ -279,14 +291,21 @@ export function MeetImportButton({
         result.events ? `${result.events} events` : null,
         result.entries ? `${result.entries} entries` : null,
         result.results ? `${result.results} results` : null,
-        result.unmatched ? `${result.unmatched} unmatched` : null,
+        result.swimmersCreated
+          ? `${result.swimmersCreated} swimmers added`
+          : null,
+        result.resultsSkipped
+          ? `${result.resultsSkipped} skipped (other teams / unmatched)`
+          : null,
       ].filter(Boolean);
 
       setResultMeetId(result.meetId);
       setResultMessage(
-        result.linkedExisting
-          ? `Linked to existing meet · ${parts.join(" · ") || "done"}`
-          : `Created meet · ${parts.join(" · ") || "done"}`,
+        result.warning
+          ? result.warning
+          : result.linkedExisting
+            ? `Linked to existing meet · ${parts.join(" · ") || "done"}`
+            : `Created meet · ${parts.join(" · ") || "done"}`,
       );
       setStep("done");
       router.refresh();
@@ -358,7 +377,7 @@ export function MeetImportButton({
               ? "Confirm meet details and entry limits before adding."
               : step === "done"
                 ? "Your file has been imported."
-                : "Upload event templates (EV3/HYV), entries, results (SD3, HY3, CL2), or XLS reports."}
+                : "Meet Events: EV3 or EV3+HYV zip. Results: CL2/HY3/SD3 or zip (including CL2-only). Entries: CL2+HY3 zip. Roster-only zips go under Roster import."}
           </DialogDescription>
         </DialogHeader>
 
@@ -504,6 +523,132 @@ export function MeetImportButton({
                     support is planned.
                   </AlertDescription>
                 </Alert>
+              ) : null}
+
+              {preview.athleteMatch && preview.resultCount > 0 ? (
+                <div className="space-y-3 rounded-lg border p-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Athlete matching</p>
+                    <p className="text-muted-foreground text-sm">
+                      Results files include every team. Only athletes on your
+                      roster are imported unless you map or add them.
+                    </p>
+                    <p className="text-sm">
+                      {preview.athleteMatch.matchedCount} matched
+                      {preview.athleteMatch.reviewCount
+                        ? ` · ${preview.athleteMatch.reviewCount} need review`
+                        : ""}
+                      {preview.athleteMatch.unmatchedResultCount
+                        ? ` · ${preview.athleteMatch.unmatchedResultCount} results from unmatched athletes`
+                        : ""}
+                    </p>
+                  </div>
+
+                  <Field orientation="horizontal" className="w-auto">
+                    <Checkbox
+                      id={`${inputId}-add-athletes`}
+                      checked={addNewAthletes}
+                      onCheckedChange={(checked) =>
+                        setAddNewAthletes(checked === true)
+                      }
+                    />
+                    <FieldLabel
+                      htmlFor={`${inputId}-add-athletes`}
+                      className="font-normal"
+                    >
+                      Add unmatched athletes to roster
+                    </FieldLabel>
+                  </Field>
+                  <FieldDescription>
+                    Off by default (like Team Manager). Requires DOB and gender
+                    in the file.
+                  </FieldDescription>
+
+                  {preview.athleteMatch.reviewAthletes.length > 0 ? (
+                    <div className="max-h-64 space-y-2 overflow-y-auto">
+                      {preview.athleteMatch.reviewAthletes.map((athlete) => {
+                        const canCreate = Boolean(
+                          athlete.dateOfBirth && athlete.gender,
+                        );
+                        const selectItems = [
+                          { value: "skip", label: "Skip" },
+                          ...(canCreate
+                            ? [{ value: "create", label: "Add to roster" }]
+                            : []),
+                          ...athlete.candidates.map((c) => ({
+                            value: c.membershipId,
+                            label: `${c.displayName} (${c.reason.replaceAll("_", " ")})`,
+                          })),
+                          ...preview.athleteMatch!.rosterOptions
+                            .filter(
+                              (r) =>
+                                !athlete.candidates.some(
+                                  (c) => c.membershipId === r.membershipId,
+                                ),
+                            )
+                            .slice(0, 40)
+                            .map((r) => ({
+                              value: r.membershipId,
+                              label: r.displayName,
+                            })),
+                        ];
+                        const value = athleteMaps[athlete.key] ?? "skip";
+                        return (
+                          <div
+                            key={athlete.key}
+                            className="grid gap-2 border-b border-border/60 py-2 last:border-0 sm:grid-cols-[1fr_minmax(12rem,16rem)] sm:items-center"
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium">
+                                {athlete.swimmerName}
+                              </p>
+                              <p className="text-muted-foreground truncate text-xs">
+                                {athlete.teamCode
+                                  ? `${athlete.teamCode} · `
+                                  : ""}
+                                {athlete.dateOfBirth ?? "no DOB"}
+                                {athlete.usaMemberId
+                                  ? ` · ${athlete.usaMemberId}`
+                                  : ""}
+                                {` · ${athlete.resultCount} result${athlete.resultCount === 1 ? "" : "s"}`}
+                                {athlete.status === "ambiguous"
+                                  ? " · ambiguous"
+                                  : " · unmatched"}
+                              </p>
+                            </div>
+                            <Select
+                              items={selectItems}
+                              value={value}
+                              onValueChange={(v) => {
+                                if (v == null) return;
+                                setAthleteMaps((prev) => ({
+                                  ...prev,
+                                  [athlete.key]: v as AthleteMapAction,
+                                }));
+                              }}
+                            >
+                              <SelectTrigger className="h-8 w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  {selectItems.map((item) => (
+                                    <SelectItem
+                                      key={item.value}
+                                      value={item.value}
+                                    >
+                                      {item.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
               ) : null}
 
               <div className="grid gap-3 sm:grid-cols-2">
