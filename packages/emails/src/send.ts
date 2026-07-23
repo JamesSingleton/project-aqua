@@ -116,11 +116,13 @@ const SUBJECTS: Record<EmailType, string> = {
   "safesport-training-required": "SafeSport training required",
 };
 
-type TemplateLoader = () => Promise<{
-  default: (props: EmailProps[EmailType]) => ReactElement;
-}>;
+type TemplateLoaders = {
+  [K in EmailType]: () => Promise<{
+    default: (props: EmailProps[K]) => ReactElement;
+  }>;
+};
 
-const TEMPLATE_LOADERS: Record<EmailType, TemplateLoader> = {
+const TEMPLATE_LOADERS = {
   "verify-email": () => import("./templates/auth/verify-email"),
   "reset-password": () => import("./templates/auth/reset-password"),
   "password-changed": () => import("./templates/auth/password-changed"),
@@ -148,7 +150,7 @@ const TEMPLATE_LOADERS: Record<EmailType, TemplateLoader> = {
     import("./templates/safesport/safesport-training-expiring"),
   "safesport-training-required": () =>
     import("./templates/safesport/safesport-training-required"),
-};
+} satisfies TemplateLoaders;
 
 export type SendEmailOptions<T extends EmailType> = {
   type: T;
@@ -165,9 +167,9 @@ export async function sendEmail<T extends EmailType>(
     return;
   }
 
-  const loader = TEMPLATE_LOADERS[opts.type];
+  const loader = TEMPLATE_LOADERS[opts.type] as TemplateLoaders[T];
   const mod = await loader();
-  const html = await render(mod.default(opts.props as EmailProps[EmailType]));
+  const html = await render(mod.default(opts.props));
 
   const resend = getResendClient();
   const { error } = await resend.emails.send({

@@ -164,6 +164,7 @@ export function parseDateTimeLocal(value: string): {
 } {
   if (!value) return { date: undefined, time: "" };
   const [datePart, timePart = ""] = value.split("T");
+  if (!datePart) return { date: undefined, time: timePart };
   const date = parseLocalDateOnly(datePart);
   if (!date) return { date: undefined, time: timePart };
   const time = timePart.slice(0, 5);

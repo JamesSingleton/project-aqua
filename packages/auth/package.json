@@ -26,10 +26,14 @@
     "better-auth": "catalog:",
     "drizzle-orm": "catalog:"
   },
+  "peerDependencies": {
+    "next": "catalog:"
+  },
   "devDependencies": {
     "@project-aqua/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "next": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
