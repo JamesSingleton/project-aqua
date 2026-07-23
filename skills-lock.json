@@ -101,7 +101,7 @@
       "source": "vercel/turborepo",
       "sourceType": "github",
       "skillPath": "skills/turborepo/SKILL.md",
-      "computedHash": "a004cb647398484ebdc0c4baf0058668d8551a43bfe6ad69ebe6d65f188a4112"
+      "computedHash": "1c05416a506eaf3e6da8cb958cf9d75827055222922a1d541545611727ea1106"
     },
     "two-factor-authentication-best-practices": {
       "source": "better-auth/skills",
