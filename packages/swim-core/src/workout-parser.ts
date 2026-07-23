@@ -108,8 +108,7 @@ export function parseWorkoutText(rawText: string): ParsedWorkout {
   for (const line of lines) {
     const sectionMatch = line.match(SECTION_RE);
     if (sectionMatch && !SET_RE.test(line) && !/^\d+\s*[x×*]/.test(line)) {
-      const label = sectionMatch[1];
-      if (label) section = normalizeSection(label);
+      section = normalizeSection(sectionMatch[1]!);
       continue;
     }
 
@@ -171,13 +170,9 @@ export function textEditDistance(a: string, b: string): number {
     curr[0] = i;
     for (let j = 1; j <= n; j++) {
       const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      curr[j] = Math.min(
-        (prev[j] /* v8 ignore next */ ?? 0) + 1,
-        (curr[j - 1] /* v8 ignore next */ ?? 0) + 1,
-        (prev[j - 1] /* v8 ignore next */ ?? 0) + cost,
-      );
+      curr[j] = Math.min(prev[j]! + 1, curr[j - 1]! + 1, prev[j - 1]! + cost);
     }
-    for (let j = 0; j <= n; j++) prev[j] = curr[j] /* v8 ignore next */ ?? 0;
+    for (let j = 0; j <= n; j++) prev[j] = curr[j]!;
   }
-  return prev[n] /* v8 ignore next */ ?? 0;
+  return prev[n]!;
 }

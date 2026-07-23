@@ -14,8 +14,7 @@ function parseCl2D01Line(
   line: string,
   seasonYear: number,
 ): (Partial<ParsedRosterRow> & { firstName: string; lastName: string }) | null {
-  if (!line.startsWith("D01")) return null;
-
+  // Caller only invokes for D01 lines.
   const withClass = line.match(
     /^D01[A-Z0-9]{2}\s+(FR|SO|JR|SR)\s+([^,]+),\s*(.+?)(?:\s{2,})/i,
   );
@@ -61,7 +60,9 @@ function parseCl2D01Line(
   );
   const eventGender =
     line.match(/(FF|MM)\s+\d/) ?? line.match(/\d{2}(FF|MM)\s/);
-  const gender = eventGender ? genderFromEventCode(eventGender[1]!) : undefined;
+  const gender = eventGender
+    ? genderFromEventCode(eventGender[1]!)
+    : undefined;
   const dateOfBirth = parseAusaBirthDate(line);
   const usaMemberId = parseUsaMemberIdFromLine(line);
 

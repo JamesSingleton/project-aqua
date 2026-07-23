@@ -56,6 +56,15 @@ describe("getColumnPinningStyle", () => {
     });
     expect(style.boxShadow).toBeUndefined();
   });
+
+  it("omits border shadow for pinned columns that are not edge-pinned", () => {
+    const style = getColumnPinningStyle({
+      column: mockColumn({ pinned: "left", lastLeft: false }),
+      withBorder: true,
+    });
+    expect(style.boxShadow).toBeUndefined();
+    expect(style.left).toBe("0px");
+  });
 });
 
 // silence unused if tree-shaken

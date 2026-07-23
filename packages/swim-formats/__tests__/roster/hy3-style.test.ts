@@ -49,18 +49,53 @@ describe("parseHy3Roster", () => {
     expect(parseHy3Roster(content)).toEqual([]);
   });
 
-  it("covers hy3-style D1 rows without class year", () => {
+  it("skips hy3-style D1 rows without class year (no DOB to merge)", () => {
     const content = [
       "A103Rosters Only             Hy-Tek",
       "D1M    9NoClass             Pat                                                                                                   98",
     ].join("\n");
-    const rows = parseHy3Roster(content);
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.dateOfBirth).toBeUndefined();
-    expect(rows[0]?.classYear).toBeUndefined();
+    // parseHy3D1Line yields no dateOfBirth without class year; mergeSwimmer requires DOB.
+    expect(parseHy3Roster(content)).toEqual([]);
   });
 
   it("exports deprecated alias parseHy3StyleRoster", () => {
     expect(parseHy3StyleRoster).toBe(parseHy3Roster);
+  });
+
+  it("covers non-MF D1 lines and first/last name fallbacks", () => {
+    expect(parseHy3Roster("D1X   21NotParsed          Name")).toEqual([]);
+
+    // D1 layout: last at 8-28, first at 28-48.
+    const lastOnlyLine =
+      "D1M   21" +
+      "OnlyLast".padEnd(20, " ") +
+      "".padEnd(20, " ") +
+      " ".repeat(40) +
+      "0JR";
+    expect(parseHy3Roster(`A103Rosters Only\n${lastOnlyLine}`)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          firstName: "Unknown",
+          lastName: "OnlyLast",
+          classYear: "JR",
+        }),
+      ]),
+    );
+
+    const firstOnlyLine =
+      "D1F   27" +
+      "".padEnd(20, " ") +
+      "OnlyFirst".padEnd(20, " ") +
+      " ".repeat(40) +
+      "0SR";
+    expect(parseHy3Roster(`A103Rosters Only\n${firstOnlyLine}`)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          firstName: "OnlyFirst",
+          lastName: "Swimmer",
+          classYear: "SR",
+        }),
+      ]),
+    );
   });
 });

@@ -126,14 +126,12 @@ export function parseEventKey(eventKey: string): {
 } | null {
   const parts = eventKey.split("_");
   if (parts.length < 4) return null;
-  const genderCode = parts[parts.length - 1] /* v8 ignore next */ ?? "m";
-  const courseRaw = (
-    parts[parts.length - 2] /* v8 ignore next */ ?? "scy"
-  ).toUpperCase();
+  const genderCode = parts[parts.length - 1]!;
+  const courseRaw = parts[parts.length - 2]!.toUpperCase();
   if (courseRaw !== "SCY" && courseRaw !== "SCM" && courseRaw !== "LCM") {
     return null;
   }
-  const distance = Number.parseInt(parts[0] /* v8 ignore next */ ?? "", 10);
+  const distance = Number.parseInt(parts[0]!, 10);
   if (!Number.isFinite(distance)) return null;
   const stroke = parts.slice(1, -2).join("_");
   if (!stroke) return null;

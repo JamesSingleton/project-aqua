@@ -29,9 +29,9 @@ function parseTimeCell(value: unknown): number | undefined {
   const raw = cellString(value);
   if (!raw) return undefined;
   if (raw.includes(":")) {
-    const [minutes, seconds] = raw.split(":");
-    const m = Number.parseInt(minutes ?? "0", 10);
-    const s = Number.parseFloat(seconds ?? "0");
+    const [minutes = "0", seconds = "0"] = raw.split(":");
+    const m = Number.parseInt(minutes, 10);
+    const s = Number.parseFloat(seconds);
     if (!Number.isFinite(m) || !Number.isFinite(s)) return undefined;
     return m * 60 + s;
   }
@@ -110,7 +110,7 @@ export function parseEventExportXls(
   let headerRow: string[] | undefined;
   let headerRowIndex = -1;
   for (let rx = 0; rx < rows.length; rx++) {
-    const row = rows[rx] ?? [];
+    const row = rows[rx]!;
     if (cellString(row[0]).toLowerCase() === "name") {
       headerRow = row.map((c) => cellString(c).toLowerCase());
       headerRowIndex = rx;
@@ -132,15 +132,14 @@ export function parseEventExportXls(
 
   const results: ParsedResult[] = [];
   for (let rx = firstRowIndex; rx < rows.length; rx++) {
-    const row = rows[rx] ?? [];
+    const row = rows[rx]!;
     if (cellString(row[0]) === "") break;
 
     const placeRaw = cellString(row[0]);
     const place = Number.parseInt(placeRaw, 10);
     if (!Number.isFinite(place) && placeRaw !== "---") continue;
 
-    const name =
-      offsets.name != null ? cellString(row[offsets.name]) : undefined;
+    const name = cellString(row[offsets.name!]);
     if (!name) continue;
 
     const { seconds, resultType } = pickResultTime(row, offsets);

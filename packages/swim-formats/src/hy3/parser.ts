@@ -172,8 +172,7 @@ function secondsToTimeString(seconds: number | undefined): string | undefined {
 function parseNumericEventNumber(raw: string): number | undefined {
   const digits = raw.replace(/\D/g, "");
   if (!digits) return undefined;
-  const n = Number.parseInt(digits, 10);
-  return Number.isFinite(n) ? n : undefined;
+  return Number.parseInt(digits, 10);
 }
 
 function parseTimeField(raw: string): number | undefined {

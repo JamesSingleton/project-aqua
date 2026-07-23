@@ -154,4 +154,24 @@ describe("parseCl2Meet", () => {
     expect(meet.entries.length).toBeGreaterThan(5);
     expect(meet.entries[0]?.swimmerName).toMatch(/\S+\s+\S+/);
   });
+
+  it("covers empty B1 fields and blank athlete name/event fallbacks", () => {
+    const blankB1 = parseCl2Meet(
+      "A01V3      02Meet Entries                  \nB11                                                                                          ",
+    );
+    expect(blankB1.name).toBe("Meet Entries");
+    expect(blankB1.location).toBeUndefined();
+
+    const blankAthlete = [
+      "D0    " + " ".repeat(100),
+      "F0    " + " ".repeat(70) + "1:00.00",
+      "G0    " + " ".repeat(70),
+    ].join("\n");
+    const meet = parseCl2Meet(blankAthlete);
+    expect(meet.entries[0]?.eventNumber).toBeUndefined();
+    expect(meet.entries[0]?.swimmerName).toBe("");
+    expect(meet.results[0]?.eventNumber).toBeUndefined();
+    expect(meet.results[0]?.swimmerName).toBe("");
+    expect(meet.results).toHaveLength(1);
+  });
 });

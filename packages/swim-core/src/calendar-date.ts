@@ -164,7 +164,7 @@ export function parseDateTimeLocal(value: string): {
 } {
   if (!value) return { date: undefined, time: "" };
   const [datePart, timePart = ""] = value.split("T");
-  const date = parseLocalDateOnly(datePart /* v8 ignore next */ ?? "");
+  const date = parseLocalDateOnly(datePart);
   if (!date) return { date: undefined, time: timePart };
   const time = timePart.slice(0, 5);
   return {
@@ -192,12 +192,7 @@ export function formatDateTimeLocalLabel(value: string): string | null {
   if (!time) return dateLabel;
   const [hours, minutes] = time.split(":").map(Number);
   const withTime = new Date(date);
-  withTime.setHours(
-    hours /* v8 ignore next */ ?? 0,
-    minutes /* v8 ignore next */ ?? 0,
-    0,
-    0,
-  );
+  withTime.setHours(hours!, minutes!, 0, 0);
   const timeLabel = withTime.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",

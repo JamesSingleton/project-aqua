@@ -163,4 +163,29 @@ describe("exportHy3", () => {
     expect(text).toContain("FL ");
     expect(text).toContain("IM ");
   });
+
+  it("covers undefined event numbers, LCM course, and seedless relays", () => {
+    const meet: ParsedMeet = {
+      name: "Sparse",
+      course: "LCM",
+      events: [
+        { distance: 50, stroke: "free", gender: "female", eventKey: "x" },
+      ],
+      entries: [{ swimmerName: "Solo Name" }],
+      results: [{ swimmerName: "Solo Name", time: "30.00" }],
+      relays: [
+        {
+          swimmerNames: ["A", "B", "C", "D"],
+        },
+      ],
+    };
+    const sdif = exportSdif(meet);
+    expect(sdif).toMatch(/B11.{68}3/);
+    expect(sdif).toContain("0000");
+
+    const hy3 = exportHy3(meet);
+    expect(hy3).toMatch(/^B13/m);
+    expect(hy3).toContain("F0");
+    expect(hy3).toContain("G0");
+  });
 });

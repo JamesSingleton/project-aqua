@@ -87,4 +87,32 @@ describe("parseCl2Roster", () => {
   it("exports deprecated alias parseSdifStyleRoster", () => {
     expect(parseSdifStyleRoster).toBe(parseCl2Roster);
   });
+
+  it("covers unmatched D01 patterns, alternate FF placement, and non-matching D31", () => {
+    expect(parseCl2Roster("D01AZ  onlyonefield")).toEqual([]);
+
+    // Classless D01 where only `\d{2}(FF|MM)\s` matches (no `FF 1` style).
+    const altGender =
+      "D01AZ      Smith, Jane                 ABCD1234567890AUSA04152012  13FF  rest                                                                      N26";
+    expect(parseCl2Roster(altGender)[0]).toMatchObject({
+      firstName: "Jane",
+      lastName: "Smith",
+      gender: "female",
+      dateOfBirth: "2012-04-15",
+    });
+
+    // Classless D01 with DOB but no gender codes → gender ternary else branch.
+    expect(
+      parseCl2Roster(
+        "D01AZ      NoGender, Pat               ABCD1234567890AUSA04152012                                                                            N26",
+      ),
+    ).toEqual([]);
+
+    const usaId = "ABCDEF01234567";
+    const content = [
+      `D01AZ  FR  Smith, Jane                 ${usaId}AUSA04152012FF 1001 11 UNOV         1:16.69Y                                                            N26`,
+      "D31ZZZZZZZZZZZZZZ  Nick                                                                                                                                       N61",
+    ].join("\n");
+    expect(parseCl2Roster(content)[0]?.firstName).toBe("Jane");
+  });
 });

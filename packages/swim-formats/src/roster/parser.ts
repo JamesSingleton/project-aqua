@@ -14,7 +14,7 @@ function isMeetEventsFile(content: string): boolean {
 }
 
 function sniffRosterFormat(content: string): RosterFileFormat | null {
-  const firstLine = content.trim().split(/\r?\n/)[0] ?? "";
+  const firstLine = content.trim().split(/\r?\n/)[0]!;
 
   if (isMeetEventsFile(content)) return null;
 
@@ -56,7 +56,7 @@ export function detectRosterFileFormat(
       return "cl2";
     case "ev3":
     case "hyv":
-      return content ? null : null;
+      return null;
     default:
       return content ? sniffRosterFormat(content) : null;
   }

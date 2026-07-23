@@ -220,8 +220,39 @@ describe("parseEventExportXls", () => {
     const rows = [
       ["meta"],
       ["50 Free"],
-      ["name", "age", "team", "seed time", "x", "x", "prelim time", "x", "x", "finals time", "x", "x"],
-      ["1", "Bad Time", "14", "TST", "abc", "", "", "bad", "", "", "nope", "", ""],
+      [
+        "name",
+        "age",
+        "team",
+        "seed time",
+        "x",
+        "x",
+        "prelim time",
+        "x",
+        "x",
+        "finals time",
+        "x",
+        "x",
+        "pad",
+        "pad2",
+      ],
+      [
+        "1",
+        "Bad Time",
+        "14",
+        "TST",
+        "abc",
+        "",
+        "",
+        "bad",
+        "",
+        "",
+        "nope",
+        "",
+        "",
+        "",
+        "",
+      ],
     ];
     expect(parseEventExportXls(makeWorkbook(rows)).results).toEqual([]);
   });
@@ -230,5 +261,85 @@ describe("parseEventExportXls", () => {
     const err = new ExportXlsParseError("test");
     expect(err.name).toBe("ExportXlsParseError");
     expect(err.message).toBe("test");
+  });
+
+  it("covers invalid colon times, seed-only pick, and sparse row skips", () => {
+    const badColon = [
+      ["meta"],
+      ["50 Free"],
+      ["name", "age", "team", "seed time", "x", "x"],
+      ["1", "Bad Colon", "14", "TST", "xx:yy", ""],
+      ["2", "Good Seed", "14", "TST", "28.50", ""],
+      ["skip", "Not A Place", "14", "TST", "28.50", ""],
+      ["3", "", "14", "TST", "28.50", ""],
+      [""],
+    ];
+    const meet = parseEventExportXls(makeWorkbook(badColon));
+    expect(meet.results).toHaveLength(1);
+    expect(meet.results[0]?.swimmerName).toBe("Good Seed");
+
+    const seedFallback = [
+      ["meta"],
+      ["50 Free"],
+      [
+        "name",
+        "age",
+        "team",
+        "seed time",
+        "x",
+        "x",
+        "prelim time",
+        "x",
+        "x",
+        "finals time",
+        "x",
+        "x",
+        "pad",
+        "pad2",
+      ],
+      [
+        "1",
+        "Seed Path",
+        "14",
+        "TST",
+        "29.00",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ],
+    ];
+    expect(parseEventExportXls(makeWorkbook(seedFallback)).results[0]).toMatchObject({
+      swimmerName: "Seed Path",
+      time: "29.00",
+    });
+
+    // No seed/prelim/finals columns → seed-time if-branch false.
+    const noTimes = [
+      ["meta"],
+      ["50 Free"],
+      ["name", "age", "team"],
+      ["1", "No Times", "14", "TST"],
+    ];
+    expect(
+      parseEventExportXls(makeWorkbook(noTimes), ["name", "age", "team"]).results,
+    ).toEqual([]);
+
+    // Header is last row → empty sampleRow fallback.
+    expect(() =>
+      parseEventExportXls(
+        makeWorkbook([
+          ["meta"],
+          ["Event"],
+          ["name", "age", "team", "seed time", "x", "x"],
+        ]),
+      ),
+    ).toThrow(/Invalid header row offset/);
   });
 });

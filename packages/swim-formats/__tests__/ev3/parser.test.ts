@@ -218,6 +218,50 @@ describe("parseEv3 edge cases", () => {
     const onlyLow = parseEv3(`${header.join(";")}\n1;F;F;I;0;G;15;;50;1;`);
     expect(onlyLow.events[0]?.ageGroup).toBe("15");
   });
+
+  it("covers SCM course, skip paths, and header/event defaults", () => {
+    const header = Array(6).fill("");
+    header[0] = "";
+    header[5] = "M";
+    const scm = parseEv3(
+      [
+        header.join(";"),
+        "no-semicolons",
+        "1;2;3",
+        "NaN;F;F;I;0;G;0;18;50;1;;;;;;;",
+        ";F;F;I;0;G;0;18;50;1;;;;;;;",
+        "1;F;F;I;0;G;;18;50;1;;;;;;;",
+        "2;F;F;;;;;;;;;",
+        `3;F;F;I;0;G;10;12;100;FR${";".repeat(10)}1:05.00`,
+        `4;F;F;I;0;G;10;12;100;FR${";".repeat(10)}0.00`,
+      ].join("\n"),
+    );
+    expect(scm.name).toBe("Imported Events");
+    expect(scm.course).toBe("SCM");
+    expect(scm.startDate).toBeUndefined();
+    expect(scm.events.some((e) => e.eventNumber === 1 && e.ageGroup === undefined)).toBe(
+      true,
+    );
+    expect(scm.events.find((e) => e.eventNumber === 2)?.stroke).toBe("free");
+    expect(scm.events.find((e) => e.eventNumber === 3)?.qualifyingTimeMs).toBe(
+      65_000,
+    );
+    expect(scm.events.find((e) => e.eventNumber === 4)?.qualifyingTimeMs).toBeUndefined();
+
+    const lOnly = Array(6).fill("");
+    lOnly[0] = "L Meet";
+    lOnly[5] = "L";
+    expect(parseEv3(`${lOnly.join(";")}\n1;F;F;I;0;G;0;18;50;1;;;;;;;`).course).toBe(
+      "LCM",
+    );
+
+    const scyWithM = Array(6).fill("");
+    scyWithM[0] = "Y Meet";
+    scyWithM[5] = "MY";
+    expect(parseEv3(`${scyWithM.join(";")}\n1;F;F;I;0;G;0;18;50;1;;;;;;;`).course).toBe(
+      "SCY",
+    );
+  });
 });
 
 describe("parseHyv edge cases", () => {
@@ -229,5 +273,38 @@ describe("parseHyv edge cases", () => {
     expect(meet.events[1]?.roundType).toBe("time_trial");
     expect(meet.events[1]?.ageGroup).toBe("15-0");
     expect(meet.course).toBe("SCM");
+  });
+
+  it("covers empty HYV, LCM/course defaults, and skip paths", () => {
+    expect(parseHyv("").events).toEqual([]);
+
+    const bare = parseHyv(
+      "Meet\nshort\n;F;F;I;0;18;50;1\n3A;;F;;;;;;\n4A;P;F;R;8;10;200;E;1:10.00\n5A;F;;I;0;18;50;1",
+    );
+    expect(bare.name).toBe("Meet");
+    expect(bare.course).toBe("SCY");
+    expect(bare.location).toBeUndefined();
+    expect(bare.startDate).toBeUndefined();
+    expect(bare.events.find((e) => e.eventNumber === 3)?.roundType).toBe("finals");
+    expect(bare.events.find((e) => e.eventNumber === 3)?.stroke).toBe("free");
+    expect(bare.events.find((e) => e.eventNumber === 4)?.roundType).toBe("prelim");
+    expect(bare.events.find((e) => e.eventNumber === 4)?.stroke).toBe("medley_relay");
+    expect(bare.events.find((e) => e.eventNumber === 4)?.qualifyingTimeMs).toBe(
+      70_000,
+    );
+    expect(bare.events.find((e) => e.eventNumber === 5)?.gender).toBe("male");
+
+    const lcmBare = parseHyv(";;;;LCM\n1A;F;F;I;0;18;50;1");
+    expect(lcmBare.course).toBe("LCM");
+
+    const letterL = parseHyv("Meet;1/1/2025;1/1/2025;;L;Pool\n1A;F;M;I;0;18;50;1");
+    expect(letterL.course).toBe("LCM");
+
+    const letterM = parseHyv("Meet;1/1/2025;1/1/2025;;M;\n1A;F;M;I;;;50;1");
+    expect(letterM.course).toBe("SCM");
+    expect(letterM.location).toBeUndefined();
+
+    const open109 = parseHyv("Meet;1/1/2025;1/1/2025;;Y;Pool\n1A;F;F;I;0;109;50;1");
+    expect(open109.events[0]?.ageGroup).toBeUndefined();
   });
 });

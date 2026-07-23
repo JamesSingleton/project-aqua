@@ -46,6 +46,8 @@ describe("detectRosterFileFormat", () => {
     expect(detectRosterFileFormat("events.ev3")).toBeNull();
     expect(detectRosterFileFormat("notes.txt", "hello world")).toBeNull();
     expect(detectRosterFileFormat("notes.txt")).toBeNull();
+    expect(detectRosterFileFormat("x.ev3")).toBeNull();
+    expect(detectRosterFileFormat("x.hyv", "still not events")).toBeNull();
   });
 });
 

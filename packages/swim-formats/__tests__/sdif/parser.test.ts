@@ -96,20 +96,82 @@ describe("parseSdif", () => {
   });
 
   it("uses fallback SDIF name, member id, and place fields", () => {
-    const d0 =
-      "D0         0002Smith               Bob                 " +
-      " ".repeat(37) +
-      "1:06.00";
-    const g0 =
-      "G0         0002Smith               Pat                 " +
-      " ".repeat(21) +
-      "1:03.00" +
-      "002";
-    const meet = parseSdif([d0, g0].join("\n"));
+    function fixed(len: number, fill = " "): string[] {
+      return Array.from({ length: len }, () => fill);
+    }
+    function put(buf: string[], start: number, value: string) {
+      for (let i = 0; i < value.length; i++) buf[start + i] = value[i]!;
+    }
+
+    // Primary name fields (48–88) left blank so fallback 31–51 / 11–31 is used.
+    // Seed/time at 99–107 (outside the name window).
+    const d0 = fixed(120);
+    put(d0, 0, "D0");
+    put(d0, 11, "Smith");
+    put(d0, 31, "Bob");
+    put(d0, 99, "1:06.00");
+
+    const g0 = fixed(120);
+    put(g0, 0, "G0");
+    put(g0, 11, "Smith");
+    put(g0, 31, "Pat");
+    put(g0, 99, "1:03.00");
+    put(g0, 113, "2");
+
+    const meet = parseSdif([d0.join(""), g0.join("")].join("\n"));
     expect(meet.entries[0]?.swimmerName).toBe("Bob Smith");
     expect(meet.entries[0]?.usaMemberId).toBeUndefined();
     expect(meet.results[0]?.swimmerName).toBe("Pat Smith");
     expect(meet.results[0]?.place).toBe(2);
+  });
+
+  it("covers empty A0/B1 titles and alternate E1 field offsets", () => {
+    function fixed(len: number, fill = " "): string[] {
+      return Array.from({ length: len }, () => fill);
+    }
+    function put(buf: string[], start: number, value: string) {
+      for (let i = 0; i < value.length; i++) buf[start + i] = value[i]!;
+    }
+
+    const a0 = fixed(80);
+    put(a0, 0, "A0");
+
+    const b1 = fixed(80);
+    put(b1, 0, "B1");
+    put(b1, 71, "notadate");
+
+    // Primary E1 slots empty → fallbacks at 16–24 / 2–6.
+    const e1 = fixed(40);
+    put(e1, 0, "E1");
+    put(e1, 2, "0007");
+    put(e1, 16, "F");
+    put(e1, 17, "0100");
+    put(e1, 21, "XYZ");
+
+    // Both distance/eventNumber primary+fallback empty → distance 0, eventNumber undefined.
+    const e1Sparse = fixed(40);
+    put(e1Sparse, 0, "E1");
+    put(e1Sparse, 16, "M");
+    put(e1Sparse, 21, "FR");
+
+    const meet = parseSdif(
+      [a0.join(""), b1.join(""), e1.join(""), e1Sparse.join("")].join("\n"),
+    );
+    expect(meet.name).toBe("Imported Meet");
+    expect(meet.location).toBeUndefined();
+    expect(meet.course).toBe("SCY");
+    expect(meet.events[0]).toMatchObject({
+      eventNumber: 7,
+      distance: 100,
+      stroke: "xyz",
+      gender: "female",
+    });
+    expect(meet.events[1]).toMatchObject({
+      eventNumber: undefined,
+      distance: 0,
+      stroke: "free",
+      gender: "male",
+    });
   });
 });
 

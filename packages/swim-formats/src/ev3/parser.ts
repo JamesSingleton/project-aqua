@@ -37,8 +37,8 @@ function mapStroke(code: string): string {
   return STROKE_CODES[code.toUpperCase()] ?? STROKE_CODES[code] ?? "free";
 }
 
-function isDiveStrokeCode(code: string | undefined): boolean {
-  const normalized = (code ?? "").trim().toUpperCase();
+function isDiveStrokeCode(code: string): boolean {
+  const normalized = code.trim().toUpperCase();
   return DIVE_STROKE_CODES.has(normalized);
 }
 
@@ -53,14 +53,11 @@ function mapRelayStroke(stroke: string, isRelay: boolean): string {
   return stroke === "im" ? "medley_relay" : "free_relay";
 }
 
-function formatAgeGroup(
-  ageLow: string | undefined,
-  ageHigh: string | undefined,
-): string | undefined {
-  const low = ageLow?.trim();
-  const high = ageHigh?.trim();
-  const lowNumber = Number.parseInt(low ?? "", 10);
-  const highNumber = Number.parseInt(high ?? "", 10);
+function formatAgeGroup(ageLow: string, ageHigh: string): string | undefined {
+  const low = ageLow.trim();
+  const high = ageHigh.trim();
+  const lowNumber = Number.parseInt(low, 10);
+  const highNumber = Number.parseInt(high, 10);
   if (
     Number.isFinite(lowNumber) &&
     Number.isFinite(highNumber) &&
@@ -74,7 +71,8 @@ function formatAgeGroup(
 }
 
 function positiveInt(raw: string | undefined): number | undefined {
-  const value = Number.parseInt(raw?.trim() ?? "", 10);
+  if (raw == null) return undefined;
+  const value = Number.parseInt(raw.trim(), 10);
   return Number.isFinite(value) && value > 0 ? value : undefined;
 }
 
@@ -118,7 +116,8 @@ function firstQualifyingTimeMs(
   ...candidates: Array<string | undefined>
 ): number | undefined {
   for (const raw of candidates) {
-    const trimmed = raw?.trim();
+    if (raw == null) continue;
+    const trimmed = raw.trim();
     if (!trimmed || !HYTEK_TIME_RE.test(trimmed)) continue;
     const ms = parseTime(trimmed);
     if (ms > 0) return ms;
@@ -144,12 +143,12 @@ export function parseEv3(content: string): ParsedMeet {
   meet.name = header[0]?.trim() || meet.name;
   meet.location = header[1]?.trim() || undefined;
   meet.address = formatAddress(header);
-  const start = parseMmDdYyyy(header[2] ?? "");
+  const start = parseMmDdYyyy(header[2] || "");
   if (start) meet.startDate = start;
-  const end = normalizeMeetEndDate(start, parseMmDdYyyy(header[3] ?? ""));
+  const end = normalizeMeetEndDate(start, parseMmDdYyyy(header[3] || ""));
   if (end) meet.endDate = end;
   // EV3 meet header: [23]=host entry deadline (entries due to meet host).
-  const entryDeadline = parseMmDdYyyy(header[23] ?? "");
+  const entryDeadline = parseMmDdYyyy(header[23] || "");
   if (entryDeadline) meet.entryDeadline = entryDeadline;
   // EV3 meet header: [18]=combined, [19]=individual, [20]=relay.
   const maxCombinedEntries = positiveInt(header[18]);
@@ -167,7 +166,7 @@ export function parseEv3(content: string): ParsedMeet {
     };
   }
 
-  const courseHint = (header[5] ?? "").toUpperCase();
+  const courseHint = (header[5] || "").toUpperCase();
   if (courseHint.includes("L") || courseHint === "LCM") meet.course = "LCM";
   else if (courseHint.includes("M") && !courseHint.includes("Y"))
     meet.course = "SCM";
@@ -178,21 +177,21 @@ export function parseEv3(content: string): ParsedMeet {
     const parts = line.replace(/\*>\s*$/, "").split(";");
     if (parts.length < 10) continue;
 
-    const eventNumber = Number.parseInt(parts[0] ?? "", 10);
+    const eventNumber = Number.parseInt(parts[0] || "", 10);
     if (!Number.isFinite(eventNumber)) continue;
 
     // EV3: [2]=round F/P, [4]=I/R, [5]=gender G/B, [6-7]=age, [8]=distance, [9]=stroke
     // Dive events use stroke F (and often distance 0); skip until dive support lands.
-    if (isDiveStrokeCode(parts[9])) {
+    if (isDiveStrokeCode(parts[9]!)) {
       meet.skippedDiveEvents = (meet.skippedDiveEvents ?? 0) + 1;
       continue;
     }
 
-    const gender = mapGender(parts[5] ?? "B");
-    const isRelay = (parts[4] ?? "I").toUpperCase() === "R";
-    const distance = Number.parseInt(parts[8] ?? "0", 10) || 0;
-    const stroke = mapRelayStroke(mapStroke(parts[9] ?? "1"), isRelay);
-    const ageGroup = formatAgeGroup(parts[6], parts[7]);
+    const gender = mapGender(parts[5] || "B");
+    const isRelay = (parts[4] || "I").toUpperCase() === "R";
+    const distance = Number.parseInt(parts[8] || "0", 10) || 0;
+    const stroke = mapRelayStroke(mapStroke(parts[9] || "1"), isRelay);
+    const ageGroup = formatAgeGroup(parts[6] || "", parts[7] || "");
     // Primary entry QT slots [19]/[20] (match HYV [8]/[9]).
     const qualifyingTimeMs = firstQualifyingTimeMs(parts[19], parts[20]);
 
@@ -227,12 +226,12 @@ export function parseHyv(content: string): ParsedMeet {
 
   const header = firstLine.split(";");
   meet.name = header[0]?.trim() || meet.name;
-  const start = parseMmDdYyyy(header[1] ?? "");
+  const start = parseMmDdYyyy(header[1] || "");
   if (start) meet.startDate = start;
-  const end = normalizeMeetEndDate(start, parseMmDdYyyy(header[2] ?? ""));
+  const end = normalizeMeetEndDate(start, parseMmDdYyyy(header[2] || ""));
   if (end) meet.endDate = end;
 
-  const courseCode = (header[4] ?? "").trim().toUpperCase();
+  const courseCode = (header[4] || "").trim().toUpperCase();
   if (courseCode === "L" || courseCode === "LCM") meet.course = "LCM";
   else if (courseCode === "S" || courseCode === "M" || courseCode === "SCM")
     meet.course = "SCM";
@@ -244,11 +243,11 @@ export function parseHyv(content: string): ParsedMeet {
     const parts = line.split(";");
     if (parts.length < 8) continue;
 
-    const eventToken = parts[0] ?? "";
+    const eventToken = parts[0] || "";
     const eventNumber = Number.parseInt(eventToken.replace(/\D/g, ""), 10);
     if (!Number.isFinite(eventNumber)) continue;
 
-    const roundRaw = (parts[1] ?? "F").toUpperCase();
+    const roundRaw = (parts[1] || "F").toUpperCase();
     const roundType =
       roundRaw === "P"
         ? ("prelim" as const)
@@ -260,22 +259,24 @@ export function parseHyv(content: string): ParsedMeet {
 
     // HYV: [1]=round, [2]=gender F/M, [3]=I/R, [4-5]=age, [6]=distance, [7]=stroke
     // Dive events use stroke code 6; skip until dive support lands.
-    if (isDiveStrokeCode(parts[7])) {
+    if (isDiveStrokeCode(parts[7]!)) {
       meet.skippedDiveEvents = (meet.skippedDiveEvents ?? 0) + 1;
       continue;
     }
 
-    const gender = mapGender(parts[2] ?? "M");
-    const isRelay = (parts[3] ?? "I").toUpperCase() === "R";
-    const distance = Number.parseInt(parts[6] ?? "0", 10) || 0;
-    const stroke = mapRelayStroke(mapStroke(parts[7] ?? "1"), isRelay);
-    const ageLow = Number.parseInt(parts[4] ?? "", 10);
-    const ageHigh = Number.parseInt(parts[5] ?? "", 10);
+    const gender = mapGender(parts[2] || "M");
+    const isRelay = (parts[3] || "I").toUpperCase() === "R";
+    const distance = Number.parseInt(parts[6] || "0", 10) || 0;
+    const stroke = mapRelayStroke(mapStroke(parts[7] || "1"), isRelay);
+    const ageLow = Number.parseInt(parts[4] || "", 10);
+    const ageHigh = Number.parseInt(parts[5] || "", 10);
     const openAge =
       Number.isFinite(ageLow) &&
       ageLow === 0 &&
       (ageHigh === 0 || ageHigh === 109);
-    const ageGroup = openAge ? undefined : formatAgeGroup(parts[4], parts[5]);
+    const ageGroup = openAge
+      ? undefined
+      : formatAgeGroup(parts[4] || "", parts[5] || "");
     // Primary QT: first non-empty of [8]/[9].
     const qualifyingTimeMs = firstQualifyingTimeMs(parts[8], parts[9]);
 
