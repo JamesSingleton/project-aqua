@@ -19,7 +19,7 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^4.0.16",
+    "@ai-sdk/openai": "^4.0.17",
     "@hookform/resolvers": "^5.4.0",
     "@project-aqua/auth": "workspace:*",
     "@project-aqua/billing": "workspace:*",
@@ -31,9 +31,9 @@
     "@project-aqua/swim-formats": "workspace:*",
     "@project-aqua/ui": "workspace:*",
     "@project-aqua/usa-swimming": "workspace:*",
-    "@tanstack/react-query": "^5.101.2",
+    "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-table": "^8.21.3",
-    "ai": "^7.0.31",
+    "ai": "^7.0.34",
     "better-auth": "catalog:",
     "geist": "^1.7.2",
     "lucide-react": "catalog:",
@@ -47,12 +47,12 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@playwright/test": "^1.54.2",
+    "@playwright/test": "^1.61.1",
     "@project-aqua/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/coverage-v8": "catalog:",
     "drizzle-orm": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

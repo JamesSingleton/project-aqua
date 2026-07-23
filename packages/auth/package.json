@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@polar-sh/better-auth": "^1.8.4",
-    "@polar-sh/sdk": "^0.48.1",
+    "@polar-sh/sdk": "catalog:",
     "@project-aqua/db": "workspace:*",
     "@project-aqua/emails": "workspace:*",
     "@project-aqua/swim-core": "workspace:*",
@@ -29,7 +29,7 @@
   "devDependencies": {
     "@project-aqua/typescript-config": "workspace:*",
     "@types/node": "catalog:",
-    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/coverage-v8": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
