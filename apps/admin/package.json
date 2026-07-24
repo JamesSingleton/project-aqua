@@ -19,7 +19,7 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^4.0.17",
+    "@ai-sdk/openai": "^4.0.19",
     "@hookform/resolvers": "^5.4.0",
     "@project-aqua/auth": "workspace:*",
     "@project-aqua/billing": "workspace:*",
@@ -33,7 +33,7 @@
     "@project-aqua/usa-swimming": "workspace:*",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-table": "^8.21.3",
-    "ai": "^7.0.34",
+    "ai": "^7.0.36",
     "better-auth": "catalog:",
     "geist": "^1.7.2",
     "lucide-react": "catalog:",
