@@ -92,7 +92,16 @@ export function formatStrokeLabel(stroke: string): string {
 }
 
 /** Display name for a meet event, e.g. "200 Medley Relay". */
-export function formatEventName(distance: number, stroke: string): string {
+export function formatEventName(
+  distance: number,
+  stroke: string,
+  diveCount?: number | null,
+): string {
+  if (stroke === "dive") {
+    return diveCount != null && diveCount > 0
+      ? `Diving (${diveCount} dives)`
+      : "Diving";
+  }
   return `${distance} ${formatStrokeLabel(stroke)}`;
 }
 

@@ -126,6 +126,104 @@ describe("parseSdif", () => {
     expect(meet.results).toEqual([]);
   });
 
+  it("parses F0 relay records with alternate team and seed-time columns", () => {
+    function fixed(len: number): string[] {
+      return Array.from({ length: len }, () => " ");
+    }
+    function put(buf: string[], start: number, value: string) {
+      for (let i = 0; i < value.length; i++) buf[start + i] = value[i]!;
+    }
+
+    const f0Primary = fixed(110);
+    put(f0Primary, 0, "F0");
+    put(f0Primary, 2, "0010");
+    put(f0Primary, 11, "TEAM1");
+    put(f0Primary, 99, "1:45.00");
+
+    const f0Fallback = fixed(110);
+    put(f0Fallback, 0, "F0");
+    put(f0Fallback, 2, "0007");
+    put(f0Fallback, 11, "TEAM1");
+    put(f0Fallback, 72, "1:50.00");
+
+    const meet = parseSdif(
+      [f0Primary.join(""), f0Fallback.join("")].join("\n"),
+    );
+    expect(meet.relays).toHaveLength(2);
+    expect(meet.relays?.[0]).toMatchObject({
+      eventNumber: 10,
+      teamCode: "TEAM1",
+      seedTime: "1:45.00",
+    });
+    expect(meet.relays?.[1]?.seedTime).toBe("1:50.00");
+  });
+
+  it("reads F0 team codes from column 2 when column 11 is blank", () => {
+    function fixed(len: number): string[] {
+      return Array.from({ length: len }, () => " ");
+    }
+    function put(buf: string[], start: number, value: string) {
+      for (let i = 0; i < value.length; i++) buf[start + i] = value[i]!;
+    }
+
+    const f0 = fixed(110);
+    put(f0, 0, "F0");
+    put(f0, 2, "TEAM1");
+    put(f0, 9, "07  ");
+    put(f0, 72, "1:50.00");
+
+    const meet = parseSdif(f0.join(""));
+    expect(meet.relays?.[0]).toMatchObject({
+      eventNumber: 7,
+      teamCode: "TEAM1",
+      seedTime: "1:50.00",
+    });
+  });
+
+  it("allows F0 relays without team code or seed time", () => {
+    function fixed(len: number): string[] {
+      return Array.from({ length: len }, () => " ");
+    }
+    function put(buf: string[], start: number, value: string) {
+      for (let i = 0; i < value.length; i++) buf[start + i] = value[i]!;
+    }
+    const f0 = fixed(110);
+    put(f0, 0, "F0");
+    put(f0, 9, "12");
+    const meet = parseSdif(f0.join(""));
+    expect(meet.relays?.[0]).toMatchObject({
+      eventNumber: 12,
+      teamCode: undefined,
+      seedTime: undefined,
+    });
+  });
+
+  it("uses alternate G0 place and dq code columns", () => {
+    function fixed(len: number): string[] {
+      return Array.from({ length: len }, () => " ");
+    }
+    function put(buf: string[], start: number, value: string) {
+      for (let i = 0; i < value.length; i++) buf[start + i] = value[i]!;
+    }
+
+    const g0 = fixed(120);
+    put(g0, 0, "G0");
+    put(g0, 2, "0005");
+    put(g0, 11, "Doe");
+    put(g0, 31, "Jane");
+    put(g0, 82, "0002");
+    put(g0, 99, "1:01.00");
+    put(g0, 117, "Q");
+
+    const meet = parseSdif(g0.join(""));
+    expect(meet.results[0]).toMatchObject({
+      eventNumber: 5,
+      time: "1:01.00",
+      place: 2,
+      dqCode: "Q",
+    });
+  });
+
   it("uses fallback SDIF name, member id, and place fields", () => {
     function fixed(len: number, fill = " "): string[] {
       return Array.from({ length: len }, () => fill);

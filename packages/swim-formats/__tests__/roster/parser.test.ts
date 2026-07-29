@@ -1,10 +1,12 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { strToU8, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import {
   detectRosterFileFormat,
   parseRosterFile,
+  parseRosterFileFromBytes,
   rosterImportErrorForFile,
 } from "../../src/roster/parser";
 
@@ -90,5 +92,47 @@ describe("rosterImportErrorForFile", () => {
   it("returns null for valid roster files", () => {
     const cl2 = readFileSync(join(fixturesDir, "roster-swimmers.cl2"), "utf8");
     expect(rosterImportErrorForFile("roster.cl2", cl2)).toBeNull();
+  });
+});
+
+describe("parseRosterFileFromBytes", () => {
+  it("parses a single non-zip roster file", () => {
+    const cl2 = readFileSync(join(fixturesDir, "roster-swimmers.cl2"), "utf8");
+    const bytes = new TextEncoder().encode(cl2);
+    const rows = parseRosterFileFromBytes(bytes, "roster.cl2");
+    expect(rows.length).toBeGreaterThan(0);
+  });
+
+  it("rejects unsupported non-zip bytes", () => {
+    const bytes = strToU8("not a roster");
+    expect(() => parseRosterFileFromBytes(bytes, "notes.txt")).toThrow(
+      /Unsupported file type/,
+    );
+  });
+
+  it("parses swimmers from a roster ZIP and skips non-roster formats", () => {
+    const cl2 = readFileSync(join(fixturesDir, "roster-swimmers.cl2"), "utf8");
+    const zip = zipSync({
+      "roster.cl2": strToU8(cl2),
+      "events.ev3": strToU8("Meet;1/1/2025;1/2/2025;;Y;Pool\n1A;F;F;I;0;18;50;1"),
+    });
+    const rows = parseRosterFileFromBytes(zip, "roster.zip");
+    expect(rows.length).toBeGreaterThan(0);
+  });
+
+  it("parses SDIF roster swimmers from a ZIP archive", () => {
+    const sdif = readFileSync(join(fixturesDir, "roster-swimmers.cl2"), "utf8");
+    const zip = zipSync({ "roster.sd3": strToU8(sdif) });
+    const rows = parseRosterFileFromBytes(zip, "roster.zip");
+    expect(rows.length).toBeGreaterThan(0);
+  });
+
+  it("throws when a roster ZIP has no swimmer records", () => {
+    const zip = zipSync({
+      "events.ev3": strToU8("Meet;1/1/2025;1/2/2025;;Y;Pool\n1A;F;F;I;0;18;50;1"),
+    });
+    expect(() => parseRosterFileFromBytes(zip, "empty-roster.zip")).toThrow(
+      /No roster swimmers found/,
+    );
   });
 });

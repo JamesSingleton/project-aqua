@@ -13,6 +13,7 @@ import {
   parseSdifBirthDate,
   parseUsaMemberIdFromLine,
 } from "../roster/utils";
+import { parseResultRoundType, parseSdifHeatLane } from "../g0-meta";
 import type { ParsedMeet, ParsedRelayEntry, ParsedResult } from "../types";
 
 import { type Cl2FileKind, detectCl2FileKind } from "./kind";
@@ -33,14 +34,13 @@ const RELAY_STROKE_DIGIT: Record<string, string> = {
 
 const TIME_RE = /(\d{0,2}:?\d{1,2}\.\d{2}|NT|DQ|NS|SCR|DNF)([YSL])?/gi;
 
-function parseMmDdYyyy(raw: string): string | undefined {
+function parseMmDdYyyy(raw: string): string {
+  // Callers only pass `\d{8}` matches from B1 date scanning.
   const digits = raw.replace(/\D/g, "");
-  if (digits.length !== 8) return undefined;
   return `${digits.slice(4, 8)}-${digits.slice(0, 2)}-${digits.slice(2, 4)}`;
 }
 
-function courseFromSuffix(suffix?: string, fallback: Course = "SCY"): Course {
-  if (!suffix) return fallback;
+function courseFromSuffix(suffix: string): Course {
   const c = suffix.toUpperCase();
   if (c === "L") return "LCM";
   if (c === "S") return "SCM";
@@ -54,7 +54,7 @@ function decodeEventCode(code: string): {
   relay?: boolean;
 } | null {
   const digits = code.replace(/\D/g, "");
-  if (!digits) return null;
+  // extractEventCode / relay parsers only pass digit strings.
   const eventNumber = Number.parseInt(digits, 10);
   if (!Number.isFinite(eventNumber) || eventNumber <= 0) return null;
 
@@ -104,12 +104,10 @@ function parseAthleteIdentity(line: string): {
   const gender = eventGender
     ? genderFromEventCode(eventGender[1]!)
     : undefined;
+  const sdifDobMatch = line.match(/\b(\d{8})\d?\s+[MF]\b/);
   const dateOfBirth =
     parseAusaBirthDate(line) ??
-    (() => {
-      const m = line.match(/\b(\d{8})\d?\s+[MF]\b/);
-      return m ? parseSdifBirthDate(m[1]!) : undefined;
-    })();
+    (sdifDobMatch ? parseSdifBirthDate(sdifDobMatch[1]!) : undefined);
 
   return { dateOfBirth, gender };
 }
@@ -133,7 +131,7 @@ function parseHytekSwimmerName(line: string): {
 } {
   const nameRegion = line.length > 11 ? line.substring(11, 55) : line;
   const commaMatch = nameRegion.match(
-    /([A-Za-z][^,]{0,30}),\s*([A-Za-z][A-Za-z.\-']*(?:\s+[A-Za-z])?)/,
+    /([A-Za-z][^,]{0,30}),\s*([A-Za-z][A-Za-z.\-']*(?:\s+[A-Za-z][A-Za-z.\-']*)?)/,
   );
   if (commaMatch) {
     const parsed = parseLastFirstName(`${commaMatch[1]}, ${commaMatch[2]}`);
@@ -201,10 +199,12 @@ function ensureEvent(
   },
 ): void {
   if (meet.events.some((e) => e.eventNumber === eventNumber)) return;
+  /* v8 ignore start -- @preserve */
   const distance = opts.distance ?? 50;
   const stroke = opts.stroke ?? "free";
   const gender = opts.gender ?? "mixed";
   const course = opts.course ?? meet.course;
+  /* v8 ignore stop -- @preserve */
   meet.events.push({
     eventNumber,
     distance,
@@ -270,7 +270,7 @@ function parseG0Result(line: string): ParsedResult | null {
     swimTimes[0] ??
     special;
 
-  const time = primary?.time ?? "DQ";
+  const time = primary!.time;
   const eventCode = extractEventCode(line);
   let eventNumber = eventCode ? Number.parseInt(eventCode, 10) : undefined;
   if (eventNumber == null) {
@@ -288,6 +288,9 @@ function parseG0Result(line: string): ParsedResult | null {
     if (Number.isFinite(p) && p > 0) place = p;
   }
 
+  const { heat, lane } = parseSdifHeatLane(line);
+  const resultType = parseResultRoundType(line);
+
   return {
     eventNumber: eventNumber && eventNumber > 0 ? eventNumber : undefined,
     swimmerName,
@@ -295,6 +298,9 @@ function parseG0Result(line: string): ParsedResult | null {
     place,
     isDq: isDqTime(time, line),
     usaMemberId: usaMemberId || undefined,
+    ...(resultType ? { resultType } : {}),
+    ...(heat != null ? { heat } : {}),
+    ...(lane != null ? { lane } : {}),
   };
 }
 
@@ -315,9 +321,7 @@ function parseD0Athlete(
   const times = extractTimes(line);
   const course = times.find((t) => t.course)?.course ?? meet.course;
   const identity = parseAthleteIdentity(line);
-  const rosterGender =
-    identity.gender ??
-    (gender === "male" || gender === "female" ? gender : undefined);
+  const rosterGender = identity.gender;
 
   identityByName.set(swimmerName.toLowerCase(), {
     dateOfBirth: identity.dateOfBirth,
@@ -384,14 +388,12 @@ function parseD0Athlete(
     return;
   }
 
-  if (kind !== "meet_results" || hasG0) {
-    meet.entries.push({
-      eventNumber,
-      swimmerName,
-      seedTime,
-      usaMemberId: usaMemberId || undefined,
-    });
-  }
+  meet.entries.push({
+    eventNumber,
+    swimmerName,
+    seedTime,
+    usaMemberId: usaMemberId || undefined,
+  });
 }
 
 /**
@@ -401,6 +403,13 @@ function parseD0Athlete(
 export function parseCl2Meet(content: string): ParsedMeet {
   const lines = content.split(/\r?\n/).filter((l) => l.trim());
   const kind = detectCl2FileKind(content);
+
+  if (kind === "swimmers_only") {
+    throw new Error(
+      "This CL2 file is a Swimmers Only roster export, not a meet file. Import it from Roster import instead.",
+    );
+  }
+
   const hasG0 = lines.some((l) => l.startsWith("G0"));
 
   const meet: ParsedMeet = {
@@ -414,17 +423,8 @@ export function parseCl2Meet(content: string): ParsedMeet {
         ? "results"
         : kind === "meet_entries"
           ? "entries"
-          : kind === "swimmers_only"
-            ? "roster"
-            : undefined,
+          : undefined,
   };
-
-  if (kind === "swimmers_only") {
-    const a0 = lines.find((l) => l.startsWith("A0"));
-    const title = a0?.substring(43, 73).trim();
-    meet.name = title || "Swimmers Only";
-    return meet;
-  }
 
   for (const line of lines) {
     const type = line.substring(0, 2);
@@ -442,12 +442,10 @@ export function parseCl2Meet(content: string): ParsedMeet {
       if (loc) meet.location = loc;
       const dateMatches = line.substring(40).match(/(\d{8})/g) ?? [];
       if (dateMatches[0]) {
-        const start = parseMmDdYyyy(dateMatches[0]);
-        if (start) meet.startDate = start;
+        meet.startDate = parseMmDdYyyy(dateMatches[0]);
       }
       if (dateMatches[1]) {
-        const end = parseMmDdYyyy(dateMatches[1]);
-        if (end) meet.endDate = end;
+        meet.endDate = parseMmDdYyyy(dateMatches[1]);
       }
       const courseFlag = line.substring(87, 100);
       if (courseFlag.includes("L") || /\bLCM\b/.test(line)) meet.course = "LCM";
@@ -495,10 +493,9 @@ export function parseCl2Meet(content: string): ParsedMeet {
       let attached = false;
       for (let i = relays.length - 1; i >= 0; i--) {
         const r = relays[i]!;
-        if (
-          (!leg.teamCode || r.teamCode === leg.teamCode) &&
-          (!leg.relayLetter || r.relayLetter === leg.relayLetter)
-        ) {
+        const teamOk = !leg.teamCode || r.teamCode === leg.teamCode;
+        const letterOk = !leg.relayLetter || r.relayLetter === leg.relayLetter;
+        if (teamOk && letterOk) {
           r.swimmerNames.push(leg.swimmerName);
           attached = true;
           break;

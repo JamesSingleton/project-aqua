@@ -7,6 +7,7 @@ import {
   formatGenderShort,
 } from "@project-aqua/swim-core/events";
 import { formatTime } from "@project-aqua/swim-core/times";
+import { Badge } from "@project-aqua/ui/components/badge";
 import { Label } from "@project-aqua/ui/components/label";
 import {
   Select,
@@ -39,6 +40,11 @@ export type ResultRow = {
   previousBestTimeMs: number | null;
   place: number | null;
   isDq: boolean;
+  round: "prelim" | "swimoff" | "finals" | null;
+  heat: number | null;
+  lane: number | null;
+  exhibition: boolean;
+  dqCode: string | null;
   firstName: string;
   lastName: string;
   dateOfBirth: Date | string | null;
@@ -68,6 +74,7 @@ type StandardCut = {
 };
 
 type GroupMode = "event" | "swimmer";
+type RoundFilter = "all" | "prelim" | "swimoff" | "finals";
 
 function eventLabel(row: ResultRow) {
   const gender = formatGenderShort(row.gender);
@@ -195,6 +202,69 @@ function compareToStandard(
   return "slower";
 }
 
+const ROUND_LABEL: Record<string, string> = {
+  prelim: "Prelim",
+  swimoff: "Swim-off",
+  finals: "Finals",
+};
+
+const ROUND_SORT: Record<string, number> = {
+  prelim: 0,
+  swimoff: 1,
+  finals: 2,
+};
+
+function roundSortKey(round: ResultRow["round"]) {
+  if (!round) return 3;
+  return ROUND_SORT[round] ?? 3;
+}
+
+function compareResultRows(a: ResultRow, b: ResultRow) {
+  const roundDiff = roundSortKey(a.round) - roundSortKey(b.round);
+  if (roundDiff !== 0) return roundDiff;
+  if (a.place != null && b.place != null) return a.place - b.place;
+  if (a.place != null) return -1;
+  if (b.place != null) return 1;
+  return a.timeMs - b.timeMs;
+}
+
+/** Compact heat/lane/round/exhibition/DQ-code badges shown under a result's time. */
+function ResultMetaBadges({ row }: { row: ResultRow }) {
+  const hasHeatLane = row.heat != null || row.lane != null;
+  if (
+    !hasHeatLane &&
+    !row.round &&
+    !row.exhibition &&
+    !(row.isDq && row.dqCode)
+  ) {
+    return null;
+  }
+  return (
+    <span className="mt-1 flex flex-wrap items-center gap-1">
+      {row.round ? (
+        <Badge variant="outline" className="h-4.5 px-1.5 text-[10px]">
+          {ROUND_LABEL[row.round] ?? row.round}
+        </Badge>
+      ) : null}
+      {hasHeatLane ? (
+        <Badge variant="outline" className="h-4.5 px-1.5 text-[10px]">
+          H{row.heat ?? "—"} L{row.lane ?? "—"}
+        </Badge>
+      ) : null}
+      {row.exhibition ? (
+        <Badge variant="secondary" className="h-4.5 px-1.5 text-[10px]">
+          Exhibition
+        </Badge>
+      ) : null}
+      {row.isDq && row.dqCode ? (
+        <Badge variant="destructive" className="h-4.5 px-1.5 text-[10px]">
+          {row.dqCode}
+        </Badge>
+      ) : null}
+    </span>
+  );
+}
+
 function StandardCompareIndicator({
   compare,
 }: {
@@ -259,6 +329,7 @@ export function ResultsWorkspace({
   const [pbtsOnly, setPbtsOnly] = useState(false);
   const [showPercent, setShowPercent] = useState(false);
   const [groupMode, setGroupMode] = useState<GroupMode>("event");
+  const [roundFilter, setRoundFilter] = useState<RoundFilter>("all");
   const [showStandards, setShowStandards] = useState(false);
   const [selectedSetId, setSelectedSetId] = useState(standardSets[0]?.id ?? "");
   const [cuts, setCuts] = useState<StandardCut[]>([]);
@@ -279,10 +350,27 @@ export function ResultsWorkspace({
     });
   }, [showStandards, selectedSetId, teamId]);
 
+  const availableRounds = useMemo(() => {
+    const rounds = new Set<ResultRow["round"]>();
+    for (const row of results) {
+      if (row.round) rounds.add(row.round);
+    }
+    const order: Array<NonNullable<ResultRow["round"]>> = [
+      "prelim",
+      "swimoff",
+      "finals",
+    ];
+    return order.filter((r) => rounds.has(r));
+  }, [results]);
+
   const filtered = useMemo(() => {
-    if (!pbtsOnly) return results;
-    return results.filter(isPersonalBest);
-  }, [results, pbtsOnly]);
+    let rows = results;
+    if (roundFilter !== "all") {
+      rows = rows.filter((r) => r.round === roundFilter);
+    }
+    if (!pbtsOnly) return rows;
+    return rows.filter(isPersonalBest);
+  }, [results, roundFilter, pbtsOnly]);
 
   const summary = useMemo(() => {
     const relayCount = results.filter((r) =>
@@ -320,7 +408,7 @@ export function ResultsWorkspace({
           rows: [...g.rows].sort((a, b) => {
             const an = a.eventNumber ?? Number.MAX_SAFE_INTEGER;
             const bn = b.eventNumber ?? Number.MAX_SAFE_INTEGER;
-            return an - bn;
+            return an - bn || compareResultRows(a, b);
           }),
         }));
     }
@@ -349,12 +437,7 @@ export function ResultsWorkspace({
       })
       .map((g) => ({
         label: g.label,
-        rows: [...g.rows].sort((a, b) => {
-          if (a.place != null && b.place != null) return a.place - b.place;
-          if (a.place != null) return -1;
-          if (b.place != null) return 1;
-          return a.timeMs - b.timeMs;
-        }),
+        rows: [...g.rows].sort(compareResultRows),
       }));
   }, [filtered, groupMode]);
 
@@ -436,6 +519,38 @@ export function ResultsWorkspace({
             By swimmer
           </Label>
         </div>
+        {availableRounds.length > 0 ? (
+          <div className="flex items-center gap-2">
+            <Label htmlFor="round-filter" className="text-sm font-normal">
+              Round
+            </Label>
+            <Select
+              items={[
+                { value: "all", label: "All" },
+                ...availableRounds.map((round) => ({
+                  value: round,
+                  label: ROUND_LABEL[round] ?? round,
+                })),
+              ]}
+              value={roundFilter}
+              onValueChange={(v) => setRoundFilter((v ?? "all") as RoundFilter)}
+            >
+              <SelectTrigger id="round-filter" className="h-8 w-32" size="sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">All</SelectItem>
+                  {availableRounds.map((round) => (
+                    <SelectItem key={round} value={round}>
+                      {ROUND_LABEL[round] ?? round}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
         <div
           className={cn(
             "flex flex-wrap items-center gap-2",
@@ -602,15 +717,19 @@ export function ResultsWorkspace({
                       <TableCell className="tabular-nums">
                         {age ?? "—"}
                       </TableCell>
-                      <TableCell
-                        className={cn(
-                          "font-timing tabular-nums",
-                          row.isDq && "text-destructive line-through",
-                        )}
-                      >
-                        {row.isDq
-                          ? `DQ ${formatTime(row.timeMs)}`
-                          : formatTime(row.timeMs)}
+                      <TableCell className="font-timing tabular-nums">
+                        <span className="flex flex-col">
+                          <span
+                            className={cn(
+                              row.isDq && "text-destructive line-through",
+                            )}
+                          >
+                            {row.isDq
+                              ? `DQ ${formatTime(row.timeMs)}`
+                              : formatTime(row.timeMs)}
+                          </span>
+                          <ResultMetaBadges row={row} />
+                        </span>
                       </TableCell>
                       <TableCell className="font-timing tabular-nums">
                         {row.previousBestTimeMs != null &&

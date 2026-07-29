@@ -59,14 +59,15 @@ describe("golden corpus — roster packs", () => {
 });
 
 describe("golden corpus — meet events EV3/HYV", () => {
-  it("parses Charger events zip preferring EV3 and skipping dives", () => {
+  it("parses Charger events zip preferring EV3 and including dive events", () => {
     const bytes = new Uint8Array(
       readFileSync(join(fixturesDir, "charger-events.zip")),
     );
     const meet = parseMeetFileFromBytes(bytes, "charger-events.zip");
     expect(meet.name).toMatch(/Charger/);
     expect(meet.events.length).toBeGreaterThan(10);
-    expect(meet.skippedDiveEvents).toBeGreaterThan(0);
+    expect(meet.skippedDiveEvents).toBe(undefined);
+    expect(meet.events.some((e) => e.eventKind === "dive")).toBe(true);
   });
 
   it("parses Croswhite 2025/2026 and Desert Sunrise event zips", () => {
@@ -91,12 +92,22 @@ describe("golden corpus — meet events EV3/HYV", () => {
     expect(meet.events.length).toBe(22);
   });
 
-  it("parses Croswhite HYV dive stroke as skipped when used alone", () => {
+  it("parses Croswhite HYV dive stroke as a dive event by default", () => {
     const content = readFileSync(
       join(fixturesDir, "croswhite-2025-events.hyv"),
       "utf8",
     );
     const meet = parseHyv(content);
+    expect(meet.skippedDiveEvents).toBe(undefined);
+    expect(meet.events.some((e) => e.eventKind === "dive")).toBe(true);
+  });
+
+  it("still skips Croswhite HYV dive events when includeDiveEvents is false", () => {
+    const content = readFileSync(
+      join(fixturesDir, "croswhite-2025-events.hyv"),
+      "utf8",
+    );
+    const meet = parseHyv(content, { includeDiveEvents: false });
     expect(meet.skippedDiveEvents).toBeGreaterThan(0);
   });
 });

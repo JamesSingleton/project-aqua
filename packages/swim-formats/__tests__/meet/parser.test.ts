@@ -2,13 +2,15 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { strToU8, zipSync } from "fflate";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import * as XLSX from "xlsx";
 import {
   detectMeetFileFormat,
   parseMeetFile,
   parseMeetFileFromBytes,
+  parseMeetFilesFromBytes,
 } from "../../src/meet/parser";
+import * as zipModule from "../../src/meet/zip";
 
 const fixturesDir = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -90,6 +92,15 @@ describe("parseMeetFile", () => {
       /Unsupported meet format/,
     );
   });
+
+  it("hard-fails Rosters Only HY3 on the meet import path", () => {
+    const hy3 = readFileSync(join(fixturesDir, "roster-only.hy3"), "utf8");
+    expect(() => parseMeetFile(hy3, "hy3")).toThrow(/Rosters Only/);
+    const bytes = new TextEncoder().encode(hy3);
+    expect(() => parseMeetFileFromBytes(bytes, "roster-only.hy3")).toThrow(
+      /Rosters Only/,
+    );
+  });
 });
 
 describe("parseMeetFileFromBytes", () => {
@@ -98,6 +109,39 @@ describe("parseMeetFileFromBytes", () => {
     const bytes = zipOf({ "meet.ev3": ev3 });
     const meet = parseMeetFileFromBytes(bytes, "meet.zip");
     expect(meet.name).toMatch(/Charger/);
+  });
+
+  it("prefers HYV over EV3 when merging a zip pack", () => {
+    const ev3 = readFileSync(join(fixturesDir, "charger-events.ev3"), "utf8");
+    const hyv = readFileSync(join(fixturesDir, "charger-events.hyv"), "utf8");
+    const bytes = zipSync({
+      "meet.ev3": strToU8(ev3),
+      "meet.hyv": strToU8(hyv),
+    });
+    const meet = parseMeetFileFromBytes(bytes, "charger.zip");
+    expect(meet.name).toMatch(/Charger/);
+    expect(meet.events.length).toBeGreaterThan(0);
+  });
+
+  it("skips EV3 supplements when HYV is the selected primary file", () => {
+    const ev3 = readFileSync(join(fixturesDir, "sonoran-events.ev3"), "utf8");
+    const hyv = readFileSync(join(fixturesDir, "sonoran-events.ev3"), "utf8");
+    const bytes = zipSync({
+      "meet.ev3": strToU8(ev3),
+      "meet.hyv": strToU8(hyv),
+    });
+    vi.spyOn(zipModule, "selectPrimaryMeetFile").mockReturnValue({
+      primary: {
+        filename: "meet.hyv",
+        bytes: strToU8(hyv),
+        format: "hyv",
+        depth: 0,
+      },
+      isRosterOnly: false,
+    });
+    const meet = parseMeetFileFromBytes(bytes, "pack.zip");
+    vi.restoreAllMocks();
+    expect(meet.events.length).toBe(22);
   });
 
   it("parses legacy XLS event exports from bytes", () => {
@@ -151,6 +195,55 @@ describe("parseMeetFileFromBytes", () => {
     });
   });
 
+  it("parses XLS meet reports extracted from a ZIP archive", () => {
+    const rows = [
+      ["ignored"],
+      ["50 Free Finals"],
+      [
+        "name",
+        "age",
+        "team",
+        "seed time",
+        "x",
+        "x",
+        "prelim time",
+        "x",
+        "x",
+        "finals time",
+        "x",
+        "x",
+        "pad",
+        "pad2",
+      ],
+      [
+        "1",
+        "Zip Swimmer",
+        "15",
+        "TST",
+        "25.00",
+        "",
+        "",
+        "",
+        "",
+        "24.50",
+        "",
+        "",
+        "",
+        "",
+        "24.00",
+        "",
+        "",
+        "",
+        "",
+      ],
+    ];
+    const xlsBytes = makeEventXls(rows, "biff8");
+    const zipBytes = zipSync({ "results.xls": xlsBytes });
+    const meet = parseMeetFileFromBytes(zipBytes, "meet-pack.zip");
+    expect(meet.name).toBe("50 Free Finals");
+    expect(meet.results[0]?.swimmerName).toBe("Zip Swimmer");
+  });
+
   it("parses sdif from bytes", () => {
     const sd3 = readFileSync(
       join(fixturesDir, "AZAZSL_ext7716201449890453768.sd3"),
@@ -164,5 +257,55 @@ describe("parseMeetFileFromBytes", () => {
     expect(() => parseMeetFileFromBytes(bytes, "notes.txt")).toThrow(
       /Unsupported meet file/,
     );
+  });
+});
+
+describe("parseMeetFilesFromBytes", () => {
+  it("delegates a single file to parseMeetFileFromBytes", () => {
+    const ev3 = readFileSync(join(fixturesDir, "sonoran-events.ev3"));
+    const meet = parseMeetFilesFromBytes([
+      { filename: "meet.ev3", bytes: new Uint8Array(ev3) },
+    ]);
+    expect(meet.events.length).toBe(22);
+  });
+
+  it("merges companion HFILE+CFILE pairs without zipping them first", () => {
+    const cl2 = readFileSync(join(fixturesDir, "mari-entries.cl2"));
+    const hy3 = readFileSync(join(fixturesDir, "mari-entries.hy3"));
+    const merged = parseMeetFilesFromBytes([
+      { filename: "mari-entries.cl2", bytes: new Uint8Array(cl2) },
+      { filename: "mari-entries.hy3", bytes: new Uint8Array(hy3) },
+    ]) as ReturnType<typeof parseMeetFileFromBytes> & {
+      sourceFiles?: string[];
+    };
+    expect(merged.entries.length).toBeGreaterThan(0);
+    expect(merged.sourceFiles).toEqual([
+      "mari-entries.cl2",
+      "mari-entries.hy3",
+    ]);
+  });
+
+  it("rejects mixing a ZIP with other files", () => {
+    const zipBytes = zipOf({ "meet.ev3": "A102Meet Entries" });
+    expect(() =>
+      parseMeetFilesFromBytes([
+        { filename: "pack.zip", bytes: zipBytes },
+        { filename: "extra.cl2", bytes: strToU8("A01V3      02Meet Entries") },
+      ]),
+    ).toThrow(/not both together/);
+  });
+
+  it("rejects an unsupported file in a multi-file selection", () => {
+    const cl2 = readFileSync(join(fixturesDir, "mari-entries.cl2"));
+    expect(() =>
+      parseMeetFilesFromBytes([
+        { filename: "mari-entries.cl2", bytes: new Uint8Array(cl2) },
+        { filename: "notes.txt", bytes: strToU8("not a meet file") },
+      ]),
+    ).toThrow(/isn't a supported meet file/);
+  });
+
+  it("rejects an empty selection", () => {
+    expect(() => parseMeetFilesFromBytes([])).toThrow(/Select at least one/);
   });
 });

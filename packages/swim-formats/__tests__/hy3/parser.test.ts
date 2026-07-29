@@ -349,6 +349,49 @@ describe("parseHy3", () => {
     expect(meet.entries.some((e) => e.swimmerName === "Pat Smith")).toBe(true);
   });
 
+  it("detects a roster title and falls back to undefined gender for a mixed D1 swimmer", () => {
+    function put(line: string[], oneBased: number, s: string) {
+      for (let i = 0; i < s.length; i++) line[oneBased - 1 + i] = s[i]!;
+    }
+    function blank(len = 130): string[] {
+      return Array.from({ length: len }, () => " ");
+    }
+
+    const d1 = blank();
+    put(d1, 1, "D1");
+    put(d1, 3, "X"); // mixed — neither male nor female
+    put(d1, 4, "    1");
+    put(d1, 9, "Doe");
+    put(d1, 29, "Jamie");
+
+    const e1 = blank();
+    put(e1, 1, "E1");
+    put(e1, 3, "M");
+    put(e1, 4, "    1");
+    put(e1, 14, "M");
+    put(e1, 16, "    50");
+    put(e1, 22, "A");
+    put(e1, 39, "   1");
+    put(e1, 52, "  28.00");
+
+    const e2 = blank();
+    put(e2, 1, "E2");
+    put(e2, 3, "F");
+    put(e2, 4, "  27.50");
+
+    const content = [
+      "A102Rosters Only            Hy-Tek",
+      d1.join(""),
+      e1.join(""),
+      e2.join(""),
+    ].join("\n");
+
+    const meet = parseHy3(content);
+    expect(meet.importKind).toBe("roster");
+    expect(meet.entries[0]?.gender).toBeUndefined();
+    expect(meet.results[0]?.gender).toBeUndefined();
+  });
+
   it("covers age-only-max, empty seed float, and DQ without time", () => {
     function put(line: string[], oneBased: number, s: string) {
       for (let i = 0; i < s.length; i++) line[oneBased - 1 + i] = s[i]!;

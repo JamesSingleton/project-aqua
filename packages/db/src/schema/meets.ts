@@ -38,6 +38,18 @@ export const seedTimeSourceEnum = pgEnum("seed_time_source", [
 
 export type SeedTimeSource = (typeof seedTimeSourceEnum.enumValues)[number];
 
+export const meetResultRoundEnum = pgEnum("meet_result_round", [
+  "prelim",
+  "swimoff",
+  "finals",
+]);
+
+export type MeetResultRound = (typeof meetResultRoundEnum.enumValues)[number];
+
+export const meetEventKindEnum = pgEnum("meet_event_kind", ["swim", "dive"]);
+
+export type MeetEventKind = (typeof meetEventKindEnum.enumValues)[number];
+
 export const meets = pgTable("meets", {
   id: text("id").primaryKey(),
   organizationId: text("organization_id")
@@ -82,6 +94,10 @@ export const meetEvents = pgTable("meet_events", {
     .references(() => swimEvents.eventKey),
   /** Meet-specific entry qualifying cut (from EV3/HYV), milliseconds. */
   qualifyingTimeMs: integer("qualifying_time_ms"),
+  /** Diving events (Hy-Tek EV3 `F` / HYV `6`) are unscored, distance-0 rows. */
+  eventKind: meetEventKindEnum("event_kind").notNull().default("swim"),
+  /** Number of dives (EV3/HYV dive-count field), diving events only. */
+  diveCount: integer("dive_count"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -116,6 +132,8 @@ export const meetEntries = pgTable("meet_entries", {
     .default("no_time"),
   entryNotes: text("entry_notes"),
   status: meetEntryStatusEnum("status").notNull().default("draft"),
+  /** Swum outside the scored field (Hy-Tek E1 col 84 `X`). */
+  exhibition: boolean("exhibition").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -136,6 +154,14 @@ export const meetResults = pgTable("meet_results", {
   place: integer("place"),
   isDq: boolean("is_dq").notNull().default(false),
   splitTimes: jsonb("split_times"),
+  /** Championship round when known (Hy-Tek E2/HYV): prelim/swimoff/finals. */
+  round: meetResultRoundEnum("round"),
+  heat: integer("heat"),
+  lane: integer("lane"),
+  /** Swum outside the scored field (Hy-Tek E1 col 84 `X`). */
+  exhibition: boolean("exhibition").notNull().default(false),
+  /** Hy-Tek DQ reason code (E2/H1), e.g. "1F" false start, "2K" kick. */
+  dqCode: text("dq_code"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

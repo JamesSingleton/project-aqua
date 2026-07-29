@@ -58,7 +58,7 @@ describe("extractMeetFileFromZip", () => {
       "readme.txt": "not a meet file",
     });
     expect(() => extractMeetFileFromZip(bytes)).toThrow(
-      /No supported meet file/,
+      /doesn't contain a supported meet file/,
     );
   });
 

@@ -1,3 +1,5 @@
+import { formatTime } from "./times";
+
 export type EntryLimitPackage = {
   individual: number;
   relay: number;
@@ -83,6 +85,29 @@ export function canAddMeetEntry(
   }
 
   return { ok: true };
+}
+
+/**
+ * Whether a seed time satisfies a meet event's qualifying time (QT) cutoff.
+ *
+ * QT events (from Hy-Tek EV3/HYV `qualifyingTimeMs`) require an entered time
+ * at or faster than the cut. A missing seed (NT) is allowed through — the
+ * coach can submit "no time" pending verification — but a *submitted* time
+ * slower than the QT is blocked with an explanation, mirroring
+ * `canAddMeetEntry`.
+ */
+export function checkQualifyingTime(
+  qualifyingTimeMs: number | null | undefined,
+  seedTimeMs: number | null | undefined,
+): { ok: true } | { ok: false; reason: string } {
+  if (qualifyingTimeMs == null || qualifyingTimeMs <= 0) return { ok: true };
+  if (seedTimeMs == null || seedTimeMs <= 0) return { ok: true };
+  if (seedTimeMs <= qualifyingTimeMs) return { ok: true };
+
+  return {
+    ok: false,
+    reason: `Seed time ${formatTime(seedTimeMs)} is slower than the meet qualifying time ${formatTime(qualifyingTimeMs)}. Enter a faster time, or clear the seed to submit as no-time (NT).`,
+  };
 }
 
 export function formatEntryLimitsSummary(

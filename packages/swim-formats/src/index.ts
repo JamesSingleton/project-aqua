@@ -1,8 +1,18 @@
 export { type Cl2FileKind, detectCl2FileKind } from "./cl2/kind";
 export { parseCl2Meet } from "./cl2/parser";
 export { exportRosterCsv, parseRosterCsv } from "./csv/parser";
-export { parseEv3, parseHyv } from "./ev3/parser";
-export { exportHy3 } from "./export/meet";
+export {
+  type Ev3ParseOptions,
+  parseEv3,
+  parseHyv,
+} from "./ev3/parser";
+export {
+  exportCl2,
+  exportEv3,
+  exportHy3,
+  exportHyv,
+  exportMeetZip,
+} from "./export/meet";
 export { parseHy3 } from "./hy3/parser";
 export {
   detectMeetFileFormat,
@@ -16,6 +26,8 @@ export {
   mergeParsedMeets,
   parseMeetFile,
   parseMeetFileFromBytes,
+  parseMeetFilesFromBytes,
+  selectPrimaryMeetFile,
 } from "./meet/parser";
 export { parseCl2Roster } from "./roster/cl2";
 export { parseHy3Roster } from "./roster/hy3-style";

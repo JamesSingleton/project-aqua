@@ -35,6 +35,21 @@ export interface ParsedMeet {
   importKind?: "results" | "entries" | "events" | "roster";
 }
 
+export interface ParsedEntry {
+  eventNumber?: number;
+  swimmerName: string;
+  seedTime?: string;
+  usaMemberId?: string;
+  /** YYYY-MM-DD when present on HY3 D1 (or derived from USA ID). */
+  dateOfBirth?: string;
+  gender?: "male" | "female";
+  /** True when HY3 E1 col 84 is `X` (exhibition). */
+  exhibition?: boolean;
+  meetDivision?: string;
+  heat?: number;
+  lane?: number;
+}
+
 export interface ParsedEvent {
   eventNumber?: number;
   stroke: string;
@@ -42,22 +57,14 @@ export interface ParsedEvent {
   gender: EventGender;
   ageGroup?: string;
   eventKey: string;
+  /** `dive` for Hy-Tek dive events (stroke F/6); default swim. */
+  eventKind?: "swim" | "dive";
+  /** Number of dives when present on EV3 dive rows. */
+  diveCount?: number;
   /** Championship round when present (HYV): prelims/finals/swimoff/time trial. */
   roundType?: "prelim" | "finals" | "swimoff" | "time_trial";
   /** Primary meet qualifying/entry cut time in milliseconds when present. */
   qualifyingTimeMs?: number;
-}
-
-export interface ParsedEntry {
-  eventNumber?: number;
-  swimmerName: string;
-  seedTime?: string;
-  usaMemberId?: string;
-  /** True when HY3 E1 col 84 is `X` (exhibition). */
-  exhibition?: boolean;
-  meetDivision?: string;
-  heat?: number;
-  lane?: number;
 }
 
 export interface ParsedResult {

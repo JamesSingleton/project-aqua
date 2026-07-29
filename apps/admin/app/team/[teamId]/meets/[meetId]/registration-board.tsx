@@ -3,6 +3,7 @@
 import { swimmerAgeOnDate } from "@project-aqua/swim-core/age";
 import {
   canAddMeetEntry,
+  checkQualifyingTime,
   formatEntryLimitsSummary,
   isRelayStroke,
   type MeetEntryLimits,
@@ -288,6 +289,7 @@ export function RegistrationBoard({
     roster[0]?.membershipId ?? "",
   );
   const [seedDrafts, setSeedDrafts] = useState<Record<string, string>>({});
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const commitmentByMembership = useMemo(
     () => new Map(commitments.map((c) => [c.membershipId, c.status])),
@@ -475,6 +477,13 @@ export function RegistrationBoard({
     const limitCheck = canAddMeetEntry(limits, entryCounts, candidateIsRelay);
     if (!limitCheck.ok) return;
 
+    const qtCheck = checkQualifyingTime(
+      event.qualifyingTimeMs,
+      resolved.seedTimeMs,
+    );
+    if (!qtCheck.ok) return;
+
+    setActionError(null);
     setPendingAction(`add:${event.id}`);
     startTransition(async () => {
       try {
@@ -491,6 +500,10 @@ export function RegistrationBoard({
           return next;
         });
         refresh();
+      } catch (err) {
+        setActionError(
+          err instanceof Error ? err.message : "Couldn't add this entry.",
+        );
       } finally {
         setPendingAction(null);
       }
@@ -731,6 +744,14 @@ export function RegistrationBoard({
             </header>
 
             <div className="flex-1 space-y-6 overflow-y-auto p-4">
+              {actionError ? (
+                <Alert variant="destructive">
+                  <AlertTriangleIcon />
+                  <AlertTitle>Couldn't add entry</AlertTitle>
+                  <AlertDescription>{actionError}</AlertDescription>
+                </Alert>
+              ) : null}
+
               {limitAlert ? (
                 <Alert className="border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-50">
                   <AlertTriangleIcon />
@@ -838,12 +859,8 @@ export function RegistrationBoard({
                       const resolved = resolveSeed(event.id, event.eventKey);
                       const seedMs = resolved?.seedTimeMs ?? null;
                       const qtMs = event.qualifyingTimeMs;
-                      const missesQt =
-                        qtMs != null &&
-                        qtMs > 0 &&
-                        seedMs != null &&
-                        seedMs > 0 &&
-                        seedMs > qtMs;
+                      const qtCheck = checkQualifyingTime(qtMs, seedMs);
+                      const missesQt = !qtCheck.ok;
                       return (
                         <li
                           key={event.id}
@@ -896,22 +913,27 @@ export function RegistrationBoard({
                               >
                                 <AlertTriangleIcon className="size-3.5 shrink-0" />
                                 <span className="sr-only sm:not-sr-only">
-                                  Slow vs QT
+                                  Slower than QT
                                 </span>
                               </TooltipTrigger>
                               <TooltipContent className="max-w-xs">
-                                Seed {formatTime(seedMs!)} is slower than the
-                                meet QT {formatTime(qtMs!)}. Edit the seed if
-                                you have a faster practice or time-trial time.
+                                {qtCheck.ok ? null : qtCheck.reason}
                               </TooltipContent>
                             </Tooltip>
                           ) : null}
                           <AddEntryButton
                             disabled={
-                              pending || !membershipId || !limitCheck.ok
+                              pending ||
+                              !membershipId ||
+                              !limitCheck.ok ||
+                              !qtCheck.ok
                             }
                             limitReason={
-                              !limitCheck.ok ? limitCheck.reason : undefined
+                              !limitCheck.ok
+                                ? limitCheck.reason
+                                : !qtCheck.ok
+                                  ? qtCheck.reason
+                                  : undefined
                             }
                             pending={pendingAction === `add:${event.id}`}
                             onClick={() => addEntry(event)}

@@ -28,8 +28,16 @@ const STROKE_CODES: Record<string, string> = {
   IM: "im",
 };
 
-/** Hy-Tek dive stroke codes. Not mapped to swim strokes; skipped until dive support ships. */
+/** Hy-Tek dive stroke codes (EV3 uses `F`, HYV uses `6`). */
 const DIVE_STROKE_CODES = new Set(["6", "F", "DV", "DIVE"]);
+
+export interface Ev3ParseOptions {
+  /**
+   * Include diving events as `ParsedEvent` with `eventKind: 'dive'` instead
+   * of skipping them. Defaults to `true`.
+   */
+  includeDiveEvents?: boolean;
+}
 
 const HYTEK_TIME_RE = /^\d{1,2}:\d{2}\.\d{1,2}$|^\d{1,2}\.\d{1,2}$/;
 
@@ -126,7 +134,11 @@ function firstQualifyingTimeMs(
 }
 
 /** Parse Hy-Tek Meet Manager EV3 event template files. */
-export function parseEv3(content: string): ParsedMeet {
+export function parseEv3(
+  content: string,
+  options: Ev3ParseOptions = {},
+): ParsedMeet {
+  const includeDiveEvents = options.includeDiveEvents ?? true;
   const lines = content.split(/\r?\n/).filter((l) => l.trim());
   const meet: ParsedMeet = {
     name: "Imported Events",
@@ -180,20 +192,35 @@ export function parseEv3(content: string): ParsedMeet {
     const eventNumber = Number.parseInt(parts[0] || "", 10);
     if (!Number.isFinite(eventNumber)) continue;
 
-    // EV3: [2]=round F/P, [4]=I/R, [5]=gender G/B, [6-7]=age, [8]=distance, [9]=stroke
-    // Dive events use stroke F (and often distance 0); skip until dive support lands.
-    if (isDiveStrokeCode(parts[9]!)) {
-      meet.skippedDiveEvents = (meet.skippedDiveEvents ?? 0) + 1;
-      continue;
-    }
-
+    // EV3: [2]=round F/P, [4]=I/R, [5]=gender G/B, [6-7]=age, [8]=distance, [9]=stroke, [10]=dive count
     const gender = mapGender(parts[5] || "B");
     const isRelay = (parts[4] || "I").toUpperCase() === "R";
-    const distance = Number.parseInt(parts[8] || "0", 10) || 0;
-    const stroke = mapRelayStroke(mapStroke(parts[9] || "1"), isRelay);
     const ageGroup = formatAgeGroup(parts[6] || "", parts[7] || "");
     // Primary entry QT slots [19]/[20] (match HYV [8]/[9]).
     const qualifyingTimeMs = firstQualifyingTimeMs(parts[19], parts[20]);
+
+    if (isDiveStrokeCode(parts[9]!)) {
+      if (!includeDiveEvents) {
+        meet.skippedDiveEvents = (meet.skippedDiveEvents ?? 0) + 1;
+        continue;
+      }
+      const diveCount = Number.parseInt(parts[10] || "", 10);
+      meet.events.push({
+        eventNumber,
+        distance: 0,
+        stroke: "dive",
+        gender,
+        ageGroup,
+        eventKey: `dive-${eventNumber}`,
+        eventKind: "dive",
+        ...(Number.isFinite(diveCount) && diveCount > 0 ? { diveCount } : {}),
+        ...(qualifyingTimeMs != null ? { qualifyingTimeMs } : {}),
+      });
+      continue;
+    }
+
+    const distance = Number.parseInt(parts[8] || "0", 10) || 0;
+    const stroke = mapRelayStroke(mapStroke(parts[9] || "1"), isRelay);
 
     const event: ParsedEvent = {
       eventNumber,
@@ -211,7 +238,11 @@ export function parseEv3(content: string): ParsedMeet {
 }
 
 /** Parse Hy-Tek HYV event/qualifying-time files. */
-export function parseHyv(content: string): ParsedMeet {
+export function parseHyv(
+  content: string,
+  options: Ev3ParseOptions = {},
+): ParsedMeet {
+  const includeDiveEvents = options.includeDiveEvents ?? true;
   const lines = content.split(/\r?\n/).filter((l) => l.trim());
   const meet: ParsedMeet = {
     name: "Imported Events",
@@ -258,9 +289,26 @@ export function parseHyv(content: string): ParsedMeet {
             : ("finals" as const);
 
     // HYV: [1]=round, [2]=gender F/M, [3]=I/R, [4-5]=age, [6]=distance, [7]=stroke
-    // Dive events use stroke code 6; skip until dive support lands.
+    // Dive events use stroke code 6; [6] holds the dive count instead of a distance.
     if (isDiveStrokeCode(parts[7]!)) {
-      meet.skippedDiveEvents = (meet.skippedDiveEvents ?? 0) + 1;
+      if (!includeDiveEvents) {
+        meet.skippedDiveEvents = (meet.skippedDiveEvents ?? 0) + 1;
+        continue;
+      }
+      const diveGender = mapGender(parts[2] || "M");
+      const diveAgeGroup = formatAgeGroup(parts[4] || "", parts[5] || "");
+      const diveCount = Number.parseInt(parts[6] || "", 10);
+      meet.events.push({
+        eventNumber,
+        distance: 0,
+        stroke: "dive",
+        gender: diveGender,
+        ageGroup: diveAgeGroup,
+        eventKey: `dive-${eventNumber}`,
+        eventKind: "dive",
+        roundType,
+        ...(Number.isFinite(diveCount) && diveCount > 0 ? { diveCount } : {}),
+      });
       continue;
     }
 

@@ -76,6 +76,8 @@ type Hy3Swimmer = {
   lastName: string;
   nickName?: string;
   usaMemberId?: string;
+  /** YYYY-MM-DD from D1 cols 89–96 when present. */
+  dateOfBirth?: string;
   gender: EventGender;
   age?: number;
   classYear?: string;
@@ -208,20 +210,58 @@ function parseResultKind(code: string): ResultKind | undefined {
   return undefined;
 }
 
-function bestResult(entry: Hy3Entry): {
-  kind: ResultKind;
-  result: RoundResult;
-} | null {
-  if (entry.finals?.timeSeconds != null || entry.finals?.timeCode) {
-    return { kind: "finals", result: entry.finals };
+/** Emit every scored round (prelim / swimoff / finals), not only the best. */
+function allRoundResults(
+  entry: Hy3Entry,
+): Array<{ kind: ResultKind; result: RoundResult }> {
+  const rounds: Array<{ kind: ResultKind; result: RoundResult }> = [];
+  for (const kind of ["prelim", "swimoff", "finals"] as const) {
+    const result = entry[kind];
+    if (result && (result.timeSeconds != null || result.timeCode)) {
+      rounds.push({ kind, result });
+    }
   }
-  if (entry.swimoff?.timeSeconds != null || entry.swimoff?.timeCode) {
-    return { kind: "swimoff", result: entry.swimoff };
-  }
-  if (entry.prelim?.timeSeconds != null || entry.prelim?.timeCode) {
-    return { kind: "prelim", result: entry.prelim };
-  }
-  return null;
+  return rounds;
+}
+
+function pushResultFromRound(
+  results: ParsedResult[],
+  entry: Hy3Entry,
+  swimmer: Hy3Swimmer,
+  kind: ResultKind,
+  round: RoundResult,
+): void {
+  const time = secondsToTimeString(round.timeSeconds);
+  const isDq =
+    !!round.dqCode ||
+    DQ_TIME_CODES.has(round.timeCode ?? "") ||
+    round.timeCode === "Q";
+  if (!time && !isDq) return;
+  results.push({
+    eventNumber: entry.eventNumber,
+    swimmerName: swimmerDisplayName(swimmer),
+    time: time ?? "DQ",
+    place: round.overallPlace,
+    isDq,
+    usaMemberId: swimmer.usaMemberId,
+    dateOfBirth: swimmer.dateOfBirth,
+    gender:
+      swimmer.gender === "male" || swimmer.gender === "female"
+        ? swimmer.gender
+        : undefined,
+    teamCode: swimmer.teamCode,
+    resultType: kind,
+    heat: round.heat,
+    lane: round.lane,
+    dqCode: round.dqCode,
+    exhibition: entry.exhibition,
+    splitsMs:
+      round.splits.size > 0
+        ? [...round.splits.entries()]
+            .sort((a, b) => a[0] - b[0])
+            .map(([, seconds]) => Math.round(seconds * 1000))
+        : undefined,
+  });
 }
 
 function parseA1(line: string, state: ParseState): void {
@@ -268,6 +308,15 @@ function parseC3(_line: string, _state: ParseState): void {
   // Team contact retained in full parse path later if needed.
 }
 
+function resolveSwimmerDob(
+  lineDob: string | undefined,
+  usaMemberId: string | undefined,
+): string | undefined {
+  if (lineDob) return lineDob;
+  if (usaMemberId) return parseDobFromUsaMemberId(usaMemberId);
+  return undefined;
+}
+
 function parseD1(line: string, state: ParseState): void {
   const meetId = safeInt(extract(line, 4, 5), -1);
   if (meetId < 0) return;
@@ -276,6 +325,11 @@ function parseD1(line: string, state: ParseState): void {
   const firstName = extract(line, 29, 20);
   const nickName = extract(line, 49, 20) || undefined;
   const usaMemberId = extract(line, 70, 14) || undefined;
+  // Match hytek-parser d1_parser: DOB at cols 89–96 (MMDDYYYY).
+  const dateOfBirth = resolveSwimmerDob(
+    parseMmDdYyyy(extract(line, 89, 8)),
+    usaMemberId,
+  );
   const age = safeInt(extract(line, 97, 3), -1);
   const classYear = extract(line, 100, 2) || undefined;
 
@@ -285,6 +339,7 @@ function parseD1(line: string, state: ParseState): void {
     lastName,
     nickName,
     usaMemberId,
+    dateOfBirth,
     gender,
     age: age >= 0 ? age : undefined,
     classYear,
@@ -518,45 +573,20 @@ function flatten(state: ParseState): ParsedMeet {
       swimmerName,
       seedTime: secondsToTimeString(entry.seedSeconds),
       usaMemberId: swimmer.usaMemberId,
-      exhibition: entry.exhibition,
-      meetDivision: entry.meetDivision,
-    });
-
-    const best = bestResult(entry);
-    if (!best) continue;
-    const time = secondsToTimeString(best.result.timeSeconds);
-    const isDq =
-      !!best.result.dqCode ||
-      DQ_TIME_CODES.has(best.result.timeCode ?? "") ||
-      best.result.timeCode === "Q";
-    if (!time && !isDq) continue;
-    results.push({
-      eventNumber: entry.eventNumber,
-      swimmerName,
-      time: time ?? "DQ",
-      place: best.result.overallPlace,
-      isDq,
-      usaMemberId: swimmer.usaMemberId,
-      dateOfBirth: swimmer.usaMemberId
-        ? parseDobFromUsaMemberId(swimmer.usaMemberId)
-        : undefined,
+      dateOfBirth: swimmer.dateOfBirth,
       gender:
         swimmer.gender === "male" || swimmer.gender === "female"
           ? swimmer.gender
           : undefined,
-      teamCode: swimmer.teamCode,
-      resultType: best.kind,
-      heat: best.result.heat,
-      lane: best.result.lane,
-      dqCode: best.result.dqCode,
       exhibition: entry.exhibition,
-      splitsMs:
-        best.result.splits.size > 0
-          ? [...best.result.splits.entries()]
-              .sort((a, b) => a[0] - b[0])
-              .map(([, seconds]) => Math.round(seconds * 1000))
-          : undefined,
+      meetDivision: entry.meetDivision,
     });
+
+    const rounds = allRoundResults(entry);
+    if (rounds.length === 0) continue;
+    for (const { kind, result } of rounds) {
+      pushResultFromRound(results, entry, swimmer, kind, result);
+    }
   }
 
   return {

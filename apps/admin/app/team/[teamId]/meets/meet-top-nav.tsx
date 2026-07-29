@@ -9,12 +9,15 @@ export function MeetTopNav({ teamId }: { teamId: string }) {
   const base = `/team/${teamId}/meets`;
   const resultsHref = `${base}/results`;
   const standardsHref = `${base}/time-standards`;
+  const historyHref = `${base}/import-history`;
 
   const active = pathname.startsWith(standardsHref)
     ? "standards"
-    : pathname.startsWith(resultsHref)
-      ? "results"
-      : "entries";
+    : pathname.startsWith(historyHref)
+      ? "history"
+      : pathname.startsWith(resultsHref)
+        ? "results"
+        : "entries";
 
   return (
     <Tabs value={active} className="w-full">
@@ -45,6 +48,14 @@ export function MeetTopNav({ teamId }: { teamId: string }) {
           className="flex-none px-1 pb-3 text-base data-active:bg-transparent"
         >
           Time Standards
+        </TabsTrigger>
+        <TabsTrigger
+          value="history"
+          nativeButton={false}
+          render={<Link href={historyHref} />}
+          className="flex-none px-1 pb-3 text-base data-active:bg-transparent"
+        >
+          Import History
         </TabsTrigger>
       </TabsList>
     </Tabs>

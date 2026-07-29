@@ -36,7 +36,18 @@ export default async function MeetRegistrationPage({
   const detail = await getMeetDetailAction(teamId, meetId);
   if (!detail) notFound();
 
-  const { meet, events, entries, commitments, roster, bestTimes } = detail;
+  const {
+    meet,
+    events: allEvents,
+    entries,
+    commitments,
+    roster,
+    bestTimes,
+  } = detail;
+  // Diving events are unscored and have no entry flow yet — keep them out of
+  // the swim entry/registration boards; they're still listed on the Events
+  // page for reference.
+  const events = allEvents.filter((e) => e.eventKind !== "dive");
   const relayLegs = await getMeetRelayLegsAction(teamId, meetId);
   const nameByMembership = new Map(
     roster.map(

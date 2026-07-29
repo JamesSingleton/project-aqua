@@ -5,6 +5,7 @@ import {
   type Stroke,
 } from "@project-aqua/swim-core/events";
 import { parseTime } from "@project-aqua/swim-core/times";
+import { parseResultRoundType, parseSdifHeatLane } from "../g0-meta";
 import type {
   ParsedEntry,
   ParsedEvent,
@@ -162,6 +163,8 @@ export function parseSdif(content: string): ParsedMeet {
           line.substring(99, 107).trim() || line.substring(72, 82).trim();
         if (!time) break;
         const dqFlag = line.substring(117, 118).trim();
+        const { heat, lane } = parseSdifHeatLane(line);
+        const resultType = parseResultRoundType(line);
         const result: ParsedResult = {
           eventNumber: eventNumberFromLine(line),
           swimmerName: swimmerNameFromLine(line),
@@ -173,6 +176,9 @@ export function parseSdif(content: string): ParsedMeet {
           isDq: dqFlag === "D" || /DQ|NS|SCR/i.test(line),
           usaMemberId: usaIdFromLine(line),
           dqCode: dqFlag && dqFlag !== "" ? dqFlag : undefined,
+          ...(resultType ? { resultType } : {}),
+          ...(heat != null ? { heat } : {}),
+          ...(lane != null ? { lane } : {}),
         };
         meet.results.push(result);
         break;

@@ -116,14 +116,18 @@ function collectFromZip(
   out: ExtractedMeetFile[],
 ): void {
   if (!isZipBytes(bytes)) {
-    throw new Error("Not a valid ZIP archive.");
+    throw new Error(
+      "This doesn't look like a ZIP file. Re-export the meet pack from Meet Manager or Team Manager and upload the .zip it produces.",
+    );
   }
 
   let entries: Record<string, Uint8Array>;
   try {
     entries = unzipSync(bytes);
   } catch {
-    throw new Error("Could not read ZIP archive.");
+    throw new Error(
+      "Couldn't read this ZIP archive — it may be corrupted. Re-export it and try again.",
+    );
   }
 
   for (const [path, fileBytes] of Object.entries(entries)) {
@@ -151,6 +155,33 @@ function pickPrimary(files: ExtractedMeetFile[]): ExtractedMeetFile {
 }
 
 /**
+ * Choose the primary meet file from a set of extracted/selected files and
+ * detect whether the set is roster-only. Shared by ZIP extraction and
+ * multi-file (non-ZIP pack) selection so both paths apply the same
+ * "Swimmers Only / Rosters Only" guardrail.
+ */
+export function selectPrimaryMeetFile(files: ExtractedMeetFile[]): {
+  primary: ExtractedMeetFile;
+  isRosterOnly: boolean;
+} {
+  const topLevel = files.filter((f) => f.depth === 0);
+  const topLevelRoster =
+    topLevel.length > 0 &&
+    topLevel.every((f) => isRosterOnlyContent(f.filename, f.bytes));
+  const topLevelHasMeet = topLevel.some(isMeetContentFile);
+  // Team Manager "Roster" zips often nest an entries pack — still roster-only
+  // when every *top-level* file is Swimmers Only / Rosters Only.
+  const isRosterOnly = topLevelRoster && !topLevelHasMeet;
+
+  const pool = isRosterOnly
+    ? files.filter((f) => f.depth === 0)
+    : files.filter((f) => !isRosterOnlyContent(f.filename, f.bytes));
+  const primaryPool = pool.length > 0 ? pool : files;
+
+  return { primary: pickPrimary(primaryPool), isRosterOnly };
+}
+
+/**
  * Extract all supported meet files from a ZIP (including nested ZIPs).
  */
 export function extractAllMeetFilesFromZip(
@@ -163,7 +194,7 @@ export function extractAllMeetFilesFromZip(
 
   if (files.length === 0) {
     throw new Error(
-      "No supported meet file in ZIP. Expected EV3, HYV, HY3, SD3/SDIF, CL2, or XLS.",
+      "This ZIP doesn't contain a supported meet file. Re-export it from Meet Manager or Team Manager with an EV3, HYV, HY3, SD3/SDIF, CL2, or XLS file included, then try again.",
     );
   }
 
@@ -176,23 +207,11 @@ export function extractAllMeetFilesFromZip(
     unique.push(file);
   }
 
-  const topLevel = unique.filter((f) => f.depth === 0);
-  const topLevelRoster =
-    topLevel.length > 0 &&
-    topLevel.every((f) => isRosterOnlyContent(f.filename, f.bytes));
-  const topLevelHasMeet = topLevel.some(isMeetContentFile);
-  // Team Manager "Roster" zips often nest an entries pack — still roster-only
-  // when every *top-level* file is Swimmers Only / Rosters Only.
-  const isRosterOnly = topLevelRoster && !topLevelHasMeet;
-
-  const pool = isRosterOnly
-    ? unique.filter((f) => f.depth === 0)
-    : unique.filter((f) => !isRosterOnlyContent(f.filename, f.bytes));
-  const primaryPool = pool.length > 0 ? pool : unique;
+  const { primary, isRosterOnly } = selectPrimaryMeetFile(unique);
 
   return {
     files: unique,
-    primary: pickPrimary(primaryPool),
+    primary,
     isRosterOnly,
   };
 }

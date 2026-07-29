@@ -8,6 +8,7 @@
     "./sdif": "./src/sdif/parser.ts",
     "./csv": "./src/csv/parser.ts",
     "./hy3": "./src/hy3/index.ts",
+    "./export": "./src/export/meet.ts",
     "./roster": "./src/roster/parser.ts",
     "./meet": "./src/meet/parser.ts",
     "./ev3": "./src/ev3/parser.ts",

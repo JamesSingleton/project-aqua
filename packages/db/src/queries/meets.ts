@@ -11,6 +11,7 @@ import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../client";
 import {
   type EntryLimitPackage,
+  type MeetResultRound,
   meetCommitments,
   meetEntries,
   meetEvents,
@@ -273,6 +274,8 @@ export async function addMeetEvent(
     eventKey: string;
     course?: "SCY" | "SCM" | "LCM";
     qualifyingTimeMs?: number | null;
+    eventKind?: "swim" | "dive";
+    diveCount?: number | null;
   },
 ) {
   const gender = parseEventGender(event.gender);
@@ -295,6 +298,8 @@ export async function addMeetEvent(
     ageGroup: event.ageGroup,
     eventKey: event.eventKey,
     qualifyingTimeMs: event.qualifyingTimeMs ?? null,
+    eventKind: event.eventKind ?? "swim",
+    diveCount: event.diveCount ?? null,
   });
   return id;
 }
@@ -307,6 +312,7 @@ export async function addMeetEntry(
   entryNotes?: string,
   status: "draft" | "approved" | "scratched" = "draft",
   seedTimeSource?: SeedTimeSource,
+  exhibition?: boolean,
 ) {
   const source: SeedTimeSource =
     seedTimeSource ??
@@ -321,6 +327,7 @@ export async function addMeetEntry(
     seedTimeSource: source,
     entryNotes: entryNotes ?? null,
     status,
+    exhibition: exhibition ?? false,
   });
   return id;
 }
@@ -505,6 +512,11 @@ export async function addMeetResult(
     isDq?: boolean;
     previousBestTimeMs?: number | null;
     splitTimes?: number[] | null;
+    round?: MeetResultRound | null;
+    heat?: number | null;
+    lane?: number | null;
+    exhibition?: boolean;
+    dqCode?: string | null;
   },
 ) {
   const id = generateId();
@@ -544,6 +556,11 @@ export async function addMeetResult(
     place: options?.place ?? null,
     isDq: options?.isDq ?? false,
     splitTimes: options?.splitTimes ?? null,
+    round: options?.round ?? null,
+    heat: options?.heat ?? null,
+    lane: options?.lane ?? null,
+    exhibition: options?.exhibition ?? false,
+    dqCode: options?.dqCode ?? null,
   });
 
   if (event && !options?.isDq) {
@@ -583,6 +600,11 @@ export async function getMeetResultsDetailed(meetId: string) {
       previousBestTimeMs: meetResults.previousBestTimeMs,
       place: meetResults.place,
       isDq: meetResults.isDq,
+      round: meetResults.round,
+      heat: meetResults.heat,
+      lane: meetResults.lane,
+      exhibition: meetResults.exhibition,
+      dqCode: meetResults.dqCode,
       firstName: swimmers.firstName,
       lastName: swimmers.lastName,
       dateOfBirth: swimmers.dateOfBirth,

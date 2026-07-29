@@ -18,11 +18,11 @@ describe("zip helpers", () => {
 
   it("rejects invalid or unreadable zip archives", () => {
     expect(() => extractMeetFileFromZip(new Uint8Array([1, 2, 3]))).toThrow(
-      /Not a valid ZIP/,
+      /doesn't look like a ZIP/,
     );
     expect(() =>
       extractMeetFileFromZip(new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0xff])),
-    ).toThrow(/Could not read ZIP/);
+    ).toThrow(/Couldn't read this ZIP/);
   });
 });
 

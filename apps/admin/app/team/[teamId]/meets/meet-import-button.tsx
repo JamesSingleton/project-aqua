@@ -20,6 +20,7 @@ import {
   AlertTitle,
 } from "@project-aqua/ui/components/alert";
 import { Button } from "@project-aqua/ui/components/button";
+import { Checkbox } from "@project-aqua/ui/components/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -43,21 +44,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@project-aqua/ui/components/select";
-import { Checkbox } from "@project-aqua/ui/components/checkbox";
 import { cn } from "@project-aqua/ui/lib/utils";
 import { AlertTriangleIcon, Loader, Upload } from "lucide-react";
+import { parseAsStringEnum, useQueryState } from "nuqs";
 import { useRouter } from "next/navigation";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { DatePickerField } from "@/components/date-picker-field";
 import {
   type AthleteMapAction,
   importMeetFileAction,
+  type MeetImportFilePayload,
   type MeetImportPreview,
   parseMeetFilePreviewAction,
 } from "./actions";
 
 const MEET_ACCEPT = ".sd3,.sdif,.cl2,.hy3,.ev3,.hyv,.xls,.xlsx,.txt,.zip";
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const IMPORT_STEPS = ["upload", "review", "done"] as const;
+type ImportStep = (typeof IMPORT_STEPS)[number];
+const importStepParser = parseAsStringEnum([...IMPORT_STEPS]).withDefault(
+  "upload",
+);
 const GENDER_OPTIONS = [
   { value: "female", label: "Female" },
   { value: "male", label: "Male" },
@@ -130,16 +137,15 @@ export function MeetImportButton({
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
+  const [importStep, setImportStep] = useQueryState("importStep", importStepParser);
+  const step = (importStep ?? "upload") as ImportStep;
   const [dragging, setDragging] = useState(false);
-  const [step, setStep] = useState<"upload" | "review" | "done">("upload");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fileMeta, setFileMeta] = useState<{
-    name: string;
     label: string;
     sizeLabel: string;
-    content: string;
-    encoding: "utf8" | "base64";
+    files: MeetImportFilePayload[];
   } | null>(null);
   const [preview, setPreview] = useState<MeetImportPreview | null>(null);
   const [review, setReview] = useState<ReviewState | null>(null);
@@ -154,7 +160,7 @@ export function MeetImportButton({
   >({});
 
   function resetFlow() {
-    setStep("upload");
+    void setImportStep("upload");
     setBusy(false);
     setError(null);
     setFileMeta(null);
@@ -166,63 +172,94 @@ export function MeetImportButton({
     setAthleteMaps({});
   }
 
+  useEffect(() => {
+    if (step === "review" && (!preview || !review || !fileMeta)) {
+      void setImportStep("upload");
+      setError(null);
+    }
+    if (step === "done" && !resultMessage) {
+      void setImportStep("upload");
+    }
+  }, [step, preview, review, fileMeta, resultMessage, setImportStep]);
+
   async function handleFiles(fileList: FileList | File[]) {
-    const file = Array.from(fileList)[0];
-    if (!file) return;
+    const files = Array.from(fileList);
+    if (files.length === 0) return;
 
     setError(null);
-    if (file.size > MAX_FILE_BYTES) {
+
+    if (files.some((f) => isZipFilename(f.name)) && files.length > 1) {
       setError(
-        `The file exceeds the ${MAX_FILE_BYTES / (1024 * 1024)} MB size limit.`,
+        "Choose one ZIP meet pack, or select multiple non-ZIP files (like an HFILE + CFILE pair) — not both together.",
+      );
+      return;
+    }
+
+    const oversized = files.find((f) => f.size > MAX_FILE_BYTES);
+    if (oversized) {
+      setError(
+        `“${oversized.name}” is larger than the ${MAX_FILE_BYTES / (1024 * 1024)} MB limit. Export a smaller file and try again.`,
       );
       return;
     }
 
     setBusy(true);
     try {
-      const lower = file.name.toLowerCase();
-      const isBinary =
-        lower.endsWith(".xls") ||
-        lower.endsWith(".xlsx") ||
-        lower.endsWith(".zip");
-      const encoding = isBinary ? ("base64" as const) : ("utf8" as const);
-      let content: string;
-      if (isBinary) {
-        const buffer = await file.arrayBuffer();
-        const bytes = new Uint8Array(buffer);
-        let binary = "";
-        for (const byte of bytes) binary += String.fromCharCode(byte);
-        content = btoa(binary);
-      } else {
-        content = await file.text();
-      }
-      if (!isZipFilename(file.name)) {
-        const format = detectMeetFileFormat(
-          file.name,
-          isBinary ? undefined : content,
-        );
-        if (!format) {
-          setError(
-            "Not a meet file. Use SD3/SDIF, HY3, EV3, HYV, CL2, XLS, or ZIP.",
+      const decoded = await Promise.all(
+        files.map(async (file) => {
+          const lower = file.name.toLowerCase();
+          const isBinary =
+            lower.endsWith(".xls") ||
+            lower.endsWith(".xlsx") ||
+            lower.endsWith(".zip");
+          const encoding = isBinary ? ("base64" as const) : ("utf8" as const);
+          let content: string;
+          if (isBinary) {
+            const buffer = await file.arrayBuffer();
+            const bytes = new Uint8Array(buffer);
+            let binary = "";
+            for (const byte of bytes) binary += String.fromCharCode(byte);
+            content = btoa(binary);
+          } else {
+            content = await file.text();
+          }
+          return { filename: file.name, content, encoding, size: file.size };
+        }),
+      );
+
+      if (decoded.length === 1) {
+        const [only] = decoded;
+        if (!isZipFilename(only!.filename)) {
+          const format = detectMeetFileFormat(
+            only!.filename,
+            only!.encoding === "utf8" ? only!.content : undefined,
           );
-          return;
+          if (!format) {
+            setError(
+              "This file isn't a supported meet format. Choose an SD3/SDIF, HY3, EV3, HYV, CL2, XLS, or ZIP file exported from Meet Manager or Team Manager.",
+            );
+            return;
+          }
         }
       }
 
-      const parsed = await parseMeetFilePreviewAction(
-        teamId,
-        content,
-        file.name,
-        encoding,
-      );
+      const payloads: MeetImportFilePayload[] = decoded.map((d) => ({
+        content: d.content,
+        filename: d.filename,
+        encoding: d.encoding,
+      }));
+
+      const parsed = await parseMeetFilePreviewAction(teamId, payloads);
+
+      const namesLabel = decoded.map((d) => d.filename).join(" + ");
+      const totalSize = decoded.reduce((sum, d) => sum + d.size, 0);
       setFileMeta({
-        name: file.name,
-        label: parsed.sourceFilename
-          ? `${file.name} → ${parsed.sourceFilename}`
-          : file.name,
-        sizeLabel: formatBytes(file.size),
-        content,
-        encoding,
+        label:
+          parsed.sourceFilename && parsed.sourceFilename !== namesLabel
+            ? `${namesLabel} → ${parsed.sourceFilename}`
+            : namesLabel,
+        sizeLabel: formatBytes(totalSize),
+        files: payloads,
       });
       setPreview(parsed);
       setReview({
@@ -242,7 +279,7 @@ export function MeetImportButton({
       });
       setAddNewAthletes(false);
       setAthleteMaps({});
-      setStep("review");
+      void setImportStep("review");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to parse file");
     } finally {
@@ -262,30 +299,24 @@ export function MeetImportButton({
             ? { target: "new" as const }
             : { target: "existing" as const, meetId: target };
 
-      const result = await importMeetFileAction(
-        teamId,
-        fileMeta.content,
-        fileMeta.name,
-        {
-          ...options,
-          encoding: fileMeta.encoding,
-          athleteMaps,
-          addNewAthletes,
-          review: {
-            name: review.name,
-            startDate: review.startDate || undefined,
-            endDate: review.endDate,
-            entryDeadline: review.entryDeadline,
-            course: review.course,
-            location: review.location || undefined,
-            address: review.address || undefined,
-            maxIndividualEntries: optionalLimit(review.maxIndividualEntries),
-            maxRelayEntries: optionalLimit(review.maxRelayEntries),
-            maxCombinedEntries: optionalLimit(review.maxCombinedEntries),
-            events: review.events,
-          },
+      const result = await importMeetFileAction(teamId, fileMeta.files, {
+        ...options,
+        athleteMaps,
+        addNewAthletes,
+        review: {
+          name: review.name,
+          startDate: review.startDate || undefined,
+          endDate: review.endDate,
+          entryDeadline: review.entryDeadline,
+          course: review.course,
+          location: review.location || undefined,
+          address: review.address || undefined,
+          maxIndividualEntries: optionalLimit(review.maxIndividualEntries),
+          maxRelayEntries: optionalLimit(review.maxRelayEntries),
+          maxCombinedEntries: optionalLimit(review.maxCombinedEntries),
+          events: review.events,
         },
-      );
+      });
 
       const parts = [
         result.events ? `${result.events} events` : null,
@@ -294,8 +325,11 @@ export function MeetImportButton({
         result.swimmersCreated
           ? `${result.swimmersCreated} swimmers added`
           : null,
+        result.entriesSkipped
+          ? `${result.entriesSkipped} entries skipped (unmatched)`
+          : null,
         result.resultsSkipped
-          ? `${result.resultsSkipped} skipped (other teams / unmatched)`
+          ? `${result.resultsSkipped} results skipped (other teams / unmatched)`
           : null,
       ].filter(Boolean);
 
@@ -307,7 +341,7 @@ export function MeetImportButton({
             ? `Linked to existing meet · ${parts.join(" · ") || "done"}`
             : `Created meet · ${parts.join(" · ") || "done"}`,
       );
-      setStep("done");
+      void setImportStep("done");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Import failed");
@@ -465,6 +499,7 @@ export function MeetImportButton({
                   id={inputId}
                   type="file"
                   accept={MEET_ACCEPT}
+                  multiple
                   disabled={busy}
                   className="sr-only"
                   aria-label="Upload meet file"
@@ -487,11 +522,12 @@ export function MeetImportButton({
                   <p className="text-base font-medium text-balance">
                     {busy
                       ? "Parsing file…"
-                      : "Drag & Drop or Choose file to upload"}
+                      : "Drag & Drop or Choose files to upload"}
                   </p>
                   <p className="text-muted-foreground text-sm text-balance">
-                    SD3, HY3, EV3, HYV, CL2, XLS, or ZIP · Up to{" "}
-                    {MAX_FILE_BYTES / (1024 * 1024)} MB
+                    SD3, HY3, EV3, HYV, CL2, XLS, or ZIP · Select multiple files
+                    (e.g. HFILE + CFILE) or one ZIP pack · Up to{" "}
+                    {MAX_FILE_BYTES / (1024 * 1024)} MB each
                   </p>
                 </div>
               </div>
@@ -525,12 +561,13 @@ export function MeetImportButton({
                 </Alert>
               ) : null}
 
-              {preview.athleteMatch && preview.resultCount > 0 ? (
+              {preview.athleteMatch &&
+              (preview.resultCount > 0 || preview.entryCount > 0) ? (
                 <div className="space-y-3 rounded-lg border p-3">
                   <div className="space-y-1">
                     <p className="text-sm font-medium">Athlete matching</p>
                     <p className="text-muted-foreground text-sm">
-                      Results files include every team. Only athletes on your
+                      Meet files include every team. Only athletes on your
                       roster are imported unless you map or add them.
                     </p>
                     <p className="text-sm">
@@ -539,7 +576,7 @@ export function MeetImportButton({
                         ? ` · ${preview.athleteMatch.reviewCount} need review`
                         : ""}
                       {preview.athleteMatch.unmatchedResultCount
-                        ? ` · ${preview.athleteMatch.unmatchedResultCount} results from unmatched athletes`
+                        ? ` · ${preview.athleteMatch.unmatchedResultCount} from unmatched athletes`
                         : ""}
                     </p>
                   </div>
@@ -579,8 +616,8 @@ export function MeetImportButton({
                             value: c.membershipId,
                             label: `${c.displayName} (${c.reason.replaceAll("_", " ")})`,
                           })),
-                          ...preview.athleteMatch!.rosterOptions
-                            .filter(
+                          ...preview
+                            .athleteMatch!.rosterOptions.filter(
                               (r) =>
                                 !athlete.candidates.some(
                                   (c) => c.membershipId === r.membershipId,
@@ -904,7 +941,7 @@ export function MeetImportButton({
                   variant="outline"
                   disabled={busy}
                   onClick={() => {
-                    setStep("upload");
+                    void setImportStep("upload");
                     setPreview(null);
                     setReview(null);
                     setFileMeta(null);

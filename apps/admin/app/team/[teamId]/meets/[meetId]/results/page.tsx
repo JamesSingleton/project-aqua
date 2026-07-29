@@ -64,6 +64,11 @@ export default async function MeetResultsPage({
           previousBestTimeMs: r.previousBestTimeMs,
           place: r.place,
           isDq: r.isDq,
+          round: r.round,
+          heat: r.heat,
+          lane: r.lane,
+          exhibition: r.exhibition,
+          dqCode: r.dqCode,
           firstName: r.firstName,
           lastName: r.lastName,
           dateOfBirth: r.dateOfBirth,
@@ -74,10 +79,12 @@ export default async function MeetResultsPage({
           ageGroup: r.ageGroup,
           eventKey: r.eventKey,
         }))}
-        events={events.map((event) => ({
-          id: event.id,
-          label: `#${event.eventNumber ?? "—"} ${formatEventName(event.distance, event.stroke)}`,
-        }))}
+        events={events
+          .filter((event) => event.eventKind !== "dive")
+          .map((event) => ({
+            id: event.id,
+            label: `#${event.eventNumber ?? "—"} ${formatEventName(event.distance, event.stroke)}`,
+          }))}
         swimmers={roster.map((r) => ({
           swimmerId: r.swimmerId,
           name: `${r.firstName} ${r.lastName}`,

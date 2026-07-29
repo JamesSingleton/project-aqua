@@ -129,15 +129,52 @@ describe("parseHyv", () => {
     expect(e7?.qualifyingTimeMs).toBe(undefined);
   });
 
-  it("skips diving stroke code 6", () => {
+  it("includes diving stroke code 6 as dive events by default", () => {
     const content = readFileSync(
       join(fixturesDir, "charger-events.hyv"),
       "utf8",
     );
     const meet = parseHyv(content);
+    expect(meet.skippedDiveEvents).toBe(undefined);
+    const dive23 = byEventNumber(meet.events, 23);
+    const dive24 = byEventNumber(meet.events, 24);
+    expect(dive23).toMatchObject({
+      eventKind: "dive",
+      stroke: "dive",
+      distance: 0,
+      gender: "female",
+    });
+    expect(dive24).toMatchObject({
+      eventKind: "dive",
+      stroke: "dive",
+      distance: 0,
+      gender: "male",
+    });
+  });
+
+  it("still skips diving events when includeDiveEvents is false", () => {
+    const content = readFileSync(
+      join(fixturesDir, "charger-events.hyv"),
+      "utf8",
+    );
+    const meet = parseHyv(content, { includeDiveEvents: false });
     expect(meet.skippedDiveEvents).toBe(2);
     expect(byEventNumber(meet.events, 23)).toBe(undefined);
     expect(byEventNumber(meet.events, 24)).toBe(undefined);
+  });
+
+  it("covers an HYV dive event with no dive count", () => {
+    const meet = parseHyv("Meet;1/1/2025;1/2/2025;;Y;Pool\n23;F;F;I;0;0;;6");
+    const dive = byEventNumber(meet.events, 23);
+    expect(dive?.eventKind).toBe("dive");
+    expect(dive?.diveCount).toBeUndefined();
+  });
+
+  it("defaults an HYV dive event's blank gender and age fields", () => {
+    const meet = parseHyv("Meet;1/1/2025;1/2/2025;;Y;Pool\n23;F;;I;;;;6");
+    const dive = byEventNumber(meet.events, 23);
+    expect(dive).toMatchObject({ eventKind: "dive", gender: "male" });
+    expect(dive?.ageGroup).toBeUndefined();
   });
 });
 
@@ -164,12 +201,34 @@ describe("parseEv3 qualifying times", () => {
     expect(e7?.qualifyingTimeMs).toBe(undefined);
   });
 
-  it("skips diving events instead of mapping them to freestyle", () => {
+  it("includes diving events as eventKind dive by default (instead of mapping to freestyle)", () => {
     const content = readFileSync(
       join(fixturesDir, "charger-events.ev3"),
       "utf8",
     );
     const meet = parseEv3(content);
+    expect(meet.skippedDiveEvents).toBe(undefined);
+    expect(meet.events.length).toBe(24);
+    const dive23 = byEventNumber(meet.events, 23);
+    const dive24 = byEventNumber(meet.events, 24);
+    expect(dive23).toMatchObject({
+      eventKind: "dive",
+      stroke: "dive",
+      distance: 0,
+    });
+    expect(dive24).toMatchObject({
+      eventKind: "dive",
+      stroke: "dive",
+      distance: 0,
+    });
+  });
+
+  it("still skips diving events when includeDiveEvents is false", () => {
+    const content = readFileSync(
+      join(fixturesDir, "charger-events.ev3"),
+      "utf8",
+    );
+    const meet = parseEv3(content, { includeDiveEvents: false });
     expect(meet.skippedDiveEvents).toBe(2);
     expect(meet.events.length).toBe(22);
     expect(byEventNumber(meet.events, 23)).toBe(undefined);
@@ -184,6 +243,27 @@ describe("parseEv3 qualifying times", () => {
     const meet = parseEv3(content);
     expect(meet.events.every((e) => e.qualifyingTimeMs == null)).toBeTruthy();
     expect(meet.skippedDiveEvents).toBe(undefined);
+  });
+
+  it("covers a dive event with no dive count but with a QT", () => {
+    const header = Array(21).fill("");
+    header[0] = "Meet";
+    header[2] = "1/1/2025";
+    header[5] = "Y";
+    const diveLine = Array(21).fill("");
+    diveLine[0] = "5";
+    diveLine[4] = "I";
+    diveLine[5] = "G";
+    diveLine[6] = "0";
+    diveLine[7] = "18";
+    diveLine[8] = "0";
+    diveLine[9] = "F";
+    diveLine[19] = "1:00.00";
+    const meet = parseEv3(`${header.join(";")}\n${diveLine.join(";")}`);
+    const dive = byEventNumber(meet.events, 5);
+    expect(dive?.eventKind).toBe("dive");
+    expect(dive?.diveCount).toBeUndefined();
+    expect(dive?.qualifyingTimeMs).toBe(60_000);
   });
 });
 

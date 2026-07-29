@@ -3,6 +3,7 @@ import {
   formatGenderLabel,
 } from "@project-aqua/swim-core/events";
 import { formatTime } from "@project-aqua/swim-core/times";
+import { Badge } from "@project-aqua/ui/components/badge";
 import {
   Card,
   CardContent,
@@ -69,22 +70,36 @@ export default async function MeetEventsPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {events.map((event) => (
-                <TableRow key={event.id}>
-                  <TableCell>{event.eventNumber ?? "—"}</TableCell>
-                  <TableCell>
-                    {formatEventName(event.distance, event.stroke)}
-                  </TableCell>
-                  <TableCell>{formatGenderLabel(event.gender)}</TableCell>
-                  <TableCell>{event.ageGroup ?? "—"}</TableCell>
-                  <TableCell className="font-timing text-right tabular-nums">
-                    {event.qualifyingTimeMs != null &&
-                    event.qualifyingTimeMs > 0
-                      ? formatTime(event.qualifyingTimeMs)
-                      : "—"}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {events.map((event) => {
+                const isDive = event.eventKind === "dive";
+                return (
+                  <TableRow key={event.id}>
+                    <TableCell>{event.eventNumber ?? "—"}</TableCell>
+                    <TableCell>
+                      <span className="flex items-center gap-2">
+                        {formatEventName(
+                          event.distance,
+                          event.stroke,
+                          event.diveCount,
+                        )}
+                        {isDive ? (
+                          <Badge variant="secondary" className="text-[10px]">
+                            Not scored
+                          </Badge>
+                        ) : null}
+                      </span>
+                    </TableCell>
+                    <TableCell>{formatGenderLabel(event.gender)}</TableCell>
+                    <TableCell>{event.ageGroup ?? "—"}</TableCell>
+                    <TableCell className="font-timing text-right tabular-nums">
+                      {event.qualifyingTimeMs != null &&
+                      event.qualifyingTimeMs > 0
+                        ? formatTime(event.qualifyingTimeMs)
+                        : "—"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}

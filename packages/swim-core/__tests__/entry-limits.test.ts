@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canAddMeetEntry,
+  checkQualifyingTime,
   formatEntryLimitsSummary,
   isRelayStroke,
 } from "../src/entry-limits";
@@ -75,6 +76,33 @@ describe("canAddMeetEntry", () => {
         ok: false,
         reason: "Maximum individual entries is 2.",
       },
+    );
+  });
+});
+
+describe("checkQualifyingTime", () => {
+  it("allows when there is no qualifying time", () => {
+    expect(checkQualifyingTime(null, 65000)).toEqual({ ok: true });
+    expect(checkQualifyingTime(undefined, 65000)).toEqual({ ok: true });
+    expect(checkQualifyingTime(0, 65000)).toEqual({ ok: true });
+  });
+
+  it("allows no-time (NT) entries even when a QT is set", () => {
+    expect(checkQualifyingTime(60000, null)).toEqual({ ok: true });
+    expect(checkQualifyingTime(60000, undefined)).toEqual({ ok: true });
+    expect(checkQualifyingTime(60000, 0)).toEqual({ ok: true });
+  });
+
+  it("allows a seed at or faster than the QT", () => {
+    expect(checkQualifyingTime(60000, 60000)).toEqual({ ok: true });
+    expect(checkQualifyingTime(60000, 59500)).toEqual({ ok: true });
+  });
+
+  it("blocks a submitted seed slower than the QT with an explanation", () => {
+    const result = checkQualifyingTime(60000, 65000);
+    expect(result.ok).toBe(false);
+    expect((result as { ok: false; reason: string }).reason).toBe(
+      "Seed time 1:05.00 is slower than the meet qualifying time 1:00.00. Enter a faster time, or clear the seed to submit as no-time (NT).",
     );
   });
 });

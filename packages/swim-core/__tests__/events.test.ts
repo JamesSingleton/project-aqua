@@ -64,6 +64,13 @@ describe("event naming and keys", () => {
     expect(formatEventLabel(50, "free")).toBe("50 Freestyle");
   });
 
+  it("labels diving events distinctly from swim strokes", () => {
+    expect(formatEventName(0, "dive")).toBe("Diving");
+    expect(formatEventName(0, "dive", null)).toBe("Diving");
+    expect(formatEventName(0, "dive", 0)).toBe("Diving");
+    expect(formatEventName(0, "dive", 6)).toBe("Diving (6 dives)");
+  });
+
   it("builds and parses event keys", () => {
     expect(buildEventKey(200, "medley_relay", "SCY", "mixed")).toBe(
       "200_medley_relay_scy_x",

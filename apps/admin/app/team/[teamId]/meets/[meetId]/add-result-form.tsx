@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@project-aqua/ui/components/card";
+import { Checkbox } from "@project-aqua/ui/components/checkbox";
 import {
   Field,
   FieldError,
@@ -33,13 +34,32 @@ import { addResultAction } from "../actions";
 type EventOption = { id: string; label: string };
 type SwimmerOption = { swimmerId: string; name: string };
 
+const ROUND_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "prelim", label: "Prelim" },
+  { value: "swimoff", label: "Swim-off" },
+  { value: "finals", label: "Finals" },
+] as const;
+
 const addResultSchema = z.object({
   swimmerId: z.string().min(1, "Select a swimmer"),
   meetEventId: z.string().min(1, "Select an event"),
   time: z.string().trim().min(1, "Time is required"),
+  round: z.enum(["", "prelim", "swimoff", "finals"]),
+  heat: z.string(),
+  lane: z.string(),
+  exhibition: z.boolean(),
+  dqCode: z.string(),
 });
 
 type AddResultValues = z.infer<typeof addResultSchema>;
+
+function optionalInt(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const n = Number.parseInt(trimmed, 10);
+  return Number.isFinite(n) ? n : null;
+}
 
 export function AddResultForm({
   teamId,
@@ -66,6 +86,11 @@ export function AddResultForm({
       meetEventId: events[0]?.id ?? "",
       swimmerId: swimmers[0]?.swimmerId ?? "",
       time: "",
+      round: "",
+      heat: "",
+      lane: "",
+      exhibition: false,
+      dqCode: "",
     },
   });
 
@@ -82,8 +107,21 @@ export function AddResultForm({
         values.meetEventId,
         values.swimmerId,
         values.time,
+        {
+          round:
+            values.round === ""
+              ? null
+              : (values.round as "prelim" | "swimoff" | "finals"),
+          heat: optionalInt(values.heat),
+          lane: optionalInt(values.lane),
+          exhibition: values.exhibition,
+          dqCode: values.dqCode.trim() || null,
+        },
       );
       resetField("time");
+      resetField("heat");
+      resetField("lane");
+      resetField("dqCode");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed");
@@ -194,6 +232,82 @@ export function AddResultForm({
                 {...register("time")}
               />
               <FieldError errors={[errors.time]} />
+            </Field>
+            <Controller
+              name="round"
+              control={control}
+              render={({ field }) => (
+                <Field className="w-28">
+                  <FieldLabel htmlFor="result-round">Round</FieldLabel>
+                  <Select
+                    items={[...ROUND_OPTIONS]}
+                    value={field.value}
+                    onValueChange={(value) => {
+                      if (value != null) field.onChange(value);
+                    }}
+                  >
+                    <SelectTrigger id="result-round" className="w-full">
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {ROUND_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value || "none"} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            />
+            <Field className="w-20">
+              <FieldLabel htmlFor="result-heat">Heat</FieldLabel>
+              <Input
+                id="result-heat"
+                inputMode="numeric"
+                placeholder="—"
+                {...register("heat")}
+              />
+            </Field>
+            <Field className="w-20">
+              <FieldLabel htmlFor="result-lane">Lane</FieldLabel>
+              <Input
+                id="result-lane"
+                inputMode="numeric"
+                placeholder="—"
+                {...register("lane")}
+              />
+            </Field>
+            <Controller
+              name="exhibition"
+              control={control}
+              render={({ field }) => (
+                <Field orientation="horizontal" className="w-auto pb-1">
+                  <Checkbox
+                    id="result-exhibition"
+                    checked={field.value}
+                    onCheckedChange={(checked) =>
+                      field.onChange(checked === true)
+                    }
+                  />
+                  <FieldLabel
+                    htmlFor="result-exhibition"
+                    className="font-normal"
+                  >
+                    Exhibition
+                  </FieldLabel>
+                </Field>
+              )}
+            />
+            <Field className="w-24">
+              <FieldLabel htmlFor="result-dq">DQ code</FieldLabel>
+              <Input
+                id="result-dq"
+                placeholder="—"
+                {...register("dqCode")}
+              />
             </Field>
             <Field className="w-auto">
               <Button type="submit" disabled={isSubmitting}>
