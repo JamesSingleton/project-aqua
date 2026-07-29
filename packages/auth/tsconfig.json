@@ -1,6 +1,7 @@
 {
   "extends": "@project-aqua/typescript-config/base.json",
   "compilerOptions": {
+    "jsx": "react-jsx",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "rootDir": "./src",

@@ -252,7 +252,10 @@ export function AddResultForm({
                     <SelectContent>
                       <SelectGroup>
                         {ROUND_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value || "none"} value={opt.value}>
+                          <SelectItem
+                            key={opt.value || "none"}
+                            value={opt.value}
+                          >
                             {opt.label}
                           </SelectItem>
                         ))}
@@ -303,11 +306,7 @@ export function AddResultForm({
             />
             <Field className="w-24">
               <FieldLabel htmlFor="result-dq">DQ code</FieldLabel>
-              <Input
-                id="result-dq"
-                placeholder="—"
-                {...register("dqCode")}
-              />
+              <Input id="result-dq" placeholder="—" {...register("dqCode")} />
             </Field>
             <Field className="w-auto">
               <Button type="submit" disabled={isSubmitting}>

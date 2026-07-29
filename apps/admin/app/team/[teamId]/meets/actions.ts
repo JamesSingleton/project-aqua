@@ -1170,13 +1170,9 @@ export async function importMeetFileAction(
     if (entryWarnings.length > 0) {
       const sample = [...new Set(entryWarnings)].slice(0, 3).join("; ");
       const suffix =
-        entryWarnings.length > 3
-          ? ` (+${entryWarnings.length - 3} more)`
-          : "";
+        entryWarnings.length > 3 ? ` (+${entryWarnings.length - 3} more)` : "";
       const limitMsg = `${entriesSkipped} entries skipped (limits or qualifying times): ${sample}${suffix}`;
-      importWarning = importWarning
-        ? `${importWarning} ${limitMsg}`
-        : limitMsg;
+      importWarning = importWarning ? `${importWarning} ${limitMsg}` : limitMsg;
     }
 
     let relaysAdded = 0;

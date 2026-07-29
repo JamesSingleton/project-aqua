@@ -19,7 +19,9 @@ describe("g0-meta", () => {
     expect(parseResultRoundType(`${" ".repeat(115)}F junk`)).toBe("finals");
     expect(parseResultRoundType(`${" ".repeat(115)}S junk`)).toBe("swimoff");
     expect(parseResultRoundType("no round")).toBeUndefined();
-    expect(parseResultRoundType("....6:36.51F             N12")).toBeUndefined();
+    expect(
+      parseResultRoundType("....6:36.51F             N12"),
+    ).toBeUndefined();
   });
 
   it("uses fixed column 115 when trailing regex is blocked by junk after P/F/S", () => {
@@ -30,7 +32,9 @@ describe("g0-meta", () => {
   });
 
   it("reads trailing swimoff marker before the checksum suffix", () => {
-    expect(parseResultRoundType("....1:05.00 S             N00")).toBe("swimoff");
+    expect(parseResultRoundType("....1:05.00 S             N00")).toBe(
+      "swimoff",
+    );
     expect(parseResultRoundType("heat 3 lane 4 S")).toBe("swimoff");
   });
 

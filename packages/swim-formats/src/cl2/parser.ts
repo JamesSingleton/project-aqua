@@ -5,6 +5,7 @@ import {
   type RelayStroke,
   type Stroke,
 } from "@project-aqua/swim-core/events";
+import { parseResultRoundType, parseSdifHeatLane } from "../g0-meta";
 import { parseCl2Roster } from "../roster/cl2";
 import {
   genderFromEventCode,
@@ -13,7 +14,6 @@ import {
   parseSdifBirthDate,
   parseUsaMemberIdFromLine,
 } from "../roster/utils";
-import { parseResultRoundType, parseSdifHeatLane } from "../g0-meta";
 import type { ParsedMeet, ParsedRelayEntry, ParsedResult } from "../types";
 
 import { type Cl2FileKind, detectCl2FileKind } from "./kind";
@@ -101,9 +101,7 @@ function parseAthleteIdentity(line: string): {
 
   const eventGender =
     line.match(/(FF|MM)\s+\d/) ?? line.match(/\d{2}(FF|MM)\s/);
-  const gender = eventGender
-    ? genderFromEventCode(eventGender[1]!)
-    : undefined;
+  const gender = eventGender ? genderFromEventCode(eventGender[1]!) : undefined;
   const sdifDobMatch = line.match(/\b(\d{8})\d?\s+[MF]\b/);
   const dateOfBirth =
     parseAusaBirthDate(line) ??

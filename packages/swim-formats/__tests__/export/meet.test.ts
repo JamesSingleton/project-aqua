@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
 import { detectCl2FileKind } from "../../src/cl2/kind";
 import { parseCl2Meet } from "../../src/cl2/parser";
 import { parseEv3, parseHyv } from "../../src/ev3/parser";
@@ -248,9 +248,9 @@ describe("exportSdif", () => {
       lane: 4,
     });
     expect(parsed.results.find((r) => r.isDq)?.swimmerName).toContain("Baker");
-    expect(
-      parsed.results.find((r) => r.resultType === "swimoff")?.time,
-    ).toBe("29.00");
+    expect(parsed.results.find((r) => r.resultType === "swimoff")?.time).toBe(
+      "29.00",
+    );
   });
 
   it("handles single-word swimmer names in entries/results", () => {
@@ -720,9 +720,9 @@ describe("exportCl2", () => {
     });
     expect(rosterOnly).toContain("Swimmers Only");
     expect(detectCl2FileKind("B1 only file\nD0 data")).toBe("unknown");
-    expect(detectCl2FileKind("A01V3      02Custom Export                 Hy-Tek")).toBe(
-      "unknown",
-    );
+    expect(
+      detectCl2FileKind("A01V3      02Custom Export                 Hy-Tek"),
+    ).toBe("unknown");
     expect(
       detectCl2FileKind("A01V3      02Team Roster                   Hy-Tek"),
     ).toBe("swimmers_only");
@@ -848,10 +848,7 @@ describe("exportCl2", () => {
   });
 
   it("re-exports azsi-results.cl2 with comparable result counts", () => {
-    const content = readFileSync(
-      join(fixturesDir, "azsi-results.cl2"),
-      "utf8",
-    );
+    const content = readFileSync(join(fixturesDir, "azsi-results.cl2"), "utf8");
     const imported = parseCl2Meet(content);
     const reexported = parseCl2Meet(exportCl2(imported));
     expect(reexported.results.length).toBeGreaterThan(0);
@@ -1017,7 +1014,9 @@ describe("exportHyv", () => {
     expect(text).toContain(";Y;");
 
     const parsed = parseHyv(text);
-    expect(parsed.events.find((e) => e.roundType === "time_trial")).toBeTruthy();
+    expect(
+      parsed.events.find((e) => e.roundType === "time_trial"),
+    ).toBeTruthy();
     expect(parsed.events.find((e) => e.eventKind === "dive")).toMatchObject({
       diveCount: 5,
     });

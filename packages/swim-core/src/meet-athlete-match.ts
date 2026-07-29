@@ -204,7 +204,12 @@ export function matchResultAthletes(
       if (exact) exactName.push(r);
 
       const rosterLast = normalizePersonName(r.lastName);
-      if (fileDob && dob === fileDob && fileLastNorm && rosterLast === fileLastNorm) {
+      if (
+        fileDob &&
+        dob === fileDob &&
+        fileLastNorm &&
+        rosterLast === fileLastNorm
+      ) {
         lastDob.push(r);
       }
 

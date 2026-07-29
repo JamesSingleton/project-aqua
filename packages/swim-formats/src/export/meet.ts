@@ -4,10 +4,7 @@ import {
 } from "@project-aqua/swim-core/events";
 import { parseTime } from "@project-aqua/swim-core/times";
 import { strToU8, zipSync } from "fflate";
-import {
-  cl2G0RoundSuffix,
-  resultRoundCode,
-} from "../g0-meta";
+import { cl2G0RoundSuffix, resultRoundCode } from "../g0-meta";
 import type { ParsedEvent, ParsedMeet, ParsedResult } from "../types";
 
 function pad(value: string, len: number): string {
@@ -812,9 +809,7 @@ function hyvGenderCode(gender: ParsedEvent["gender"]): string {
   return "M";
 }
 
-function hyvRoundCode(
-  roundType: ParsedEvent["roundType"] | undefined,
-): string {
+function hyvRoundCode(roundType: ParsedEvent["roundType"] | undefined): string {
   if (roundType === "prelim") return "P";
   if (roundType === "swimoff") return "S";
   if (roundType === "time_trial") return "X";

@@ -4,10 +4,10 @@ import { fileURLToPath } from "node:url";
 import { strToU8, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import {
+  type ExtractedMeetFile,
   extractAllMeetFilesFromZip,
   mergeParsedMeets,
   selectPrimaryMeetFile,
-  type ExtractedMeetFile,
 } from "../../src/meet/zip";
 import type { ParsedMeet } from "../../src/types";
 
@@ -44,7 +44,10 @@ describe("selectPrimaryMeetFile", () => {
 
   it("treats nested meet files as non-roster when top-level has meet content", () => {
     const entries = readFileSync(join(fixturesDir, "mari-entries.cl2"), "utf8");
-    const roster = readFileSync(join(fixturesDir, "roster-swimmers.cl2"), "utf8");
+    const roster = readFileSync(
+      join(fixturesDir, "roster-swimmers.cl2"),
+      "utf8",
+    );
     const files = [
       file("entries.cl2", entries, "cl2", 0),
       file("nested/roster.cl2", roster, "cl2", 1),
@@ -77,7 +80,10 @@ describe("extractAllMeetFilesFromZip extras", () => {
     );
     expect(hy3Bundle.isRosterOnly).toBe(true);
 
-    const sdifRoster = readFileSync(join(fixturesDir, "roster-swimmers.cl2"), "utf8");
+    const sdifRoster = readFileSync(
+      join(fixturesDir, "roster-swimmers.cl2"),
+      "utf8",
+    );
     const sdifBundle = extractAllMeetFilesFromZip(
       zipSync({ "roster.sd3": strToU8(sdifRoster) }),
     );
@@ -85,7 +91,10 @@ describe("extractAllMeetFilesFromZip extras", () => {
   });
 
   it("falls back to the full file list when the filtered meet pool is empty", () => {
-    const roster = readFileSync(join(fixturesDir, "roster-swimmers.cl2"), "utf8");
+    const roster = readFileSync(
+      join(fixturesDir, "roster-swimmers.cl2"),
+      "utf8",
+    );
     const { primary } = selectPrimaryMeetFile([
       file("nested/roster.cl2", roster, "cl2", 1),
     ]);
@@ -93,7 +102,11 @@ describe("extractAllMeetFilesFromZip extras", () => {
   });
 
   it("falls back to the first file when no ranked format matches", () => {
-    const unknown = file("notes.txt", "hello", "xls" as ExtractedMeetFile["format"]);
+    const unknown = file(
+      "notes.txt",
+      "hello",
+      "xls" as ExtractedMeetFile["format"],
+    );
     const { primary } = selectPrimaryMeetFile([
       { ...unknown, format: "bogus" as ExtractedMeetFile["format"] },
     ]);
@@ -229,10 +242,9 @@ describe("mergeParsedMeets", () => {
   });
 
   it("keeps primary importKind when supplement is only entries", () => {
-    const merged = mergeParsedMeets(
-      { ...primary, importKind: undefined },
-      [{ ...supplement, importKind: "entries" }],
-    );
+    const merged = mergeParsedMeets({ ...primary, importKind: undefined }, [
+      { ...supplement, importKind: "entries" },
+    ]);
     expect(merged.importKind).toBe("entries");
   });
 
@@ -260,10 +272,9 @@ describe("mergeParsedMeets", () => {
   });
 
   it("starts with undefined relays when the primary meet has none", () => {
-    const merged = mergeParsedMeets(
-      { ...primary, relays: undefined },
-      [supplement],
-    );
+    const merged = mergeParsedMeets({ ...primary, relays: undefined }, [
+      supplement,
+    ]);
     expect(merged.relays).toHaveLength(1);
   });
 

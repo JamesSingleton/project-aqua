@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   fileAthleteKey,
-  matchResultAthletes,
   type MatchFileAthlete,
   type MatchRosterAthlete,
+  matchResultAthletes,
 } from "../src/meet-athlete-match";
 
 const roster: MatchRosterAthlete[] = [
@@ -86,9 +86,7 @@ describe("matchResultAthletes", () => {
   });
 
   it("matches unique exact name without dob", () => {
-    const results: MatchFileAthlete[] = [
-      { swimmerName: "Ellie Currin" },
-    ];
+    const results: MatchFileAthlete[] = [{ swimmerName: "Ellie Currin" }];
     const matched = matchResultAthletes(roster, results);
     expect(matched.matched).toHaveLength(1);
     expect(matched.matched[0]?.matched?.reason).toBe("name");

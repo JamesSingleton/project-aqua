@@ -105,9 +105,7 @@ export type ParseMeetBytesResult = ParsedMeet & {
  * versa) when both are present. Shared by ZIP extraction and multi-file
  * (non-ZIP pack) uploads.
  */
-function mergeExtractedFiles(
-  files: ExtractedMeetFile[],
-): ParseMeetBytesResult {
+function mergeExtractedFiles(files: ExtractedMeetFile[]): ParseMeetBytesResult {
   const { primary, isRosterOnly } = selectPrimaryMeetFile(files);
   if (isRosterOnly) {
     throw new Error(ROSTER_ONLY_ZIP_ERROR);

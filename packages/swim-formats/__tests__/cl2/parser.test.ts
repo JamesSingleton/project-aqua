@@ -485,8 +485,6 @@ describe("parseCl2Meet", () => {
     expect(named.entries[0]?.swimmerName).toMatch(/Michael/);
   });
 
-
-
   it("parses SDIF-style DOB when AUSA birth date is absent", () => {
     const meet = parseCl2Meet(
       [
@@ -496,6 +494,4 @@ describe("parseCl2Meet", () => {
     );
     expect(meet.entries[0]?.swimmerName).toMatch(/Jane/);
   });
-
-
 });

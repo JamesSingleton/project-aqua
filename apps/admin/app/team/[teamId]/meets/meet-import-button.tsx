@@ -46,8 +46,8 @@ import {
 } from "@project-aqua/ui/components/select";
 import { cn } from "@project-aqua/ui/lib/utils";
 import { AlertTriangleIcon, Loader, Upload } from "lucide-react";
-import { parseAsStringEnum, useQueryState } from "nuqs";
 import { useRouter } from "next/navigation";
+import { parseAsStringEnum, useQueryState } from "nuqs";
 import { useEffect, useId, useRef, useState } from "react";
 import { DatePickerField } from "@/components/date-picker-field";
 import {
@@ -137,7 +137,10 @@ export function MeetImportButton({
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
-  const [importStep, setImportStep] = useQueryState("importStep", importStepParser);
+  const [importStep, setImportStep] = useQueryState(
+    "importStep",
+    importStepParser,
+  );
   const step = (importStep ?? "upload") as ImportStep;
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);

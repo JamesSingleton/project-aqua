@@ -1,4 +1,7 @@
-import { getMeets, getMeetsWithResultStats } from "@project-aqua/db/queries/meets";
+import {
+  getMeets,
+  getMeetsWithResultStats,
+} from "@project-aqua/db/queries/meets";
 import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
 import { Badge } from "@project-aqua/ui/components/badge";
 import type { Metadata } from "next";
