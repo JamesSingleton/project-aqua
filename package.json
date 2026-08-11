@@ -32,10 +32,10 @@
     "email:dev": "turbo email:dev"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.5",
+    "@biomejs/biome": "^2.5.7",
     "@project-aqua/typescript-config": "workspace:*",
     "@types/node": "catalog:",
-    "turbo": "^2.10.6",
+    "turbo": "^2.10.9",
     "typescript": "catalog:"
   }
 }
