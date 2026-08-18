@@ -22,7 +22,7 @@
     "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "resend": "^6.18.1"
+    "resend": "^6.20.0"
   },
   "devDependencies": {
     "@project-aqua/typescript-config": "workspace:*",
