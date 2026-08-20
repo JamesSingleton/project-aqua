@@ -2,7 +2,7 @@
   "name": "project-aqua",
   "private": true,
   "license": "AGPL-3.0-only",
-  "packageManager": "pnpm@11.7.0",
+  "packageManager": "pnpm@10.34.5",
   "engines": {
     "node": ">=24"
   },
