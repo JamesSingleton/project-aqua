@@ -14,7 +14,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.112.3"
+    "@supabase/supabase-js": "^2.112.4"
   },
   "devDependencies": {
     "@project-aqua/typescript-config": "workspace:*",
