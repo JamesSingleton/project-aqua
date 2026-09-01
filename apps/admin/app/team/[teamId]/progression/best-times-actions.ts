@@ -10,10 +10,16 @@ import {
   deleteBestTime,
   setBestTime,
 } from "@project-aqua/db/queries/progression";
-import { parseDateOnly } from "@project-aqua/swim-core/calendar-date";
+import { getRoster } from "@project-aqua/db/queries/roster";
+import {
+  formatLocalDateOnly,
+  parseDateOnly,
+} from "@project-aqua/swim-core/calendar-date";
 import { getCatalogEvent } from "@project-aqua/swim-core/event-catalog";
 import type { Course } from "@project-aqua/swim-core/events";
+import { normalizePersonName } from "@project-aqua/swim-core/people";
 import { parseTime } from "@project-aqua/swim-core/times";
+import { parseTimesCsv } from "@project-aqua/swim-formats/csv";
 import { revalidatePath } from "next/cache";
 
 const MUTATE_ROLES = [
@@ -95,4 +101,84 @@ export async function deleteSwimmerBestTimeAction(
   }
 
   revalidateProgression(teamId, swimmerId);
+}
+
+export async function importBestTimesCsvAction(
+  teamId: string,
+  content: string,
+) {
+  const session = await getSession();
+  await requireTeamRole(session?.user?.id, teamId, [...MUTATE_ROLES]);
+
+  const rows = parseTimesCsv(content);
+  if (rows.length === 0) {
+    throw new Error(
+      "No times found. Use first_name, last_name, event_key, time columns.",
+    );
+  }
+
+  const roster = await getRoster(teamId);
+  const byName = new Map(
+    roster.map((s) => [
+      `${normalizePersonName(s.lastName)}|${normalizePersonName(s.firstName)}`,
+      s,
+    ]),
+  );
+
+  let imported = 0;
+  let unmatched = 0;
+  let invalid = 0;
+  const today = formatLocalDateOnly(new Date());
+
+  for (const row of rows) {
+    const swimmer = byName.get(
+      `${normalizePersonName(row.lastName)}|${normalizePersonName(row.firstName)}`,
+    );
+    if (!swimmer) {
+      unmatched += 1;
+      continue;
+    }
+
+    const catalogEvent = getCatalogEvent(row.eventKey);
+    if (catalogEvent?.eventType !== "individual") {
+      invalid += 1;
+      continue;
+    }
+
+    const timeMs = parseTime(row.time);
+    if (timeMs <= 0) {
+      invalid += 1;
+      continue;
+    }
+
+    let achievedAt: Date;
+    try {
+      achievedAt = parseAchievedAt(row.achievedOn?.slice(0, 10) ?? today);
+    } catch {
+      invalid += 1;
+      continue;
+    }
+
+    await ensureSwimEvent({
+      eventKey: catalogEvent.eventKey,
+      distance: catalogEvent.distance,
+      stroke: catalogEvent.stroke,
+      gender: catalogEvent.gender,
+      course: catalogEvent.course,
+    });
+
+    await setBestTime({
+      swimmerId: swimmer.swimmerId,
+      organizationId: teamId,
+      eventKey: catalogEvent.eventKey,
+      course: catalogEvent.course as Course,
+      timeMs,
+      achievedAt,
+    });
+    imported += 1;
+  }
+
+  revalidatePath(`/team/${teamId}/progression`);
+  revalidatePath(`/team/${teamId}/roster`);
+  return { imported, unmatched, invalid };
 }

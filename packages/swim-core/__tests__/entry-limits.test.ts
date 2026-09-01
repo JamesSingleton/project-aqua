@@ -98,7 +98,7 @@ describe("checkQualifyingTime", () => {
     expect(checkQualifyingTime(60000, 59500)).toEqual({ ok: true });
   });
 
-  it("blocks a submitted seed slower than the QT with an explanation", () => {
+  it("flags a submitted seed slower than the QT with an explanation", () => {
     const result = checkQualifyingTime(60000, 65000);
     expect(result.ok).toBe(false);
     expect((result as { ok: false; reason: string }).reason).toBe(

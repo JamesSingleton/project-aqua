@@ -144,6 +144,22 @@ export async function sendPasswordChanged(to: string, name: string) {
   });
 }
 
+export async function sendTwoFactorOtp({
+  to,
+  name,
+  otp,
+}: {
+  to: string;
+  name: string;
+  otp: string;
+}) {
+  await sendEmail({
+    type: "two-factor-otp",
+    to,
+    props: { name, otp },
+  });
+}
+
 export async function sendSubscriptionConfirmed(
   to: string,
   props: { name: string; teamName: string; plan: string; teamId: string },

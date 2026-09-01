@@ -6,6 +6,7 @@ export type EmailType =
   | "verify-email"
   | "reset-password"
   | "password-changed"
+  | "two-factor-otp"
   | "coach-welcome"
   | "team-welcome"
   | "coach-invitation"
@@ -29,6 +30,7 @@ export interface EmailProps {
   "verify-email": { name: string; url: string };
   "reset-password": { name: string; url: string };
   "password-changed": { name: string };
+  "two-factor-otp": { name: string; otp: string };
   "coach-welcome": { name: string; dashboardUrl: string };
   "team-welcome": {
     name: string;
@@ -96,6 +98,7 @@ const SUBJECTS: Record<EmailType, string> = {
   "verify-email": "Verify your email — Project Aqua",
   "reset-password": "Reset your password — Project Aqua",
   "password-changed": "Your password was changed — Project Aqua",
+  "two-factor-otp": "Your sign-in code — Project Aqua",
   "coach-welcome": "Welcome to Project Aqua!",
   "team-welcome": "Your team is ready — Project Aqua",
   "coach-invitation": "You've been invited to join a team",
@@ -126,6 +129,7 @@ const TEMPLATE_LOADERS = {
   "verify-email": () => import("./templates/auth/verify-email"),
   "reset-password": () => import("./templates/auth/reset-password"),
   "password-changed": () => import("./templates/auth/password-changed"),
+  "two-factor-otp": () => import("./templates/auth/two-factor-otp"),
   "coach-welcome": () => import("./templates/onboarding/coach-welcome"),
   "team-welcome": () => import("./templates/onboarding/team-welcome"),
   "coach-invitation": () => import("./templates/team/coach-invitation"),

@@ -22,7 +22,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   import: "Import",
   results: "Results",
   "time-standards": "Time standards",
-  registration: "Registration",
+  entries: "Entries",
   events: "Events",
   progression: "Progression",
   analytics: "Analytics",

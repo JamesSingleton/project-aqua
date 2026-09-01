@@ -293,4 +293,46 @@ describe("mergeParsedMeets", () => {
       merged.results.some((r) => r.swimmerName === "No Event Swimmer"),
     ).toBe(true);
   });
+
+  it("merges meet-roster athletes, filling identity on name match", () => {
+    const merged = mergeParsedMeets(
+      {
+        ...primary,
+        athletes: [
+          { name: "Relay Only", relayOnly: true },
+          { name: "Known", usaMemberId: "ID1" },
+        ],
+      },
+      [
+        {
+          ...supplement,
+          athletes: [
+            {
+              name: "Relay Only",
+              dateOfBirth: "2011-01-01",
+              gender: "female",
+              usaMemberId: "USA9",
+            },
+            { name: "New Athlete", relayOnly: true },
+          ],
+        },
+      ],
+    );
+    expect(merged.athletes).toHaveLength(3);
+    const relayOnly = merged.athletes?.find((a) => a.name === "Relay Only");
+    expect(relayOnly).toMatchObject({
+      usaMemberId: "USA9",
+      dateOfBirth: "2011-01-01",
+      gender: "female",
+      relayOnly: true,
+    });
+    expect(merged.athletes?.some((a) => a.name === "New Athlete")).toBe(true);
+  });
+
+  it("starts an athlete list when the primary meet has none", () => {
+    const merged = mergeParsedMeets({ ...primary, athletes: undefined }, [
+      { ...supplement, athletes: [{ name: "Zip Only", relayOnly: true }] },
+    ]);
+    expect(merged.athletes).toEqual([{ name: "Zip Only", relayOnly: true }]);
+  });
 });

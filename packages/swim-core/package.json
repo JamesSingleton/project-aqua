@@ -9,8 +9,12 @@
     "./times": "./src/times.ts",
     "./validators": "./src/validators.ts",
     "./plans": "./src/plans.ts",
+    "./draft-quota": "./src/draft-quota.ts",
     "./event-catalog": "./src/event-catalog.ts",
     "./entry-limits": "./src/entry-limits.ts",
+    "./relay-legs": "./src/relay-legs.ts",
+    "./best-times": "./src/best-times.ts",
+    "./lineup-suggest": "./src/lineup-suggest.ts",
     "./age": "./src/age.ts",
     "./calendar-date": "./src/calendar-date.ts",
     "./calendar-recurrence": "./src/calendar-recurrence.ts",
@@ -18,7 +22,11 @@
     "./meet-athlete-match": "./src/meet-athlete-match.ts",
     "./text": "./src/text.ts",
     "./team-types": "./src/team-types.ts",
-    "./workout-parser": "./src/workout-parser.ts"
+    "./workout-parser": "./src/workout-parser.ts",
+    "./meet-event-presets": "./src/meet-event-presets.ts",
+    "./meet-entry-export": "./src/meet-entry-export.ts",
+    "./meet-results-csv": "./src/meet-results-csv.ts",
+    "./meet-import-merge": "./src/meet-import-merge.ts"
   },
   "scripts": {
     "check:types": "tsc --noEmit",

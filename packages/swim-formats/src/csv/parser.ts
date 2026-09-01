@@ -125,3 +125,51 @@ export function exportRosterCsv(
 
   return lines.join("\n");
 }
+
+export type ParsedTimesCsvRow = {
+  firstName: string;
+  lastName: string;
+  eventKey: string;
+  time: string;
+  course?: string;
+  achievedOn?: string;
+};
+
+export function parseTimesCsv(
+  content: string,
+  delimiter = ",",
+): ParsedTimesCsvRow[] {
+  const lines = content.split(/\r?\n/).filter((l) => l.trim());
+  if (lines.length < 2) return [];
+
+  const headers = parseCsvLine(lines[0]!, delimiter).map((h) =>
+    h.toLowerCase().replace(/\s+/g, "_"),
+  );
+  const getIndex = (key: string) => headers.indexOf(key);
+
+  const rows: ParsedTimesCsvRow[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const values = parseCsvLine(lines[i]!, delimiter);
+    const get = (key: string) => values[getIndex(key)] ?? "";
+
+    const firstName = get("first_name");
+    const lastName = get("last_name");
+    const eventKey = get("event_key");
+    const time = get("time");
+    if (!firstName && !lastName) continue;
+    if (!eventKey.trim() || !time.trim()) continue;
+
+    const course = get("course").trim() || undefined;
+    const achievedOn = get("achieved_on").trim() || undefined;
+    rows.push({
+      firstName,
+      lastName,
+      eventKey: eventKey.trim(),
+      time: time.trim(),
+      course,
+      achievedOn,
+    });
+  }
+
+  return rows;
+}

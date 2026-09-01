@@ -1,6 +1,7 @@
 "use server";
 
 import { getSession } from "@project-aqua/auth/session";
+import { assertFeature } from "@project-aqua/billing/features";
 import { requireTeamRole } from "@project-aqua/db/authz";
 import { db } from "@project-aqua/db/client";
 import { organization } from "@project-aqua/db/schema";
@@ -11,6 +12,7 @@ import { eq } from "drizzle-orm";
 export async function getVendorClubsAction(teamId: string) {
   const session = await getSession();
   await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+  await assertFeature(teamId, "swims_sync");
 
   try {
     const client = createSwimsClient();
@@ -26,6 +28,7 @@ export async function connectUsaSwimmingClubAction(
 ) {
   const session = await getSession();
   await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+  await assertFeature(teamId, "swims_sync");
 
   const [org] = await db
     .select()
@@ -45,6 +48,7 @@ export async function connectUsaSwimmingClubAction(
 export async function syncSwimsRosterAction(teamId: string) {
   const session = await getSession();
   await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+  await assertFeature(teamId, "swims_sync");
 
   const [org] = await db
     .select()
@@ -62,6 +66,7 @@ export async function syncSwimsRosterAction(teamId: string) {
 export async function getRegistrationLinkAction(teamId: string) {
   const session = await getSession();
   await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+  await assertFeature(teamId, "swims_sync");
 
   const [org] = await db
     .select()

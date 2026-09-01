@@ -5,6 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getMeetDetailAction } from "../../actions";
 import { listTimeStandardSetsAction } from "../../time-standards-actions";
+import { MeetResultsCsvImport } from "./meet-results-csv-import";
 import { ResultsWorkspace } from "./results-workspace";
 
 export async function generateMetadata({
@@ -44,11 +45,15 @@ export default async function MeetResultsPage({
         </Link>
         <span className="mx-1.5">/</span>
         <Link
-          href={`/team/${teamId}/meets/${meetId}`}
+          href={`/team/${teamId}/meets/${meetId}/entries`}
           className="hover:text-foreground underline-offset-4 hover:underline"
         >
           Entries
         </Link>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <MeetResultsCsvImport teamId={teamId} meetId={meetId} />
       </div>
 
       <ResultsWorkspace

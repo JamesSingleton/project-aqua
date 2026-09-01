@@ -54,3 +54,17 @@ Do not use other model families (Claude, GPT, GLM, etc.) unless the human explic
 
 - Treat every Server Action like a public endpoint: authenticate and authorize inside the action (`requireTeamRole` / plan features).
 - Meet import/export is gated to owner + head_coach and the `meet_import` plan feature.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues in this repo (`gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical roles with matching label strings. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.md`.

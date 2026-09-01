@@ -15,8 +15,17 @@ import {
   replaceMeetRelayLegs,
 } from "@project-aqua/db/queries/meets";
 import { getRoster } from "@project-aqua/db/queries/roster";
+import type { SharedDraftQuota } from "@project-aqua/swim-core/draft-quota";
 import { isRelayStroke } from "@project-aqua/swim-core/entry-limits";
 import { formatEventName } from "@project-aqua/swim-core/events";
+import { getPlanLimits } from "@project-aqua/swim-core/plans";
+import {
+  deriveRelayLetter,
+  RELAY_MAX_LEGS,
+  RELAY_PRIMARY_LEG_COUNT,
+  strokeForRelayLeg,
+} from "@project-aqua/swim-core/relay-legs";
+import { blocksMeetEntries } from "@project-aqua/swim-core/team-types";
 import { formatTime } from "@project-aqua/swim-core/times";
 import { generateText } from "ai";
 import { revalidatePath } from "next/cache";
@@ -41,6 +50,48 @@ export type RelayLegSuggestion = {
   name: string;
 };
 
+export async function saveMeetRelayLegsAction(
+  teamId: string,
+  meetId: string,
+  meetEventId: string,
+  legs: Array<{
+    membershipId: string;
+    legOrder: number;
+    relayLetter: string;
+    stroke?: string;
+    reasoning?: string;
+  }>,
+) {
+  const session = await getSession();
+  await requireTeamRole(session?.user?.id, teamId, [
+    "owner",
+    "head_coach",
+    "assistant_coach",
+  ]);
+  const meet = await getMeetById(meetId, teamId);
+  if (!meet) throw new Error("Meet not found");
+
+  const cleaned = legs
+    .filter((leg) => leg.membershipId && leg.legOrder >= 1)
+    .slice(0, RELAY_MAX_LEGS * 3)
+    .map((leg) => ({
+      membershipId: leg.membershipId,
+      legOrder: leg.legOrder,
+      relayLetter: deriveRelayLetter(leg.relayLetter, leg.legOrder),
+      stroke: leg.stroke,
+      reasoning: leg.reasoning,
+    }));
+
+  await replaceMeetRelayLegs({
+    meetId,
+    meetEventId,
+    legs: cleaned,
+  });
+  revalidatePath(`/team/${teamId}/meets/${meetId}`);
+  revalidatePath(`/team/${teamId}/meets/${meetId}/entries`);
+  revalidatePath(`/team/${teamId}/meets/${meetId}/report`);
+}
+
 export async function suggestRelayOrderAction(
   teamId: string,
   input: RelaySuggestInput,
@@ -53,14 +104,16 @@ export async function suggestRelayOrderAction(
   ]);
 
   if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY is not configured");
+    throw new Error(
+      "Relay suggestions aren't configured. Add OPENAI_API_KEY to apps/admin/.env.",
+    );
   }
 
   const numberOfRelays = input.numberOfRelays ?? 1;
   const allowDoubles = input.allowDoubles ?? false;
   const optimizeFor = input.optimizeFor ?? "speed";
 
-  await assertAndRecordAiGeneration({
+  const quotaRecord = await assertAndRecordAiGeneration({
     organizationId: teamId,
     userId: session?.user?.id,
     kind: "relay",
@@ -90,21 +143,22 @@ export async function suggestRelayOrderAction(
     throw new Error("Selected event is not a relay");
   }
 
-  const committedIds = new Set(
+  const notGoingIds = new Set(
     commitments
-      .filter((c) => c.status === "committed")
+      .filter((c) => c.status === "not_going")
       .map((c) => c.membershipId),
   );
-  const pool =
-    committedIds.size > 0
-      ? roster.filter((r) => committedIds.has(r.membershipId))
-      : roster;
+  const pool = roster.filter(
+    (r) =>
+      !notGoingIds.has(r.membershipId) &&
+      !blocksMeetEntries(r.eligibilityStatus),
+  );
 
   if (pool.length < 4) {
     throw new Error(
-      committedIds.size > 0
-        ? "Need at least 4 committed swimmers for a relay"
-        : "Need at least 4 roster swimmers for a relay",
+      notGoingIds.size > 0
+        ? "Need at least 4 eligible swimmers attending this meet for a relay"
+        : "Need at least 4 eligible roster swimmers for a relay",
     );
   }
 
@@ -203,11 +257,11 @@ ${swimmerLines}`,
     const json = text.trim().replace(/^```json\n?|\n?```$/g, "");
     parsed = JSON.parse(json);
   } catch {
-    throw new Error("AI returned invalid relay order JSON");
+    throw new Error("Couldn't parse suggested relay order.");
   }
 
   if (!Array.isArray(parsed.teams) || parsed.teams.length === 0) {
-    throw new Error("AI returned no relay teams");
+    throw new Error("No relay teams in the suggestion.");
   }
 
   const nameById = new Map(
@@ -222,9 +276,11 @@ ${swimmerLines}`,
 
   parsed.teams.slice(0, numberOfRelays).forEach((team, teamIndex) => {
     const letter = team.letter?.toUpperCase() || TEAM_LETTERS[teamIndex] || "A";
-    const order = (team.order ?? []).slice(0, 4);
-    if (order.length < 4) {
-      throw new Error(`Team ${letter} needs 4 swimmers`);
+    const order = (team.order ?? []).slice(0, RELAY_PRIMARY_LEG_COUNT);
+    if (order.length < RELAY_PRIMARY_LEG_COUNT) {
+      throw new Error(
+        `Team ${letter} needs ${RELAY_PRIMARY_LEG_COUNT} swimmers`,
+      );
     }
     order.forEach((leg, i) => {
       if (!eligibleIds.has(leg.membershipId)) {
@@ -244,10 +300,11 @@ ${swimmerLines}`,
       }
       used.add(leg.membershipId);
       usageCount.set(leg.membershipId, prior + 1);
+      const slot = i + 1;
       legs.push({
         membershipId: leg.membershipId,
-        legOrder: teamIndex * 4 + i + 1,
-        stroke: leg.stroke,
+        legOrder: slot,
+        stroke: leg.stroke ?? strokeForRelayLeg(event.stroke, slot),
         reasoning: leg.reason
           ? `Team ${letter}: ${leg.reason}`
           : `Team ${letter}`,
@@ -257,20 +314,16 @@ ${swimmerLines}`,
     });
   });
 
-  await replaceMeetRelayLegs({
-    meetId: input.meetId,
-    meetEventId: input.meetEventId,
-    legs: legs.map((leg) => ({
-      membershipId: leg.membershipId,
-      legOrder: leg.legOrder,
-      stroke: leg.stroke,
-      reasoning: leg.reasoning,
-    })),
-  });
+  const limits = getPlanLimits(quotaRecord.plan);
+  const draftQuota: SharedDraftQuota = {
+    remaining: quotaRecord.remaining,
+    included: limits.aiGenerationsIncluded,
+    used: quotaRecord.used,
+    allowed: quotaRecord.remaining > 0 || limits.aiOverageAllowed,
+    overageAllowed: limits.aiOverageAllowed,
+  };
 
-  revalidatePath(`/team/${teamId}/meets/${input.meetId}`);
-  revalidatePath(`/team/${teamId}/meets/${input.meetId}/registration`);
-  return { legs, summary: parsed.summary ?? "" };
+  return { legs, summary: parsed.summary ?? "", draftQuota };
 }
 
 export async function getMeetRelayLegsAction(teamId: string, meetId: string) {

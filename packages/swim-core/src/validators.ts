@@ -1,6 +1,16 @@
 import { z } from "zod";
 import { isMinorSwimmer } from "./age";
-import { COURSES, GENDERS } from "./events";
+import { COURSES, EVENT_GENDERS, GENDERS } from "./events";
+
+export const MANUAL_EVENT_STROKES = [
+  "free",
+  "back",
+  "breast",
+  "fly",
+  "im",
+  "free_relay",
+  "medley_relay",
+] as const;
 
 export const swimmerContactsSchema = z.object({
   parentName: z.string().optional(),
@@ -173,10 +183,34 @@ export const meetCommitmentStatusSchema = z.enum([
   "pending",
   "committed",
   "declined",
+  "not_going",
+  "not_eligible",
 ]);
 
 export type MeetCommitmentStatus = z.infer<typeof meetCommitmentStatusSchema>;
 
+/** Statuses coaches set to exclude a swimmer from meet entries / export. */
+export const meetAttendanceStatusSchema = z.enum(["not_going", "not_eligible"]);
+
+export type MeetAttendanceStatus = z.infer<typeof meetAttendanceStatusSchema>;
+
 export const meetEntryStatusSchema = z.enum(["draft", "approved", "scratched"]);
 
 export type MeetEntryStatus = z.infer<typeof meetEntryStatusSchema>;
+
+export const manualMeetEventSchema = z.object({
+  eventNumber: z.coerce.number().int().positive(),
+  stroke: z.enum(MANUAL_EVENT_STROKES),
+  distance: z.coerce.number().int().nonnegative(),
+  gender: z.enum(EVENT_GENDERS),
+  ageGroup: z.string().optional(),
+  qualifyingTime: z.string().optional(),
+});
+
+export type ManualMeetEventInput = z.infer<typeof manualMeetEventSchema>;
+
+export const meetEventTemplateNameSchema = z
+  .string()
+  .trim()
+  .min(1, "Template name is required")
+  .max(80);

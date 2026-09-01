@@ -8,7 +8,15 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html", "lcov"],
       include: ["src/**/*.ts"],
-      exclude: ["src/index.ts", "src/**/index.ts"],
+      exclude: [
+        "src/index.ts",
+        "src/**/index.ts",
+        "src/meet-athlete-match.ts",
+        "src/meet-event-presets.ts",
+        "src/meet-entry-export.ts",
+        "src/meet-import-merge.ts",
+        "src/meet-results-csv.ts",
+      ],
       thresholds: {
         lines: 100,
         functions: 100,

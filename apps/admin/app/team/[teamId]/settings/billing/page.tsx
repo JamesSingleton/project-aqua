@@ -11,7 +11,6 @@ import {
 } from "@project-aqua/ui/components/alert";
 import { Progress } from "@project-aqua/ui/components/progress";
 import { Separator } from "@project-aqua/ui/components/separator";
-import { Sparkles } from "lucide-react";
 import type { Metadata } from "next";
 import { SettingsSection } from "../settings-section";
 import { BillingActions } from "./billing-actions";
@@ -24,7 +23,7 @@ export async function generateMetadata({
   const { teamId } = await params;
   return {
     title: "Billing",
-    description: "Plan, subscription, and AI usage.",
+    description: "Plan, subscription, and usage.",
     alternates: { canonical: `/team/${teamId}/settings/billing` },
   };
 }
@@ -51,10 +50,10 @@ export default async function BillingSettingsPage({
     <div className="flex flex-col">
       {plan === "free" ? (
         <Alert className="mb-6">
-          <Sparkles />
-          <AlertTitle>You&apos;re on the Free plan</AlertTitle>
+          <AlertTitle>Free plan</AlertTitle>
           <AlertDescription>
-            Upgrade to Pro for more coaches, meet import, and higher AI limits.
+            Upgrade to Pro for extra coaches, lineup suggestions, and cut
+            tracking.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -89,19 +88,27 @@ export default async function BillingSettingsPage({
               coaches
             </li>
             <li>
-              AI generations: {limits.aiGenerationsIncluded}/mo
-              {limits.aiOverageAllowed ? " + overage" : " (hard stop)"}
+              Relay suggestions &amp; workout drafts:{" "}
+              {included === Number.POSITIVE_INFINITY
+                ? "Unlimited"
+                : `${included}/mo`}{" "}
+              (shared pool)
             </li>
             <li>Meet import: {limits.meetImport ? "Yes" : "No"}</li>
             <li>Progression tracking: {limits.progression ? "Yes" : "No"}</li>
+            <li>SWIMS sync: {limits.swimsSync ? "Yes" : "No"}</li>
+            <li>
+              Lineup suggestions: {limits.lineupSuggestions ? "Yes" : "No"}
+            </li>
+            <li>Cut tracker: {limits.advancedAnalytics ? "Yes" : "No"}</li>
           </ul>
           <BillingActions teamId={teamId} currentPlan={plan} />
         </div>
       </SettingsSection>
 
       <SettingsSection
-        title="AI usage"
-        description="Generations are metered per team for the current month."
+        title="Relay suggestions & workout drafts"
+        description="One monthly pool for relay order suggestions and workout drafts. Each Suggest click uses one."
         showSeparator
       >
         <div className="flex w-full max-w-md flex-col gap-2">
@@ -113,20 +120,10 @@ export default async function BillingSettingsPage({
             </span>
           </div>
           <Progress value={usagePct} className="w-full" />
-          <div className="flex items-center justify-between">
-            <p className="text-muted-foreground text-xs">
-              Used {quota.used} generations
-            </p>
-            <p className="text-muted-foreground text-xs">
-              {included === Number.POSITIVE_INFINITY
-                ? "Unlimited included"
-                : `${included} included`}
-            </p>
-          </div>
           <p className="text-muted-foreground text-sm">
             {quota.overageAllowed && quota.remaining === 0
-              ? "Included quota used — overage allowed on this plan."
-              : `${quota.remaining} generations remaining.`}
+              ? "Included quota used — extra allowed on this plan."
+              : `${quota.remaining} left this month.`}
           </p>
         </div>
       </SettingsSection>

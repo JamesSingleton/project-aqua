@@ -21,6 +21,11 @@ import { Textarea } from "@project-aqua/ui/components/textarea";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
+  DraftQuotaHint,
+  isDraftQuotaBlocked,
+  type SharedDraftQuota,
+} from "@/components/draft-quota-hint";
+import {
   parseWorkoutPreviewAction,
   saveWorkoutAction,
   suggestWorkoutAction,
@@ -47,6 +52,7 @@ export function WorkoutEditor({
   initialPracticeGroup = "",
   initialDistanceUnit = "yards",
   practiceSessionId,
+  draftQuota: initialDraftQuota,
 }: {
   teamId: string;
   workoutId?: string;
@@ -55,9 +61,12 @@ export function WorkoutEditor({
   initialPracticeGroup?: string;
   initialDistanceUnit?: DistanceUnit | null;
   practiceSessionId?: string;
+  draftQuota: SharedDraftQuota;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [draftQuota, setDraftQuota] = useState(initialDraftQuota);
+  const suggestBlocked = isDraftQuotaBlocked(draftQuota);
   const [title, setTitle] = useState(initialTitle);
   const [rawText, setRawText] = useState(initialRawText);
   const [practiceGroup, setPracticeGroup] = useState(initialPracticeGroup);
@@ -98,7 +107,10 @@ export function WorkoutEditor({
         setAiDraftText(result.draftText);
         setAiPrompt(result.prompt);
         setWasAiGenerated(true);
-        if (!title) setTitle(`AI · ${focus.trim().slice(0, 40)}`);
+        if (!title) setTitle(focus.trim().slice(0, 40));
+        if (result.draftQuota) {
+          setDraftQuota(result.draftQuota);
+        }
         const parsed = await parseWorkoutPreviewAction(result.draftText);
         setSets(parsed.sets);
         setTotalDistance(parsed.totalDistance);
@@ -138,7 +150,7 @@ export function WorkoutEditor({
         <CardHeader>
           <CardTitle>{workoutId ? "Edit workout" : "New workout"}</CardTitle>
           <CardDescription>
-            Write coach notation or ask AI to suggest, then parse into sets.
+            Write coach notation, then parse into sets.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -186,36 +198,6 @@ export function WorkoutEditor({
             </div>
           </div>
 
-          <div className="bg-muted/40 space-y-3 rounded-lg border p-3">
-            <p className="text-sm font-medium">AI suggest</p>
-            <div className="space-y-2">
-              <Label htmlFor="focus">Focus</Label>
-              <Input
-                id="focus"
-                value={focus}
-                onChange={(e) => setFocus(e.target.value)}
-                placeholder="Aerobic free + fly speed, taper week"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="duration">Duration (min)</Label>
-              <Input
-                id="duration"
-                type="number"
-                value={durationMinutes}
-                onChange={(e) => setDurationMinutes(e.target.value)}
-              />
-            </div>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={pending}
-              onClick={handleSuggest}
-            >
-              {pending ? "Working…" : "Suggest workout"}
-            </Button>
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="raw">Workout text</Label>
             <Textarea
@@ -226,6 +208,41 @@ export function WorkoutEditor({
               placeholder={`Warm-up\n4x100 free @ 1:30 easy\nMain\n8x50 fly @ :50 race\nCool-down\n200 choice`}
             />
           </div>
+
+          <details className="rounded-lg border px-3 py-2">
+            <summary className="cursor-pointer text-sm font-medium">
+              Need a starting draft?
+            </summary>
+            <div className="mt-3 space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="focus">Focus</Label>
+                <Input
+                  id="focus"
+                  value={focus}
+                  onChange={(e) => setFocus(e.target.value)}
+                  placeholder="Aerobic free + fly speed, taper week"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="duration">Duration (min)</Label>
+                <Input
+                  id="duration"
+                  type="number"
+                  value={durationMinutes}
+                  onChange={(e) => setDurationMinutes(e.target.value)}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={pending || suggestBlocked}
+                onClick={handleSuggest}
+              >
+                {pending ? "Working…" : "Suggest a practice"}
+              </Button>
+              <DraftQuotaHint surface="workout" quota={draftQuota} />
+            </div>
+          </details>
 
           <div className="flex flex-wrap gap-2">
             <Button
@@ -259,7 +276,7 @@ export function WorkoutEditor({
         <CardContent className="space-y-3">
           {sets.length === 0 ? (
             <p className="text-muted-foreground text-sm">
-              Parse or suggest a workout to preview structured sets.
+              Parse the workout text to preview sets.
             </p>
           ) : (
             <ul className="space-y-2 text-sm">

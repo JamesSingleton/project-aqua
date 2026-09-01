@@ -9,10 +9,6 @@ const fixturesDir = join(
   "../../fixtures",
 );
 
-function padHy3(line: string, len = 130): string {
-  return line.padEnd(len, " ");
-}
-
 describe("parseHy3", () => {
   it("parses Sonoran entries with correct offsets and names", () => {
     const content = readFileSync(join(fixturesDir, "mari-entries.hy3"), "utf8");
@@ -95,6 +91,33 @@ describe("parseHy3", () => {
       "D1M   99Ignored           Swimmer                                                                  17",
     ].join("\n");
     expect(parseHy3(truncated).entries).toHaveLength(0);
+    expect(
+      parseHy3(truncated).athletes?.some((a) => a.name.includes("Bob")),
+    ).toBe(true);
+    const blank =
+      "D1F    1                                                                                      ";
+    expect(parseHy3(blank).athletes).toBeUndefined();
+  });
+
+  it("skips individual entries with no meet id or a missing D1 swimmer", () => {
+    function e1(meetId: string): string {
+      const line = Array.from({ length: 120 }, () => " ");
+      const put = (oneBased: number, s: string) => {
+        for (let i = 0; i < s.length; i++) line[oneBased - 1 + i] = s[i]!;
+      };
+      put(1, "E1");
+      put(3, "M");
+      put(4, meetId.padStart(5));
+      put(16, "    50");
+      put(22, "A");
+      put(39, "   6");
+      return line.join("");
+    }
+
+    const d1 =
+      "D1M    1Smith               Bob                                                                  017   17";
+    expect(parseHy3([d1, e1("99")].join("\n")).entries).toEqual([]);
+    expect(parseHy3(e1("")).entries).toEqual([]);
   });
 
   it("covers nickName, split-only G1, H1/H2, and age-group branches", () => {

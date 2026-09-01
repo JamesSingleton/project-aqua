@@ -13,6 +13,11 @@ import {
   formatGenderLabel,
   isSwimmerEligibleForEvent,
 } from "@project-aqua/swim-core/events";
+import {
+  blocksMeetEntries,
+  ELIGIBILITY_STATUS_LABELS,
+  type EligibilityStatus,
+} from "@project-aqua/swim-core/team-types";
 import { formatTime, parseTime } from "@project-aqua/swim-core/times";
 import {
   Alert,
@@ -20,6 +25,13 @@ import {
   AlertTitle,
 } from "@project-aqua/ui/components/alert";
 import { Button } from "@project-aqua/ui/components/button";
+import { Checkbox } from "@project-aqua/ui/components/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@project-aqua/ui/components/dropdown-menu";
 import { Input } from "@project-aqua/ui/components/input";
 import {
   Select,
@@ -39,17 +51,18 @@ import { cn } from "@project-aqua/ui/lib/utils";
 import {
   AlertTriangleIcon,
   Minus,
+  MoreVertical,
   Plus,
   Search,
-  SquareCheckBig,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   addMeetEntryAction,
   deleteMeetEntryAction,
-  setMeetCommitmentAction,
-  setMeetCommitmentsBulkAction,
+  setMeetAttendanceAction,
+  updateMeetEntryAction,
 } from "../actions";
 
 type RosterRow = {
@@ -63,6 +76,8 @@ type RosterRow = {
   groupName: string | null;
   gender: "male" | "female";
   dateOfBirth: Date | string | null;
+  eligibilityStatus: EligibilityStatus | null;
+  eligibilityNotes: string | null;
 };
 
 type EventRow = {
@@ -82,6 +97,8 @@ type EntryRow = {
   membershipId: string;
   seedTimeMs: number | null;
   status: string;
+  exhibition?: boolean;
+  entryNotes?: string | null;
   firstName: string;
   lastName: string;
   distance: number;
@@ -91,9 +108,10 @@ type EntryRow = {
   eventKey?: string;
 };
 
-type CommitmentRow = {
+type AttendanceRow = {
   membershipId: string;
   status: string;
+  notes?: string | null;
   firstName: string;
   lastName: string;
 };
@@ -104,20 +122,23 @@ type BestTimeRow = {
   timeMs: number;
 };
 
-type CommitmentStatus = "pending" | "committed" | "declined";
-type RosterFilter = "all" | "committed" | "pending" | "declined";
+type RosterFilter =
+  | "all"
+  | "has_entries"
+  | "no_entries"
+  | "not_going"
+  | "ineligible";
 
-function commitmentLabel(status: string) {
-  if (status === "committed") return "Committed";
-  if (status === "declined") return "Declined";
-  return "Pending";
+function rowStatusLabel(
+  notGoing: boolean,
+  eligibilityStatus: EligibilityStatus | null,
+) {
+  if (blocksMeetEntries(eligibilityStatus)) {
+    return ELIGIBILITY_STATUS_LABELS.ineligible;
+  }
+  if (notGoing) return "Not going";
+  return null;
 }
-
-const COMMITMENT_ITEMS = [
-  { value: "pending", label: "Pending" },
-  { value: "committed", label: "Committed" },
-  { value: "declined", label: "Declined" },
-] as const;
 
 function formatEventLine(event: {
   eventNumber: number | null;
@@ -140,11 +161,6 @@ function formatEventLine(event: {
     /\s+/g,
     " ",
   );
-}
-
-function seedDisplay(ms: number | null, course: string) {
-  if (ms == null) return "NT";
-  return `${formatTime(ms)}${course.charAt(0)}`;
 }
 
 function qtDisplay(ms: number | null | undefined) {
@@ -265,8 +281,9 @@ export function RegistrationBoard({
   roster,
   events,
   entries,
-  commitments,
+  attendance,
   bestTimes,
+  relayLegMembershipIds,
 }: {
   teamId: string;
   meetId: string;
@@ -276,30 +293,50 @@ export function RegistrationBoard({
   roster: RosterRow[];
   events: EventRow[];
   entries: EntryRow[];
-  commitments: CommitmentRow[];
+  attendance: AttendanceRow[];
   bestTimes: BestTimeRow[];
+  relayLegMembershipIds: string[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<RosterFilter>("committed");
+  const [filter, setFilter] = useState<RosterFilter>("all");
   const [groupFilter, setGroupFilter] = useState<string>("all");
   const [membershipId, setMembershipId] = useState(
     roster[0]?.membershipId ?? "",
   );
   const [seedDrafts, setSeedDrafts] = useState<Record<string, string>>({});
+  const [exhibitionDrafts, setExhibitionDrafts] = useState<
+    Record<string, boolean>
+  >({});
+  const [notesDrafts, setNotesDrafts] = useState<Record<string, string>>({});
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const commitmentByMembership = useMemo(
-    () => new Map(commitments.map((c) => [c.membershipId, c.status])),
-    [commitments],
+  const attendanceByMembership = useMemo(
+    () => new Map(attendance.map((row) => [row.membershipId, row.status])),
+    [attendance],
+  );
+
+  const relayLegSet = useMemo(
+    () => new Set(relayLegMembershipIds),
+    [relayLegMembershipIds],
   );
 
   const entryCountByMembership = useMemo(() => {
     const map = new Map<string, number>();
     for (const entry of entries) {
       if (entry.status === "scratched") continue;
+      map.set(entry.membershipId, (map.get(entry.membershipId) ?? 0) + 1);
+    }
+    return map;
+  }, [entries]);
+
+  const individualCountByMembership = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const entry of entries) {
+      if (entry.status === "scratched") continue;
+      if (isRelayStroke(entry.stroke, entry.eventKey)) continue;
       map.set(entry.membershipId, (map.get(entry.membershipId) ?? 0) + 1);
     }
     return map;
@@ -320,8 +357,21 @@ export function RegistrationBoard({
   const filteredRoster = useMemo(() => {
     const q = search.trim().toLowerCase();
     return roster.filter((row) => {
-      const status = commitmentByMembership.get(row.membershipId) ?? "pending";
-      if (filter !== "all" && status !== filter) return false;
+      const status = attendanceByMembership.get(row.membershipId);
+      const entryCount = entryCountByMembership.get(row.membershipId) ?? 0;
+      const hasIndividual =
+        (individualCountByMembership.get(row.membershipId) ?? 0) > 0;
+
+      if (filter === "has_entries" && entryCount === 0) return false;
+      if (filter === "no_entries" && entryCount > 0) return false;
+      if (filter === "not_going" && status !== "not_going") return false;
+      if (
+        filter === "ineligible" &&
+        !blocksMeetEntries(row.eligibilityStatus)
+      ) {
+        return false;
+      }
+
       if (groupFilter !== "all") {
         if (groupFilter === "none") {
           if (row.groupId) return false;
@@ -335,7 +385,15 @@ export function RegistrationBoard({
         .trim();
       return name.includes(q);
     });
-  }, [roster, search, filter, groupFilter, commitmentByMembership]);
+  }, [
+    roster,
+    search,
+    filter,
+    groupFilter,
+    attendanceByMembership,
+    entryCountByMembership,
+    individualCountByMembership,
+  ]);
 
   useEffect(() => {
     if (
@@ -348,9 +406,14 @@ export function RegistrationBoard({
   }, [filteredRoster, membershipId]);
 
   const selectedSwimmer = roster.find((r) => r.membershipId === membershipId);
-  const commitmentStatus =
-    (membershipId ? commitmentByMembership.get(membershipId) : undefined) ??
-    "pending";
+  const attendanceStatus = membershipId
+    ? attendanceByMembership.get(membershipId)
+    : undefined;
+  const isNotGoing = attendanceStatus === "not_going";
+  const isProfileIneligible = blocksMeetEntries(
+    selectedSwimmer?.eligibilityStatus,
+  );
+  const isBlocked = isNotGoing || isProfileIneligible;
 
   const swimmerEntries = useMemo(
     () =>
@@ -358,6 +421,11 @@ export function RegistrationBoard({
         (e) => e.membershipId === membershipId && e.status !== "scratched",
       ),
     [entries, membershipId],
+  );
+
+  const enteredEventIds = useMemo(
+    () => new Set(swimmerEntries.map((e) => e.meetEventId)),
+    [swimmerEntries],
   );
 
   const entryCounts = useMemo(() => {
@@ -370,19 +438,14 @@ export function RegistrationBoard({
     return { individual, relay };
   }, [swimmerEntries]);
 
-  const enteredEventIds = useMemo(
-    () => new Set(swimmerEntries.map((e) => e.meetEventId)),
-    [swimmerEntries],
-  );
-
   const availableEvents = useMemo(() => {
-    if (!selectedSwimmer) return [];
+    if (!selectedSwimmer || isBlocked) return [];
     return events.filter(
       (event) =>
         !enteredEventIds.has(event.id) &&
         isSwimmerEligibleForEvent(selectedSwimmer.gender, event.gender),
     );
-  }, [events, enteredEventIds, selectedSwimmer]);
+  }, [events, enteredEventIds, selectedSwimmer, isBlocked]);
 
   const limitAlert = useMemo(
     () =>
@@ -440,28 +503,57 @@ export function RegistrationBoard({
     router.refresh();
   }
 
-  const uncommittedCount = useMemo(() => {
-    return roster.filter(
-      (row) =>
-        (commitmentByMembership.get(row.membershipId) ?? "pending") !==
-        "committed",
-    ).length;
-  }, [roster, commitmentByMembership]);
+  function enteredSeedValue(entry: EntryRow) {
+    if (seedDrafts[entry.id] !== undefined) return seedDrafts[entry.id]!;
+    return entry.seedTimeMs != null ? formatTime(entry.seedTimeMs) : "";
+  }
 
-  function commitAllSwimmers() {
-    const ids = roster
-      .filter(
-        (row) =>
-          (commitmentByMembership.get(row.membershipId) ?? "pending") !==
-          "committed",
-      )
-      .map((row) => row.membershipId);
-    if (ids.length === 0) return;
-    setPendingAction("commit-all");
+  function saveEnteredSeed(entry: EntryRow, raw: string) {
+    const trimmed = raw.trim();
+    const prevMs = entry.seedTimeMs;
+    if (!trimmed) {
+      if (prevMs == null) return;
+      setPendingAction(`seed:${entry.id}`);
+      startTransition(async () => {
+        try {
+          await updateMeetEntryAction(teamId, meetId, entry.id, {
+            seedTimeMs: null,
+            seedTimeSource: "no_time",
+          });
+          refresh();
+        } finally {
+          setPendingAction(null);
+        }
+      });
+      return;
+    }
+    const parsed = parseTime(trimmed);
+    if (!parsed || parsed <= 0) return;
+    if (prevMs === parsed) return;
+    setPendingAction(`seed:${entry.id}`);
     startTransition(async () => {
       try {
-        await setMeetCommitmentsBulkAction(teamId, meetId, ids, "committed");
-        setFilter("committed");
+        await updateMeetEntryAction(teamId, meetId, entry.id, {
+          seedTimeMs: parsed,
+          seedTimeSource: "manual",
+        });
+        refresh();
+      } finally {
+        setPendingAction(null);
+      }
+    });
+  }
+
+  function setNotGoingForMember(targetMembershipId: string, notGoing: boolean) {
+    setPendingAction(`attendance:${notGoing ? "not_going" : "clear"}`);
+    startTransition(async () => {
+      try {
+        await setMeetAttendanceAction(
+          teamId,
+          meetId,
+          targetMembershipId,
+          notGoing ? "not_going" : null,
+        );
         refresh();
       } finally {
         setPendingAction(null);
@@ -481,9 +573,12 @@ export function RegistrationBoard({
       event.qualifyingTimeMs,
       resolved.seedTimeMs,
     );
-    if (!qtCheck.ok) return;
+    if (!qtCheck.ok) {
+      setActionError(qtCheck.reason);
+    } else {
+      setActionError(null);
+    }
 
-    setActionError(null);
     setPendingAction(`add:${event.id}`);
     startTransition(async () => {
       try {
@@ -493,8 +588,20 @@ export function RegistrationBoard({
           seedTimeMs: resolved.seedTimeMs,
           seedTimeSource: resolved.seedTimeSource,
           status: "approved",
+          exhibition: exhibitionDrafts[event.id] === true,
+          entryNotes: notesDrafts[event.id]?.trim() || undefined,
         });
         setSeedDrafts((prev) => {
+          const next = { ...prev };
+          delete next[event.id];
+          return next;
+        });
+        setExhibitionDrafts((prev) => {
+          const next = { ...prev };
+          delete next[event.id];
+          return next;
+        });
+        setNotesDrafts((prev) => {
           const next = { ...prev };
           delete next[event.id];
           return next;
@@ -540,15 +647,22 @@ export function RegistrationBoard({
                 <SelectValue>
                   {filter === "all"
                     ? `All (${roster.length})`
-                    : `${commitmentLabel(filter)} (${roster.filter((r) => (commitmentByMembership.get(r.membershipId) ?? "pending") === filter).length})`}
+                    : filter === "has_entries"
+                      ? `Has entries (${roster.filter((r) => (entryCountByMembership.get(r.membershipId) ?? 0) > 0).length})`
+                      : filter === "no_entries"
+                        ? `No entries yet (${roster.filter((r) => (entryCountByMembership.get(r.membershipId) ?? 0) === 0 && !attendanceByMembership.get(r.membershipId)).length})`
+                        : filter === "not_going"
+                          ? `Not going (${roster.filter((r) => attendanceByMembership.get(r.membershipId) === "not_going").length})`
+                          : `Ineligible (${roster.filter((r) => blocksMeetEntries(r.eligibilityStatus)).length})`}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
                   <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="committed">Committed</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="declined">Declined</SelectItem>
+                  <SelectItem value="has_entries">Has entries</SelectItem>
+                  <SelectItem value="no_entries">No entries yet</SelectItem>
+                  <SelectItem value="not_going">Not going</SelectItem>
+                  <SelectItem value="ineligible">Ineligible</SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>
@@ -580,36 +694,6 @@ export function RegistrationBoard({
                 </SelectGroup>
               </SelectContent>
             </Select>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={pending || uncommittedCount === 0}
-                    onClick={commitAllSwimmers}
-                    aria-label={
-                      uncommittedCount === 0
-                        ? "All swimmers already committed"
-                        : `Commit all ${uncommittedCount} uncommitted swimmers`
-                    }
-                  />
-                }
-              >
-                {pendingAction === "commit-all" ? (
-                  <Spinner data-icon="inline-start" />
-                ) : (
-                  <SquareCheckBig data-icon="inline-start" />
-                )}
-                Commit all
-              </TooltipTrigger>
-              <TooltipContent>
-                {uncommittedCount === 0
-                  ? "Everyone is already committed"
-                  : `Commit ${uncommittedCount} swimmer${uncommittedCount === 1 ? "" : "s"} who are not yet committed`}
-              </TooltipContent>
-            </Tooltip>
           </div>
         </div>
 
@@ -620,48 +704,117 @@ export function RegistrationBoard({
             </li>
           ) : (
             filteredRoster.map((row) => {
-              const status =
-                commitmentByMembership.get(row.membershipId) ?? "pending";
+              const notGoing =
+                attendanceByMembership.get(row.membershipId) === "not_going";
+              const profileIneligible = blocksMeetEntries(
+                row.eligibilityStatus,
+              );
               const count = entryCountByMembership.get(row.membershipId) ?? 0;
+              const hasIndividual =
+                (individualCountByMembership.get(row.membershipId) ?? 0) > 0;
+              const relaysOnly =
+                relayLegSet.has(row.membershipId) && !hasIndividual;
               const active = row.membershipId === membershipId;
               const rowAge = swimmerAgeOnDate(row.dateOfBirth, meetStartDate);
+              const statusLabel = rowStatusLabel(
+                notGoing,
+                row.eligibilityStatus,
+              );
 
               return (
                 <li key={row.membershipId} className="border-border border-b">
-                  <button
-                    type="button"
+                  <div
                     className={cn(
-                      "flex w-full min-w-0 flex-col gap-0.5 px-3 py-2.5 text-left transition-colors",
+                      "flex items-start gap-1 px-2 py-1.5",
                       active && "bg-muted/60",
                     )}
-                    onClick={() => setMembershipId(row.membershipId)}
                   >
-                    <span className="truncate text-sm font-medium">
-                      {row.firstName} {row.lastName}
-                      {rowAge != null ? (
-                        <span className="text-muted-foreground font-normal">
-                          {" "}
-                          · {rowAge}
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="text-muted-foreground flex items-center gap-2 text-xs">
-                      <span
-                        className={cn(
-                          "inline-block size-1.5 rounded-full",
-                          status === "committed" && "bg-emerald-500",
-                          status === "declined" && "bg-destructive",
-                          status === "pending" && "bg-muted-foreground/40",
-                        )}
-                        aria-hidden
-                      />
-                      {commitmentLabel(status)}
-                      <span>·</span>
-                      <span>
-                        {count} {count === 1 ? "event" : "events"}
+                    <button
+                      type="button"
+                      className="flex min-w-0 flex-1 flex-col gap-0.5 py-1 pl-1 text-left"
+                      onClick={() => setMembershipId(row.membershipId)}
+                    >
+                      <span className="truncate text-sm font-medium">
+                        {row.firstName} {row.lastName}
+                        {rowAge != null ? (
+                          <span className="text-muted-foreground font-normal">
+                            {" "}
+                            · {rowAge}
+                          </span>
+                        ) : null}
                       </span>
-                    </span>
-                  </button>
+                      <span className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
+                        {statusLabel ? (
+                          <>
+                            <span
+                              className={cn(
+                                "inline-block size-1.5 rounded-full",
+                                profileIneligible && "bg-amber-500",
+                                notGoing && "bg-destructive",
+                              )}
+                              aria-hidden
+                            />
+                            {statusLabel}
+                            <span>·</span>
+                          </>
+                        ) : null}
+                        <span>
+                          {count} {count === 1 ? "event" : "events"}
+                        </span>
+                        {relaysOnly ? (
+                          <>
+                            <span>·</span>
+                            <span>Relays only</span>
+                          </>
+                        ) : null}
+                      </span>
+                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="mt-1 shrink-0"
+                            aria-label={`Actions for ${row.firstName} ${row.lastName}`}
+                            disabled={pending}
+                          />
+                        }
+                      >
+                        <MoreVertical className="size-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {profileIneligible ? (
+                          <DropdownMenuItem
+                            render={
+                              <Link
+                                href={`/team/${teamId}/swimmers/${row.swimmerId}`}
+                              />
+                            }
+                          >
+                            Update eligibility on profile
+                          </DropdownMenuItem>
+                        ) : notGoing ? (
+                          <DropdownMenuItem
+                            onClick={() =>
+                              setNotGoingForMember(row.membershipId, false)
+                            }
+                          >
+                            Attending this meet
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem
+                            onClick={() =>
+                              setNotGoingForMember(row.membershipId, true)
+                            }
+                          >
+                            Won&apos;t attend this meet
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </li>
               );
             })
@@ -706,44 +859,63 @@ export function RegistrationBoard({
                   </p>
                 ) : null}
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground text-xs uppercase tracking-wide">
-                  Commitment
-                </span>
-                <Select
-                  items={COMMITMENT_ITEMS}
-                  value={commitmentStatus}
-                  disabled={pending}
-                  onValueChange={(value) => {
-                    if (value == null) return;
-                    startTransition(async () => {
-                      await setMeetCommitmentAction(
-                        teamId,
-                        meetId,
-                        membershipId,
-                        value as CommitmentStatus,
-                      );
-                      refresh();
-                    });
-                  }}
-                >
-                  <SelectTrigger className="h-8 w-36">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {COMMITMENT_ITEMS.map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
+              {!isProfileIneligible ? (
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                  {isNotGoing ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={pending}
+                      onClick={() => setNotGoingForMember(membershipId, false)}
+                    >
+                      Attending this meet
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={pending}
+                      onClick={() => setNotGoingForMember(membershipId, true)}
+                    >
+                      Won&apos;t attend this meet
+                    </Button>
+                  )}
+                </div>
+              ) : null}
             </header>
 
             <div className="flex-1 space-y-6 overflow-y-auto p-4">
+              {isProfileIneligible ? (
+                <Alert>
+                  <AlertTitle>Ineligible on profile</AlertTitle>
+                  <AlertDescription>
+                    {selectedSwimmer.eligibilityNotes?.trim()
+                      ? `${selectedSwimmer.eligibilityNotes.trim()} `
+                      : ""}
+                    This swimmer cannot be entered in meets until eligibility is
+                    updated on their{" "}
+                    <Link
+                      href={`/team/${teamId}/swimmers/${selectedSwimmer.swimmerId}`}
+                      className="underline"
+                    >
+                      swimmer profile
+                    </Link>
+                    .
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+              {isNotGoing ? (
+                <Alert>
+                  <AlertTitle>Not going to this meet</AlertTitle>
+                  <AlertDescription>
+                    This swimmer will not export and cannot be entered in
+                    events. Use &ldquo;Attending this meet&rdquo; above if plans
+                    change.
+                  </AlertDescription>
+                </Alert>
+              ) : null}
               {actionError ? (
                 <Alert variant="destructive">
                   <AlertTriangleIcon />
@@ -762,188 +934,288 @@ export function RegistrationBoard({
                 </Alert>
               ) : null}
 
-              <div className="space-y-2">
-                <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-                  Entered
-                </h3>
-                {swimmerEntries.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">
-                    No events yet. Add from available entries below.
-                  </p>
-                ) : (
-                  <ul className="divide-border divide-y rounded-md border">
-                    {swimmerEntries.map((entry) => {
-                      const meetEvent = events.find(
-                        (e) => e.id === entry.meetEventId,
-                      );
-                      const qtLabel = qtDisplay(meetEvent?.qualifyingTimeMs);
-                      return (
-                        <li
-                          key={entry.id}
-                          className="flex items-center gap-3 px-3 py-2.5"
-                        >
-                          <span className="min-w-0 flex-1 truncate text-sm">
-                            {formatEventLine(entry)}
-                          </span>
-                          <span
-                            className="text-muted-foreground font-timing w-16 shrink-0 text-right text-xs tabular-nums"
-                            title={
-                              qtLabel ? `Qualifying time ${qtLabel}` : undefined
-                            }
+              {!isBlocked ? (
+                <div className="space-y-2">
+                  <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                    Entered
+                  </h3>
+                  {swimmerEntries.length === 0 ? (
+                    <p className="text-muted-foreground text-sm">
+                      No events yet. Add from available events below.
+                    </p>
+                  ) : (
+                    <ul className="divide-border divide-y rounded-md border">
+                      {swimmerEntries.map((entry) => {
+                        const meetEvent = events.find(
+                          (e) => e.id === entry.meetEventId,
+                        );
+                        const qtLabel = qtDisplay(meetEvent?.qualifyingTimeMs);
+                        return (
+                          <li
+                            key={entry.id}
+                            className="flex flex-wrap items-center gap-2 px-3 py-2.5 sm:flex-nowrap"
                           >
-                            {qtLabel ? `QT ${qtLabel}` : ""}
-                          </span>
-                          <span className="font-timing w-20 shrink-0 text-right text-sm tabular-nums">
-                            {seedDisplay(entry.seedTimeMs, course)}
-                          </span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            disabled={pending}
-                            aria-label="Remove entry"
-                            onClick={() => {
-                              setPendingAction(`remove:${entry.id}`);
-                              startTransition(async () => {
-                                try {
-                                  await deleteMeetEntryAction(
-                                    teamId,
-                                    meetId,
-                                    entry.id,
-                                  );
-                                  refresh();
-                                } finally {
-                                  setPendingAction(null);
-                                }
-                              });
-                            }}
-                          >
-                            {pendingAction === `remove:${entry.id}` ? (
-                              <Spinner />
-                            ) : (
-                              <Minus className="size-4" />
-                            )}
-                          </Button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-                  Available
-                </h3>
-                {events.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">
-                    Import a meet events file before building entries.
-                  </p>
-                ) : availableEvents.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">
-                    No eligible events left for this swimmer.
-                  </p>
-                ) : (
-                  <ul className="divide-border divide-y rounded-md border">
-                    {availableEvents.map((event) => {
-                      const best = bestSeedFor(event.eventKey);
-                      const candidateIsRelay = isRelayStroke(
-                        event.stroke,
-                        event.eventKey,
-                      );
-                      const limitCheck = canAddMeetEntry(
-                        limits,
-                        entryCounts,
-                        candidateIsRelay,
-                      );
-                      const resolved = resolveSeed(event.id, event.eventKey);
-                      const seedMs = resolved?.seedTimeMs ?? null;
-                      const qtMs = event.qualifyingTimeMs;
-                      const qtCheck = checkQualifyingTime(qtMs, seedMs);
-                      const missesQt = !qtCheck.ok;
-                      return (
-                        <li
-                          key={event.id}
-                          className="flex flex-wrap items-center gap-2 px-3 py-2.5 sm:flex-nowrap"
-                        >
-                          <span className="min-w-0 flex-1 truncate text-sm">
-                            {formatEventLine(event)}
-                          </span>
-                          <span
-                            className="text-muted-foreground font-timing w-16 shrink-0 text-right text-xs tabular-nums"
-                            title={
-                              qtMs != null && qtMs > 0
-                                ? `Qualifying time ${formatTime(qtMs)}`
-                                : undefined
-                            }
-                          >
-                            {qtMs != null && qtMs > 0
-                              ? `QT ${formatTime(qtMs)}`
-                              : ""}
-                          </span>
-                          <Input
-                            className={cn(
-                              "font-timing h-8 w-24 text-sm tabular-nums",
-                              missesQt && "border-amber-500/80",
-                            )}
-                            placeholder="NT"
-                            value={seedInputValue(event.id, event.eventKey)}
-                            onChange={(e) =>
-                              setSeedDrafts((prev) => ({
-                                ...prev,
-                                [event.id]: e.target.value,
-                              }))
-                            }
-                            aria-label={`Seed time for ${formatEventName(event.distance, event.stroke)}`}
-                            aria-invalid={missesQt || undefined}
-                          />
-                          {best != null &&
-                          seedDrafts[event.id] === undefined ? (
-                            <span className="text-muted-foreground sr-only sm:not-sr-only sm:text-xs">
-                              best
+                            <span className="min-w-0 flex-1 truncate text-sm">
+                              {formatEventLine(entry)}
                             </span>
-                          ) : null}
-                          {missesQt ? (
-                            <Tooltip>
-                              <TooltipTrigger
-                                render={
-                                  <span className="text-amber-700 dark:text-amber-400 inline-flex items-center gap-1 text-xs" />
-                                }
-                                aria-label="Seed slower than qualifying time"
-                              >
-                                <AlertTriangleIcon className="size-3.5 shrink-0" />
-                                <span className="sr-only sm:not-sr-only">
-                                  Slower than QT
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                {qtCheck.ok ? null : qtCheck.reason}
-                              </TooltipContent>
-                            </Tooltip>
-                          ) : null}
-                          <AddEntryButton
-                            disabled={
-                              pending ||
-                              !membershipId ||
-                              !limitCheck.ok ||
-                              !qtCheck.ok
-                            }
-                            limitReason={
-                              !limitCheck.ok
-                                ? limitCheck.reason
-                                : !qtCheck.ok
-                                  ? qtCheck.reason
+                            <span
+                              className="text-muted-foreground font-timing w-16 shrink-0 text-right text-xs tabular-nums"
+                              title={
+                                qtLabel
+                                  ? `Qualifying time ${qtLabel}`
                                   : undefined
-                            }
-                            pending={pendingAction === `add:${event.id}`}
-                            onClick={() => addEntry(event)}
-                          />
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
+                              }
+                            >
+                              {qtLabel ? `QT ${qtLabel}` : ""}
+                            </span>
+                            <Input
+                              className="font-timing h-8 w-24 text-sm tabular-nums"
+                              placeholder="NT"
+                              value={enteredSeedValue(entry)}
+                              onChange={(e) =>
+                                setSeedDrafts((prev) => ({
+                                  ...prev,
+                                  [entry.id]: e.target.value,
+                                }))
+                              }
+                              onBlur={(e) => {
+                                saveEnteredSeed(entry, e.target.value);
+                                setSeedDrafts((prev) => {
+                                  const next = { ...prev };
+                                  delete next[entry.id];
+                                  return next;
+                                });
+                              }}
+                              aria-label={`Seed time for ${formatEventLine(entry)}`}
+                            />
+                            <label
+                              htmlFor={`entered-exh-${entry.id}`}
+                              className="text-muted-foreground flex shrink-0 items-center gap-1 text-xs"
+                            >
+                              <Checkbox
+                                id={`entered-exh-${entry.id}`}
+                                checked={entry.exhibition === true}
+                                disabled={pending}
+                                onCheckedChange={(checked) => {
+                                  setPendingAction(`exh:${entry.id}`);
+                                  startTransition(async () => {
+                                    try {
+                                      await updateMeetEntryAction(
+                                        teamId,
+                                        meetId,
+                                        entry.id,
+                                        { exhibition: checked === true },
+                                      );
+                                      refresh();
+                                    } finally {
+                                      setPendingAction(null);
+                                    }
+                                  });
+                                }}
+                                aria-label="Exhibition"
+                              />
+                              Exh
+                            </label>
+                            <Input
+                              className="h-8 w-36 text-xs"
+                              defaultValue={entry.entryNotes ?? ""}
+                              placeholder="Notes"
+                              aria-label={`Notes for ${formatEventLine(entry)}`}
+                              onBlur={(e) => {
+                                const next = e.target.value.trim();
+                                const prev = entry.entryNotes?.trim() ?? "";
+                                if (next === prev) return;
+                                setPendingAction(`notes:${entry.id}`);
+                                startTransition(async () => {
+                                  try {
+                                    await updateMeetEntryAction(
+                                      teamId,
+                                      meetId,
+                                      entry.id,
+                                      { entryNotes: next || null },
+                                    );
+                                    refresh();
+                                  } finally {
+                                    setPendingAction(null);
+                                  }
+                                });
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              disabled={pending}
+                              aria-label="Remove entry"
+                              onClick={() => {
+                                setPendingAction(`remove:${entry.id}`);
+                                startTransition(async () => {
+                                  try {
+                                    await deleteMeetEntryAction(
+                                      teamId,
+                                      meetId,
+                                      entry.id,
+                                    );
+                                    refresh();
+                                  } finally {
+                                    setPendingAction(null);
+                                  }
+                                });
+                              }}
+                            >
+                              {pendingAction === `remove:${entry.id}` ? (
+                                <Spinner />
+                              ) : (
+                                <Minus className="size-4" />
+                              )}
+                            </Button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              ) : null}
+
+              {!isBlocked ? (
+                <div className="space-y-2">
+                  <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                    Available
+                  </h3>
+                  {events.length === 0 ? (
+                    <p className="text-muted-foreground text-sm">
+                      Import a meet events file before building entries.
+                    </p>
+                  ) : availableEvents.length === 0 ? (
+                    <p className="text-muted-foreground text-sm">
+                      No eligible events left for this swimmer.
+                    </p>
+                  ) : (
+                    <ul className="divide-border divide-y rounded-md border">
+                      {availableEvents.map((event) => {
+                        const best = bestSeedFor(event.eventKey);
+                        const candidateIsRelay = isRelayStroke(
+                          event.stroke,
+                          event.eventKey,
+                        );
+                        const limitCheck = canAddMeetEntry(
+                          limits,
+                          entryCounts,
+                          candidateIsRelay,
+                        );
+                        const resolved = resolveSeed(event.id, event.eventKey);
+                        const seedMs = resolved?.seedTimeMs ?? null;
+                        const qtMs = event.qualifyingTimeMs;
+                        const qtCheck = checkQualifyingTime(qtMs, seedMs);
+                        const missesQt = !qtCheck.ok;
+                        return (
+                          <li
+                            key={event.id}
+                            className="flex flex-wrap items-center gap-2 px-3 py-2.5 sm:flex-nowrap"
+                          >
+                            <span className="min-w-0 flex-1 truncate text-sm">
+                              {formatEventLine(event)}
+                            </span>
+                            <span
+                              className="text-muted-foreground font-timing w-16 shrink-0 text-right text-xs tabular-nums"
+                              title={
+                                qtMs != null && qtMs > 0
+                                  ? `Qualifying time ${formatTime(qtMs)}`
+                                  : undefined
+                              }
+                            >
+                              {qtMs != null && qtMs > 0
+                                ? `QT ${formatTime(qtMs)}`
+                                : ""}
+                            </span>
+                            <Input
+                              className={cn(
+                                "font-timing h-8 w-24 text-sm tabular-nums",
+                                missesQt && "border-amber-500/80",
+                              )}
+                              placeholder="NT"
+                              value={seedInputValue(event.id, event.eventKey)}
+                              onChange={(e) =>
+                                setSeedDrafts((prev) => ({
+                                  ...prev,
+                                  [event.id]: e.target.value,
+                                }))
+                              }
+                              aria-label={`Seed time for ${formatEventName(event.distance, event.stroke)}`}
+                              aria-invalid={missesQt || undefined}
+                            />
+                            {best != null &&
+                            seedDrafts[event.id] === undefined ? (
+                              <span className="text-muted-foreground sr-only sm:not-sr-only sm:text-xs">
+                                best
+                              </span>
+                            ) : null}
+                            {missesQt ? (
+                              <Tooltip>
+                                <TooltipTrigger
+                                  render={
+                                    <span className="text-amber-700 dark:text-amber-400 inline-flex items-center gap-1 text-xs" />
+                                  }
+                                  aria-label="Seed slower than qualifying time"
+                                >
+                                  <AlertTriangleIcon className="size-3.5 shrink-0" />
+                                  <span className="sr-only sm:not-sr-only">
+                                    Slower than QT
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  {qtCheck.ok
+                                    ? null
+                                    : `${qtCheck.reason} You can still enter this swim.`}
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : null}
+                            <label
+                              htmlFor={`exh-${event.id}`}
+                              className="text-muted-foreground flex shrink-0 items-center gap-1 text-xs"
+                            >
+                              <Checkbox
+                                id={`exh-${event.id}`}
+                                checked={exhibitionDrafts[event.id] === true}
+                                onCheckedChange={(checked) =>
+                                  setExhibitionDrafts((prev) => ({
+                                    ...prev,
+                                    [event.id]: checked === true,
+                                  }))
+                                }
+                                aria-label="Exhibition"
+                              />
+                              Exh
+                            </label>
+                            <Input
+                              className="h-8 w-36 text-xs"
+                              placeholder="Notes"
+                              value={notesDrafts[event.id] ?? ""}
+                              onChange={(e) =>
+                                setNotesDrafts((prev) => ({
+                                  ...prev,
+                                  [event.id]: e.target.value,
+                                }))
+                              }
+                              aria-label={`Notes for ${formatEventName(event.distance, event.stroke)}`}
+                            />
+                            <AddEntryButton
+                              disabled={
+                                pending || !membershipId || !limitCheck.ok
+                              }
+                              limitReason={
+                                !limitCheck.ok ? limitCheck.reason : undefined
+                              }
+                              pending={pendingAction === `add:${event.id}`}
+                              onClick={() => addEntry(event)}
+                            />
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              ) : null}
             </div>
           </>
         )}

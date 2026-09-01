@@ -10,6 +10,7 @@ import {
 import { formatTime as formatMs } from "@project-aqua/swim-core/times";
 import { parseDobFromUsaMemberId } from "../roster/utils";
 import type {
+  ParsedAthlete,
   ParsedEntry,
   ParsedEvent,
   ParsedMeet,
@@ -545,6 +546,7 @@ function flatten(state: ParseState): ParsedMeet {
   const entries: ParsedEntry[] = [];
   const results: ParsedResult[] = [];
   const relays: ParsedRelayEntry[] = [];
+  const individualMeetIds = new Set<number>();
 
   for (const entry of state.entries) {
     if (entry.relay) {
@@ -563,9 +565,10 @@ function flatten(state: ParseState): ParsedMeet {
       continue;
     }
 
-    const swimmer =
-      entry.meetId != null ? state.swimmers.get(entry.meetId) : undefined;
+    if (entry.meetId == null) continue;
+    const swimmer = state.swimmers.get(entry.meetId);
     if (!swimmer) continue;
+    individualMeetIds.add(entry.meetId);
     const swimmerName = swimmerDisplayName(swimmer);
 
     entries.push({
@@ -589,6 +592,22 @@ function flatten(state: ParseState): ParsedMeet {
     }
   }
 
+  const athletes: ParsedAthlete[] = [];
+  for (const swimmer of state.swimmers.values()) {
+    const name = swimmerDisplayName(swimmer);
+    if (!name) continue;
+    athletes.push({
+      name,
+      usaMemberId: swimmer.usaMemberId,
+      dateOfBirth: swimmer.dateOfBirth,
+      gender:
+        swimmer.gender === "male" || swimmer.gender === "female"
+          ? swimmer.gender
+          : undefined,
+      relayOnly: !individualMeetIds.has(swimmer.meetId),
+    });
+  }
+
   return {
     name: state.meet.name,
     startDate: state.meet.startDate,
@@ -603,6 +622,7 @@ function flatten(state: ParseState): ParsedMeet {
     entries,
     results,
     relays: relays.length > 0 ? relays : undefined,
+    athletes: athletes.length > 0 ? athletes : undefined,
   };
 }
 

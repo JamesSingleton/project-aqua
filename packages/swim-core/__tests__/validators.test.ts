@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   attendanceStatusSchema,
   createMeetSchema,
+  meetAttendanceStatusSchema,
   meetCommitmentStatusSchema,
   meetEntryRowSchema,
   meetEntryStatusSchema,
@@ -156,7 +157,10 @@ describe("other schemas", () => {
   it("parses status enums", () => {
     expect(attendanceStatusSchema.parse("present")).toBe("present");
     expect(rsvpStatusSchema.parse("attending")).toBe("attending");
-    expect(meetCommitmentStatusSchema.parse("committed")).toBe("committed");
+    expect(meetCommitmentStatusSchema.parse("not_going")).toBe("not_going");
+    expect(meetAttendanceStatusSchema.parse("not_eligible")).toBe(
+      "not_eligible",
+    );
     expect(meetEntryStatusSchema.parse("approved")).toBe("approved");
   });
 });

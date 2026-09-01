@@ -6,6 +6,7 @@ const publicRoutes = [
   "/accept-invite",
   "/2fa",
   "/forgot-password",
+  "/reset-password",
 ];
 
 export async function proxy(request: NextRequest) {
@@ -25,8 +26,9 @@ export async function proxy(request: NextRequest) {
     request.cookies.get("better-auth.session_token") ??
     request.cookies.get("__Secure-better-auth.session_token");
 
+  const sessionToken = sessionCookie?.value?.trim();
   const isPublic = publicRoutes.some((route) => pathname.startsWith(route));
-  const isAuthenticated = !!sessionCookie;
+  const isAuthenticated = Boolean(sessionToken);
 
   if (!isAuthenticated && !isPublic) {
     const signInUrl = new URL("/sign-in", request.url);
@@ -34,14 +36,8 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(signInUrl);
   }
 
-  if (isAuthenticated && (pathname === "/sign-in" || pathname === "/sign-up")) {
-    return NextResponse.redirect(new URL("/onboarding", request.url));
-  }
-
-  if (isAuthenticated && pathname === "/") {
-    return NextResponse.redirect(new URL("/onboarding", request.url));
-  }
-
+  // Do not redirect away from auth pages based on cookie presence alone.
+  // A stale session_token causes a loop with server pages that call getSession().
   return NextResponse.next();
 }
 

@@ -1243,3 +1243,135 @@ describe("exportMeetZip", () => {
     expect(eventsBundle.primary.format).toBe("ev3");
   });
 });
+
+describe("relay-only athletes and championship alternates", () => {
+  const meet: ParsedMeet = {
+    name: "Invitational",
+    course: "SCY",
+    startDate: "2026-01-15",
+    events: [
+      {
+        eventNumber: 1,
+        distance: 50,
+        stroke: "free",
+        gender: "female",
+        eventKey: "50_free_scy_f",
+      },
+      {
+        eventNumber: 14,
+        distance: 200,
+        stroke: "free_relay",
+        gender: "female",
+        eventKey: "200_free_relay_scy_f",
+      },
+    ],
+    entries: [
+      {
+        eventNumber: 1,
+        swimmerName: "Ada Lovelace",
+        seedTime: "28.50",
+        dateOfBirth: "2012-03-01",
+        gender: "female",
+        exhibition: true,
+      },
+    ],
+    results: [],
+    athletes: [
+      {
+        name: "Relay Only",
+        dateOfBirth: "2011-06-15",
+        gender: "female",
+        usaMemberId: "061511RELAYON",
+        relayOnly: true,
+      },
+    ],
+    relays: [
+      {
+        eventNumber: 14,
+        relayLetter: "A",
+        swimmerNames: [
+          "Ada Lovelace",
+          "Bea Anchor",
+          "Cate Three",
+          "Dee Four",
+          "Eve Alt5",
+          "Fay Alt6",
+          "Gia Alt7",
+          "Helen Alt8",
+        ],
+      },
+    ],
+  };
+
+  it("writes D1/D0 for relay-only roster athletes and round-trips HY3", () => {
+    const hy3 = exportHy3(meet);
+    expect(hy3).toContain("Relay");
+    expect(hy3).toContain("Only");
+    const parsed = parseHy3(hy3);
+    const relayOnly = parsed.athletes?.find((a) =>
+      a.name.includes("Relay Only"),
+    );
+    expect(relayOnly?.relayOnly).toBe(true);
+    expect(relayOnly?.dateOfBirth).toBe("2011-06-15");
+    expect(
+      parsed.athletes?.find((a) => a.name === "Ada Lovelace")?.relayOnly,
+    ).toBe(false);
+    expect(
+      parsed.entries.some((e) => e.swimmerName.includes("Relay Only")),
+    ).toBe(false);
+  });
+
+  it("exports eight F3 legs (four plus alternates) and round-trips", () => {
+    const parsed = parseHy3(exportHy3(meet));
+    expect(parsed.relays?.[0]?.swimmerNames).toHaveLength(8);
+    expect(parsed.relays?.[0]?.swimmerNames[4]).toContain("Eve");
+    expect(parsed.relays?.[0]?.swimmerNames[7]).toContain("Helen");
+  });
+
+  it("emits a CL2 D0 identity line for relay-only athletes", () => {
+    const cl2 = exportCl2(meet);
+    expect(cl2).toContain("Relay");
+    expect(cl2).toContain("Only");
+    expect(cl2).toContain("D0");
+  });
+
+  it("skips CL2 D0 for athletes already listed as entries and fills identity from the registry", () => {
+    const cl2 = exportCl2({
+      ...meet,
+      athletes: [{ name: "Ada Lovelace" }, { name: "Bare Roster" }],
+    });
+    const adaLines = cl2
+      .split("\n")
+      .filter((line) => line.startsWith("D0") && line.includes("Lovelace"));
+    expect(adaLines).toHaveLength(1);
+    expect(cl2).toContain("Bare");
+    expect(cl2).toContain("Roster");
+  });
+
+  it("round-trips A and B relay letters as separate F1 teams", () => {
+    const parsed = parseHy3(
+      exportHy3({
+        ...meet,
+        relays: [
+          {
+            eventNumber: 14,
+            relayLetter: "A",
+            swimmerNames: [
+              "Ada Lovelace",
+              "Bea Anchor",
+              "Cate Three",
+              "Dee Four",
+            ],
+          },
+          {
+            eventNumber: 14,
+            relayLetter: "B",
+            swimmerNames: ["Eve Alt5", "Fay Alt6", "Gia Alt7", "Helen Alt8"],
+          },
+        ],
+      }),
+    );
+    const letters = parsed.relays?.map((r) => r.relayLetter).sort();
+    expect(letters).toEqual(["A", "B"]);
+  });
+});

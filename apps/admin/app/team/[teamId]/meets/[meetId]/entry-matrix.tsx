@@ -1,6 +1,12 @@
 "use client";
 
 import {
+  canAddMeetEntry,
+  checkQualifyingTime,
+  isRelayStroke,
+  type MeetEntryLimits,
+} from "@project-aqua/swim-core/entry-limits";
+import {
   formatEventName,
   formatGenderShort,
 } from "@project-aqua/swim-core/events";
@@ -40,6 +46,8 @@ type MatrixEvent = {
   distance: number;
   stroke: string;
   gender: string;
+  eventKey?: string;
+  qualifyingTimeMs?: number | null;
 };
 
 type MatrixSwimmer = {
@@ -53,17 +61,20 @@ type MatrixEntry = {
   meetEventId: string;
   membershipId: string;
   status: string;
+  seedTimeMs?: number | null;
+  exhibition?: boolean;
 };
 
-type GroupBy = "swimmer" | "event";
+type GroupBy = "swimmer" | "event" | "errors";
 
 const GROUP_BY_OPTIONS: { value: GroupBy; label: string }[] = [
   { value: "swimmer", label: "Swimmer" },
   { value: "event", label: "Event" },
+  { value: "errors", label: "Validation" },
 ];
 
 function isGroupBy(value: string): value is GroupBy {
-  return value === "swimmer" || value === "event";
+  return value === "swimmer" || value === "event" || value === "errors";
 }
 
 function eventLabel(event: MatrixEvent) {
@@ -108,12 +119,14 @@ export function EntryMatrix({
   events,
   swimmers,
   entries,
+  limits,
 }: {
   teamId: string;
   meetId: string;
   events: MatrixEvent[];
   swimmers: MatrixSwimmer[];
   entries: MatrixEntry[];
+  limits?: MeetEntryLimits | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -179,6 +192,52 @@ export function EntryMatrix({
         .sort((a, b) => a.label.localeCompare(b.label));
     }
 
+    if (groupBy === "errors") {
+      const counts = new Map<string, { individual: number; relay: number }>();
+      for (const entry of activeEntries) {
+        const event = eventById.get(entry.meetEventId);
+        const current = counts.get(entry.membershipId) ?? {
+          individual: 0,
+          relay: 0,
+        };
+        if (isRelayStroke(event?.stroke ?? "", event?.eventKey)) {
+          current.relay += 1;
+        } else {
+          current.individual += 1;
+        }
+        counts.set(entry.membershipId, current);
+      }
+
+      const qtMiss: MatrixEntry[] = [];
+      const overLimit: MatrixEntry[] = [];
+      for (const entry of activeEntries) {
+        const event = eventById.get(entry.meetEventId);
+        const qt = checkQualifyingTime(
+          event?.qualifyingTimeMs,
+          entry.seedTimeMs,
+        );
+        if (!qt.ok) qtMiss.push(entry);
+        const current = counts.get(entry.membershipId) ?? {
+          individual: 0,
+          relay: 0,
+        };
+        const withoutThis = isRelayStroke(event?.stroke ?? "", event?.eventKey)
+          ? { individual: current.individual, relay: current.relay - 1 }
+          : { individual: current.individual - 1, relay: current.relay };
+        const check = canAddMeetEntry(
+          limits,
+          withoutThis,
+          isRelayStroke(event?.stroke ?? "", event?.eventKey),
+        );
+        if (!check.ok) overLimit.push(entry);
+      }
+
+      return [
+        { key: "qt", label: "Slower than QT", rows: qtMiss },
+        { key: "limit", label: "Over entry limit", rows: overLimit },
+      ].filter((group) => group.rows.length > 0);
+    }
+
     const byEvent = new Map<string, MatrixEntry[]>();
     for (const entry of activeEntries) {
       const list = byEvent.get(entry.meetEventId) ?? [];
@@ -204,7 +263,15 @@ export function EntryMatrix({
         };
       })
       .filter((group) => group.rows.length > 0);
-  }, [groupBy, swimmers, sortedEvents, activeEntries, eventById, swimmerById]);
+  }, [
+    groupBy,
+    swimmers,
+    sortedEvents,
+    activeEntries,
+    eventById,
+    swimmerById,
+    limits,
+  ]);
 
   function approveDrafts() {
     if (draftEntries.length === 0) return;
@@ -229,9 +296,10 @@ export function EntryMatrix({
     return null;
   }
 
-  const showEventColumn = groupBy === "swimmer";
-  const showSwimmerColumn = groupBy === "event";
-  const columnCount = 2;
+  const showEventColumn = groupBy !== "event";
+  const showSwimmerColumn = groupBy !== "swimmer";
+  const columnCount =
+    (showSwimmerColumn ? 1 : 0) + (showEventColumn ? 1 : 0) + 1;
 
   return (
     <Card className="min-w-0 overflow-hidden">
@@ -239,8 +307,8 @@ export function EntryMatrix({
         <div className="min-w-0">
           <CardTitle>Entries</CardTitle>
           <CardDescription>
-            Committed swimmers and their events. Group by swimmer or event;
-            approve drafts in bulk.
+            Swimmers with entries and their events. Group by swimmer, event, or
+            validation (QT warnings and entry-limit errors).
           </CardDescription>
         </div>
         <Button
@@ -289,7 +357,12 @@ export function EntryMatrix({
 
         {groupBy === "event" && activeEntries.length === 0 ? (
           <p className="text-muted-foreground text-sm">
-            No entries yet. Commit swimmers and add events from the board above.
+            No entries yet. Select a swimmer and add events from the board
+            above.
+          </p>
+        ) : groupBy === "errors" && groups.length === 0 ? (
+          <p className="text-muted-foreground text-sm">
+            No QT warnings or entry-limit errors on the current lineup.
           </p>
         ) : (
           <Table>

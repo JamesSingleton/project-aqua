@@ -18,7 +18,7 @@ export function NextCompetitionCard({
     name: string;
     startDate: Date;
     location: string | null;
-    committedCount: number;
+    athletesEntered: number;
   } | null;
 }) {
   const shellClassName =
@@ -65,14 +65,14 @@ export function NextCompetitionCard({
     days <= 0 ? "today" : days === 1 ? "day away" : "days away";
   const countdownValue = days <= 0 ? "0" : String(days);
   const athleteLabel =
-    meet.committedCount > 0
-      ? `${meet.committedCount} committed`
+    meet.athletesEntered > 0
+      ? `${meet.athletesEntered} with entries`
       : meet.location?.trim() || "Entries open";
 
   return (
     <div className={shellClassName} style={shellStyle}>
       <Link
-        href={`/team/${teamId}/meets/${meet.id}`}
+        href={`/team/${teamId}/meets/${meet.id}/entries`}
         className="relative flex items-center justify-between gap-4 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground/40"
       >
         <div className="flex min-w-0 flex-col gap-0.5">

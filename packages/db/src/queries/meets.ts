@@ -7,7 +7,7 @@ import {
   parseEventGender,
 } from "@project-aqua/swim-core/events";
 import type { CreateMeetInput } from "@project-aqua/swim-core/validators";
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { db } from "../client";
 import {
   type EntryLimitPackage,
@@ -18,6 +18,7 @@ import {
   meetRelayLegs,
   meetResults,
   meets,
+  organization,
   type SeedTimeSource,
   swimEvents,
   swimmerBestTimes,
@@ -124,6 +125,35 @@ export async function getMeets(
     .leftJoin(teamSeasons, eq(meets.seasonId, teamSeasons.id))
     .where(and(...conditions))
     .orderBy(desc(meets.startDate));
+}
+
+/** Upcoming meets for a coach who belongs to multiple teams. */
+export async function getUpcomingMeetsForOrganizations(
+  organizationIds: string[],
+  from: Date,
+  limit = 20,
+) {
+  if (organizationIds.length === 0) return [];
+
+  return db
+    .select({
+      id: meets.id,
+      organizationId: meets.organizationId,
+      teamName: organization.name,
+      name: meets.name,
+      startDate: meets.startDate,
+      location: meets.location,
+    })
+    .from(meets)
+    .innerJoin(organization, eq(meets.organizationId, organization.id))
+    .where(
+      and(
+        inArray(meets.organizationId, organizationIds),
+        gte(meets.startDate, from),
+      ),
+    )
+    .orderBy(asc(meets.startDate))
+    .limit(limit);
 }
 
 export async function getMeetById(meetId: string, organizationId: string) {
@@ -335,7 +365,7 @@ export async function addMeetEntry(
 export async function upsertMeetCommitment(
   meetId: string,
   membershipId: string,
-  status: "pending" | "committed" | "declined",
+  status: "pending" | "committed" | "declined" | "not_going" | "not_eligible",
   notes?: string,
 ) {
   const [existing] = await db
@@ -372,6 +402,20 @@ export async function upsertMeetCommitment(
   return id;
 }
 
+export async function deleteMeetCommitment(
+  meetId: string,
+  membershipId: string,
+) {
+  await db
+    .delete(meetCommitments)
+    .where(
+      and(
+        eq(meetCommitments.meetId, meetId),
+        eq(meetCommitments.membershipId, membershipId),
+      ),
+    );
+}
+
 export async function getMeetCommitments(meetId: string) {
   return db
     .select({
@@ -392,21 +436,17 @@ export async function getMeetCommitments(meetId: string) {
     .where(eq(meetCommitments.meetId, meetId));
 }
 
-/** Batch commitment counts for dashboard meet cards. */
+/** Batch exclusion counts for dashboard meet cards. */
 export async function getMeetCommitmentCounts(meetIds: string[]) {
   if (meetIds.length === 0) {
-    return new Map<
-      string,
-      { committed: number; pending: number; declined: number }
-    >();
+    return new Map<string, { notGoing: number; notEligible: number }>();
   }
 
   const rows = await db
     .select({
       meetId: meetCommitments.meetId,
-      committed: sql<number>`count(*) filter (where ${meetCommitments.status} = 'committed')::int`,
-      pending: sql<number>`count(*) filter (where ${meetCommitments.status} = 'pending')::int`,
-      declined: sql<number>`count(*) filter (where ${meetCommitments.status} = 'declined')::int`,
+      notGoing: sql<number>`count(*) filter (where ${meetCommitments.status} = 'not_going')::int`,
+      notEligible: sql<number>`count(*) filter (where ${meetCommitments.status} = 'not_eligible')::int`,
     })
     .from(meetCommitments)
     .where(inArray(meetCommitments.meetId, meetIds))
@@ -416,9 +456,8 @@ export async function getMeetCommitmentCounts(meetIds: string[]) {
     rows.map((row) => [
       row.meetId,
       {
-        committed: Number(row.committed ?? 0),
-        pending: Number(row.pending ?? 0),
-        declined: Number(row.declined ?? 0),
+        notGoing: Number(row.notGoing ?? 0),
+        notEligible: Number(row.notEligible ?? 0),
       },
     ]),
   );
@@ -460,6 +499,8 @@ export async function getMeetEntriesDetailed(meetId: string) {
       seedTimeMs: meetEntries.seedTimeMs,
       entryNotes: meetEntries.entryNotes,
       status: meetEntries.status,
+      seedTimeSource: meetEntries.seedTimeSource,
+      exhibition: meetEntries.exhibition,
       eventNumber: meetEvents.eventNumber,
       distance: meetEvents.distance,
       stroke: meetEvents.stroke,
@@ -477,6 +518,31 @@ export async function getMeetEntriesDetailed(meetId: string) {
     )
     .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
     .where(eq(meetEntries.meetId, meetId));
+}
+
+export async function updateMeetEntry(
+  entryId: string,
+  data: {
+    seedTimeMs?: number | null;
+    seedTimeSource?: SeedTimeSource;
+    entryNotes?: string | null;
+    exhibition?: boolean;
+    status?: "draft" | "approved" | "scratched";
+  },
+) {
+  await db
+    .update(meetEntries)
+    .set({
+      ...(data.seedTimeMs !== undefined ? { seedTimeMs: data.seedTimeMs } : {}),
+      ...(data.seedTimeSource !== undefined
+        ? { seedTimeSource: data.seedTimeSource }
+        : {}),
+      ...(data.entryNotes !== undefined ? { entryNotes: data.entryNotes } : {}),
+      ...(data.exhibition !== undefined ? { exhibition: data.exhibition } : {}),
+      ...(data.status !== undefined ? { status: data.status } : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(meetEntries.id, entryId));
 }
 
 export async function updateMeetEntryStatus(
@@ -563,7 +629,7 @@ export async function addMeetResult(
     dqCode: options?.dqCode ?? null,
   });
 
-  if (event && !options?.isDq) {
+  if (event && !options?.isDq && !options?.exhibition) {
     await upsertBestTime({
       swimmerId,
       eventKey: event.eventKey,
@@ -658,6 +724,7 @@ export async function replaceMeetRelayLegs(input: {
     legOrder: number;
     stroke?: string;
     reasoning?: string;
+    relayLetter?: string;
   }>;
 }) {
   await db
@@ -674,6 +741,7 @@ export async function replaceMeetRelayLegs(input: {
       id: generateId(),
       meetId: input.meetId,
       meetEventId: input.meetEventId,
+      relayLetter: (leg.relayLetter ?? "A").trim().toUpperCase() || "A",
       legOrder: leg.legOrder,
       membershipId: leg.membershipId,
       stroke: leg.stroke ?? null,
@@ -687,5 +755,98 @@ export async function getMeetRelayLegs(meetId: string) {
     .select()
     .from(meetRelayLegs)
     .where(eq(meetRelayLegs.meetId, meetId))
-    .orderBy(asc(meetRelayLegs.legOrder));
+    .orderBy(asc(meetRelayLegs.relayLetter), asc(meetRelayLegs.legOrder));
+}
+
+export async function getMeetRelayLegsDetailed(meetId: string) {
+  return db
+    .select({
+      meetEventId: meetRelayLegs.meetEventId,
+      relayLetter: meetRelayLegs.relayLetter,
+      legOrder: meetRelayLegs.legOrder,
+      membershipId: meetRelayLegs.membershipId,
+      firstName: swimmers.firstName,
+      lastName: swimmers.lastName,
+    })
+    .from(meetRelayLegs)
+    .innerJoin(
+      teamSwimmerMemberships,
+      eq(meetRelayLegs.membershipId, teamSwimmerMemberships.id),
+    )
+    .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
+    .where(eq(meetRelayLegs.meetId, meetId))
+    .orderBy(asc(meetRelayLegs.relayLetter), asc(meetRelayLegs.legOrder));
+}
+
+export async function getMeetEventById(eventId: string, meetId: string) {
+  const [event] = await db
+    .select()
+    .from(meetEvents)
+    .where(and(eq(meetEvents.id, eventId), eq(meetEvents.meetId, meetId)))
+    .limit(1);
+  return event ?? null;
+}
+
+export async function countMeetEntriesForEvent(meetEventId: string) {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(meetEntries)
+    .where(eq(meetEntries.meetEventId, meetEventId));
+  return row?.count ?? 0;
+}
+
+export async function suggestMeetEventNumber(meetId: string): Promise<number> {
+  const events = await getMeetEvents(meetId);
+  const numbers = events
+    .map((event) => event.eventNumber)
+    .filter((n): n is number => n != null);
+  if (numbers.length === 0) return 1;
+  return Math.max(...numbers) + 1;
+}
+
+export async function updateMeetEvent(
+  eventId: string,
+  meetId: string,
+  data: {
+    eventNumber?: number | null;
+    stroke?: string;
+    distance?: number;
+    gender?: string;
+    ageGroup?: string | null;
+    eventKey?: string;
+    qualifyingTimeMs?: number | null;
+  },
+) {
+  const patch: Record<string, unknown> = { ...data };
+  if (data.gender) {
+    patch.gender = parseEventGender(data.gender);
+  }
+  await db
+    .update(meetEvents)
+    .set(patch)
+    .where(and(eq(meetEvents.id, eventId), eq(meetEvents.meetId, meetId)));
+}
+
+export async function deleteMeetEvent(eventId: string, meetId: string) {
+  await db
+    .delete(meetEvents)
+    .where(and(eq(meetEvents.id, eventId), eq(meetEvents.meetId, meetId)));
+}
+
+export async function deleteMeetEntriesForEvent(meetEventId: string) {
+  await db.delete(meetEntries).where(eq(meetEntries.meetEventId, meetEventId));
+}
+
+export async function deleteMeetRelayLegsForEvent(
+  meetId: string,
+  meetEventId: string,
+) {
+  await db
+    .delete(meetRelayLegs)
+    .where(
+      and(
+        eq(meetRelayLegs.meetId, meetId),
+        eq(meetRelayLegs.meetEventId, meetEventId),
+      ),
+    );
 }

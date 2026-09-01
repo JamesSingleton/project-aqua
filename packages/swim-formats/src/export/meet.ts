@@ -386,6 +386,13 @@ export function exportHy3(meet: ParsedMeet): string {
   for (const relay of meet.relays ?? []) {
     for (const name of relay.swimmerNames) registerSwimmer(name, {});
   }
+  for (const athlete of meet.athletes ?? []) {
+    registerSwimmer(athlete.name, {
+      usaMemberId: athlete.usaMemberId,
+      dateOfBirth: athlete.dateOfBirth,
+      gender: athlete.gender,
+    });
+  }
 
   const resultsByKey = new Map<string, ParsedResult[]>();
   for (const result of meet.results) {
@@ -623,6 +630,9 @@ export function exportCl2(meet: ParsedMeet): string {
   for (const result of meet.results) {
     noteIdentity(result.swimmerName, result);
   }
+  for (const athlete of meet.athletes ?? []) {
+    noteIdentity(athlete.name, athlete);
+  }
 
   // D0 lines: real entries, plus a bare identity line for any result-only
   // swimmer so `identityByName` in the parser can attach DOB/gender to G0s.
@@ -666,6 +676,18 @@ export function exportCl2(meet: ParsedMeet): string {
     lines.push(
       cl2NameLine("D0", result.swimmerName, `${usa}${dob}${eventToken}`),
     );
+  }
+  for (const athlete of meet.athletes ?? []) {
+    const key = athlete.name.trim().toLowerCase();
+    if (entrySwimmerKeys.has(key)) continue;
+    entrySwimmerKeys.add(key);
+    const identity = identityByName.get(key);
+    const usa = cl2Field(athlete.usaMemberId ?? identity?.usaMemberId, 14);
+    const dob = cl2IdentityToken(
+      athlete.dateOfBirth ?? identity?.dateOfBirth,
+      athlete.gender ?? identity?.gender,
+    );
+    lines.push(cl2NameLine("D0", athlete.name, `${usa}${dob}`));
   }
 
   for (const result of meet.results) {

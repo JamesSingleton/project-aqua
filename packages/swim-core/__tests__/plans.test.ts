@@ -11,7 +11,11 @@ describe("planHasFeature", () => {
   it("returns feature flags per tier", () => {
     expect(planHasFeature("free", "meet_import")).toBe(true);
     expect(planHasFeature("free", "progression")).toBe(true);
-    expect(planHasFeature("free", "swims_sync")).toBe(false);
+    expect(planHasFeature("free", "swims_sync")).toBe(true);
+    expect(planHasFeature("free", "lineup_suggestions")).toBe(false);
+    expect(planHasFeature("free", "advanced_analytics")).toBe(false);
+    expect(planHasFeature("pro", "lineup_suggestions")).toBe(true);
+    expect(planHasFeature("pro", "advanced_analytics")).toBe(true);
     expect(planHasFeature("enterprise", "swims_sync")).toBe(true);
   });
 
@@ -22,7 +26,8 @@ describe("planHasFeature", () => {
 
 describe("getPlanLimits", () => {
   it("returns limits for each tier", () => {
-    expect(getPlanLimits("pro").maxSwimmers).toBe(150);
+    expect(getPlanLimits("free").maxSwimmers).toBe(Number.POSITIVE_INFINITY);
+    expect(getPlanLimits("pro").maxSwimmers).toBe(Number.POSITIVE_INFINITY);
     expect(getPlanLimits("enterprise").maxCoaches).toBe(
       Number.POSITIVE_INFINITY,
     );
@@ -55,7 +60,7 @@ describe("canUseAiGeneration", () => {
     expect(canUseAiGeneration("free", 5)).toEqual({
       allowed: false,
       remaining: 0,
-      reason: expect.stringContaining("Free plan AI generations"),
+      reason: expect.stringContaining("relay suggestions"),
     });
   });
 });

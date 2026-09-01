@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
     setError("");
     const result = await requestPasswordReset({
       email: values.email,
-      redirectTo: "/sign-in",
+      redirectTo: "/reset-password",
     });
     if (result.error) {
       setError(result.error.message ?? "Could not send reset email");
@@ -54,8 +54,12 @@ export default function ForgotPasswordPage() {
     <AuthShell>
       <form
         className="flex flex-col gap-6"
+        method="post"
         noValidate
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={(event) => {
+          event.preventDefault();
+          void handleSubmit(onSubmit)(event);
+        }}
       >
         <FieldGroup>
           <div className="flex flex-col items-center gap-1 text-center">

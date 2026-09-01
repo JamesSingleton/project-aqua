@@ -3,6 +3,7 @@ import {
   advanceAcademicStanding,
   advanceClassYear,
   advanceSeasonsOfCompetitionUsed,
+  blocksMeetEntries,
   formatBestTimeEventLabel,
   formatEventGenderLabel,
   parseAcademicStanding,
@@ -21,12 +22,14 @@ describe("team compliance helpers", () => {
     expect(requiresSafeSportCompliance("club")).toBe(true);
     expect(requiresSafeSportCompliance("national")).toBe(true);
     expect(requiresSafeSportCompliance("high_school")).toBe(false);
+    expect(requiresSafeSportCompliance("summer")).toBe(false);
     expect(requiresSafeSportCompliance(null)).toBe(true);
   });
 
   it("supportsUsaSwimmingIntegration mirrors SafeSport", () => {
     expect(supportsUsaSwimmingIntegration("club")).toBe(true);
     expect(supportsUsaSwimmingIntegration("college")).toBe(false);
+    expect(supportsUsaSwimmingIntegration("summer")).toBe(false);
   });
 
   it("supportsClassYear for high school only", () => {
@@ -43,6 +46,7 @@ describe("team compliance helpers", () => {
 describe("parsers", () => {
   it("parseTeamType defaults to club", () => {
     expect(parseTeamType("college")).toBe("college");
+    expect(parseTeamType("summer")).toBe("summer");
     expect(parseTeamType("unknown")).toBe("club");
   });
 
@@ -62,6 +66,13 @@ describe("parsers", () => {
     expect(parseEligibilityStatus(" Redshirt ")).toBe("redshirt");
     expect(parseEligibilityStatus("bad")).toBeNull();
     expect(parseEligibilityStatus(42)).toBeNull();
+  });
+
+  it("blocksMeetEntries only for ineligible", () => {
+    expect(blocksMeetEntries("ineligible")).toBe(true);
+    expect(blocksMeetEntries("competing")).toBe(false);
+    expect(blocksMeetEntries("redshirt")).toBe(false);
+    expect(blocksMeetEntries(null)).toBe(false);
   });
 });
 
@@ -90,6 +101,7 @@ describe("advance helpers", () => {
 describe("labels", () => {
   it("teamTypeLabel", () => {
     expect(teamTypeLabel("college")).toBe("College");
+    expect(teamTypeLabel("summer")).toBe("Summer league");
     expect(teamTypeLabel("unknown")).toBe("USA Swimming Club");
     expect(teamTypeLabel(null)).toBe("USA Swimming Club");
   });
@@ -102,6 +114,7 @@ describe("labels", () => {
     expect(formatEventGenderLabel("male", "college")).toBe("Men");
     expect(formatEventGenderLabel("female", "high_school")).toBe("Girls");
     expect(formatEventGenderLabel("male", "club")).toBe("Boys");
+    expect(formatEventGenderLabel("female", "summer")).toBe("Girls");
     expect(formatEventGenderLabel("f", "national")).toBe("Women");
     expect(formatEventGenderLabel("g", "club")).toBe("Girls");
   });

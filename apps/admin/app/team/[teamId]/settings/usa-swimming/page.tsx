@@ -50,6 +50,7 @@ export default async function UsaSwimmingPage({
         <p className="text-muted-foreground max-w-2xl text-sm text-pretty">
           SWIMS club sync is for USA Swimming member clubs. High school teams
           usually are not USA Swimming members and do not need this integration.
+          Summer league teams skip SWIMS and SafeSport as well.
         </p>
       </SettingsSection>
     );

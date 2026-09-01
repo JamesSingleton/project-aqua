@@ -1,6 +1,8 @@
+import { getAiQuotaStatus } from "@project-aqua/db/queries/ai-quota";
 import { getWorkoutById } from "@project-aqua/db/queries/workouts";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { toSharedDraftQuota } from "@/lib/draft-quota";
 import { getWorkoutAction } from "../../actions";
 import { WorkoutEditor } from "../../workout-editor";
 
@@ -23,8 +25,12 @@ export default async function EditWorkoutPage({
   params: Promise<{ teamId: string; workoutId: string }>;
 }) {
   const { teamId, workoutId } = await params;
-  const workout = await getWorkoutAction(teamId, workoutId);
+  const [workout, draftQuotaStatus] = await Promise.all([
+    getWorkoutAction(teamId, workoutId),
+    getAiQuotaStatus(teamId),
+  ]);
   if (!workout) notFound();
+  const draftQuota = toSharedDraftQuota(draftQuotaStatus);
 
   return (
     <div className="space-y-6">
@@ -36,6 +42,7 @@ export default async function EditWorkoutPage({
         initialRawText={workout.rawText}
         initialPracticeGroup={workout.practiceGroup ?? ""}
         initialDistanceUnit={workout.distanceUnit}
+        draftQuota={draftQuota}
       />
     </div>
   );

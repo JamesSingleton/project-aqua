@@ -8,7 +8,13 @@ import {
   getAttendanceSeries,
   getVolumeSeries,
 } from "@project-aqua/db/queries/analytics";
+import { getTeamPlan } from "@project-aqua/db/queries/billing";
 import { getTeamBestTimes } from "@project-aqua/db/queries/progression";
+import {
+  getTimeStandardCuts,
+  listTimeStandardSets,
+} from "@project-aqua/db/queries/time-standards";
+import { planHasFeature } from "@project-aqua/swim-core/plans";
 import { formatBestTimeEventLabel } from "@project-aqua/swim-core/team-types";
 import {
   Card,
@@ -21,6 +27,7 @@ import type { Metadata } from "next";
 import { AttendanceChart, VolumeChart } from "@/components/analytics-charts";
 import { PageHeader, TimingBoard } from "@/components/page-header";
 import { TeamTopTimes } from "@/components/team-top-times";
+import { CutTrackerCard, type CutTrackerRow } from "./cut-tracker-card";
 
 export async function generateMetadata({
   params,
@@ -44,14 +51,31 @@ export default async function AnalyticsPage({
   const session = await getSession();
   await requireTeamMember(session?.user?.id, teamId);
 
-  const [summary, volumeSeriesResult, attendanceSeries, bestTimes, teamType] =
-    await Promise.all([
-      getAnalyticsSummary(teamId),
-      getVolumeSeries(teamId, 30),
-      getAttendanceSeries(teamId, 30),
-      getTeamBestTimes(teamId),
-      getOrganizationTeamType(teamId),
-    ]);
+  const [
+    summary,
+    volumeSeriesResult,
+    attendanceSeries,
+    bestTimes,
+    teamType,
+    plan,
+    sets,
+  ] = await Promise.all([
+    getAnalyticsSummary(teamId),
+    getVolumeSeries(teamId, 30),
+    getAttendanceSeries(teamId, 30),
+    getTeamBestTimes(teamId),
+    getOrganizationTeamType(teamId),
+    getTeamPlan(teamId),
+    listTimeStandardSets(teamId),
+  ]);
+  const advancedAnalytics = planHasFeature(plan, "advanced_analytics");
+  const cuts = advancedAnalytics
+    ? (
+        await Promise.all(sets.map((set) => getTimeStandardCuts(set.id)))
+      ).flatMap((list, i) =>
+        list.map((cut) => ({ ...cut, setName: sets[i]!.name })),
+      )
+    : [];
 
   const volumeSeries = volumeSeriesResult.series;
   const volumeUnit = volumeSeriesResult.distanceUnit;
@@ -76,6 +100,37 @@ export default async function AnalyticsPage({
     timeMs: bt.timeMs,
     achievedAt: bt.achievedAt.toISOString(),
   }));
+
+  const cutRows: CutTrackerRow[] = [];
+  if (advancedAnalytics) {
+    for (const bt of bestTimes) {
+      for (const cut of cuts) {
+        if (cut.eventKey !== bt.eventKey) continue;
+        if (
+          cut.gender !== "mixed" &&
+          bt.eventGender &&
+          cut.gender !== bt.eventGender
+        ) {
+          continue;
+        }
+        if (bt.timeMs <= 0 || cut.timeMs <= 0 || bt.timeMs > cut.timeMs) {
+          continue;
+        }
+        cutRows.push({
+          swimmerName: `${bt.firstName} ${bt.lastName}`,
+          eventLabel: formatBestTimeEventLabel(
+            bt.eventLabel,
+            bt.course,
+            bt.eventGender,
+            teamType,
+          ),
+          timeMs: bt.timeMs,
+          cutTimeMs: cut.timeMs,
+          setName: cut.setName,
+        });
+      }
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -146,6 +201,12 @@ export default async function AnalyticsPage({
           <TeamTopTimes times={allTimes} teamId={teamId} />
         </CardContent>
       </Card>
+
+      <CutTrackerCard
+        teamId={teamId}
+        rows={cutRows}
+        available={advancedAnalytics}
+      />
     </div>
   );
 }

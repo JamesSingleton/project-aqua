@@ -24,6 +24,7 @@
     "@project-aqua/emails": "workspace:*",
     "@project-aqua/swim-core": "workspace:*",
     "better-auth": "catalog:",
+    "@better-auth/drizzle-adapter": "catalog:",
     "drizzle-orm": "catalog:"
   },
   "peerDependencies": {

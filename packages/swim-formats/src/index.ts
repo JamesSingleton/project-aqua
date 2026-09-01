@@ -1,6 +1,11 @@
 export { type Cl2FileKind, detectCl2FileKind } from "./cl2/kind";
 export { parseCl2Meet } from "./cl2/parser";
-export { exportRosterCsv, parseRosterCsv } from "./csv/parser";
+export {
+  exportRosterCsv,
+  type ParsedTimesCsvRow,
+  parseRosterCsv,
+  parseTimesCsv,
+} from "./csv/parser";
 export {
   type Ev3ParseOptions,
   parseEv3,

@@ -161,6 +161,9 @@ export function MeetImportButton({
   const [athleteMaps, setAthleteMaps] = useState<
     Record<string, AthleteMapAction>
   >({});
+  const [eventConflictResolutions, setEventConflictResolutions] = useState<
+    Record<number, "keep_manual" | "use_import">
+  >({});
 
   function resetFlow() {
     void setImportStep("upload");
@@ -173,6 +176,7 @@ export function MeetImportButton({
     setResultMeetId(null);
     setAddNewAthletes(false);
     setAthleteMaps({});
+    setEventConflictResolutions({});
   }
 
   useEffect(() => {
@@ -252,7 +256,19 @@ export function MeetImportButton({
         encoding: d.encoding,
       }));
 
-      const parsed = await parseMeetFilePreviewAction(teamId, payloads);
+      const previewMeetId =
+        target !== "auto" && target !== "new" ? target : defaultMeetId;
+      const parsed = await parseMeetFilePreviewAction(
+        teamId,
+        payloads,
+        previewMeetId ? { meetId: previewMeetId } : undefined,
+      );
+
+      const conflictDefaults: Record<number, "keep_manual" | "use_import"> = {};
+      for (const conflict of parsed.eventConflicts ?? []) {
+        conflictDefaults[conflict.eventNumber] = "keep_manual";
+      }
+      setEventConflictResolutions(conflictDefaults);
 
       const namesLabel = decoded.map((d) => d.filename).join(" + ");
       const totalSize = decoded.reduce((sum, d) => sum + d.size, 0);
@@ -306,6 +322,7 @@ export function MeetImportButton({
         ...options,
         athleteMaps,
         addNewAthletes,
+        eventConflictResolutions,
         review: {
           name: review.name,
           startDate: review.startDate || undefined,
@@ -562,6 +579,70 @@ export function MeetImportButton({
                     support is planned.
                   </AlertDescription>
                 </Alert>
+              ) : null}
+
+              {preview.eventConflicts && preview.eventConflicts.length > 0 ? (
+                <div className="space-y-3 rounded-lg border p-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Event conflicts</p>
+                    <p className="text-muted-foreground text-sm">
+                      These event numbers already exist on the meet with
+                      different strokes. Choose which version to keep.
+                    </p>
+                  </div>
+                  <div className="max-h-64 space-y-2 overflow-y-auto">
+                    {preview.eventConflicts.map((conflict) => (
+                      <div
+                        key={conflict.eventNumber}
+                        className="grid gap-2 border-b border-border/60 py-2 last:border-0 sm:grid-cols-[1fr_minmax(12rem,16rem)] sm:items-center"
+                      >
+                        <div className="min-w-0 text-sm">
+                          <p className="font-medium">
+                            Event #{conflict.eventNumber}
+                          </p>
+                          <p className="text-muted-foreground">
+                            Manual: {conflict.manual.distance}{" "}
+                            {conflict.manual.stroke} ({conflict.manual.gender})
+                          </p>
+                          <p className="text-muted-foreground">
+                            Import: {conflict.imported.distance}{" "}
+                            {conflict.imported.stroke} (
+                            {conflict.imported.gender})
+                          </p>
+                        </div>
+                        <Select
+                          value={
+                            eventConflictResolutions[conflict.eventNumber] ??
+                            "keep_manual"
+                          }
+                          onValueChange={(value) => {
+                            if (!value) return;
+                            setEventConflictResolutions((current) => ({
+                              ...current,
+                              [conflict.eventNumber]: value as
+                                | "keep_manual"
+                                | "use_import",
+                            }));
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              <SelectItem value="keep_manual">
+                                Keep manual event
+                              </SelectItem>
+                              <SelectItem value="use_import">
+                                Use imported event
+                              </SelectItem>
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               ) : null}
 
               {preview.athleteMatch &&

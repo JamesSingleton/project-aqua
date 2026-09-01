@@ -2,6 +2,7 @@ import { getSession } from "@project-aqua/auth/session";
 import {
   getMember,
   getOrganizationTeamType,
+  getUserTeams,
   hasCurrentSafeSportTraining,
 } from "@project-aqua/db/authz";
 import { db } from "@project-aqua/db/client";
@@ -12,9 +13,9 @@ import {
 } from "@project-aqua/db/queries/analytics";
 import { getTeamCalendarProjection } from "@project-aqua/db/queries/calendar";
 import {
-  getMeetCommitmentCounts,
   getMeetEntryProgressCounts,
   getMeets,
+  getUpcomingMeetsForOrganizations,
 } from "@project-aqua/db/queries/meets";
 import { getTeamBestTimesInRange } from "@project-aqua/db/queries/progression";
 import {
@@ -213,6 +214,7 @@ export default async function TeamDashboardPage({
     seasonBestTimes,
     teamType,
     org,
+    otherTeamMeets,
   ] = await Promise.all([
     getRosterStats(teamId),
     getAnalyticsSummary(teamId),
@@ -233,6 +235,12 @@ export default async function TeamDashboardPage({
       .where(eq(organization.id, teamId))
       .limit(1)
       .then((rows) => rows[0] ?? null),
+    session?.user?.id
+      ? getUserTeams(session.user.id).then((teams) => {
+          const ids = teams.filter((t) => t.id !== teamId).map((t) => t.id);
+          return getUpcomingMeetsForOrganizations(ids, calendarFrom, 6);
+        })
+      : Promise.resolve([]),
   ]);
 
   const volumeSeries = volumeSeriesResult.series;
@@ -249,21 +257,17 @@ export default async function TeamDashboardPage({
   const safeSportRequired = requiresSafeSportCompliance(teamType);
   const showUsaSwimming = supportsUsaSwimmingIntegration(teamType);
 
-  const [
-    commitmentCounts,
-    entryProgressCounts,
-    compliance,
-    member,
-    swimsSummary,
-  ] = await Promise.all([
-    getMeetCommitmentCounts(upcomingMeets.map((m) => m.id)),
-    getMeetEntryProgressCounts(upcomingMeets.map((m) => m.id)),
-    safeSportRequired ? getComplianceSummary(teamId) : Promise.resolve(null),
-    safeSportRequired && session?.user?.id
-      ? getMember(session.user.id, teamId)
-      : Promise.resolve(null),
-    showUsaSwimming ? getSwimsDashboardSummary(teamId) : Promise.resolve(null),
-  ]);
+  const [entryProgressCounts, compliance, member, swimsSummary] =
+    await Promise.all([
+      getMeetEntryProgressCounts(upcomingMeets.map((m) => m.id)),
+      safeSportRequired ? getComplianceSummary(teamId) : Promise.resolve(null),
+      safeSportRequired && session?.user?.id
+        ? getMember(session.user.id, teamId)
+        : Promise.resolve(null),
+      showUsaSwimming
+        ? getSwimsDashboardSummary(teamId)
+        : Promise.resolve(null),
+    ]);
 
   const safeSportCurrent =
     !safeSportRequired || !member
@@ -499,6 +503,34 @@ export default async function TeamDashboardPage({
         />
       </div>
 
+      {otherTeamMeets.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Other teams</CardTitle>
+            <CardDescription>
+              Upcoming meets on workspaces besides this one
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-1">
+            {otherTeamMeets.map((meet) => (
+              <DashboardListRow
+                key={meet.id}
+                href={`/team/${meet.organizationId}/meets/${meet.id}`}
+                title={meet.name}
+                meta={`${meet.teamName} · ${meet.startDate.toLocaleDateString(
+                  undefined,
+                  {
+                    month: "short",
+                    day: "numeric",
+                    timeZone: "UTC",
+                  },
+                )}`}
+              />
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="grid items-stretch gap-4 lg:grid-cols-3">
         <RecentBestTimesCard
           teamId={teamId}
@@ -518,8 +550,9 @@ export default async function TeamDashboardPage({
                     name: upcomingMeets[0].name,
                     startDate: upcomingMeets[0].startDate,
                     location: upcomingMeets[0].location,
-                    committedCount:
-                      commitmentCounts.get(upcomingMeets[0].id)?.committed ?? 0,
+                    athletesEntered:
+                      entryProgressCounts.get(upcomingMeets[0].id)
+                        ?.athletesEntered ?? 0,
                   }
                 : null
             }
@@ -534,7 +567,6 @@ export default async function TeamDashboardPage({
                 name: meet.name,
                 entryDeadline: meet.entryDeadline,
                 startDate: meet.startDate,
-                committedCount: commitmentCounts.get(meet.id)?.committed ?? 0,
                 athletesEntered: progress?.athletesEntered ?? 0,
                 entryCount: progress?.entryCount ?? 0,
               };

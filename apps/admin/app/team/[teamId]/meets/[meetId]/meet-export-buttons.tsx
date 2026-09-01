@@ -10,14 +10,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@project-aqua/ui/components/dropdown-menu";
-import { ChevronDown, Download } from "lucide-react";
+import { ChevronDown, Download, Printer } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { exportMeetAction, exportMeetZipAction } from "../actions";
+import { exportMeetEntriesCsvAction } from "../meet-events-actions";
 
 type TextFormat = "sdif" | "hy3" | "cl2" | "ev3" | "hyv";
+type CsvFormat = "entry_list" | "by_event";
 type ZipKind = "entries" | "results" | "events";
 type ExportJob =
   | { kind: "text"; format: TextFormat }
+  | { kind: "csv"; format: CsvFormat }
   | { kind: "zip"; zip: ZipKind };
 
 const TEXT_FORMAT_META: Record<
@@ -38,7 +42,9 @@ const ZIP_KIND_META: Record<ZipKind, { label: string }> = {
 };
 
 function jobKey(job: ExportJob): string {
-  return job.kind === "text" ? `text:${job.format}` : `zip:${job.zip}`;
+  if (job.kind === "text") return `text:${job.format}`;
+  if (job.kind === "csv") return `csv:${job.format}`;
+  return `zip:${job.zip}`;
 }
 
 function base64ToBytes(base64: string): Uint8Array {
@@ -81,6 +87,17 @@ export function MeetExportButtons({
           new Blob([content], { type: "text/plain" }),
           `${baseName}.${extension}`,
         );
+      } else if (job.kind === "csv") {
+        const content = await exportMeetEntriesCsvAction(
+          teamId,
+          meetId,
+          job.format,
+        );
+        const suffix = job.format === "by_event" ? "by_event" : "entries";
+        downloadBlob(
+          new Blob([content], { type: "text/csv;charset=utf-8" }),
+          `${baseName}_${suffix}.csv`,
+        );
       } else {
         const base64 = await exportMeetZipAction(teamId, meetId, job.zip);
         downloadBlob(
@@ -104,6 +121,15 @@ export function MeetExportButtons({
       <Button
         variant="outline"
         size="sm"
+        nativeButton={false}
+        render={<Link href={`/team/${teamId}/meets/${meetId}/report`} />}
+      >
+        <Printer data-icon="inline-start" />
+        Entry report
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
         disabled={busy}
         onClick={() => runJob({ kind: "text", format: "hy3" })}
       >
@@ -120,6 +146,26 @@ export function MeetExportButtons({
         {loading === jobKey({ kind: "text", format: "sdif" })
           ? "Exporting…"
           : TEXT_FORMAT_META.sdif.label}
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={busy}
+        onClick={() => runJob({ kind: "csv", format: "entry_list" })}
+      >
+        {loading === jobKey({ kind: "csv", format: "entry_list" })
+          ? "Exporting…"
+          : "Entries CSV"}
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={busy}
+        onClick={() => runJob({ kind: "csv", format: "by_event" })}
+      >
+        {loading === jobKey({ kind: "csv", format: "by_event" })
+          ? "Exporting…"
+          : "By event CSV"}
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger

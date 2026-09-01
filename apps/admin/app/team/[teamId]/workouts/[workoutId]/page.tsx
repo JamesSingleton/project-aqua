@@ -42,7 +42,6 @@ export default async function WorkoutDetailPage({
             {workout.totalDistance ?? 0}
             {workout.distanceUnit ? ` ${workout.distanceUnit}` : ""} total ·{" "}
             {workout.sets.length} sets
-            {workout.wasAiGenerated ? " · AI-assisted" : ""}
           </p>
         </div>
         <Button

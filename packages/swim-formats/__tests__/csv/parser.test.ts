@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { exportRosterCsv, parseRosterCsv } from "../../src/csv/parser";
+import {
+  exportRosterCsv,
+  parseRosterCsv,
+  parseTimesCsv,
+} from "../../src/csv/parser";
 import type { ParsedRosterRow } from "../../src/types";
 
 describe("parseRosterCsv", () => {
@@ -122,5 +126,41 @@ describe("exportRosterCsv", () => {
       },
     ];
     expect(exportRosterCsv(rows, "|").split("|")[0]).toBe("first_name");
+  });
+});
+
+describe("parseTimesCsv", () => {
+  it("returns empty for header-only or blank input", () => {
+    expect(parseTimesCsv("first_name,last_name,event_key,time\n")).toEqual([]);
+    expect(parseTimesCsv("")).toEqual([]);
+  });
+
+  it("parses times and skips incomplete rows", () => {
+    const csv = [
+      "first_name,last_name,event_key,time,course,achieved_on",
+      "Ada,Lovelace,100_free_scy_f,1:02.34,SCY,2025-09-01",
+      "Bob,Smith,50_free_scy_m,28.50,,",
+      "Ghost,,100_free_scy_m,,",
+      " , ,50_back_scy_m,30.00,,",
+    ].join("\n");
+
+    const rows = parseTimesCsv(csv);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toEqual({
+      firstName: "Ada",
+      lastName: "Lovelace",
+      eventKey: "100_free_scy_f",
+      time: "1:02.34",
+      course: "SCY",
+      achievedOn: "2025-09-01",
+    });
+    expect(rows[1]?.course).toBeUndefined();
+    expect(rows[1]?.achievedOn).toBeUndefined();
+  });
+
+  it("supports a custom delimiter", () => {
+    const csv =
+      "first_name;last_name;event_key;time\nAda;Lovelace;100_free_scy_f;1:00.00";
+    expect(parseTimesCsv(csv, ";")[0]?.eventKey).toBe("100_free_scy_f");
   });
 });

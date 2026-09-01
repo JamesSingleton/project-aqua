@@ -1,4 +1,7 @@
-import { canUseAiGeneration } from "@project-aqua/swim-core/plans";
+import {
+  canUseAiGeneration,
+  getPlanLimits,
+} from "@project-aqua/swim-core/plans";
 import { getTeamPlan } from "./billing";
 import {
   countAiGenerationsLastMinutes,
@@ -20,7 +23,7 @@ export async function assertAndRecordAiGeneration(input: {
   const used = await countAiGenerationsThisMonth(input.organizationId);
   const gate = canUseAiGeneration(plan, used);
   if (!gate.allowed) {
-    throw new Error(gate.reason ?? "AI generation quota exceeded");
+    throw new Error(gate.reason ?? "Monthly suggestion limit reached");
   }
 
   const burst = await countAiGenerationsLastMinutes(
@@ -29,7 +32,7 @@ export async function assertAndRecordAiGeneration(input: {
   );
   if (burst >= BURST_LIMIT) {
     throw new Error(
-      `Too many AI generations in a short window. Wait a few minutes (max ${BURST_LIMIT} per ${BURST_WINDOW_MINUTES} minutes).`,
+      `Too many suggestions in a short window. Wait a few minutes (max ${BURST_LIMIT} per ${BURST_WINDOW_MINUTES} minutes).`,
     );
   }
 
@@ -45,11 +48,13 @@ export async function getAiQuotaStatus(organizationId: string) {
   const plan = await getTeamPlan(organizationId);
   const used = await countAiGenerationsThisMonth(organizationId);
   const gate = canUseAiGeneration(plan, used);
+  const limits = getPlanLimits(plan);
   return {
     plan,
     used,
     remaining: gate.remaining,
+    included: limits.aiGenerationsIncluded,
     allowed: gate.allowed,
-    overageAllowed: plan !== "free",
+    overageAllowed: limits.aiOverageAllowed,
   };
 }

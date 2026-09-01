@@ -1,9 +1,11 @@
+import { getSession } from "@project-aqua/auth/session";
+import { assertFeature } from "@project-aqua/billing/features";
+import { requireTeamRole } from "@project-aqua/db/authz";
+import { listMeetEventTemplatesSafe } from "@project-aqua/db/queries/meet-event-templates";
 import {
-  formatEventName,
-  formatGenderLabel,
-} from "@project-aqua/swim-core/events";
-import { formatTime } from "@project-aqua/swim-core/times";
-import { Badge } from "@project-aqua/ui/components/badge";
+  getMeetRelayLegsDetailed,
+  getMeets,
+} from "@project-aqua/db/queries/meets";
 import {
   Card,
   CardContent,
@@ -11,17 +13,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@project-aqua/ui/components/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@project-aqua/ui/components/table";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getMeetDetailAction } from "../../../actions";
+import { MeetEventsPanel } from "../../meet-events-panel";
 
 export async function generateMetadata({
   params,
@@ -34,6 +29,17 @@ export async function generateMetadata({
   return { title: `${detail.meet.name} - Events` };
 }
 
+async function canManageMeetEvents(teamId: string) {
+  const session = await getSession();
+  try {
+    await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+    await assertFeature(teamId, "meet_import");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export default async function MeetEventsPage({
   params,
 }: {
@@ -43,66 +49,74 @@ export default async function MeetEventsPage({
   const detail = await getMeetDetailAction(teamId, meetId);
   if (!detail) notFound();
 
-  const { events } = detail;
+  const { meet, events, entries } = detail;
+  const canManage = await canManageMeetEvents(teamId);
+
+  const entryCountByEvent = new Map<string, number>();
+  for (const entry of entries) {
+    if (entry.status === "scratched") continue;
+    entryCountByEvent.set(
+      entry.meetEventId,
+      (entryCountByEvent.get(entry.meetEventId) ?? 0) + 1,
+    );
+  }
+
+  const relayLegs = await getMeetRelayLegsDetailed(meetId);
+  for (const leg of relayLegs) {
+    entryCountByEvent.set(
+      leg.meetEventId,
+      Math.max(entryCountByEvent.get(leg.meetEventId) ?? 0, 1),
+    );
+  }
+
+  const [teamTemplates, allMeets] = await Promise.all([
+    canManage ? listMeetEventTemplatesSafe(teamId) : Promise.resolve([]),
+    canManage ? getMeets(teamId) : Promise.resolve([]),
+  ]);
+
+  const otherMeets = allMeets
+    .filter((row) => row.id !== meetId)
+    .map((row) => ({ id: row.id, name: row.name }));
+
+  const eventRows = events.map((event) => ({
+    id: event.id,
+    eventNumber: event.eventNumber,
+    stroke: event.stroke,
+    distance: event.distance,
+    gender: event.gender,
+    ageGroup: event.ageGroup,
+    qualifyingTimeMs: event.qualifyingTimeMs,
+    eventKey: event.eventKey,
+    entryCount: entryCountByEvent.get(event.id) ?? 0,
+  }));
+
+  const importedFromFile = Boolean(meet.importSource);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Events</CardTitle>
         <CardDescription>
-          {events.length} events from the meet file
+          {events.length} event{events.length === 1 ? "" : "s"}
+          {importedFromFile
+            ? " from the meet file. You can still add or edit events manually."
+            : ". Add events manually or import a meet file."}
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        {events.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            No events yet. Import a meet events file to load the event list.
-          </p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>#</TableHead>
-                <TableHead>Event</TableHead>
-                <TableHead>Gender</TableHead>
-                <TableHead>Age group</TableHead>
-                <TableHead className="text-right">Qualifying time</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {events.map((event) => {
-                const isDive = event.eventKind === "dive";
-                return (
-                  <TableRow key={event.id}>
-                    <TableCell>{event.eventNumber ?? "—"}</TableCell>
-                    <TableCell>
-                      <span className="flex items-center gap-2">
-                        {formatEventName(
-                          event.distance,
-                          event.stroke,
-                          event.diveCount,
-                        )}
-                        {isDive ? (
-                          <Badge variant="secondary" className="text-[10px]">
-                            Not scored
-                          </Badge>
-                        ) : null}
-                      </span>
-                    </TableCell>
-                    <TableCell>{formatGenderLabel(event.gender)}</TableCell>
-                    <TableCell>{event.ageGroup ?? "—"}</TableCell>
-                    <TableCell className="font-timing text-right tabular-nums">
-                      {event.qualifyingTimeMs != null &&
-                      event.qualifyingTimeMs > 0
-                        ? formatTime(event.qualifyingTimeMs)
-                        : "—"}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        )}
+      <CardContent className="space-y-6">
+        <MeetEventsPanel
+          teamId={teamId}
+          meetId={meetId}
+          events={eventRows}
+          canManage={canManage}
+          teamTemplates={teamTemplates.map((template) => ({
+            id: template.id,
+            name: template.name,
+            course: template.course,
+            events: template.events,
+          }))}
+          otherMeets={otherMeets}
+        />
       </CardContent>
     </Card>
   );

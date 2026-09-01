@@ -2,6 +2,7 @@
 
 import { changePassword, twoFactor } from "@project-aqua/auth/client";
 import { Button } from "@project-aqua/ui/components/button";
+import { Checkbox } from "@project-aqua/ui/components/checkbox";
 import {
   Field,
   FieldDescription,
@@ -25,6 +26,7 @@ export function AccountSecurityForm({
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [revokeOtherSessions, setRevokeOtherSessions] = useState(true);
   const [passwordError, setPasswordError] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
 
@@ -52,7 +54,7 @@ export function AccountSecurityForm({
       const result = await changePassword({
         currentPassword,
         newPassword,
-        revokeOtherSessions: true,
+        revokeOtherSessions,
       });
       if (result.error) {
         setPasswordError(result.error.message ?? "Failed to change password");
@@ -74,8 +76,11 @@ export function AccountSecurityForm({
         setTwoFactorError(result.error.message ?? "Failed to enable 2FA");
         return;
       }
-      setTotpURI(result.data?.totpURI ?? null);
-      setBackupCodes(result.data?.backupCodes ?? []);
+      const data = result.data;
+      if (data && "totpURI" in data) {
+        setTotpURI(data.totpURI);
+        setBackupCodes(data.backupCodes ?? []);
+      }
       setTotpPassword("");
       setTwoFactorMessage(
         "Scan the QR code, then verify with a code from your app.",
@@ -180,6 +185,19 @@ export function AccountSecurityForm({
               onChange={(e) => setConfirmPassword(e.target.value)}
               disabled={pending}
             />
+          </Field>
+          <Field orientation="horizontal">
+            <Checkbox
+              id="revoke-other-sessions"
+              checked={revokeOtherSessions}
+              onCheckedChange={(checked) =>
+                setRevokeOtherSessions(checked === true)
+              }
+              disabled={pending}
+            />
+            <FieldLabel htmlFor="revoke-other-sessions" className="font-normal">
+              Sign out on all other devices
+            </FieldLabel>
           </Field>
           {passwordError ? <FieldError>{passwordError}</FieldError> : null}
           <div className="flex items-center gap-3">

@@ -44,7 +44,7 @@ export default async function WorkoutsPage({
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Workouts"
-        description="Write practices in coach notation. Suggest with AI using times and attendance."
+        description="Practice workouts in coach notation."
         actions={
           <Button
             nativeButton={false}
@@ -62,16 +62,13 @@ export default async function WorkoutsPage({
         </CardHeader>
         <CardContent>
           {workouts.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No workouts yet. Create one or ask AI to suggest a practice.
-            </p>
+            <p className="text-muted-foreground text-sm">No workouts yet.</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Title</TableHead>
                   <TableHead>Distance</TableHead>
-                  <TableHead>AI</TableHead>
                   <TableHead>Created</TableHead>
                 </TableRow>
               </TableHeader>
@@ -97,7 +94,6 @@ export default async function WorkoutsPage({
                           }`
                         : "—"}
                     </TableCell>
-                    <TableCell>{w.wasAiGenerated ? "Yes" : "—"}</TableCell>
                     <TableCell>{w.createdAt.toLocaleDateString()}</TableCell>
                   </TableRow>
                 ))}

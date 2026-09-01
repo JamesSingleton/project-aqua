@@ -34,11 +34,9 @@ type AttendanceFormValues = z.infer<typeof attendanceFormSchema>;
 
 export function AttendanceForm({
   teamId,
-  rosterCount,
   defaultLocation = "",
 }: {
   teamId: string;
-  rosterCount: number;
   defaultLocation?: string;
 }) {
   const router = useRouter();
@@ -69,7 +67,7 @@ export function AttendanceForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>New practice session</CardTitle>
+        <CardTitle>Take roll for a practice</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
@@ -103,25 +101,16 @@ export function AttendanceForm({
               <FieldLabel htmlFor="notes">Notes</FieldLabel>
               <Input
                 id="notes"
-                placeholder="Optional"
+                placeholder="Optional…"
                 maxLength={2000}
                 {...register("notes")}
               />
             </Field>
           </FieldGroup>
-          <Button
-            type="submit"
-            className="w-fit"
-            disabled={isSubmitting || rosterCount === 0}
-          >
-            {isSubmitting ? "Creating..." : "Create session"}
+          <Button type="submit" className="w-fit" disabled={isSubmitting}>
+            {isSubmitting ? "Opening…" : "Open roll"}
           </Button>
         </form>
-        {rosterCount === 0 && (
-          <p className="text-muted-foreground mt-2 text-sm">
-            Add swimmers to your roster before creating sessions.
-          </p>
-        )}
       </CardContent>
     </Card>
   );

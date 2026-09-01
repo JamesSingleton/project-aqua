@@ -16,6 +16,7 @@ import { notFound } from "next/navigation";
 import { SetBreadcrumbEntity } from "@/components/breadcrumb-entities";
 import { PageHeader } from "@/components/page-header";
 import { SwimmerProgressionPanel } from "@/components/swimmer-progression-panel";
+import { ImportTimesCsvButton } from "../import-times-csv-button";
 import { ProgressionSwimmerPicker } from "../progression-swimmer-picker";
 
 export async function generateMetadata({
@@ -127,6 +128,12 @@ export default async function ProgressionSwimmerPage({
       <PageHeader
         title="Progression"
         description="Time trends, best times, and swim history."
+        actions={
+          <ImportTimesCsvButton
+            teamId={teamId}
+            canEdit={isCoachingRole(membership?.role ?? "")}
+          />
+        }
       />
 
       <ProgressionSwimmerPicker

@@ -10,8 +10,10 @@ describe("onboardingFormSchema", () => {
     plan: "pro" as const,
   };
 
-  it("accepts valid values", () => {
-    expect(onboardingFormSchema.parse(valid)).toEqual(valid);
+  it("accepts summer league teams", () => {
+    expect(
+      onboardingFormSchema.parse({ ...valid, teamType: "summer" }).teamType,
+    ).toBe("summer");
   });
 
   it("rejects short team names and invalid plan/type", () => {

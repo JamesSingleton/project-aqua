@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: ["127.0.0.1", "localhost"],
+  allowedDevOrigins: ["127.0.0.1", "localhost", "192.168.1.166"],
   transpilePackages: [
     "@project-aqua/ui",
     "@project-aqua/auth",

@@ -239,6 +239,7 @@ export function mergeParsedMeets(
     entries: [...primary.entries],
     results: [...primary.results],
     relays: primary.relays ? [...primary.relays] : undefined,
+    athletes: primary.athletes ? [...primary.athletes] : undefined,
   };
 
   for (const extra of supplements) {
@@ -302,6 +303,27 @@ export function mergeParsedMeets(
 
     if (extra.relays?.length) {
       merged.relays = [...(merged.relays ?? []), ...extra.relays];
+    }
+
+    if (extra.athletes?.length) {
+      const byName = new Map(
+        (merged.athletes ?? []).map(
+          (a) => [a.name.trim().toLowerCase(), a] as const,
+        ),
+      );
+      for (const athlete of extra.athletes) {
+        const key = athlete.name.trim().toLowerCase();
+        const existing = byName.get(key);
+        if (existing) {
+          existing.usaMemberId ??= athlete.usaMemberId;
+          existing.dateOfBirth ??= athlete.dateOfBirth;
+          existing.gender ??= athlete.gender;
+          existing.relayOnly ??= athlete.relayOnly;
+          continue;
+        }
+        byName.set(key, athlete);
+      }
+      merged.athletes = [...byName.values()];
     }
 
     // Prefer results/entries kind from any member of the zip pack

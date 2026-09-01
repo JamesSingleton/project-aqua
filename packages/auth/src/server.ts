@@ -1,3 +1,4 @@
+import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import {
   checkout,
   polar,
@@ -21,13 +22,14 @@ import {
   sendResetPassword,
   sendRoleChanged,
   sendTeamWelcome,
+  sendTwoFactorOtp,
   sendVerifyEmail,
 } from "@project-aqua/emails";
 import type { PlanTier } from "@project-aqua/swim-core/plans";
 import { getPlanLimits } from "@project-aqua/swim-core/plans";
 import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { organization, twoFactor } from "better-auth/plugins";
+import { organization } from "better-auth/plugins/organization";
+import { twoFactor } from "better-auth/plugins/two-factor";
 import { eq } from "drizzle-orm";
 import { orgAc, orgRoles } from "./organization-ac";
 
@@ -104,25 +106,68 @@ function createPolarClient() {
   });
 }
 
+function membershipLimitForOrg(metadata: string | null): number {
+  const limit = getPlanLimits(getOrgPlan(metadata)).maxCoaches;
+  if (limit === Number.POSITIVE_INFINITY) return 10_000;
+  return limit;
+}
+
+const authSchema = {
+  user: schema.user,
+  session: schema.session,
+  account: schema.account,
+  verification: schema.verification,
+  twoFactor: schema.twoFactor,
+  organization: schema.organization,
+  member: schema.member,
+  invitation: schema.invitation,
+  userRelations: schema.userRelations,
+  sessionRelations: schema.sessionRelations,
+  accountRelations: schema.accountRelations,
+  twoFactorRelations: schema.twoFactorRelations,
+  organizationRelations: schema.organizationRelations,
+  memberRelations: schema.memberRelations,
+  invitationRelations: schema.invitationRelations,
+};
+
 function createAuth(polarClient: Polar) {
+  const trustedOriginsFromEnv = process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(
+    ",",
+  )
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
   return betterAuth({
     database: drizzleAdapter(db, {
       provider: "pg",
-      schema: {
-        user: schema.user,
-        session: schema.session,
-        account: schema.account,
-        verification: schema.verification,
-        twoFactor: schema.twoFactor,
-        organization: schema.organization,
-        member: schema.member,
-        invitation: schema.invitation,
-      },
+      schema: authSchema,
     }),
     appName: "Project Aqua",
+    ...(trustedOriginsFromEnv?.length
+      ? { trustedOrigins: trustedOriginsFromEnv }
+      : process.env.NODE_ENV === "development"
+        ? {
+            trustedOrigins: async (request) => {
+              const origin = request?.headers.get("origin");
+              return origin ? [origin] : [];
+            },
+          }
+        : {}),
+    advanced: {
+      database: {
+        joins: true,
+      },
+    },
+    session: {
+      cookieCache: {
+        enabled: true,
+        maxAge: 5 * 60,
+      },
+    },
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,
+      revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ user, url }) => {
         await sendResetPassword({ user, url });
       },
@@ -170,16 +215,26 @@ function createAuth(polarClient: Polar) {
     plugins: [
       twoFactor({
         issuer: "Project Aqua",
+        otpOptions: {
+          async sendOTP({ user, otp }) {
+            await sendTwoFactorOtp({
+              to: user.email,
+              name: user.name,
+              otp,
+            });
+          },
+        },
       }),
       organization({
         ac: orgAc,
         roles: orgRoles,
         allowUserToCreateOrganization: true,
         creatorRole: "owner",
-        membershipLimit: async (_user, org) => {
-          const plan = getOrgPlan(org?.metadata ?? null);
-          return getPlanLimits(plan).maxCoaches as number;
-        },
+        invitationExpiresIn: 60 * 60 * 24 * 7,
+        invitationLimit: 50,
+        cancelPendingInvitationsOnReInvite: true,
+        membershipLimit: async (_user, org) =>
+          membershipLimitForOrg(org?.metadata ?? null),
         sendInvitationEmail: async (data) => {
           await sendCoachInvitation({
             email: data.email,

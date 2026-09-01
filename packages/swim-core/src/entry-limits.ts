@@ -90,11 +90,11 @@ export function canAddMeetEntry(
 /**
  * Whether a seed time satisfies a meet event's qualifying time (QT) cutoff.
  *
- * QT events (from Hy-Tek EV3/HYV `qualifyingTimeMs`) require an entered time
+ * QT events (from Hy-Tek EV3/HYV `qualifyingTimeMs`) expect an entered time
  * at or faster than the cut. A missing seed (NT) is allowed through — the
- * coach can submit "no time" pending verification — but a *submitted* time
- * slower than the QT is blocked with an explanation, mirroring
- * `canAddMeetEntry`.
+ * coach can submit "no time" pending verification. A *submitted* time
+ * slower than the QT is a **warning** (`ok: false`), not a hard entry block;
+ * coaches may still export the lineup.
  */
 export function checkQualifyingTime(
   qualifyingTimeMs: number | null | undefined,

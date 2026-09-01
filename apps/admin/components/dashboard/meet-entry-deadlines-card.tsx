@@ -23,7 +23,6 @@ export type MeetEntryDeadlineItem = {
   name: string;
   entryDeadline: Date | null;
   startDate: Date;
-  committedCount: number;
   athletesEntered: number;
   entryCount: number;
 };
@@ -63,15 +62,9 @@ export function MeetEntryDeadlinesCard({
             const due = meet.entryDeadline ?? meet.startDate;
             const dueKey = formatDateOnly(due);
             const days = daysUntilDateOnly(dueKey, todayKey);
-            const complete =
-              meet.committedCount > 0 &&
-              meet.athletesEntered >= meet.committedCount;
+            const complete = meet.entryCount > 0;
             const urgency = deadlineUrgencyLevel(days, complete);
-            const denominator = Math.max(meet.committedCount, 1);
-            const fillPct = Math.min(
-              100,
-              Math.round((meet.athletesEntered / denominator) * 100),
-            );
+            const fillPct = complete ? 100 : 0;
             const dueLabel = meet.entryDeadline
               ? `Due: ${meet.entryDeadline.toLocaleDateString(undefined, {
                   month: "short",
@@ -95,7 +88,7 @@ export function MeetEntryDeadlinesCard({
             return (
               <Link
                 key={meet.id}
-                href={`/team/${teamId}/meets/${meet.id}`}
+                href={`/team/${teamId}/meets/${meet.id}/entries`}
                 className={cn(
                   "rounded-xl border p-3.5 transition-colors hover:bg-muted/40",
                   urgency === "urgent" &&
@@ -148,14 +141,14 @@ export function MeetEntryDeadlinesCard({
                         urgency === "ok" && "bg-primary",
                       )}
                       style={{
-                        width: `${meet.committedCount > 0 ? fillPct : 0}%`,
+                        width: `${fillPct}%`,
                       }}
                     />
                   </div>
                   <span className="text-muted-foreground shrink-0 text-[10px] tabular-nums">
-                    {meet.committedCount > 0
-                      ? `${meet.athletesEntered}/${meet.committedCount} athletes`
-                      : `${meet.entryCount} entries`}
+                    {meet.entryCount > 0
+                      ? `${meet.athletesEntered} athletes · ${meet.entryCount} entries`
+                      : "No entries yet"}
                   </span>
                 </div>
               </Link>

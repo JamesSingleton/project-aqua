@@ -25,7 +25,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { teamId, sessionId } = await params;
   const practice = await getPracticeSession(sessionId, teamId);
-  const dateLabel = practice ? practice.date.toLocaleDateString() : "Session";
+  const dateLabel = practice ? practice.date.toLocaleDateString() : "Practice";
   return {
     title: `Attendance · ${dateLabel}`,
     description: "Take roll call and review RSVPs for this practice.",
@@ -79,13 +79,13 @@ export default async function AttendanceSessionPage({
   const rsvpAbsent = rows.filter((r) => r.rsvpStatus === "absent").length;
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div>
         <Link
           href={`/team/${teamId}/attendance`}
           className="text-muted-foreground text-sm underline"
         >
-          ← All sessions
+          ← All practices
         </Link>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">
           Take attendance

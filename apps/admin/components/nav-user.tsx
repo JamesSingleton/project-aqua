@@ -1,6 +1,5 @@
 "use client";
 
-import { signOut } from "@project-aqua/auth/client";
 import {
   Avatar,
   AvatarFallback,
@@ -21,15 +20,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@project-aqua/ui/components/sidebar";
-import {
-  BadgeCheck,
-  ChevronsUpDown,
-  CreditCard,
-  LogOut,
-  Sparkles,
-} from "lucide-react";
+import { BadgeCheck, ChevronsUpDown, CreditCard, LogOut } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { signOutToMarketing } from "@/lib/sign-out";
 
 export function NavUser({
   teamId,
@@ -43,12 +36,13 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
-  const router = useRouter();
 
-  async function handleSignOut() {
-    await signOut();
-    router.push("/sign-in");
-    router.refresh();
+  function handleSignOut() {
+    void signOutToMarketing().then((result) => {
+      if (!result.ok) {
+        console.error(result.error);
+      }
+    });
   }
 
   const initials = user.name
@@ -104,16 +98,6 @@ export function NavUser({
                   </div>
                 </div>
               </DropdownMenuLabel>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem
-                nativeButton={false}
-                render={<Link href={billingHref} />}
-              >
-                <Sparkles />
-                Upgrade to Pro
-              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>

@@ -93,17 +93,17 @@ const PLAN_OPTIONS: {
   {
     value: "free",
     price: "$0/month",
-    blurb: `Up to ${PLAN_LIMITS.free.maxSwimmers} swimmers · ${PLAN_LIMITS.free.maxCoaches} coach · ${PLAN_LIMITS.free.aiGenerationsIncluded} AI gens/mo`,
+    blurb: `Unlimited swimmers · ${PLAN_LIMITS.free.maxCoaches} coach · SWIMS · ${PLAN_LIMITS.free.aiGenerationsIncluded} relay/workout suggestions/mo`,
   },
   {
     value: "pro",
     price: "Pro",
-    blurb: `Up to ${PLAN_LIMITS.pro.maxSwimmers} swimmers · ${PLAN_LIMITS.pro.maxCoaches} coaches · ${PLAN_LIMITS.pro.aiGenerationsIncluded} AI gens/mo + overage`,
+    blurb: `Unlimited swimmers · ${PLAN_LIMITS.pro.maxCoaches} coaches · lineup suggestions`,
   },
   {
     value: "enterprise",
     price: "Enterprise",
-    blurb: "Unlimited swimmers & coaches · SWIMS sync · highest AI limits",
+    blurb: "Unlimited swimmers & coaches · SWIMS sync",
   },
 ];
 

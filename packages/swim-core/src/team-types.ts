@@ -19,6 +19,11 @@ export const TEAM_TYPES = [
     label: "National",
     description: "National/elite program — SafeSport typically applies",
   },
+  {
+    value: "summer",
+    label: "Summer league",
+    description: "Seasonal / rec league — no SafeSport or SWIMS gates",
+  },
 ] as const;
 
 export type TeamType = (typeof TEAM_TYPES)[number]["value"];
@@ -69,7 +74,7 @@ const USA_SWIMMING_COMPLIANCE_TYPES = new Set<string>(["club", "national"]);
 
 /**
  * SafeSport training and MAAPP apply to USA Swimming–affiliated programs.
- * High school and college teams are generally outside that requirement.
+ * High school, college, and summer league teams are generally outside that requirement.
  */
 export function requiresSafeSportCompliance(
   teamType: string | null | undefined,
@@ -129,6 +134,13 @@ export function parseEligibilityStatus(
     : null;
 }
 
+/** Season eligibility that blocks meet entries and host export. */
+export function blocksMeetEntries(
+  status: EligibilityStatus | string | null | undefined,
+): boolean {
+  return status === "ineligible";
+}
+
 /** Advance HS class year for a new season; SR has no next year. */
 export function advanceClassYear(
   classYear: ClassYear | null,
@@ -173,7 +185,7 @@ export function teamTypeLabel(teamType: string | null | undefined): string {
  * Competitive-category labels for UI (not DB gender values).
  * - high_school → Boys / Girls
  * - college → Men / Women
- * - club → Boys / Girls (age-group convention; club rosters are usually youth-heavy)
+ * - club / summer → Boys / Girls (age-group / rec convention)
  * - national → Men / Women (senior/elite leaning)
  */
 export function formatEventGenderLabel(

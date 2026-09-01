@@ -6,6 +6,8 @@ describe("roleHasPermission", () => {
     expect(roleHasPermission("owner", "billing")).toBe(true);
     expect(roleHasPermission("assistant_coach", "roster")).toBe(true);
     expect(roleHasPermission("assistant_coach", "settings")).toBe(false);
+    expect(roleHasPermission("assistant_coach", "billing")).toBe(false);
+    expect(roleHasPermission("head_coach", "meets")).toBe(true);
     expect(roleHasPermission("unknown", "roster")).toBe(false);
   });
 });

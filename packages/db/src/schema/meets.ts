@@ -22,6 +22,8 @@ export const meetCommitmentStatusEnum = pgEnum("meet_commitment_status", [
   "pending",
   "committed",
   "declined",
+  "not_going",
+  "not_eligible",
 ]);
 
 export const meetEntryStatusEnum = pgEnum("meet_entry_status", [
@@ -109,7 +111,7 @@ export const meetCommitments = pgTable("meet_commitments", {
   membershipId: text("membership_id")
     .notNull()
     .references(() => teamSwimmerMemberships.id, { onDelete: "cascade" }),
-  status: meetCommitmentStatusEnum("status").notNull().default("pending"),
+  status: meetCommitmentStatusEnum("status").notNull(),
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -213,6 +215,8 @@ export const meetRelayLegs = pgTable("meet_relay_legs", {
   meetEventId: text("meet_event_id")
     .notNull()
     .references(() => meetEvents.id, { onDelete: "cascade" }),
+  /** A / B / C — one Hy-Tek F1 relay; legs 1–4 primary, 5–8 alternates. */
+  relayLetter: text("relay_letter").notNull().default("A"),
   legOrder: integer("leg_order").notNull(),
   membershipId: text("membership_id")
     .notNull()
@@ -220,6 +224,27 @@ export const meetRelayLegs = pgTable("meet_relay_legs", {
   stroke: text("stroke"),
   reasoning: text("reasoning"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type MeetEventTemplateRow = {
+  eventNumber: number;
+  distance: number;
+  stroke: string;
+  gender: "male" | "female" | "mixed";
+  ageGroup?: string;
+  qualifyingTimeMs?: number | null;
+};
+
+export const meetEventTemplates = pgTable("meet_event_templates", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id")
+    .notNull()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  course: courseEnum("course").notNull().default("SCY"),
+  events: jsonb("events").$type<MeetEventTemplateRow[]>().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const timeStandardSets = pgTable("time_standard_sets", {
@@ -346,6 +371,16 @@ export const meetRelayLegsRelations = relations(meetRelayLegs, ({ one }) => ({
     references: [teamSwimmerMemberships.id],
   }),
 }));
+
+export const meetEventTemplatesRelations = relations(
+  meetEventTemplates,
+  ({ one }) => ({
+    organization: one(organization, {
+      fields: [meetEventTemplates.organizationId],
+      references: [organization.id],
+    }),
+  }),
+);
 
 export const timeStandardSetsRelations = relations(
   timeStandardSets,

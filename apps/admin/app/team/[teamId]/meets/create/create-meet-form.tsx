@@ -115,8 +115,9 @@ export function CreateMeetForm({ teamId }: { teamId: string }) {
       <CardHeader>
         <CardTitle>Meet details</CardTitle>
         <CardDescription>
-          Create a meet shell for entries and RSVPs. Import an event file later
-          to load the event list.
+          Create a meet for entries and RSVPs. Add events manually on the Events
+          tab, start from a template, or import a meet file later. to load the
+          event list.
         </CardDescription>
       </CardHeader>
       <CardContent>

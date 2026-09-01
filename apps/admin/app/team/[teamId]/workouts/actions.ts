@@ -16,6 +16,8 @@ import {
   listWorkouts,
   updateWorkout,
 } from "@project-aqua/db/queries/workouts";
+import type { SharedDraftQuota } from "@project-aqua/swim-core/draft-quota";
+import { getPlanLimits } from "@project-aqua/swim-core/plans";
 import { formatTime } from "@project-aqua/swim-core/times";
 import {
   parseWorkoutText,
@@ -93,11 +95,11 @@ export async function suggestWorkoutAction(
 
   if (!process.env.OPENAI_API_KEY) {
     throw new Error(
-      "OPENAI_API_KEY is not configured. Add it to apps/admin/.env to enable AI suggestions.",
+      "Practice drafts aren't configured. Add OPENAI_API_KEY to apps/admin/.env.",
     );
   }
 
-  await assertAndRecordAiGeneration({
+  const quotaRecord = await assertAndRecordAiGeneration({
     organizationId: teamId,
     userId: session?.user?.id,
     kind: "workout",
@@ -178,9 +180,19 @@ export async function suggestWorkoutAction(
     prompt,
   });
 
+  const limits = getPlanLimits(quotaRecord.plan);
+  const draftQuota: SharedDraftQuota = {
+    remaining: quotaRecord.remaining,
+    included: limits.aiGenerationsIncluded,
+    used: quotaRecord.used,
+    allowed: quotaRecord.remaining > 0 || limits.aiOverageAllowed,
+    overageAllowed: limits.aiOverageAllowed,
+  };
+
   return {
     draftText: text.trim(),
     prompt,
+    draftQuota,
   };
 }
 

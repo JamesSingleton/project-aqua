@@ -6,8 +6,10 @@ import {
   getSwimmerById,
 } from "@project-aqua/db/queries/roster";
 import { isMinorSwimmer } from "@project-aqua/swim-core/age";
+import type { EligibilityStatus } from "@project-aqua/swim-core/team-types";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { SwimmerEligibilityCard } from "./swimmer-eligibility-card";
 import { SwimmerProfileTabs } from "./swimmer-profile-tabs";
 
 export async function generateMetadata({
@@ -47,13 +49,23 @@ export default async function SwimmerProfilePage({
   const minor = isMinorSwimmer(swimmer.dateOfBirth);
 
   return (
-    <SwimmerProfileTabs
-      teamId={teamId}
-      swimmerId={swimmerId}
-      membershipId={swimmer.membershipId}
-      isMinor={minor}
-      affiliations={affiliations}
-      clubRegistration={clubRegistration}
-    />
+    <div className="flex flex-col gap-6">
+      <SwimmerEligibilityCard
+        teamId={teamId}
+        swimmerId={swimmerId}
+        eligibilityStatus={
+          swimmer.eligibilityStatus as EligibilityStatus | null
+        }
+        eligibilityNotes={swimmer.eligibilityNotes}
+      />
+      <SwimmerProfileTabs
+        teamId={teamId}
+        swimmerId={swimmerId}
+        membershipId={swimmer.membershipId}
+        isMinor={minor}
+        affiliations={affiliations}
+        clubRegistration={clubRegistration}
+      />
+    </div>
   );
 }

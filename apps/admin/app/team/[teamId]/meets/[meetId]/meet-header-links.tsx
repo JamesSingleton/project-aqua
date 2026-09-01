@@ -17,7 +17,7 @@ export function MeetHeaderLinks({
   if (onResults) {
     return (
       <Link
-        href={`/team/${teamId}/meets/${meetId}`}
+        href={`/team/${teamId}/meets/${meetId}/entries`}
         className="text-muted-foreground hover:text-foreground text-sm underline-offset-4 hover:underline"
       >
         View entries

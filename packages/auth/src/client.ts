@@ -6,8 +6,18 @@ import {
 import { createAuthClient } from "better-auth/react";
 import { orgAc, orgRoles } from "./organization-ac";
 
+function resolveAuthBaseURL() {
+  // Same-origin in the browser so sign-in works on LAN IPs, not only localhost.
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+  return process.env.NEXT_PUBLIC_BETTER_AUTH_URL;
+}
+
+const authBaseURL = resolveAuthBaseURL();
+
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL ?? "http://localhost:3001",
+  ...(authBaseURL ? { baseURL: authBaseURL } : {}),
   plugins: [
     organizationClient({
       ac: orgAc,
@@ -32,4 +42,8 @@ export const {
   changePassword,
   updateUser,
   requestPasswordReset,
+  resetPassword,
+  sendVerificationEmail,
+  revokeSession,
+  revokeSessions,
 } = authClient;

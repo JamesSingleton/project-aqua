@@ -18,9 +18,9 @@ export function MeetEntryNav({
     { value: "information", label: "Information", href: base },
     { value: "events", label: "Events", href: `${base}/events` },
     {
-      value: "registration",
-      label: "Registration",
-      href: `${base}/registration`,
+      value: "entries",
+      label: "Entries",
+      href: `${base}/entries`,
     },
   ] as const;
 

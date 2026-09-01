@@ -16,6 +16,11 @@ export interface ParsedMeet {
   entries: ParsedEntry[];
   results: ParsedResult[];
   relays?: ParsedRelayEntry[];
+  /**
+   * Meet-roster athletes, including relay-only swimmers who have a D1/D0
+   * identity record but no individual event entry.
+   */
+  athletes?: ParsedAthlete[];
   /** Entry limits when present in the source file; omit/undefined if not found. */
   entryLimits?: {
     maxIndividualEntries?: number;
@@ -90,10 +95,21 @@ export interface ParsedResult {
 
 export interface ParsedRelayEntry {
   eventNumber?: number;
+  /** Primary legs 1–4, then alternates #5–#8 when present. */
   swimmerNames: string[];
   seedTime?: string;
   teamCode?: string;
   relayLetter?: string;
+}
+
+/** Team-roster identity row (Hy-Tek D1 / CL2 D0 without an event). */
+export interface ParsedAthlete {
+  name: string;
+  usaMemberId?: string;
+  dateOfBirth?: string;
+  gender?: "male" | "female";
+  /** Committed / attending with no individual event entries. */
+  relayOnly?: boolean;
 }
 
 export interface ParsedRosterRow {
