@@ -39,6 +39,7 @@ Do not use other model families (Claude, GPT, GLM, etc.) unless the human explic
 | Marketing site | `apps/web` |
 | Formats | `packages/swim-formats` |
 | Domain (times, events, match) | `packages/swim-core` |
+| PDF / print reports | `packages/reports` |
 | DB / authz | `packages/db`, `packages/auth` |
 | UI | `packages/ui` |
 

@@ -8,6 +8,7 @@ allowBuilds:
 
 catalog:
   "@polar-sh/sdk": "^0.49.0"
+  "@react-pdf/renderer": "^4.3.2"
   "@types/node": "^26.4.0"
   "@types/react": "^19.2.18"
   "@types/react-dom": "^19.2.5"

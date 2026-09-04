@@ -26,6 +26,7 @@
     "@project-aqua/calendar-sync": "workspace:*",
     "@project-aqua/db": "workspace:*",
     "@project-aqua/emails": "workspace:*",
+    "@project-aqua/reports": "workspace:*",
     "@project-aqua/storage": "workspace:*",
     "@project-aqua/swim-core": "workspace:*",
     "@project-aqua/swim-formats": "workspace:*",

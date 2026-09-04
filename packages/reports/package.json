@@ -1,0 +1,36 @@
+{
+  "name": "@project-aqua/reports",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types.ts",
+    "./meet-entries": "./src/meet-entries/build.ts",
+    "./templates/pdf": "./src/templates/pdf/index.ts",
+    "./templates/pdf/meet-entries": "./src/templates/pdf/meet-entries.tsx",
+    "./templates/html/meet-entries": "./src/templates/html/meet-entries.tsx"
+  },
+  "scripts": {
+    "check:types": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@project-aqua/swim-core": "workspace:*",
+    "@react-pdf/renderer": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@project-aqua/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

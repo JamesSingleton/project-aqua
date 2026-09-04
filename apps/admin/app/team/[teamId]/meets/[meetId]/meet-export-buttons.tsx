@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@project-aqua/ui/components/dropdown-menu";
-import { ChevronDown, Download, Printer } from "lucide-react";
+import { ChevronDown, Download, FileText } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { exportMeetAction, exportMeetZipAction } from "../actions";
@@ -124,7 +124,7 @@ export function MeetExportButtons({
         nativeButton={false}
         render={<Link href={`/team/${teamId}/meets/${meetId}/report`} />}
       >
-        <Printer data-icon="inline-start" />
+        <FileText data-icon="inline-start" />
         Entry report
       </Button>
       <Button

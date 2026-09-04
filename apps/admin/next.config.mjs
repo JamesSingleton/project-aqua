@@ -10,8 +10,15 @@ const nextConfig = {
     "@project-aqua/swim-core",
     "@project-aqua/swim-formats",
     "@project-aqua/usa-swimming",
+    "@project-aqua/reports",
   ],
-  serverExternalPackages: ["postgres", "xlsx", "fflate", "@polar-sh/sdk"],
+  serverExternalPackages: [
+    "postgres",
+    "xlsx",
+    "fflate",
+    "@polar-sh/sdk",
+    "@react-pdf/renderer",
+  ],
   experimental: {
     optimizePackageImports: ["lucide-react", "recharts"],
   },
