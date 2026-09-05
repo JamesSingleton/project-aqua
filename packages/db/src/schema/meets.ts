@@ -7,6 +7,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { organization } from "./auth";
 import { courseEnum, eventGenderEnum, swimEvents } from "./events";
@@ -226,6 +227,34 @@ export const meetRelayLegs = pgTable("meet_relay_legs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+/** One named relay (event + A/B/C) — team seed for Hy-Tek F1. */
+export const meetRelayTeams = pgTable(
+  "meet_relay_teams",
+  {
+    id: text("id").primaryKey(),
+    meetId: text("meet_id")
+      .notNull()
+      .references(() => meets.id, { onDelete: "cascade" }),
+    meetEventId: text("meet_event_id")
+      .notNull()
+      .references(() => meetEvents.id, { onDelete: "cascade" }),
+    relayLetter: text("relay_letter").notNull().default("A"),
+    seedTimeMs: integer("seed_time_ms"),
+    seedTimeSource: seedTimeSourceEnum("seed_time_source")
+      .notNull()
+      .default("no_time"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("meet_relay_teams_event_letter_idx").on(
+      table.meetId,
+      table.meetEventId,
+      table.relayLetter,
+    ),
+  ],
+);
+
 export type MeetEventTemplateRow = {
   eventNumber: number;
   distance: number;
@@ -287,6 +316,7 @@ export const meetsRelations = relations(meets, ({ many, one }) => ({
   commitments: many(meetCommitments),
   results: many(meetResults),
   relayLegs: many(meetRelayLegs),
+  relayTeams: many(meetRelayTeams),
 }));
 
 export const meetCommitmentsRelations = relations(
@@ -311,6 +341,7 @@ export const meetEventsRelations = relations(meetEvents, ({ one, many }) => ({
   entries: many(meetEntries),
   results: many(meetResults),
   relayLegs: many(meetRelayLegs),
+  relayTeams: many(meetRelayTeams),
 }));
 
 export const meetEntriesRelations = relations(meetEntries, ({ one }) => ({
@@ -369,6 +400,17 @@ export const meetRelayLegsRelations = relations(meetRelayLegs, ({ one }) => ({
   membership: one(teamSwimmerMemberships, {
     fields: [meetRelayLegs.membershipId],
     references: [teamSwimmerMemberships.id],
+  }),
+}));
+
+export const meetRelayTeamsRelations = relations(meetRelayTeams, ({ one }) => ({
+  meet: one(meets, {
+    fields: [meetRelayTeams.meetId],
+    references: [meets.id],
+  }),
+  meetEvent: one(meetEvents, {
+    fields: [meetRelayTeams.meetEventId],
+    references: [meetEvents.id],
   }),
 }));
 

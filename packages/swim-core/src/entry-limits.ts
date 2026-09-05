@@ -32,12 +32,19 @@ export function canAddMeetEntry(
   current: EntryCounts,
   candidateIsRelay: boolean,
 ): { ok: true } | { ok: false; reason: string } {
-  if (!limits) return { ok: true };
-
   const next: EntryCounts = {
     individual: current.individual + (candidateIsRelay ? 0 : 1),
     relay: current.relay + (candidateIsRelay ? 1 : 0),
   };
+  return checkMeetEntryCounts(limits, next);
+}
+
+/** Whether these counts already sit within meet limits (no extra entry). */
+export function checkMeetEntryCounts(
+  limits: MeetEntryLimits | null | undefined,
+  counts: EntryCounts,
+): { ok: true } | { ok: false; reason: string } {
+  if (!limits) return { ok: true };
 
   const packages = limits.entryLimitPackages?.filter(
     (p) => typeof p?.individual === "number" && typeof p?.relay === "number",
@@ -45,7 +52,7 @@ export function canAddMeetEntry(
 
   if (packages && packages.length > 0) {
     const fits = packages.some(
-      (p) => next.individual <= p.individual && next.relay <= p.relay,
+      (p) => counts.individual <= p.individual && counts.relay <= p.relay,
     );
     if (!fits) {
       const pkgLabel = packages
@@ -53,7 +60,7 @@ export function canAddMeetEntry(
         .join(" or ");
       return {
         ok: false,
-        reason: `Entry limits exceeded. Allowed: ${pkgLabel}. Current would be ${next.individual} individual + ${next.relay} relay.`,
+        reason: `Entry limits exceeded. Allowed: ${pkgLabel}. Current would be ${counts.individual} individual + ${counts.relay} relay.`,
       };
     }
     return { ok: true };
@@ -61,14 +68,14 @@ export function canAddMeetEntry(
 
   if (
     limits.maxIndividualEntries != null &&
-    next.individual > limits.maxIndividualEntries
+    counts.individual > limits.maxIndividualEntries
   ) {
     return {
       ok: false,
       reason: `Maximum individual entries is ${limits.maxIndividualEntries}.`,
     };
   }
-  if (limits.maxRelayEntries != null && next.relay > limits.maxRelayEntries) {
+  if (limits.maxRelayEntries != null && counts.relay > limits.maxRelayEntries) {
     return {
       ok: false,
       reason: `Maximum relay entries is ${limits.maxRelayEntries}.`,
@@ -76,7 +83,7 @@ export function canAddMeetEntry(
   }
   if (
     limits.maxCombinedEntries != null &&
-    next.individual + next.relay > limits.maxCombinedEntries
+    counts.individual + counts.relay > limits.maxCombinedEntries
   ) {
     return {
       ok: false,
@@ -110,23 +117,114 @@ export function checkQualifyingTime(
   };
 }
 
+function formatMixLabel(mix: EntryLimitPackage): string {
+  return `${mix.individual} individual + ${mix.relay} relay`;
+}
+
+/**
+ * Maximal legal (individual, relay) mixes: packages if present, otherwise
+ * the Pareto frontier of the three scalar caps (subsets of each mix are allowed).
+ */
+export function maximalEntryLimitMixes(
+  limits: MeetEntryLimits | null | undefined,
+): EntryLimitPackage[] {
+  if (!limits) return [];
+
+  const packages = limits.entryLimitPackages?.filter(
+    (p) => typeof p?.individual === "number" && typeof p?.relay === "number",
+  );
+  if (packages && packages.length > 0) return packages;
+
+  const maxI = limits.maxIndividualEntries;
+  const maxR = limits.maxRelayEntries;
+  const maxC = limits.maxCombinedEntries;
+  if (maxI == null && maxR == null && maxC == null) return [];
+  if (maxI == null && maxR == null) return [];
+
+  if (maxC == null) {
+    if (maxI != null && maxR != null) {
+      return [{ individual: maxI, relay: maxR }];
+    }
+    return [];
+  }
+
+  const individualCap = maxI ?? maxC;
+  const relayCap = maxR ?? maxC;
+  const candidates: EntryLimitPackage[] = [];
+  for (let individual = 0; individual <= individualCap; individual++) {
+    const relay = Math.min(relayCap, maxC - individual);
+    if (relay < 0) continue;
+    candidates.push({ individual, relay });
+  }
+
+  const mixes = candidates.filter(
+    (mix) =>
+      !candidates.some(
+        (other) =>
+          other.individual >= mix.individual &&
+          other.relay >= mix.relay &&
+          (other.individual > mix.individual || other.relay > mix.relay),
+      ),
+  );
+
+  return [...mixes].sort((a, b) => b.individual - a.individual);
+}
+
 export function formatEntryLimitsSummary(
   limits: MeetEntryLimits | null | undefined,
 ): string | null {
   if (!limits) return null;
-  const packages = limits.entryLimitPackages;
-  if (packages && packages.length > 0) {
-    return packages.map((p) => `${p.individual}I + ${p.relay}R`).join(" or ");
+
+  const mixes = maximalEntryLimitMixes(limits);
+  if (mixes.length > 0) {
+    return mixes.map(formatMixLabel).join(", or ");
   }
-  const parts: string[] = [];
+
+  if (limits.maxCombinedEntries != null) {
+    return `up to ${limits.maxCombinedEntries} events in any mix of individual and relay`;
+  }
   if (limits.maxIndividualEntries != null) {
-    parts.push(`${limits.maxIndividualEntries} individual`);
+    return `up to ${limits.maxIndividualEntries} individual`;
   }
   if (limits.maxRelayEntries != null) {
-    parts.push(`${limits.maxRelayEntries} relay`);
+    return `up to ${limits.maxRelayEntries} relay`;
   }
-  if (limits.maxCombinedEntries != null) {
-    parts.push(`${limits.maxCombinedEntries} combined`);
+  return null;
+}
+
+/** This swimmer's racing entries, spelled out (alternates omitted). */
+export function formatEntryCountsSentence(counts: EntryCounts): string {
+  return `${counts.individual} individual, ${counts.relay} relay`;
+}
+
+/**
+ * How to free a slot when both an extra individual and an extra racing relay
+ * are blocked. Only names a swap that would actually be legal.
+ */
+export function formatFilledCapAdvice(
+  limits: MeetEntryLimits | null | undefined,
+  counts: EntryCounts,
+): string {
+  const parts: string[] = [];
+  if (
+    counts.individual > 0 &&
+    canAddMeetEntry(
+      limits,
+      { individual: counts.individual - 1, relay: counts.relay },
+      true,
+    ).ok
+  ) {
+    parts.push("To add a racing relay, remove an individual.");
   }
-  return parts.length > 0 ? parts.join(" · ") : null;
+  if (
+    counts.relay > 0 &&
+    canAddMeetEntry(
+      limits,
+      { individual: counts.individual, relay: counts.relay - 1 },
+      false,
+    ).ok
+  ) {
+    parts.push("To add an individual, unassign a racing relay.");
+  }
+  return parts.join(" ");
 }

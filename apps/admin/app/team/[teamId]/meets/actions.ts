@@ -6,6 +6,7 @@ import {
   requireCoachSafeSportCurrent,
   requireTeamRole,
 } from "@project-aqua/db/authz";
+import { db } from "@project-aqua/db/client";
 import {
   createImportJob,
   getImportJobs,
@@ -25,22 +26,26 @@ import {
   getMeetEntriesDetailed,
   getMeetEvents,
   getMeetRelayLegs,
+  getMeetRelayTeams,
   getMeetResults,
   getMeets,
   getRosterBestTimesForEvents,
   replaceMeetRelayLegs,
+  replaceMeetRelayTeams,
   updateMeet,
   updateMeetEntry,
   updateMeetEntryStatus,
   updateMeetEvent,
   upsertMeetCommitment,
 } from "@project-aqua/db/queries/meets";
+import { getTeamExportContact } from "@project-aqua/db/queries/members";
 import { recomputeBestTimesForSwimmer } from "@project-aqua/db/queries/progression";
 import {
   addSwimmer,
   findSwimmerByGoverningBodyId,
   getRoster,
 } from "@project-aqua/db/queries/roster";
+import { organization } from "@project-aqua/db/schema";
 import { sendMeetImportComplete } from "@project-aqua/emails";
 import { isMinorSwimmer } from "@project-aqua/swim-core/age";
 import { formatDateOnly } from "@project-aqua/swim-core/calendar-date";
@@ -63,8 +68,15 @@ import {
   type EventConflictResolution,
 } from "@project-aqua/swim-core/meet-import-merge";
 import { normalizePersonName } from "@project-aqua/swim-core/people";
-import { deriveRelayLetter } from "@project-aqua/swim-core/relay-legs";
-import { blocksMeetEntries } from "@project-aqua/swim-core/team-types";
+import {
+  deriveRelayLetter,
+  racingRelayKeysByMember,
+} from "@project-aqua/swim-core/relay-legs";
+import {
+  blocksMeetEntries,
+  parseClassYear,
+  parseTeamType,
+} from "@project-aqua/swim-core/team-types";
 import { formatTime, parseTime } from "@project-aqua/swim-core/times";
 import { createMeetSchema } from "@project-aqua/swim-core/validators";
 import {
@@ -72,6 +84,7 @@ import {
   exportEv3,
   exportHyv,
   exportMeetZip,
+  meetZipDownloadFilename,
   type ParsedMeet,
 } from "@project-aqua/swim-formats";
 import { exportHy3 } from "@project-aqua/swim-formats/hy3";
@@ -84,6 +97,7 @@ import {
   parseMeetFilesFromBytes,
 } from "@project-aqua/swim-formats/meet";
 import { exportSdif } from "@project-aqua/swim-formats/sdif";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 function revalidateMeetPaths(teamId: string, meetId?: string) {
@@ -1262,6 +1276,14 @@ export async function importMeetFileAction(
         relayLetter: string;
       }>
     >();
+    const relayTeamSeedsByEvent = new Map<
+      string,
+      Array<{
+        relayLetter: string;
+        seedTimeMs: number;
+        seedTimeSource: "manual";
+      }>
+    >();
     for (const relay of parsed.relays ?? []) {
       const meetEventId = await eventIdFor(relay.eventNumber);
       const letter = deriveRelayLetter(relay.relayLetter, 1);
@@ -1284,6 +1306,16 @@ export async function importMeetFileAction(
       }
       relayLegsByEvent.set(meetEventId, legs);
       if (matched > 0) relaysAdded += 1;
+      const seedMs = relay.seedTime ? parseTime(relay.seedTime) : 0;
+      if (seedMs > 0) {
+        const teamSeeds = relayTeamSeedsByEvent.get(meetEventId) ?? [];
+        teamSeeds.push({
+          relayLetter: letter,
+          seedTimeMs: seedMs,
+          seedTimeSource: "manual" as const,
+        });
+        relayTeamSeedsByEvent.set(meetEventId, teamSeeds);
+      }
     }
     for (const [meetEventId, legs] of relayLegsByEvent) {
       if (legs.length === 0) continue;
@@ -1292,6 +1324,14 @@ export async function importMeetFileAction(
         meetEventId,
         legs,
       });
+      const teams = relayTeamSeedsByEvent.get(meetEventId);
+      if (teams && teams.length > 0) {
+        await replaceMeetRelayTeams({
+          meetId,
+          meetEventId,
+          teams,
+        });
+      }
     }
 
     for (const swimmerId of resultSwimmerIds) {
@@ -1386,19 +1426,44 @@ async function buildMeetExportPayload(
   const meet = await getMeetById(meetId, teamId);
   if (!meet) throw new Error("Meet not found");
 
-  const [events, entries, results, relayLegs, commitments] = await Promise.all([
-    getMeetEvents(meetId),
-    getMeetEntries(meetId),
-    getMeetResults(meetId),
-    getMeetRelayLegs(meetId),
-    getMeetCommitments(meetId),
-  ]);
+  const [events, entries, results, relayLegs, relayTeams, commitments] =
+    await Promise.all([
+      getMeetEvents(meetId),
+      getMeetEntries(meetId),
+      getMeetResults(meetId),
+      getMeetRelayLegs(meetId),
+      getMeetRelayTeams(meetId),
+      getMeetCommitments(meetId),
+    ]);
 
   const roster = await getRoster(teamId);
   const membershipById = new Map(
     roster.map((r) => [r.membershipId, r] as const),
   );
   const swimmerById = new Map(roster.map((r) => [r.swimmerId, r] as const));
+
+  const [[org], contact] = await Promise.all([
+    db
+      .select({
+        name: organization.name,
+        teamCode: organization.teamCode,
+        lscCode: organization.lscCode,
+        teamType: organization.teamType,
+        addressLine1: organization.addressLine1,
+        addressLine2: organization.addressLine2,
+        city: organization.city,
+        region: organization.region,
+        postalCode: organization.postalCode,
+        country: organization.country,
+      })
+      .from(organization)
+      .where(eq(organization.id, teamId))
+      .limit(1),
+    getTeamExportContact(teamId),
+  ]);
+  const teamType = parseTeamType(org?.teamType);
+  const teamCode = org?.teamCode?.trim() || undefined;
+  const lscCode = org?.lscCode?.trim() || undefined;
 
   const notGoingIds = new Set(
     commitments
@@ -1412,9 +1477,14 @@ async function buildMeetExportPayload(
     return blocksMeetEntries(member.eligibilityStatus);
   };
 
-  const activeEntries = entries.filter(
-    (e) => e.status !== "scratched" && !isExportBlocked(e.membershipId),
-  );
+  const activeEntries = entries.filter((e) => {
+    if (e.status === "scratched" || isExportBlocked(e.membershipId)) {
+      return false;
+    }
+    const event = events.find((ev) => ev.id === e.meetEventId);
+    if (!event) return false;
+    return !isRelayStroke(event.stroke, event.eventKey);
+  });
   const exportRelayLegs = relayLegs.filter(
     (leg) => !isExportBlocked(leg.membershipId),
   );
@@ -1438,6 +1508,18 @@ async function buildMeetExportPayload(
     endDate: meet.endDate ? formatDateOnly(meet.endDate) : undefined,
     course: meet.course,
     location: meet.location ?? undefined,
+    teamCode,
+    lscCode,
+    teamName: org?.name,
+    teamKind: teamType === "high_school" ? "HS" : undefined,
+    teamAddressLine1: org?.addressLine1 ?? undefined,
+    teamAddressLine2: org?.addressLine2 ?? undefined,
+    teamCity: org?.city ?? undefined,
+    teamRegion: org?.region ?? undefined,
+    teamPostalCode: org?.postalCode ?? undefined,
+    teamCountry: org?.country ?? undefined,
+    teamContactName: contact?.name,
+    teamContactEmail: contact?.email,
     events: events.map((e) => ({
       eventNumber: e.eventNumber ?? undefined,
       stroke: e.stroke,
@@ -1465,6 +1547,7 @@ async function buildMeetExportPayload(
             ? member.gender
             : undefined,
         exhibition: e.exhibition,
+        classYear: parseClassYear(member?.classYear) ?? undefined,
       };
     }),
     results: results.map((r) => {
@@ -1511,11 +1594,18 @@ async function buildMeetExportPayload(
             member.gender === "male" || member.gender === "female"
               ? member.gender
               : undefined,
+          classYear: parseClassYear(member.classYear) ?? undefined,
           relayOnly: onRelay && !hasIndividual,
         },
       ];
     }),
-    relays: groupRelayLegsForExport(events, exportRelayLegs, membershipById),
+    relays: groupRelayLegsForExport(
+      events,
+      exportRelayLegs,
+      membershipById,
+      relayTeams,
+      teamCode,
+    ),
   };
 
   return payload;
@@ -1525,7 +1615,15 @@ function groupRelayLegsForExport(
   events: Awaited<ReturnType<typeof getMeetEvents>>,
   relayLegs: Awaited<ReturnType<typeof getMeetRelayLegs>>,
   membershipById: Map<string, { firstName: string; lastName: string }>,
+  relayTeams: Awaited<ReturnType<typeof getMeetRelayTeams>>,
+  teamCode?: string,
 ): ParsedMeet["relays"] {
+  const seedByKey = new Map(
+    relayTeams.map((team) => {
+      const letter = deriveRelayLetter(team.relayLetter, 1);
+      return [`${team.meetEventId}:${letter}`, team.seedTimeMs] as const;
+    }),
+  );
   const groups = new Map<
     string,
     { meetEventId: string; letter: string; legs: typeof relayLegs }
@@ -1549,10 +1647,14 @@ function groupRelayLegsForExport(
         events.find((ev) => ev.id === group.meetEventId)?.eventNumber ??
         undefined,
       relayLetter: group.letter,
+      seedTime: exportSeedTime(
+        seedByKey.get(`${group.meetEventId}:${group.letter}`),
+      ),
       swimmerNames: sorted.map((leg) => {
         const member = membershipById.get(leg.membershipId);
         return member ? `${member.firstName} ${member.lastName}` : "Unknown";
       }),
+      teamCode,
     };
   });
 }
@@ -1589,13 +1691,16 @@ export async function exportMeetZipAction(
   teamId: string,
   meetId: string,
   kind: "entries" | "results" | "events",
-): Promise<string> {
+): Promise<{ base64: string; filename: string }> {
   const session = await getSession();
   await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
 
   const payload = await buildMeetExportPayload(teamId, meetId);
   const bytes = exportMeetZip(payload, kind);
-  return Buffer.from(bytes).toString("base64");
+  return {
+    base64: Buffer.from(bytes).toString("base64"),
+    filename: meetZipDownloadFilename(payload, kind),
+  };
 }
 
 export async function getMeetsAction(teamId: string) {
@@ -1758,12 +1863,14 @@ export async function addMeetEntryAction(
   const meet = await getMeetById(meetId, teamId);
   if (!meet) throw new Error("Meet not found");
 
-  const [events, roster, existingEntries, commitments] = await Promise.all([
-    getMeetEvents(meetId),
-    getRoster(teamId),
-    getMeetEntriesDetailed(meetId),
-    getMeetCommitments(meetId),
-  ]);
+  const [events, roster, existingEntries, commitments, relayLegs] =
+    await Promise.all([
+      getMeetEvents(meetId),
+      getRoster(teamId),
+      getMeetEntriesDetailed(meetId),
+      getMeetCommitments(meetId),
+      getMeetRelayLegs(meetId),
+    ]);
   const event = events.find((e) => e.id === data.meetEventId);
   if (!event) throw new Error("Event not found");
 
@@ -1789,16 +1896,28 @@ export async function addMeetEntryAction(
     );
   }
 
+  if (isRelayStroke(event.stroke, event.eventKey)) {
+    throw new Error(
+      "Assign relays in Relay lineup, not as individual entries.",
+    );
+  }
+
   const active = existingEntries.filter(
     (e) => e.membershipId === data.membershipId && e.status !== "scratched",
   );
   let individual = 0;
-  let relay = 0;
   for (const e of active) {
-    if (isRelayStroke(e.stroke, e.eventKey)) relay += 1;
-    else individual += 1;
+    if (!isRelayStroke(e.stroke, e.eventKey)) individual += 1;
   }
-  const candidateIsRelay = isRelayStroke(event.stroke, event.eventKey);
+  const relay =
+    racingRelayKeysByMember(
+      relayLegs.map((leg) => ({
+        membershipId: leg.membershipId,
+        meetEventId: leg.meetEventId,
+        relayLetter: leg.relayLetter,
+        legOrder: leg.legOrder,
+      })),
+    ).get(data.membershipId)?.size ?? 0;
   const limitCheck = canAddMeetEntry(
     {
       maxIndividualEntries: meet.maxIndividualEntries,
@@ -1807,7 +1926,7 @@ export async function addMeetEntryAction(
       entryLimitPackages: meet.entryLimitPackages,
     },
     { individual, relay },
-    candidateIsRelay,
+    false,
   );
   if (!limitCheck.ok) throw new Error(limitCheck.reason);
 
@@ -1941,12 +2060,14 @@ export async function applySuggestedLineupAction(
   const meet = await getMeetById(meetId, teamId);
   if (!meet) throw new Error("Meet not found");
 
-  const [events, existingEntries, commitments, roster] = await Promise.all([
-    getMeetEvents(meetId),
-    getMeetEntriesDetailed(meetId),
-    getMeetCommitments(meetId),
-    getRoster(teamId),
-  ]);
+  const [events, existingEntries, commitments, roster, relayLegs] =
+    await Promise.all([
+      getMeetEvents(meetId),
+      getMeetEntriesDetailed(meetId),
+      getMeetCommitments(meetId),
+      getRoster(teamId),
+      getMeetRelayLegs(meetId),
+    ]);
   const bestTimes = await getRosterBestTimesForEvents(
     teamId,
     events.map((e) => e.eventKey),
@@ -1983,13 +2104,35 @@ export async function applySuggestedLineupAction(
       gender: r.gender,
       bestByEventKey: bestByMembership.get(r.membershipId) ?? {},
     })),
-    existing: existingEntries.map((e) => ({
-      membershipId: e.membershipId,
-      meetEventId: e.meetEventId,
-      eventKey: e.eventKey,
-      stroke: e.stroke,
-      status: e.status,
-    })),
+    existing: [
+      ...existingEntries
+        .filter((e) => !isRelayStroke(e.stroke, e.eventKey))
+        .map((e) => ({
+          membershipId: e.membershipId,
+          meetEventId: e.meetEventId,
+          eventKey: e.eventKey,
+          stroke: e.stroke,
+          status: e.status,
+        })),
+      ...[
+        ...racingRelayKeysByMember(
+          relayLegs.map((leg) => ({
+            membershipId: leg.membershipId,
+            meetEventId: leg.meetEventId,
+            relayLetter: leg.relayLetter,
+            legOrder: leg.legOrder,
+          })),
+        ),
+      ].flatMap(([membershipId, keys]) =>
+        [...keys].map((key) => ({
+          membershipId,
+          meetEventId: key.split(":")[0] ?? "",
+          eventKey: "relay",
+          stroke: "free_relay",
+          status: "approved",
+        })),
+      ),
+    ],
     limits: {
       maxIndividualEntries: meet.maxIndividualEntries,
       maxRelayEntries: meet.maxRelayEntries,

@@ -63,13 +63,20 @@ function sortEvents(a: MeetEntryExportEvent, b: MeetEntryExportEvent): number {
   return a.id.localeCompare(b.id);
 }
 
+export type MeetRelayTeamSeedExport = {
+  meetEventId: string;
+  relayLetter: string;
+  seedTimeMs: number | null;
+};
+
 /** One row per individual entry; one row per relay team with Leg 1–4 columns. */
 export function buildEntryListCsv(input: {
   events: MeetEntryExportEvent[];
   entries: MeetEntryExportEntry[];
   relayLegs: MeetRelayLegExport[];
+  relayTeamSeeds?: MeetRelayTeamSeedExport[];
 }): string {
-  const { events, entries, relayLegs } = input;
+  const { events, entries, relayLegs, relayTeamSeeds = [] } = input;
   const eventById = new Map(events.map((event) => [event.id, event]));
   const headers = [
     "Event #",
@@ -110,6 +117,11 @@ export function buildEntryListCsv(input: {
           const leg = ordered.find((l) => l.legOrder === order);
           return leg ? swimmerName(leg.firstName, leg.lastName) : "";
         });
+        const seedMs = relayTeamSeeds.find(
+          (team) =>
+            team.meetEventId === event.id && team.relayLetter === relayLetter,
+        )?.seedTimeMs;
+        const seed = seedMs != null && seedMs > 0 ? formatTime(seedMs) : "";
         rows.push(
           rowToCsv([
             event.eventNumber?.toString() ?? "",
@@ -118,7 +130,7 @@ export function buildEntryListCsv(input: {
             formatGenderLabel(event.gender),
             event.ageGroup ?? "",
             `Relay ${relayLetter}`,
-            "",
+            seed,
             "",
             ...legNames,
             "",

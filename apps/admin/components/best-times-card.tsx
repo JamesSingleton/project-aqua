@@ -20,6 +20,14 @@ import {
   CardTitle,
 } from "@project-aqua/ui/components/card";
 import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@project-aqua/ui/components/combobox";
+import {
   Dialog,
   DialogClose,
   DialogContent,
@@ -35,14 +43,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@project-aqua/ui/components/popover";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@project-aqua/ui/components/select";
 import {
   Table,
   TableBody,
@@ -118,10 +118,48 @@ function AchievedDatePicker({
   );
 }
 
-type EditorMode =
-  | { kind: "closed" }
-  | { kind: "add" }
-  | { kind: "edit"; row: BestTimeRow };
+type EventOption = { value: string; label: string };
+
+function BestTimeEventCombobox({
+  id,
+  options,
+  value,
+  onChange,
+}: {
+  id: string;
+  options: EventOption[];
+  value: string;
+  onChange: (eventKey: string) => void;
+}) {
+  const selected = options.find((option) => option.value === value) ?? null;
+
+  return (
+    <Combobox
+      items={options}
+      value={selected}
+      onValueChange={(item) => onChange(item?.value ?? "")}
+      itemToStringValue={(item) => item.label}
+      isItemEqualToValue={(item, current) => item.value === current.value}
+    >
+      <ComboboxInput
+        id={id}
+        className="w-full"
+        placeholder="Search events…"
+        showClear
+      />
+      <ComboboxContent>
+        <ComboboxEmpty>No events found.</ComboboxEmpty>
+        <ComboboxList>
+          {(item) => (
+            <ComboboxItem key={item.value} value={item}>
+              {item.label}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  );
+}
 
 export function BestTimesCard({
   teamId,
@@ -159,7 +197,7 @@ export function BestTimesCard({
 
   function openAdd() {
     setError("");
-    setEventKey(eventOptions[0]?.value ?? "");
+    setEventKey("");
     setTime("");
     setAchievedOn(formatLocalDateOnly(new Date()));
     setMode({ kind: "add" });
@@ -355,26 +393,12 @@ export function BestTimesCard({
                   disabled
                 />
               ) : (
-                <Select
-                  items={eventOptions}
+                <BestTimeEventCombobox
+                  id="best-time-event"
+                  options={eventOptions}
                   value={eventKey}
-                  onValueChange={(value) => {
-                    if (value != null) setEventKey(value);
-                  }}
-                >
-                  <SelectTrigger id="best-time-event" className="w-full">
-                    <SelectValue placeholder="Select event" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {eventOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                  onChange={setEventKey}
+                />
               )}
             </div>
 

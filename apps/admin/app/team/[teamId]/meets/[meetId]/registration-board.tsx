@@ -3,8 +3,11 @@
 import { swimmerAgeOnDate } from "@project-aqua/swim-core/age";
 import {
   canAddMeetEntry,
+  checkMeetEntryCounts,
   checkQualifyingTime,
+  formatEntryCountsSentence,
   formatEntryLimitsSummary,
+  formatFilledCapAdvice,
   isRelayStroke,
   type MeetEntryLimits,
 } from "@project-aqua/swim-core/entry-limits";
@@ -13,6 +16,14 @@ import {
   formatGenderLabel,
   isSwimmerEligibleForEvent,
 } from "@project-aqua/swim-core/events";
+import {
+  deriveRelayLetter,
+  formatAssignmentCountLine,
+  isRelayAlternateSlot,
+  racingRelayCount,
+  racingRelayKeysByMember,
+  relayLegRoleLabel,
+} from "@project-aqua/swim-core/relay-legs";
 import {
   blocksMeetEntries,
   ELIGIBILITY_STATUS_LABELS,
@@ -29,7 +40,10 @@ import { Checkbox } from "@project-aqua/ui/components/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@project-aqua/ui/components/dropdown-menu";
 import { Input } from "@project-aqua/ui/components/input";
@@ -50,6 +64,8 @@ import {
 import { cn } from "@project-aqua/ui/lib/utils";
 import {
   AlertTriangleIcon,
+  ArrowDownUpIcon,
+  InfoIcon,
   Minus,
   MoreVertical,
   Plus,
@@ -64,6 +80,7 @@ import {
   setMeetAttendanceAction,
   updateMeetEntryAction,
 } from "../actions";
+import { removeMeetRelaySlotAction } from "../relay-actions";
 
 type RosterRow = {
   membershipId: string;
@@ -122,12 +139,22 @@ type BestTimeRow = {
   timeMs: number;
 };
 
+type RelayLegRow = {
+  meetEventId: string;
+  membershipId: string;
+  legOrder: number;
+  relayLetter: string | null;
+  stroke: string | null;
+};
+
 type RosterFilter =
   | "all"
   | "has_entries"
   | "no_entries"
   | "not_going"
   | "ineligible";
+
+type RosterSort = "last_name" | "first_name" | "group";
 
 function rowStatusLabel(
   notGoing: boolean,
@@ -172,63 +199,78 @@ function groupLabel(row: RosterRow) {
   return row.groupName ?? row.practiceGroup ?? "No group";
 }
 
+function sortRosterRows(rows: RosterRow[], sort: RosterSort): RosterRow[] {
+  return [...rows].sort((a, b) => {
+    if (sort === "first_name") {
+      return (
+        a.firstName.localeCompare(b.firstName) ||
+        a.lastName.localeCompare(b.lastName)
+      );
+    }
+    if (sort === "group") {
+      return (
+        groupLabel(a).localeCompare(groupLabel(b)) ||
+        a.lastName.localeCompare(b.lastName) ||
+        a.firstName.localeCompare(b.firstName)
+      );
+    }
+    return (
+      a.lastName.localeCompare(b.lastName) ||
+      a.firstName.localeCompare(b.firstName)
+    );
+  });
+}
+
 function entryLimitAlert(args: {
   limits: MeetEntryLimits | null | undefined;
   entryCounts: { individual: number; relay: number };
   limitsSummary: string | null;
-  availableEvents: EventRow[];
-}): { title: string; description: string } | null {
-  const { limits, entryCounts, limitsSummary, availableEvents } = args;
-  if (!limits || availableEvents.length === 0) return null;
+}): {
+  title: string;
+  description: string;
+  variant: "default" | "destructive";
+} | null {
+  const { limits, entryCounts, limitsSummary } = args;
+  if (!limits) return null;
+
+  const current = formatEntryCountsSentence(entryCounts);
+  const limitLine = limitsSummary ? ` Meet allows ${limitsSummary}.` : "";
+  const over = checkMeetEntryCounts(limits, entryCounts);
+  if (!over.ok) {
+    return {
+      variant: "destructive",
+      title: "Over the entry limit",
+      description: `${over.reason} This swimmer has ${current}.${limitLine} Remove an individual entry or a racing relay leg.`,
+    };
+  }
 
   const individualCheck = canAddMeetEntry(limits, entryCounts, false);
   const relayCheck = canAddMeetEntry(limits, entryCounts, true);
   if (individualCheck.ok && relayCheck.ok) return null;
 
-  const hasIndividualAvailable = availableEvents.some(
-    (event) => !isRelayStroke(event.stroke, event.eventKey),
-  );
-  const hasRelayAvailable = availableEvents.some((event) =>
-    isRelayStroke(event.stroke, event.eventKey),
-  );
-
-  const blockingIndividual = !individualCheck.ok && hasIndividualAvailable;
-  const blockingRelay = !relayCheck.ok && hasRelayAvailable;
-  if (!blockingIndividual && !blockingRelay) return null;
-
-  const current = `${entryCounts.individual} individual + ${entryCounts.relay} relay`;
-  const limitLine = limitsSummary ? ` Meet limit: ${limitsSummary}.` : "";
-
-  if (blockingIndividual && blockingRelay) {
-    const reason = !individualCheck.ok
-      ? individualCheck.reason
-      : !relayCheck.ok
-        ? relayCheck.reason
-        : "Entry limits exceeded.";
+  if (!individualCheck.ok && !relayCheck.ok) {
+    const advice = formatFilledCapAdvice(limits, entryCounts);
     return {
-      title: "Entry limit reached",
-      description: `${reason} This swimmer has ${current}.${limitLine} Remove an entry to add another event.`,
-    };
-  }
-
-  if (blockingIndividual) {
-    return {
-      title: "Individual entry limit reached",
-      description: `${!individualCheck.ok ? individualCheck.reason : ""} This swimmer has ${current}.${limitLine}${
-        hasRelayAvailable && relayCheck.ok
-          ? " Relay events can still be added."
-          : " Remove an individual entry to add another."
+      variant: "default",
+      title: "Entry limit filled",
+      description: `This swimmer has ${current}, which fills the meet cap.${limitLine}${
+        advice ? ` ${advice}` : ""
       }`,
     };
   }
 
+  if (!individualCheck.ok) {
+    return {
+      variant: "default",
+      title: "Individual slots filled",
+      description: `This swimmer has ${current}.${limitLine} Relays can still be assigned in Relay lineup.`,
+    };
+  }
+
   return {
-    title: "Relay entry limit reached",
-    description: `${!relayCheck.ok ? relayCheck.reason : ""} This swimmer has ${current}.${limitLine}${
-      hasIndividualAvailable && individualCheck.ok
-        ? " Individual events can still be added."
-        : " Remove a relay entry to add another."
-    }`,
+    variant: "default",
+    title: "Relay slots filled",
+    description: `This swimmer has ${current}.${limitLine} Individual events can still be added. To add another racing relay, unassign a racing relay leg first.`,
   };
 }
 
@@ -243,18 +285,20 @@ function AddEntryButton({
   pending: boolean;
   onClick: () => void;
 }) {
+  const label = limitReason
+    ? `Add entry unavailable: ${limitReason}`
+    : "Add entry";
   const button = (
     <Button
       type="button"
       variant="ghost"
       size="icon-sm"
       disabled={disabled}
-      aria-label={
-        limitReason ? `Add entry unavailable: ${limitReason}` : "Add entry"
-      }
+      aria-label={label}
       onClick={onClick}
     >
-      {pending ? <Spinner /> : <Plus className="size-4" />}
+      {pending ? <Spinner aria-hidden /> : <Plus aria-hidden />}
+      <span className="sr-only">{label}</span>
     </Button>
   );
 
@@ -283,7 +327,7 @@ export function RegistrationBoard({
   entries,
   attendance,
   bestTimes,
-  relayLegMembershipIds,
+  relayLegs,
 }: {
   teamId: string;
   meetId: string;
@@ -295,13 +339,14 @@ export function RegistrationBoard({
   entries: EntryRow[];
   attendance: AttendanceRow[];
   bestTimes: BestTimeRow[];
-  relayLegMembershipIds: string[];
+  relayLegs: RelayLegRow[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<RosterFilter>("all");
+  const [sort, setSort] = useState<RosterSort>("last_name");
   const [groupFilter, setGroupFilter] = useState<string>("all");
   const [membershipId, setMembershipId] = useState(
     roster[0]?.membershipId ?? "",
@@ -319,18 +364,34 @@ export function RegistrationBoard({
   );
 
   const relayLegSet = useMemo(
-    () => new Set(relayLegMembershipIds),
-    [relayLegMembershipIds],
+    () => new Set(relayLegs.map((leg) => leg.membershipId)),
+    [relayLegs],
   );
 
-  const entryCountByMembership = useMemo(() => {
-    const map = new Map<string, number>();
+  const assignmentByMembership = useMemo(() => {
+    const events = new Map<string, number>();
+    const alts = new Map<string, number>();
     for (const entry of entries) {
       if (entry.status === "scratched") continue;
-      map.set(entry.membershipId, (map.get(entry.membershipId) ?? 0) + 1);
+      if (isRelayStroke(entry.stroke, entry.eventKey)) continue;
+      events.set(entry.membershipId, (events.get(entry.membershipId) ?? 0) + 1);
     }
-    return map;
-  }, [entries]);
+    for (const [membershipId, keys] of racingRelayKeysByMember(
+      relayLegs.map((leg) => ({
+        membershipId: leg.membershipId,
+        meetEventId: leg.meetEventId,
+        relayLetter: deriveRelayLetter(leg.relayLetter, leg.legOrder),
+        legOrder: leg.legOrder,
+      })),
+    )) {
+      events.set(membershipId, (events.get(membershipId) ?? 0) + keys.size);
+    }
+    for (const leg of relayLegs) {
+      if (!isRelayAlternateSlot(leg.legOrder)) continue;
+      alts.set(leg.membershipId, (alts.get(leg.membershipId) ?? 0) + 1);
+    }
+    return { events, alts };
+  }, [entries, relayLegs]);
 
   const individualCountByMembership = useMemo(() => {
     const map = new Map<string, number>();
@@ -356,14 +417,14 @@ export function RegistrationBoard({
 
   const filteredRoster = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return roster.filter((row) => {
+    const matched = roster.filter((row) => {
       const status = attendanceByMembership.get(row.membershipId);
-      const entryCount = entryCountByMembership.get(row.membershipId) ?? 0;
-      const hasIndividual =
-        (individualCountByMembership.get(row.membershipId) ?? 0) > 0;
+      const events = assignmentByMembership.events.get(row.membershipId) ?? 0;
+      const alts = assignmentByMembership.alts.get(row.membershipId) ?? 0;
+      const hasAssignment = events + alts > 0;
 
-      if (filter === "has_entries" && entryCount === 0) return false;
-      if (filter === "no_entries" && entryCount > 0) return false;
+      if (filter === "has_entries" && !hasAssignment) return false;
+      if (filter === "no_entries" && hasAssignment) return false;
       if (filter === "not_going" && status !== "not_going") return false;
       if (
         filter === "ineligible" &&
@@ -385,14 +446,15 @@ export function RegistrationBoard({
         .trim();
       return name.includes(q);
     });
+    return sortRosterRows(matched, sort);
   }, [
     roster,
     search,
     filter,
+    sort,
     groupFilter,
     attendanceByMembership,
-    entryCountByMembership,
-    individualCountByMembership,
+    assignmentByMembership,
   ]);
 
   useEffect(() => {
@@ -418,9 +480,17 @@ export function RegistrationBoard({
   const swimmerEntries = useMemo(
     () =>
       entries.filter(
-        (e) => e.membershipId === membershipId && e.status !== "scratched",
+        (e) =>
+          e.membershipId === membershipId &&
+          e.status !== "scratched" &&
+          !isRelayStroke(e.stroke, e.eventKey),
       ),
     [entries, membershipId],
+  );
+
+  const swimmerRelayLegs = useMemo(
+    () => relayLegs.filter((leg) => leg.membershipId === membershipId),
+    [relayLegs, membershipId],
   );
 
   const enteredEventIds = useMemo(
@@ -429,19 +499,25 @@ export function RegistrationBoard({
   );
 
   const entryCounts = useMemo(() => {
-    let individual = 0;
-    let relay = 0;
-    for (const entry of swimmerEntries) {
-      if (isRelayStroke(entry.stroke, entry.eventKey)) relay += 1;
-      else individual += 1;
-    }
-    return { individual, relay };
-  }, [swimmerEntries]);
+    return {
+      individual: swimmerEntries.length,
+      relay: racingRelayCount(
+        relayLegs.map((leg) => ({
+          membershipId: leg.membershipId,
+          meetEventId: leg.meetEventId,
+          relayLetter: deriveRelayLetter(leg.relayLetter, leg.legOrder),
+          legOrder: leg.legOrder,
+        })),
+        membershipId,
+      ),
+    };
+  }, [swimmerEntries, relayLegs, membershipId]);
 
   const availableEvents = useMemo(() => {
     if (!selectedSwimmer || isBlocked) return [];
     return events.filter(
       (event) =>
+        !isRelayStroke(event.stroke, event.eventKey) &&
         !enteredEventIds.has(event.id) &&
         isSwimmerEligibleForEvent(selectedSwimmer.gender, event.gender),
     );
@@ -453,9 +529,8 @@ export function RegistrationBoard({
         limits,
         entryCounts,
         limitsSummary,
-        availableEvents,
       }),
-    [limits, entryCounts, limitsSummary, availableEvents],
+    [limits, entryCounts, limitsSummary],
   );
 
   function bestSeedFor(eventKey: string) {
@@ -566,6 +641,7 @@ export function RegistrationBoard({
     if (!resolved) return;
 
     const candidateIsRelay = isRelayStroke(event.stroke, event.eventKey);
+    if (candidateIsRelay) return;
     const limitCheck = canAddMeetEntry(limits, entryCounts, candidateIsRelay);
     if (!limitCheck.ok) return;
 
@@ -648,9 +724,9 @@ export function RegistrationBoard({
                   {filter === "all"
                     ? `All (${roster.length})`
                     : filter === "has_entries"
-                      ? `Has entries (${roster.filter((r) => (entryCountByMembership.get(r.membershipId) ?? 0) > 0).length})`
+                      ? `Has entries (${roster.filter((r) => (assignmentByMembership.events.get(r.membershipId) ?? 0) + (assignmentByMembership.alts.get(r.membershipId) ?? 0) > 0).length})`
                       : filter === "no_entries"
-                        ? `No entries yet (${roster.filter((r) => (entryCountByMembership.get(r.membershipId) ?? 0) === 0 && !attendanceByMembership.get(r.membershipId)).length})`
+                        ? `No entries yet (${roster.filter((r) => (assignmentByMembership.events.get(r.membershipId) ?? 0) + (assignmentByMembership.alts.get(r.membershipId) ?? 0) === 0 && !attendanceByMembership.get(r.membershipId)).length})`
                         : filter === "not_going"
                           ? `Not going (${roster.filter((r) => attendanceByMembership.get(r.membershipId) === "not_going").length})`
                           : `Ineligible (${roster.filter((r) => blocksMeetEntries(r.eligibilityStatus)).length})`}
@@ -694,6 +770,48 @@ export function RegistrationBoard({
                 </SelectGroup>
               </SelectContent>
             </Select>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="ml-auto shrink-0"
+                    aria-label="Sort swimmers"
+                  >
+                    <ArrowDownUpIcon aria-hidden />
+                    <span className="sr-only">Sort swimmers</span>
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="min-w-44">
+                <DropdownMenuRadioGroup
+                  value={sort}
+                  onValueChange={(value) => {
+                    if (
+                      value === "last_name" ||
+                      value === "first_name" ||
+                      value === "group"
+                    ) {
+                      setSort(value);
+                    }
+                  }}
+                >
+                  <DropdownMenuGroup>
+                    <DropdownMenuRadioItem value="last_name" closeOnClick>
+                      Last name A–Z
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="first_name" closeOnClick>
+                      First name A–Z
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="group" closeOnClick>
+                      Group
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -709,7 +827,10 @@ export function RegistrationBoard({
               const profileIneligible = blocksMeetEntries(
                 row.eligibilityStatus,
               );
-              const count = entryCountByMembership.get(row.membershipId) ?? 0;
+              const events =
+                assignmentByMembership.events.get(row.membershipId) ?? 0;
+              const alts =
+                assignmentByMembership.alts.get(row.membershipId) ?? 0;
               const hasIndividual =
                 (individualCountByMembership.get(row.membershipId) ?? 0) > 0;
               const relaysOnly =
@@ -758,9 +879,7 @@ export function RegistrationBoard({
                             <span>·</span>
                           </>
                         ) : null}
-                        <span>
-                          {count} {count === 1 ? "event" : "events"}
-                        </span>
+                        <span>{formatAssignmentCountLine(events, alts)}</span>
                         {relaysOnly ? (
                           <>
                             <span>·</span>
@@ -779,11 +898,14 @@ export function RegistrationBoard({
                             className="mt-1 shrink-0"
                             aria-label={`Actions for ${row.firstName} ${row.lastName}`}
                             disabled={pending}
-                          />
+                          >
+                            <MoreVertical aria-hidden />
+                            <span className="sr-only">
+                              Actions for {row.firstName} {row.lastName}
+                            </span>
+                          </Button>
                         }
-                      >
-                        <MoreVertical className="size-4" />
-                      </DropdownMenuTrigger>
+                      />
                       <DropdownMenuContent align="end">
                         {profileIneligible ? (
                           <DropdownMenuItem
@@ -851,13 +973,9 @@ export function RegistrationBoard({
                   {groupLabel(selectedSwimmer)} ·{" "}
                   {formatGenderLabel(selectedSwimmer.gender)}
                 </p>
-                {limitsSummary ? (
-                  <p className="text-muted-foreground mt-1 text-xs">
-                    Entry limits: {limitsSummary}
-                    <span className="mx-1.5">·</span>
-                    Current: {entryCounts.individual}I + {entryCounts.relay}R
-                  </p>
-                ) : null}
+                <p className="text-muted-foreground mt-1 text-xs">
+                  {formatEntryCountsSentence(entryCounts)}
+                </p>
               </div>
               {!isProfileIneligible ? (
                 <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
@@ -925,12 +1043,20 @@ export function RegistrationBoard({
               ) : null}
 
               {limitAlert ? (
-                <Alert className="border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-50">
-                  <AlertTriangleIcon />
+                <Alert
+                  variant={
+                    limitAlert.variant === "destructive"
+                      ? "destructive"
+                      : "default"
+                  }
+                >
+                  {limitAlert.variant === "destructive" ? (
+                    <AlertTriangleIcon />
+                  ) : (
+                    <InfoIcon />
+                  )}
                   <AlertTitle>{limitAlert.title}</AlertTitle>
-                  <AlertDescription className="text-amber-800 dark:text-amber-100/90">
-                    {limitAlert.description}
-                  </AlertDescription>
+                  <AlertDescription>{limitAlert.description}</AlertDescription>
                 </Alert>
               ) : null}
 
@@ -939,12 +1065,67 @@ export function RegistrationBoard({
                   <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                     Entered
                   </h3>
-                  {swimmerEntries.length === 0 ? (
+                  {swimmerEntries.length === 0 &&
+                  swimmerRelayLegs.length === 0 ? (
                     <p className="text-muted-foreground text-sm">
-                      No events yet. Add from available events below.
+                      No events yet. Add individual events below, or assign
+                      relays in Relay lineup.
                     </p>
                   ) : (
                     <ul className="divide-border divide-y rounded-md border">
+                      {swimmerRelayLegs.map((leg) => {
+                        const meetEvent = events.find(
+                          (e) => e.id === leg.meetEventId,
+                        );
+                        if (!meetEvent) return null;
+                        const letter = deriveRelayLetter(
+                          leg.relayLetter,
+                          leg.legOrder,
+                        );
+                        const slotId = `relay:${leg.meetEventId}:${letter}:${leg.legOrder}`;
+                        const line = `${formatEventLine(meetEvent)} · ${letter} · ${relayLegRoleLabel(meetEvent.stroke, leg.legOrder)}`;
+                        return (
+                          <li
+                            key={slotId}
+                            className="flex flex-wrap items-center gap-2 px-3 py-2.5 sm:flex-nowrap"
+                          >
+                            <span className="min-w-0 flex-1 truncate text-sm">
+                              {line}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              disabled={pending}
+                              aria-label={`Remove ${line}`}
+                              onClick={() => {
+                                setPendingAction(`remove:${slotId}`);
+                                startTransition(async () => {
+                                  try {
+                                    await removeMeetRelaySlotAction(
+                                      teamId,
+                                      meetId,
+                                      leg.meetEventId,
+                                      letter,
+                                      leg.legOrder,
+                                    );
+                                    refresh();
+                                  } finally {
+                                    setPendingAction(null);
+                                  }
+                                });
+                              }}
+                            >
+                              {pendingAction === `remove:${slotId}` ? (
+                                <Spinner aria-hidden />
+                              ) : (
+                                <Minus aria-hidden />
+                              )}
+                              <span className="sr-only">Remove {line}</span>
+                            </Button>
+                          </li>
+                        );
+                      })}
                       {swimmerEntries.map((entry) => {
                         const meetEvent = events.find(
                           (e) => e.id === entry.meetEventId,
@@ -1046,7 +1227,7 @@ export function RegistrationBoard({
                               variant="ghost"
                               size="icon-sm"
                               disabled={pending}
-                              aria-label="Remove entry"
+                              aria-label={`Remove ${formatEventLine(entry)}`}
                               onClick={() => {
                                 setPendingAction(`remove:${entry.id}`);
                                 startTransition(async () => {
@@ -1064,10 +1245,13 @@ export function RegistrationBoard({
                               }}
                             >
                               {pendingAction === `remove:${entry.id}` ? (
-                                <Spinner />
+                                <Spinner aria-hidden />
                               ) : (
-                                <Minus className="size-4" />
+                                <Minus aria-hidden />
                               )}
+                              <span className="sr-only">
+                                Remove {formatEventLine(entry)}
+                              </span>
                             </Button>
                           </li>
                         );

@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  canAddMeetEntry,
+  checkMeetEntryCounts,
   checkQualifyingTime,
   isRelayStroke,
   type MeetEntryLimits,
@@ -10,6 +10,14 @@ import {
   formatEventName,
   formatGenderShort,
 } from "@project-aqua/swim-core/events";
+import {
+  deriveRelayLetter,
+  formatAssignmentCountLine,
+  isRelayAlternateSlot,
+  racingRelayCount,
+  relayLegRoleLabel,
+} from "@project-aqua/swim-core/relay-legs";
+import { formatTime } from "@project-aqua/swim-core/times";
 import { Badge } from "@project-aqua/ui/components/badge";
 import { Button } from "@project-aqua/ui/components/button";
 import {
@@ -63,6 +71,19 @@ type MatrixEntry = {
   status: string;
   seedTimeMs?: number | null;
   exhibition?: boolean;
+  kind?: "individual" | "relay";
+  relayLetter?: string;
+  legOrder?: number;
+  legStroke?: string | null;
+};
+
+type MatrixRelayLeg = {
+  id: string;
+  meetEventId: string;
+  membershipId: string;
+  relayLetter: string;
+  legOrder: number;
+  stroke: string | null;
 };
 
 type GroupBy = "swimmer" | "event" | "errors";
@@ -77,9 +98,85 @@ function isGroupBy(value: string): value is GroupBy {
   return value === "swimmer" || value === "event" || value === "errors";
 }
 
-function eventLabel(event: MatrixEvent) {
+function swimmerSortName(swimmer: MatrixSwimmer | undefined) {
+  if (!swimmer) return "";
+  return `${swimmer.lastName} ${swimmer.firstName}`;
+}
+
+function seedTimeSortValue(ms: number | null | undefined) {
+  if (ms == null || ms <= 0) return Number.POSITIVE_INFINITY;
+  return ms;
+}
+
+function compareEventGroupRows(
+  a: MatrixEntry,
+  b: MatrixEntry,
+  event: MatrixEvent,
+  swimmerById: Map<string, MatrixSwimmer>,
+) {
+  const nameCmp = swimmerSortName(
+    swimmerById.get(a.membershipId),
+  ).localeCompare(swimmerSortName(swimmerById.get(b.membershipId)));
+
+  if (isRelayStroke(event.stroke, event.eventKey)) {
+    const letter = (a.relayLetter ?? "").localeCompare(b.relayLetter ?? "");
+    if (letter !== 0) return letter;
+    const order =
+      (a.legOrder ?? Number.MAX_SAFE_INTEGER) -
+      (b.legOrder ?? Number.MAX_SAFE_INTEGER);
+    if (order !== 0) return order;
+    return nameCmp;
+  }
+
+  const time =
+    seedTimeSortValue(a.seedTimeMs) - seedTimeSortValue(b.seedTimeMs);
+  if (time !== 0) return time;
+  return nameCmp;
+}
+
+function relayRoleExtra(event: MatrixEvent, entry: MatrixEntry) {
+  if (entry.kind !== "relay" || !entry.relayLetter) return undefined;
+  return {
+    letter: entry.relayLetter,
+    slot: relayLegRoleLabel(event.stroke, entry.legOrder ?? 1),
+  };
+}
+
+function swimmerAssignmentCountLabel(
+  membershipId: string,
+  rows: MatrixEntry[],
+) {
+  const individual = rows.filter((row) => row.kind !== "relay").length;
+  const relayInputs = rows.flatMap((row) =>
+    row.kind === "relay"
+      ? [
+          {
+            membershipId: row.membershipId,
+            meetEventId: row.meetEventId,
+            relayLetter: row.relayLetter,
+            legOrder: row.legOrder ?? 0,
+          },
+        ]
+      : [],
+  );
+  const racing = racingRelayCount(relayInputs, membershipId);
+  const alts = rows.filter(
+    (row) => row.kind === "relay" && isRelayAlternateSlot(row.legOrder ?? 0),
+  ).length;
+  return formatAssignmentCountLine(individual + racing, alts);
+}
+
+function eventLabel(
+  event: MatrixEvent,
+  extra?: { letter?: string; slot?: string },
+) {
   const gender = formatGenderShort(event.gender);
-  return `#${event.eventNumber ?? "—"} ${gender ? `${gender} ` : ""}${formatEventName(event.distance, event.stroke)}`.trim();
+  const base =
+    `#${event.eventNumber ?? "—"} ${gender ? `${gender} ` : ""}${formatEventName(event.distance, event.stroke)}`.trim();
+  if (extra?.letter && extra.slot) {
+    return `${base} · ${extra.letter} · ${extra.slot}`;
+  }
+  return base;
 }
 
 function statusBadge(status: string) {
@@ -103,6 +200,9 @@ function statusBadge(status: string) {
       </Badge>
     );
   }
+  if (status === "lineup") {
+    return <Badge variant="outline">Lineup</Badge>;
+  }
   if (status === "scratched") {
     return (
       <Badge variant="destructive" className="line-through">
@@ -119,6 +219,7 @@ export function EntryMatrix({
   events,
   swimmers,
   entries,
+  relayLegs = [],
   limits,
 }: {
   teamId: string;
@@ -126,6 +227,7 @@ export function EntryMatrix({
   events: MatrixEvent[];
   swimmers: MatrixSwimmer[];
   entries: MatrixEntry[];
+  relayLegs?: MatrixRelayLeg[];
   limits?: MeetEntryLimits | null;
 }) {
   const router = useRouter();
@@ -148,10 +250,22 @@ export function EntryMatrix({
     [entries],
   );
 
-  const activeEntries = useMemo(
-    () => entries.filter((e) => e.status !== "scratched"),
-    [entries],
-  );
+  const activeEntries = useMemo(() => {
+    const individuals = entries
+      .filter((e) => e.status !== "scratched")
+      .map((e) => ({ ...e, kind: "individual" as const }));
+    const relays: MatrixEntry[] = relayLegs.map((leg) => ({
+      id: leg.id,
+      meetEventId: leg.meetEventId,
+      membershipId: leg.membershipId,
+      status: "lineup",
+      kind: "relay",
+      relayLetter: deriveRelayLetter(leg.relayLetter, leg.legOrder),
+      legOrder: leg.legOrder,
+      legStroke: leg.stroke,
+    }));
+    return [...individuals, ...relays];
+  }, [entries, relayLegs]);
 
   const sortedEvents = useMemo(
     () =>
@@ -186,6 +300,7 @@ export function EntryMatrix({
           return {
             key: swimmer.membershipId,
             label: `${swimmer.firstName} ${swimmer.lastName}`,
+            countLabel: swimmerAssignmentCountLabel(swimmer.membershipId, rows),
             rows,
           };
         })
@@ -193,49 +308,54 @@ export function EntryMatrix({
     }
 
     if (groupBy === "errors") {
-      const counts = new Map<string, { individual: number; relay: number }>();
-      for (const entry of activeEntries) {
-        const event = eventById.get(entry.meetEventId);
-        const current = counts.get(entry.membershipId) ?? {
-          individual: 0,
-          relay: 0,
-        };
-        if (isRelayStroke(event?.stroke ?? "", event?.eventKey)) {
-          current.relay += 1;
-        } else {
-          current.individual += 1;
-        }
-        counts.set(entry.membershipId, current);
-      }
-
       const qtMiss: MatrixEntry[] = [];
       const overLimit: MatrixEntry[] = [];
+      const countInputs = relayLegs.map((leg) => ({
+        membershipId: leg.membershipId,
+        meetEventId: leg.meetEventId,
+        relayLetter: deriveRelayLetter(leg.relayLetter, leg.legOrder),
+        legOrder: leg.legOrder,
+      }));
+
       for (const entry of activeEntries) {
+        if (entry.kind === "relay") continue;
         const event = eventById.get(entry.meetEventId);
         const qt = checkQualifyingTime(
           event?.qualifyingTimeMs,
           entry.seedTimeMs,
         );
         if (!qt.ok) qtMiss.push(entry);
-        const current = counts.get(entry.membershipId) ?? {
-          individual: 0,
-          relay: 0,
-        };
-        const withoutThis = isRelayStroke(event?.stroke ?? "", event?.eventKey)
-          ? { individual: current.individual, relay: current.relay - 1 }
-          : { individual: current.individual - 1, relay: current.relay };
-        const check = canAddMeetEntry(
-          limits,
-          withoutThis,
-          isRelayStroke(event?.stroke ?? "", event?.eventKey),
-        );
-        if (!check.ok) overLimit.push(entry);
+      }
+
+      const members = new Set(activeEntries.map((e) => e.membershipId));
+      for (const membershipId of members) {
+        const individual = activeEntries.filter(
+          (e) => e.membershipId === membershipId && e.kind !== "relay",
+        ).length;
+        const relay = racingRelayCount(countInputs, membershipId);
+        const check = checkMeetEntryCounts(limits, { individual, relay });
+        if (check.ok) continue;
+        for (const entry of activeEntries) {
+          if (entry.membershipId !== membershipId) continue;
+          if (
+            entry.kind === "relay" &&
+            isRelayAlternateSlot(entry.legOrder ?? 0)
+          ) {
+            continue;
+          }
+          overLimit.push(entry);
+        }
       }
 
       return [
         { key: "qt", label: "Slower than QT", rows: qtMiss },
         { key: "limit", label: "Over entry limit", rows: overLimit },
-      ].filter((group) => group.rows.length > 0);
+      ]
+        .filter((group) => group.rows.length > 0)
+        .map((group) => ({
+          ...group,
+          countLabel: String(group.rows.length),
+        }));
     }
 
     const byEvent = new Map<string, MatrixEntry[]>();
@@ -248,17 +368,13 @@ export function EntryMatrix({
     return sortedEvents
       .map((event) => {
         const rows = [...(byEvent.get(event.id) ?? [])].sort(
-          (a: MatrixEntry, b: MatrixEntry) => {
-            const sa = swimmerById.get(a.membershipId);
-            const sb = swimmerById.get(b.membershipId);
-            const na = sa ? `${sa.lastName} ${sa.firstName}` : "";
-            const nb = sb ? `${sb.lastName} ${sb.firstName}` : "";
-            return na.localeCompare(nb);
-          },
+          (a: MatrixEntry, b: MatrixEntry) =>
+            compareEventGroupRows(a, b, event, swimmerById),
         );
         return {
           key: event.id,
           label: eventLabel(event),
+          countLabel: String(rows.length),
           rows,
         };
       })
@@ -271,6 +387,7 @@ export function EntryMatrix({
     eventById,
     swimmerById,
     limits,
+    relayLegs,
   ]);
 
   function approveDrafts() {
@@ -298,8 +415,12 @@ export function EntryMatrix({
 
   const showEventColumn = groupBy !== "event";
   const showSwimmerColumn = groupBy !== "swimmer";
+  const showSeedColumn = groupBy === "event";
   const columnCount =
-    (showSwimmerColumn ? 1 : 0) + (showEventColumn ? 1 : 0) + 1;
+    (showSwimmerColumn ? 1 : 0) +
+    (showEventColumn ? 1 : 0) +
+    (showSeedColumn ? 1 : 0) +
+    1;
 
   return (
     <Card className="min-w-0 overflow-hidden">
@@ -370,6 +491,7 @@ export function EntryMatrix({
               <TableRow>
                 {showSwimmerColumn ? <TableHead>Swimmer</TableHead> : null}
                 {showEventColumn ? <TableHead>Event</TableHead> : null}
+                {showSeedColumn ? <TableHead>Seed</TableHead> : null}
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -377,10 +499,12 @@ export function EntryMatrix({
               {groups.map((group) => (
                 <Fragment key={group.key}>
                   <TableRow className="bg-muted/40 hover:bg-muted/40">
-                    <TableCell colSpan={columnCount} className="font-medium">
-                      {group.label}
-                      <span className="text-muted-foreground ml-2 font-normal">
-                        {group.rows.length}
+                    <TableCell colSpan={columnCount} className="py-3.5">
+                      <span className="text-xl font-semibold tracking-tight">
+                        {group.label}
+                      </span>
+                      <span className="text-muted-foreground ml-2 text-sm font-normal">
+                        {group.countLabel}
                       </span>
                     </TableCell>
                   </TableRow>
@@ -408,7 +532,22 @@ export function EntryMatrix({
                           ) : null}
                           {showEventColumn ? (
                             <TableCell>
-                              {event ? eventLabel(event) : "—"}
+                              {event
+                                ? eventLabel(
+                                    event,
+                                    relayRoleExtra(event, entry),
+                                  )
+                                : "—"}
+                            </TableCell>
+                          ) : null}
+                          {showSeedColumn ? (
+                            <TableCell className="tabular-nums">
+                              {entry.kind === "relay"
+                                ? `${entry.relayLetter ?? "A"} · ${relayLegRoleLabel(
+                                    event?.stroke ?? "",
+                                    entry.legOrder ?? 1,
+                                  )}`
+                                : formatTime(entry.seedTimeMs ?? 0)}
                             </TableCell>
                           ) : null}
                           <TableCell>{statusBadge(entry.status)}</TableCell>

@@ -492,51 +492,62 @@ export function MeetEventsPanel({
               <TableHead>Age group</TableHead>
               <TableHead>QT</TableHead>
               <TableHead className="w-20 text-right">Entries</TableHead>
-              {canManage ? <TableHead className="w-24" /> : null}
+              {canManage ? (
+                <TableHead className="w-24">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
             {[...events]
               .sort((a, b) => (a.eventNumber ?? 9999) - (b.eventNumber ?? 9999))
-              .map((event) => (
-                <TableRow key={event.id}>
-                  <TableCell>{event.eventNumber ?? "—"}</TableCell>
-                  <TableCell>
-                    {formatEventName(event.distance, event.stroke)}
-                  </TableCell>
-                  <TableCell>{formatGenderLabel(event.gender)}</TableCell>
-                  <TableCell>{event.ageGroup ?? "—"}</TableCell>
-                  <TableCell>
-                    {event.qualifyingTimeMs != null &&
-                    event.qualifyingTimeMs > 0
-                      ? formatTime(event.qualifyingTimeMs)
-                      : "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {event.entryCount}
-                  </TableCell>
-                  {canManage ? (
+              .map((event) => {
+                const eventName = formatEventName(event.distance, event.stroke);
+                const eventRef =
+                  event.eventNumber != null
+                    ? `#${event.eventNumber} ${eventName}`
+                    : eventName;
+                return (
+                  <TableRow key={event.id}>
+                    <TableCell>{event.eventNumber ?? "—"}</TableCell>
+                    <TableCell>{eventName}</TableCell>
+                    <TableCell>{formatGenderLabel(event.gender)}</TableCell>
+                    <TableCell>{event.ageGroup ?? "—"}</TableCell>
                     <TableCell>
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => setEditEvent(event)}
-                        >
-                          <Pencil className="size-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => deleteEvent(event)}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </div>
+                      {event.qualifyingTimeMs != null &&
+                      event.qualifyingTimeMs > 0
+                        ? formatTime(event.qualifyingTimeMs)
+                        : "—"}
                     </TableCell>
-                  ) : null}
-                </TableRow>
-              ))}
+                    <TableCell className="text-right">
+                      {event.entryCount}
+                    </TableCell>
+                    {canManage ? (
+                      <TableCell>
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Edit ${eventRef}`}
+                            onClick={() => setEditEvent(event)}
+                          >
+                            <Pencil />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Delete ${eventRef}`}
+                            onClick={() => deleteEvent(event)}
+                          >
+                            <Trash2 />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    ) : null}
+                  </TableRow>
+                );
+              })}
           </TableBody>
         </Table>
       )}

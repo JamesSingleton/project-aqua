@@ -1,7 +1,6 @@
 import { db } from "@project-aqua/db/client";
 import {
   getOwnerEmail,
-  getTeamSubscription,
   updateSubscription,
 } from "@project-aqua/db/queries/billing";
 import { organization } from "@project-aqua/db/schema";
@@ -41,11 +40,6 @@ export async function handleStripeWebhook(
         stripeCustomerId: session.customer as string,
         stripeSubscriptionId: session.subscription as string,
       });
-
-      await db
-        .update(organization)
-        .set({ metadata: JSON.stringify({ plan }) })
-        .where(eq(organization.id, organizationId));
 
       const ownerEmail = await getOwnerEmail(organizationId);
       if (ownerEmail) {

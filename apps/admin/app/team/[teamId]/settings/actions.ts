@@ -9,13 +9,33 @@ import {
   removeTeamLogo,
   uploadTeamLogo,
 } from "@project-aqua/storage";
+import {
+  normalizeLscCode,
+  normalizeTeamCode,
+} from "@project-aqua/swim-core/team-codes";
 import { parseTeamType } from "@project-aqua/swim-core/team-types";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
+function emptyToNull(value: string | undefined, max: number): string | null {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) return null;
+  return trimmed.slice(0, max);
+}
+
 export async function updateTeamProfileAction(
   teamId: string,
-  input: { name: string },
+  input: {
+    name: string;
+    teamCode?: string;
+    lscCode?: string;
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    region?: string;
+    postalCode?: string;
+    country?: string;
+  },
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     const session = await getSession();
@@ -31,11 +51,56 @@ export async function updateTeamProfileAction(
       return { ok: false, error: "Team name must be at least 2 characters" };
     }
 
-    // Names are not unique — many clubs share names across states/regions.
-    // Org slug stays an internal Better Auth identifier (set at create time).
+    const combined = input.teamCode?.trim().toUpperCase() ?? "";
+    const hyphenated = combined.match(/^([A-Z0-9]{2,5})-([A-Z]{2})$/);
+    const teamCode = input.teamCode?.trim()
+      ? normalizeTeamCode(input.teamCode)
+      : null;
+    let lscCode = input.lscCode?.trim()
+      ? normalizeLscCode(input.lscCode)
+      : null;
+    if (!lscCode && hyphenated) lscCode = hyphenated[2]!;
+
+    if (input.teamCode?.trim() && !teamCode) {
+      return {
+        ok: false,
+        error: "Team abbreviation must be 2–5 letters (e.g. MARI, DSUN, AZSL)",
+      };
+    }
+    if (input.lscCode?.trim() && !lscCode && !hyphenated) {
+      return {
+        ok: false,
+        error: "LSC must be 2 letters (e.g. AZ, GA, PC)",
+      };
+    }
+
+    const addressLine1 = emptyToNull(input.addressLine1, 60);
+    const addressLine2 = emptyToNull(input.addressLine2, 60);
+    const city = emptyToNull(input.city, 30);
+    const regionRaw = input.region?.trim().toUpperCase() ?? "";
+    if (regionRaw && !/^[A-Z]{2}$/.test(regionRaw)) {
+      return { ok: false, error: "State must be a 2-letter code (e.g. AZ)" };
+    }
+    const postalCode = emptyToNull(input.postalCode, 10);
+    const countryRaw = (input.country?.trim().toUpperCase() || "").slice(0, 3);
+    const hasAddress = Boolean(
+      addressLine1 || addressLine2 || city || regionRaw || postalCode,
+    );
+    const country = countryRaw || (hasAddress ? "USA" : "");
+
     await db
       .update(organization)
-      .set({ name })
+      .set({
+        name,
+        teamCode,
+        lscCode,
+        addressLine1,
+        addressLine2,
+        city,
+        region: regionRaw || null,
+        postalCode,
+        country: country || null,
+      })
       .where(eq(organization.id, teamId));
 
     revalidatePath(`/team/${teamId}`);
@@ -49,19 +114,6 @@ export async function updateTeamProfileAction(
   }
 }
 
-const MAX_PRACTICE_LOCATION_LENGTH = 200;
-
-function parseOrganizationMetadata(
-  raw: string | null | undefined,
-): Record<string, unknown> {
-  if (!raw) return {};
-  try {
-    return JSON.parse(raw) as Record<string, unknown>;
-  } catch {
-    return {};
-  }
-}
-
 export async function updateTeamTypeAction(
   teamId: string,
   teamTypeInput: string,
@@ -71,18 +123,9 @@ export async function updateTeamTypeAction(
 
   const teamType = parseTeamType(teamTypeInput);
 
-  const [org] = await db
-    .select({ metadata: organization.metadata })
-    .from(organization)
-    .where(eq(organization.id, teamId))
-    .limit(1);
-
-  const metadata = parseOrganizationMetadata(org?.metadata);
-  metadata.teamType = teamType;
-
   await db
     .update(organization)
-    .set({ metadata: JSON.stringify(metadata) })
+    .set({ teamType })
     .where(eq(organization.id, teamId));
 
   revalidatePath(`/team/${teamId}`);
@@ -91,6 +134,8 @@ export async function updateTeamTypeAction(
   revalidatePath(`/team/${teamId}/settings/usa-swimming`);
   revalidatePath(`/team/${teamId}/roster`);
 }
+
+const MAX_PRACTICE_LOCATION_LENGTH = 200;
 
 export async function updateDefaultPracticeLocationAction(
   teamId: string,
@@ -112,22 +157,9 @@ export async function updateDefaultPracticeLocationAction(
       };
     }
 
-    const [org] = await db
-      .select({ metadata: organization.metadata })
-      .from(organization)
-      .where(eq(organization.id, teamId))
-      .limit(1);
-
-    const metadata = parseOrganizationMetadata(org?.metadata);
-    if (location) {
-      metadata.defaultPracticeLocation = location;
-    } else {
-      delete metadata.defaultPracticeLocation;
-    }
-
     await db
       .update(organization)
-      .set({ metadata: JSON.stringify(metadata) })
+      .set({ defaultPracticeLocation: location || null })
       .where(eq(organization.id, teamId));
 
     revalidatePath(`/team/${teamId}`);

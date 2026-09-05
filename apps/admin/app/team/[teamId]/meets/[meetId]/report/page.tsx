@@ -25,12 +25,11 @@ export default async function MeetEntryReportPage({
   if (!report) notFound();
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <p className="text-muted-foreground text-sm">
-            Team Manager–style individual meet entries. Download a PDF for staff
-            review before you export the host pack.
+            Download a PDF of the meet entries.
           </p>
         </div>
         <DownloadEntriesPdfButton

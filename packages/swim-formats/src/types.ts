@@ -38,6 +38,26 @@ export interface ParsedMeet {
    * When set, guides admin import (e.g. skip draft entries for results files).
    */
   importKind?: "results" | "entries" | "events" | "roster";
+  /** Hy-Tek team abbreviation (MARI). */
+  teamCode?: string;
+  /** USA Swimming LSC (AZ). */
+  lscCode?: string;
+  /** Full team name for C1 (falls back to meet context). */
+  teamName?: string;
+  /** Optional 16-char TM short name (MHS). Defaults to teamCode. */
+  teamShortName?: string;
+  /** TM C1 team type, e.g. HS. */
+  teamKind?: string;
+  teamAddressLine1?: string;
+  teamAddressLine2?: string;
+  teamCity?: string;
+  teamRegion?: string;
+  teamPostalCode?: string;
+  teamCountry?: string;
+  /** Head coach (or owner) name for HY3 C1. */
+  teamContactName?: string;
+  /** Head coach (or owner) email for HY3 C3. */
+  teamContactEmail?: string;
 }
 
 export interface ParsedEntry {
@@ -48,6 +68,8 @@ export interface ParsedEntry {
   /** YYYY-MM-DD when present on HY3 D1 (or derived from USA ID). */
   dateOfBirth?: string;
   gender?: "male" | "female";
+  /** High-school class year (FR/SO/JR/SR) when present. */
+  classYear?: string;
   /** True when HY3 E1 col 84 is `X` (exhibition). */
   exhibition?: boolean;
   meetDivision?: string;
@@ -108,6 +130,7 @@ export interface ParsedAthlete {
   usaMemberId?: string;
   dateOfBirth?: string;
   gender?: "male" | "female";
+  classYear?: string;
   /** Committed / attending with no individual event entries. */
   relayOnly?: boolean;
 }

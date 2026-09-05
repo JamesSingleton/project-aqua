@@ -18,20 +18,6 @@ import { TeamLogoUploader } from "./team-logo-uploader";
 import { TeamProfileForm } from "./team-profile-form";
 import { TeamTypeForm } from "./team-type-form";
 
-function parseDefaultPracticeLocation(metadata: string | null | undefined) {
-  if (!metadata) return "";
-  try {
-    const parsed = JSON.parse(metadata) as {
-      defaultPracticeLocation?: unknown;
-    };
-    return typeof parsed.defaultPracticeLocation === "string"
-      ? parsed.defaultPracticeLocation
-      : "";
-  } catch {
-    return "";
-  }
-}
-
 export async function generateMetadata({
   params,
 }: {
@@ -90,10 +76,21 @@ export default async function TeamSettingsPage({
 
       <SettingsSection
         title="Team profile"
-        description="Name and logo shown across the admin app. Team names do not need to be unique."
+        description="Name, Hy-Tek abbreviation, LSC, and mailing address used on Meet Manager entry packs. C3 email is the head coach’s account email."
       >
         <div className="flex flex-col gap-8">
-          <TeamProfileForm teamId={teamId} name={org?.name ?? ""} />
+          <TeamProfileForm
+            teamId={teamId}
+            name={org?.name ?? ""}
+            teamCode={org?.teamCode ?? ""}
+            lscCode={org?.lscCode ?? ""}
+            addressLine1={org?.addressLine1 ?? ""}
+            addressLine2={org?.addressLine2 ?? ""}
+            city={org?.city ?? ""}
+            region={org?.region ?? ""}
+            postalCode={org?.postalCode ?? ""}
+            country={org?.country ?? ""}
+          />
           <TeamLogoUploader teamId={teamId} logoUrl={org?.logo ?? null} />
         </div>
       </SettingsSection>
@@ -105,7 +102,7 @@ export default async function TeamSettingsPage({
       >
         <PracticeDefaultsForm
           teamId={teamId}
-          defaultLocation={parseDefaultPracticeLocation(org?.metadata)}
+          defaultLocation={org?.defaultPracticeLocation ?? ""}
         />
       </SettingsSection>
 

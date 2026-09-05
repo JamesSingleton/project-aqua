@@ -30,18 +30,9 @@ export async function connectUsaSwimmingClubAction(
   await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
   await assertFeature(teamId, "swims_sync");
 
-  const [org] = await db
-    .select()
-    .from(organization)
-    .where(eq(organization.id, teamId))
-    .limit(1);
-
-  const metadata = org?.metadata ? JSON.parse(org.metadata) : {};
-  metadata.usaSwimmingClubId = clubId;
-
   await db
     .update(organization)
-    .set({ metadata: JSON.stringify(metadata) })
+    .set({ usaSwimmingClubId: clubId })
     .where(eq(organization.id, teamId));
 }
 
@@ -51,13 +42,15 @@ export async function syncSwimsRosterAction(teamId: string) {
   await assertFeature(teamId, "swims_sync");
 
   const [org] = await db
-    .select()
+    .select({
+      name: organization.name,
+      usaSwimmingClubId: organization.usaSwimmingClubId,
+    })
     .from(organization)
     .where(eq(organization.id, teamId))
     .limit(1);
 
-  const metadata = org?.metadata ? JSON.parse(org.metadata) : {};
-  const clubId = metadata.usaSwimmingClubId;
+  const clubId = org?.usaSwimmingClubId;
   if (!clubId) throw new Error("No USA Swimming club connected");
 
   return syncRoster(teamId, clubId, session?.user?.email, org?.name);
@@ -69,13 +62,12 @@ export async function getRegistrationLinkAction(teamId: string) {
   await assertFeature(teamId, "swims_sync");
 
   const [org] = await db
-    .select()
+    .select({ usaSwimmingClubId: organization.usaSwimmingClubId })
     .from(organization)
     .where(eq(organization.id, teamId))
     .limit(1);
 
-  const metadata = org?.metadata ? JSON.parse(org.metadata) : {};
-  const clubId = metadata.usaSwimmingClubId;
+  const clubId = org?.usaSwimmingClubId;
   if (!clubId) throw new Error("No USA Swimming club connected");
 
   const client = createSwimsClient();

@@ -1,4 +1,5 @@
 import { cn } from "@project-aqua/ui/lib/utils";
+import type { ReactNode } from "react";
 
 export function PageHeader({
   title,
@@ -7,29 +8,33 @@ export function PageHeader({
   className,
 }: {
   title: string;
-  description?: string;
-  actions?: React.ReactNode;
+  description?: ReactNode;
+  actions?: ReactNode;
   className?: string;
 }) {
   return (
     <div
       className={cn(
-        "flex flex-wrap items-end justify-between gap-4 border-b border-border pb-4",
+        "flex flex-col gap-4 border-b border-border pb-4 lg:flex-row lg:items-start lg:justify-between",
         className,
       )}
     >
-      <div className="flex min-w-0 flex-col gap-1">
-        <h1 className="font-display text-pool-deep text-2xl font-semibold tracking-tight md:text-3xl">
+      <div className="flex min-w-0 w-full flex-1 flex-col gap-1">
+        <h1 className="font-display text-pool-deep text-xl font-semibold tracking-tight sm:text-2xl md:text-3xl">
           {title}
         </h1>
         {description ? (
-          <p className="text-muted-foreground max-w-2xl text-sm break-words">
-            {description}
-          </p>
+          typeof description === "string" ? (
+            <p className="text-muted-foreground max-w-2xl text-sm break-words">
+              {description}
+            </p>
+          ) : (
+            description
+          )
         ) : null}
       </div>
       {actions ? (
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-2 lg:w-auto lg:shrink-0 lg:justify-end">
           {actions}
         </div>
       ) : null}

@@ -17,6 +17,8 @@ export {
   exportHy3,
   exportHyv,
   exportMeetZip,
+  meetEntryPackBaseName,
+  meetZipDownloadFilename,
 } from "./export/meet";
 export { parseHy3 } from "./hy3/parser";
 export {

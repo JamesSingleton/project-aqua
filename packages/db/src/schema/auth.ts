@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import {
   boolean,
   integer,
+  pgEnum,
   pgTable,
   text,
   timestamp,
@@ -82,12 +83,34 @@ export const twoFactor = pgTable("two_factor", {
   lockedUntil: timestamp("locked_until"),
 });
 
+export const teamTypeEnum = pgEnum("team_type", [
+  "club",
+  "high_school",
+  "college",
+  "national",
+  "summer",
+]);
+
 export const organization = pgTable("organization", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   logo: text("logo"),
+  /** Better Auth leftover bag; product fields live in typed columns. */
   metadata: text("metadata"),
+  /** Hy-Tek / Meet Manager team abbreviation (typically 4–5 letters, e.g. MARI). */
+  teamCode: text("team_code"),
+  /** USA Swimming LSC code (2 letters, e.g. AZ). */
+  lscCode: text("lsc_code"),
+  teamType: teamTypeEnum("team_type").notNull().default("club"),
+  defaultPracticeLocation: text("default_practice_location"),
+  usaSwimmingClubId: text("usa_swimming_club_id"),
+  addressLine1: text("address_line1"),
+  addressLine2: text("address_line2"),
+  city: text("city"),
+  region: text("region"),
+  postalCode: text("postal_code"),
+  country: text("country"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

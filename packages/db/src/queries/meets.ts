@@ -16,6 +16,7 @@ import {
   meetEntries,
   meetEvents,
   meetRelayLegs,
+  meetRelayTeams,
   meetResults,
   meets,
   organization,
@@ -750,6 +751,46 @@ export async function replaceMeetRelayLegs(input: {
   );
 }
 
+export async function replaceMeetRelayTeams(input: {
+  meetId: string;
+  meetEventId: string;
+  teams: Array<{
+    relayLetter: string;
+    seedTimeMs?: number | null;
+    seedTimeSource?: SeedTimeSource;
+  }>;
+}) {
+  await db
+    .delete(meetRelayTeams)
+    .where(
+      and(
+        eq(meetRelayTeams.meetId, input.meetId),
+        eq(meetRelayTeams.meetEventId, input.meetEventId),
+      ),
+    );
+  if (input.teams.length === 0) return;
+  const now = new Date();
+  await db.insert(meetRelayTeams).values(
+    input.teams.map((team) => ({
+      id: generateId(),
+      meetId: input.meetId,
+      meetEventId: input.meetEventId,
+      relayLetter: team.relayLetter.trim().toUpperCase() || "A",
+      seedTimeMs: team.seedTimeMs ?? null,
+      seedTimeSource: team.seedTimeSource ?? "no_time",
+      updatedAt: now,
+    })),
+  );
+}
+
+export async function getMeetRelayTeams(meetId: string) {
+  return db
+    .select()
+    .from(meetRelayTeams)
+    .where(eq(meetRelayTeams.meetId, meetId))
+    .orderBy(asc(meetRelayTeams.relayLetter));
+}
+
 export async function getMeetRelayLegs(meetId: string) {
   return db
     .select()
@@ -847,6 +888,14 @@ export async function deleteMeetRelayLegsForEvent(
       and(
         eq(meetRelayLegs.meetId, meetId),
         eq(meetRelayLegs.meetEventId, meetEventId),
+      ),
+    );
+  await db
+    .delete(meetRelayTeams)
+    .where(
+      and(
+        eq(meetRelayTeams.meetId, meetId),
+        eq(meetRelayTeams.meetEventId, meetEventId),
       ),
     );
 }

@@ -21,6 +21,7 @@ import {
   getMeetEventById,
   getMeetEvents,
   getMeetRelayLegsDetailed,
+  getMeetRelayTeams,
   suggestMeetEventNumber,
   updateMeetEvent,
 } from "@project-aqua/db/queries/meets";
@@ -392,10 +393,11 @@ export async function exportMeetEntriesCsvAction(
   const meet = await getMeetById(meetId, teamId);
   if (!meet) throw new Error("Meet not found");
 
-  const [events, entries, relayLegs] = await Promise.all([
+  const [events, entries, relayLegs, relayTeams] = await Promise.all([
     getMeetEvents(meetId),
     getMeetEntriesDetailed(meetId),
     getMeetRelayLegsDetailed(meetId),
+    getMeetRelayTeams(meetId),
   ]);
 
   const payload = {
@@ -422,6 +424,11 @@ export async function exportMeetEntriesCsvAction(
       eventKey: entry.eventKey,
     })),
     relayLegs,
+    relayTeamSeeds: relayTeams.map((team) => ({
+      meetEventId: team.meetEventId,
+      relayLetter: team.relayLetter,
+      seedTimeMs: team.seedTimeMs,
+    })),
   };
 
   return format === "by_event"

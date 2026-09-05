@@ -1,5 +1,9 @@
 import { getAiQuotaStatus } from "@project-aqua/db/queries/ai-quota";
 import { getTeamPlan } from "@project-aqua/db/queries/billing";
+import {
+  formatEntryLimitsSummary,
+  isRelayStroke,
+} from "@project-aqua/swim-core/entry-limits";
 import { formatEventName } from "@project-aqua/swim-core/events";
 import { planHasFeature } from "@project-aqua/swim-core/plans";
 import { blocksMeetEntries } from "@project-aqua/swim-core/team-types";
@@ -7,7 +11,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { toSharedDraftQuota } from "@/lib/draft-quota";
 import { getMeetDetailAction } from "../../../actions";
-import { getMeetRelayLegsAction } from "../../../relay-actions";
+import {
+  getMeetRelayLegsAction,
+  getMeetRelayTeamsAction,
+} from "../../../relay-actions";
 import { EntryMatrix } from "../../entry-matrix";
 import { LineupSuggestPanel } from "../../lineup-suggest-panel";
 import { RegistrationBoard } from "../../registration-board";
@@ -61,6 +68,7 @@ export default async function MeetEntriesPage({
   } = detail;
   const events = allEvents.filter((e) => e.eventKind !== "dive");
   const relayLegs = await getMeetRelayLegsAction(teamId, meetId);
+  const relayTeams = await getMeetRelayTeamsAction(teamId, meetId);
   const relayLegMembershipIds = [
     ...new Set(relayLegs.map((leg) => leg.membershipId)),
   ];
@@ -82,9 +90,30 @@ export default async function MeetEntriesPage({
       !blocksMeetEntries(r.eligibilityStatus),
   );
 
-  const enteredMembershipIds = new Set(
-    entries.filter((e) => e.status !== "scratched").map((e) => e.membershipId),
-  );
+  const enteredMembershipIds = new Set([
+    ...entries
+      .filter(
+        (e) => e.status !== "scratched" && !isRelayStroke(e.stroke, e.eventKey),
+      )
+      .map((e) => e.membershipId),
+    ...relayLegMembershipIds,
+  ]);
+
+  const individualCountByMembership: Record<string, number> = {};
+  for (const entry of entries) {
+    if (entry.status === "scratched") continue;
+    if (isRelayStroke(entry.stroke, entry.eventKey)) continue;
+    individualCountByMembership[entry.membershipId] =
+      (individualCountByMembership[entry.membershipId] ?? 0) + 1;
+  }
+
+  const meetLimits = {
+    maxIndividualEntries: meet.maxIndividualEntries,
+    maxRelayEntries: meet.maxRelayEntries,
+    maxCombinedEntries: meet.maxCombinedEntries,
+    entryLimitPackages: meet.entryLimitPackages,
+  };
+  const meetLimitsLine = formatEntryLimitsSummary(meetLimits);
 
   const relayEvents = events.filter(isRelayEvent).map((event) => {
     const gender =
@@ -100,22 +129,23 @@ export default async function MeetEntriesPage({
       label: `#${event.eventNumber ?? "—"} ${gender} ${formatEventName(event.distance, event.stroke)}`,
       stroke: event.stroke,
       eventKey: event.eventKey,
+      gender: event.gender,
     };
   });
 
   return (
     <div className="flex min-w-0 flex-col gap-8">
+      {meetLimitsLine ? (
+        <p className="text-muted-foreground text-sm">
+          Meet allows {meetLimitsLine}.
+        </p>
+      ) : null}
       <RegistrationBoard
         teamId={teamId}
         meetId={meetId}
         course={meet.course}
         meetStartDate={meet.startDate}
-        limits={{
-          maxIndividualEntries: meet.maxIndividualEntries,
-          maxRelayEntries: meet.maxRelayEntries,
-          maxCombinedEntries: meet.maxCombinedEntries,
-          entryLimitPackages: meet.entryLimitPackages,
-        }}
+        limits={meetLimits}
         roster={roster.map((r) => ({
           membershipId: r.membershipId,
           swimmerId: r.swimmerId,
@@ -168,18 +198,19 @@ export default async function MeetEntriesPage({
           eventKey: b.eventKey,
           timeMs: b.timeMs,
         }))}
-        relayLegMembershipIds={relayLegMembershipIds}
+        relayLegs={relayLegs.map((leg) => ({
+          meetEventId: leg.meetEventId,
+          membershipId: leg.membershipId,
+          legOrder: leg.legOrder,
+          relayLetter: leg.relayLetter,
+          stroke: leg.stroke,
+        }))}
       />
 
       <EntryMatrix
         teamId={teamId}
         meetId={meetId}
-        limits={{
-          maxIndividualEntries: meet.maxIndividualEntries,
-          maxRelayEntries: meet.maxRelayEntries,
-          maxCombinedEntries: meet.maxCombinedEntries,
-          entryLimitPackages: meet.entryLimitPackages,
-        }}
+        limits={meetLimits}
         events={events.map((e) => ({
           id: e.id,
           eventNumber: e.eventNumber,
@@ -196,13 +227,23 @@ export default async function MeetEntriesPage({
             firstName: r.firstName,
             lastName: r.lastName,
           }))}
-        entries={entries.map((e) => ({
-          id: e.id,
-          meetEventId: e.meetEventId,
-          membershipId: e.membershipId,
-          status: e.status,
-          seedTimeMs: e.seedTimeMs,
-          exhibition: e.exhibition,
+        entries={entries
+          .filter((e) => !isRelayStroke(e.stroke, e.eventKey))
+          .map((e) => ({
+            id: e.id,
+            meetEventId: e.meetEventId,
+            membershipId: e.membershipId,
+            status: e.status,
+            seedTimeMs: e.seedTimeMs,
+            exhibition: e.exhibition,
+          }))}
+        relayLegs={relayLegs.map((leg) => ({
+          id: `relay:${leg.meetEventId}:${leg.relayLetter}:${leg.legOrder}:${leg.membershipId}`,
+          meetEventId: leg.meetEventId,
+          membershipId: leg.membershipId,
+          relayLetter: leg.relayLetter,
+          legOrder: leg.legOrder,
+          stroke: leg.stroke,
         }))}
       />
 
@@ -217,7 +258,6 @@ export default async function MeetEntriesPage({
           teamId={teamId}
           meetId={meetId}
           events={relayEvents}
-          maxRelayEntries={meet.maxRelayEntries}
           initialLegs={relayLegs.map((leg) => ({
             meetEventId: leg.meetEventId,
             membershipId: leg.membershipId,
@@ -227,9 +267,17 @@ export default async function MeetEntriesPage({
             reasoning: leg.reasoning,
             name: nameByMembership.get(leg.membershipId) ?? "Unknown",
           }))}
+          initialTeams={relayTeams.map((team) => ({
+            meetEventId: team.meetEventId,
+            relayLetter: team.relayLetter,
+            seedTimeMs: team.seedTimeMs,
+          }))}
+          limits={meetLimits}
+          individualCountByMembership={individualCountByMembership}
           candidates={activeRoster.map((r) => ({
             membershipId: r.membershipId,
             name: `${r.firstName} ${r.lastName}`,
+            gender: r.gender,
           }))}
           bestTimes={bestTimes.map((b) => ({
             membershipId: b.membershipId,

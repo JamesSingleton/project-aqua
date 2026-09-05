@@ -39,8 +39,6 @@ export default async function UsaSwimmingPage({
     getOrganizationTeamType(teamId),
   ]);
 
-  const metadata = org?.metadata ? JSON.parse(org.metadata) : {};
-
   if (!supportsUsaSwimmingIntegration(teamType)) {
     return (
       <SettingsSection
@@ -63,7 +61,7 @@ export default async function UsaSwimmingPage({
     >
       <UsaSwimmingSettings
         teamId={teamId}
-        connectedClubId={metadata.usaSwimmingClubId}
+        connectedClubId={org?.usaSwimmingClubId ?? undefined}
       />
     </SettingsSection>
   );

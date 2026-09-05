@@ -59,6 +59,11 @@ export type BuildMeetEntriesReportInput = {
   events: MeetEntriesBuildEvent[];
   entries: MeetEntriesBuildEntry[];
   relayLegs: MeetEntriesBuildRelayLeg[];
+  relayTeamSeeds?: Array<{
+    meetEventId: string;
+    relayLetter: string;
+    seedTimeMs: number | null;
+  }>;
   /** Optional roster map for class year / display enrichment. */
   athletesByMembershipId?: Map<string, MeetEntriesReportAthlete>;
 };
@@ -199,6 +204,7 @@ export function buildMeetEntriesReport(
     events,
     entries,
     relayLegs,
+    relayTeamSeeds = [],
     athletesByMembershipId,
   } = input;
 
@@ -230,6 +236,12 @@ export function buildMeetEntriesReport(
         byLetter.set(leg.relayLetter, list);
       }
 
+      const seedByLetter = new Map(
+        relayTeamSeeds
+          .filter((team) => team.meetEventId === event.id)
+          .map((team) => [team.relayLetter, team.seedTimeMs] as const),
+      );
+
       const teams: MeetEntriesReportRelayTeam[] = [...byLetter.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([letter, legs]) => {
@@ -237,7 +249,10 @@ export function buildMeetEntriesReport(
           for (const leg of sorted) athleteIds.add(leg.membershipId);
           return {
             letter,
-            seedLabel: formatSeedLabel(null, course),
+            seedLabel: formatSeedLabel(
+              seedByLetter.get(letter) ?? null,
+              course,
+            ),
             legs: sorted.map((leg) => {
               const meta = athleteMeta(
                 leg.membershipId,

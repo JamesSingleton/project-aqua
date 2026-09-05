@@ -14,6 +14,7 @@ const pageStyle: CSSProperties = {
     'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   fontSize: 13,
   lineHeight: 1.45,
+  width: "100%",
   maxWidth: 816,
   margin: "0 auto",
   padding: "40px 48px 56px",

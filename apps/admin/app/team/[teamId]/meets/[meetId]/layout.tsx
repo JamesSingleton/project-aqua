@@ -1,4 +1,8 @@
-import { getMeetById } from "@project-aqua/db/queries/meets";
+import {
+  getMeetById,
+  getMeetEntryProgressCounts,
+  getMeetRelayLegs,
+} from "@project-aqua/db/queries/meets";
 import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -8,6 +12,7 @@ import { DeleteMeetButton } from "../delete-meet-button";
 import { MeetImportButton } from "../meet-import-button";
 import { MeetExportButtons } from "./meet-export-buttons";
 import { MeetHeaderLinks } from "./meet-header-links";
+import { MeetMasthead } from "./meet-masthead";
 
 export default async function MeetDetailLayout({
   children,
@@ -20,18 +25,17 @@ export default async function MeetDetailLayout({
   const meet = await getMeetById(meetId, teamId);
   if (!meet) notFound();
 
-  const endLabel = meet.endDate
-    ? ` – ${formatDateOnlyLabel(meet.endDate)}`
-    : "";
-  const deadlineLabel = meet.entryDeadline
-    ? ` · Entries due ${formatDateOnlyLabel(meet.entryDeadline)}`
-    : "";
-  const description = `${formatDateOnlyLabel(meet.startDate)}${endLabel} · ${meet.course}${deadlineLabel}${meet.location ? ` · ${meet.location}` : ""}${meet.address ? ` · ${meet.address}` : ""}`;
+  const [entryProgress, relayLegs] = await Promise.all([
+    getMeetEntryProgressCounts([meetId]),
+    getMeetRelayLegs(meetId),
+  ]);
+  const hasLineup =
+    (entryProgress.get(meetId)?.entryCount ?? 0) > 0 || relayLegs.length > 0;
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <SetBreadcrumbEntity id={meetId} label={meet.name} />
-      <div className="text-muted-foreground text-sm">
+      <div className="text-muted-foreground hidden text-sm md:block">
         <Link
           href={`/team/${teamId}/meets`}
           className="hover:text-foreground underline-offset-4 hover:underline"
@@ -44,9 +48,18 @@ export default async function MeetDetailLayout({
 
       <PageHeader
         title={meet.name}
-        description={description}
+        description={
+          <MeetMasthead
+            startDate={meet.startDate}
+            endDate={meet.endDate}
+            course={meet.course}
+            entryDeadline={meet.entryDeadline}
+            location={meet.location}
+            address={meet.address}
+          />
+        }
         actions={
-          <div className="flex flex-wrap items-center gap-2">
+          <>
             <MeetHeaderLinks teamId={teamId} meetId={meetId} />
             <MeetImportButton
               teamId={teamId}
@@ -58,19 +71,20 @@ export default async function MeetDetailLayout({
                   startDateLabel: formatDateOnlyLabel(meet.startDate),
                 },
               ]}
-              triggerLabel="Import file"
             />
             <MeetExportButtons
               teamId={teamId}
               meetId={meetId}
               meetName={meet.name}
+              hasLineup={hasLineup}
             />
             <DeleteMeetButton
               teamId={teamId}
               meetId={meetId}
               meetName={meet.name}
+              size="sm"
             />
-          </div>
+          </>
         }
       />
 

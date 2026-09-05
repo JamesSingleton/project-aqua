@@ -19,6 +19,17 @@ export async function getTeamMembers(organizationId: string) {
     .where(eq(member.organizationId, organizationId));
 }
 
+export async function getTeamExportContact(
+  organizationId: string,
+): Promise<{ name: string; email: string } | null> {
+  const members = await getTeamMembers(organizationId);
+  const pick =
+    members.find((m) => m.role === "head_coach") ??
+    members.find((m) => m.role === "owner");
+  if (!pick?.email) return null;
+  return { name: pick.name, email: pick.email };
+}
+
 export async function getTeamInvitations(organizationId: string) {
   return db
     .select({

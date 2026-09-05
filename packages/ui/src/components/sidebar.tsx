@@ -165,7 +165,8 @@ function Sidebar({
 
   if (collapsible === "none") {
     return (
-      <div
+      <aside
+        aria-label="Sidebar"
         data-slot="sidebar"
         className={cn(
           "flex h-full w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground",
@@ -174,7 +175,7 @@ function Sidebar({
         {...props}
       >
         {children}
-      </div>
+      </aside>
     );
   }
 
@@ -205,8 +206,9 @@ function Sidebar({
   }
 
   return (
-    <div
+    <aside
       className="group peer hidden text-sidebar-foreground md:block"
+      aria-label="Sidebar"
       data-state={state}
       data-collapsible={state === "collapsed" ? collapsible : ""}
       data-variant={variant}
@@ -246,7 +248,7 @@ function Sidebar({
           {children}
         </div>
       </div>
-    </div>
+    </aside>
   );
 }
 
@@ -364,9 +366,10 @@ function SidebarSeparator({
   );
 }
 
-function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
+function SidebarContent({ className, ...props }: React.ComponentProps<"nav">) {
   return (
-    <div
+    <nav
+      aria-label="Team"
       data-slot="sidebar-content"
       data-sidebar="content"
       className={cn(

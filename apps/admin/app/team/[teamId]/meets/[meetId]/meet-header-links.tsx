@@ -18,7 +18,7 @@ export function MeetHeaderLinks({
     return (
       <Link
         href={`/team/${teamId}/meets/${meetId}/entries`}
-        className="text-muted-foreground hover:text-foreground text-sm underline-offset-4 hover:underline"
+        className="text-muted-foreground hover:text-foreground inline-flex h-8 items-center text-sm underline-offset-4 hover:underline"
       >
         View entries
       </Link>
@@ -28,7 +28,7 @@ export function MeetHeaderLinks({
   return (
     <Link
       href={resultsHref}
-      className="text-muted-foreground hover:text-foreground text-sm underline-offset-4 hover:underline"
+      className="text-muted-foreground hover:text-foreground inline-flex h-8 items-center text-sm underline-offset-4 hover:underline"
     >
       View results
     </Link>

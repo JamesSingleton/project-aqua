@@ -28,7 +28,7 @@ const STROKE_DIGIT: Record<string, string> = {
 
 const RELAY_STROKE_DIGIT: Record<string, string> = {
   "6": "free_relay",
-  "7": "free_relay",
+  "7": "medley_relay",
   "8": "medley_relay",
 };
 

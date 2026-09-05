@@ -230,7 +230,10 @@ export default async function TeamDashboardPage({
     seasonBestTimesPromise,
     getOrganizationTeamType(teamId),
     db
-      .select({ metadata: organization.metadata, name: organization.name })
+      .select({
+        name: organization.name,
+        usaSwimmingClubId: organization.usaSwimmingClubId,
+      })
       .from(organization)
       .where(eq(organization.id, teamId))
       .limit(1)
@@ -333,10 +336,7 @@ export default async function TeamDashboardPage({
       ? daysUntilDate(formatDateOnly(upcomingMeets[0].startDate), todayKey)
       : null;
 
-  const orgMetadata = org?.metadata
-    ? (JSON.parse(org.metadata) as { usaSwimmingClubId?: string })
-    : {};
-  const usaClubId = orgMetadata.usaSwimmingClubId ?? null;
+  const usaClubId = org?.usaSwimmingClubId ?? null;
 
   const attendanceDeltaLabel =
     attendanceDelta == null || attendanceDelta === 0

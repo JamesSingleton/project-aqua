@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   canAddMeetEntry,
+  checkMeetEntryCounts,
   checkQualifyingTime,
+  formatEntryCountsSentence,
   formatEntryLimitsSummary,
+  formatFilledCapAdvice,
   isRelayStroke,
+  maximalEntryLimitMixes,
 } from "../src/entry-limits";
 
 describe("isRelayStroke", () => {
@@ -80,6 +84,22 @@ describe("canAddMeetEntry", () => {
   });
 });
 
+describe("checkMeetEntryCounts", () => {
+  it("accepts counts that already fit", () => {
+    expect(
+      checkMeetEntryCounts(
+        {
+          maxIndividualEntries: 3,
+          maxRelayEntries: 2,
+          maxCombinedEntries: 4,
+          entryLimitPackages: null,
+        },
+        { individual: 2, relay: 2 },
+      ),
+    ).toEqual({ ok: true });
+  });
+});
+
 describe("checkQualifyingTime", () => {
   it("allows when there is no qualifying time", () => {
     expect(checkQualifyingTime(null, 65000)).toEqual({ ok: true });
@@ -107,8 +127,66 @@ describe("checkQualifyingTime", () => {
   });
 });
 
+describe("maximalEntryLimitMixes", () => {
+  it("returns Pareto-maximal mixes for 2 individual, 3 relay, 4 combined", () => {
+    expect(maximalEntryLimitMixes(null)).toEqual([]);
+    expect(
+      maximalEntryLimitMixes({
+        maxIndividualEntries: 2,
+        maxRelayEntries: 3,
+        maxCombinedEntries: 4,
+        entryLimitPackages: null,
+      }),
+    ).toEqual([
+      { individual: 2, relay: 2 },
+      { individual: 1, relay: 3 },
+    ]);
+  });
+
+  it("uses combined as the missing type cap", () => {
+    expect(
+      maximalEntryLimitMixes({
+        maxIndividualEntries: 2,
+        maxRelayEntries: null,
+        maxCombinedEntries: 4,
+        entryLimitPackages: null,
+      }),
+    ).toEqual([
+      { individual: 2, relay: 2 },
+      { individual: 1, relay: 3 },
+      { individual: 0, relay: 4 },
+    ]);
+    expect(
+      maximalEntryLimitMixes({
+        maxIndividualEntries: null,
+        maxRelayEntries: 2,
+        maxCombinedEntries: 4,
+        entryLimitPackages: null,
+      }),
+    ).toEqual([
+      { individual: 4, relay: 0 },
+      { individual: 3, relay: 1 },
+      { individual: 2, relay: 2 },
+    ]);
+  });
+
+  it("skips mixes that would exceed the combined cap", () => {
+    expect(
+      maximalEntryLimitMixes({
+        maxIndividualEntries: 3,
+        maxRelayEntries: 1,
+        maxCombinedEntries: 1,
+        entryLimitPackages: null,
+      }),
+    ).toEqual([
+      { individual: 1, relay: 0 },
+      { individual: 0, relay: 1 },
+    ]);
+  });
+});
+
 describe("formatEntryLimitsSummary", () => {
-  it("formats packages and scalar limits", () => {
+  it("formats packages and scalar limit mixes", () => {
     expect(formatEntryLimitsSummary(null)).toBeNull();
     expect(
       formatEntryLimitsSummary({
@@ -117,7 +195,15 @@ describe("formatEntryLimitsSummary", () => {
         maxCombinedEntries: null,
         entryLimitPackages: [{ individual: 3, relay: 2 }],
       }),
-    ).toBe("3I + 2R");
+    ).toBe("3 individual + 2 relay");
+    expect(
+      formatEntryLimitsSummary({
+        maxIndividualEntries: 2,
+        maxRelayEntries: 3,
+        maxCombinedEntries: 4,
+        entryLimitPackages: null,
+      }),
+    ).toBe("2 individual + 2 relay, or 1 individual + 3 relay");
     expect(
       formatEntryLimitsSummary({
         maxIndividualEntries: 3,
@@ -125,7 +211,39 @@ describe("formatEntryLimitsSummary", () => {
         maxCombinedEntries: 4,
         entryLimitPackages: null,
       }),
-    ).toBe("3 individual · 2 relay · 4 combined");
+    ).toBe("3 individual + 1 relay, or 2 individual + 2 relay");
+    expect(
+      formatEntryLimitsSummary({
+        maxIndividualEntries: 3,
+        maxRelayEntries: 2,
+        maxCombinedEntries: null,
+        entryLimitPackages: null,
+      }),
+    ).toBe("3 individual + 2 relay");
+    expect(
+      formatEntryLimitsSummary({
+        maxIndividualEntries: 3,
+        maxRelayEntries: null,
+        maxCombinedEntries: null,
+        entryLimitPackages: null,
+      }),
+    ).toBe("up to 3 individual");
+    expect(
+      formatEntryLimitsSummary({
+        maxIndividualEntries: null,
+        maxRelayEntries: 3,
+        maxCombinedEntries: null,
+        entryLimitPackages: null,
+      }),
+    ).toBe("up to 3 relay");
+    expect(
+      formatEntryLimitsSummary({
+        maxIndividualEntries: null,
+        maxRelayEntries: null,
+        maxCombinedEntries: 4,
+        entryLimitPackages: null,
+      }),
+    ).toBe("up to 4 events in any mix of individual and relay");
     expect(
       formatEntryLimitsSummary({
         maxIndividualEntries: null,
@@ -134,5 +252,50 @@ describe("formatEntryLimitsSummary", () => {
         entryLimitPackages: null,
       }),
     ).toBeNull();
+  });
+});
+
+describe("formatFilledCapAdvice", () => {
+  const limits = {
+    maxIndividualEntries: 2,
+    maxRelayEntries: 3,
+    maxCombinedEntries: 4,
+    entryLimitPackages: null,
+  };
+
+  it("only advises a swap that stays within each type max", () => {
+    expect(formatFilledCapAdvice(limits, { individual: 2, relay: 2 })).toBe(
+      "To add a racing relay, remove an individual.",
+    );
+    expect(formatFilledCapAdvice(limits, { individual: 1, relay: 3 })).toBe(
+      "To add an individual, unassign a racing relay.",
+    );
+  });
+
+  it("advises either swap when only the combined cap is binding", () => {
+    expect(
+      formatFilledCapAdvice(
+        {
+          maxIndividualEntries: null,
+          maxRelayEntries: null,
+          maxCombinedEntries: 4,
+          entryLimitPackages: null,
+        },
+        { individual: 2, relay: 2 },
+      ),
+    ).toBe(
+      "To add a racing relay, remove an individual. To add an individual, unassign a racing relay.",
+    );
+  });
+});
+
+describe("formatEntryCountsSentence", () => {
+  it("spells out this swimmer's racing individual and relay counts", () => {
+    expect(formatEntryCountsSentence({ individual: 2, relay: 0 })).toBe(
+      "2 individual, 0 relay",
+    );
+    expect(formatEntryCountsSentence({ individual: 1, relay: 3 })).toBe(
+      "1 individual, 3 relay",
+    );
   });
 });

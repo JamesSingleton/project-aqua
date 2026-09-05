@@ -22,6 +22,7 @@
     "./meet-athlete-match": "./src/meet-athlete-match.ts",
     "./text": "./src/text.ts",
     "./team-types": "./src/team-types.ts",
+    "./team-codes": "./src/team-codes.ts",
     "./workout-parser": "./src/workout-parser.ts",
     "./meet-event-presets": "./src/meet-event-presets.ts",
     "./meet-entry-export": "./src/meet-entry-export.ts",

@@ -10,6 +10,7 @@ import { Polar } from "@polar-sh/sdk";
 import { db } from "@project-aqua/db/client";
 import {
   createDefaultSubscription,
+  getTeamPlan,
   updateSubscription,
 } from "@project-aqua/db/queries/billing";
 import * as schema from "@project-aqua/db/schema";
@@ -32,16 +33,6 @@ import { organization } from "better-auth/plugins/organization";
 import { twoFactor } from "better-auth/plugins/two-factor";
 import { eq } from "drizzle-orm";
 import { orgAc, orgRoles } from "./organization-ac";
-
-function getOrgPlan(metadata: string | null): PlanTier {
-  if (!metadata) return "free";
-  try {
-    const parsed = JSON.parse(metadata) as { plan?: PlanTier };
-    return parsed.plan ?? "free";
-  } catch {
-    return "free";
-  }
-}
 
 function asPlan(value: unknown): PlanTier | null {
   if (value === "pro" || value === "enterprise" || value === "free") {
@@ -80,10 +71,6 @@ async function syncOrgPlanFromPolar(input: {
       polarCustomerId: input.polarCustomerId,
       polarSubscriptionId: input.polarSubscriptionId,
     });
-    await db
-      .update(schema.organization)
-      .set({ metadata: JSON.stringify({ plan: input.plan }) })
-      .where(eq(schema.organization.id, input.organizationId));
   } else if (input.status) {
     await updateSubscription(input.organizationId, {
       status: input.status,
@@ -106,8 +93,11 @@ function createPolarClient() {
   });
 }
 
-function membershipLimitForOrg(metadata: string | null): number {
-  const limit = getPlanLimits(getOrgPlan(metadata)).maxCoaches;
+async function membershipLimitForOrg(
+  organizationId: string | undefined,
+): Promise<number> {
+  const plan = organizationId ? await getTeamPlan(organizationId) : "free";
+  const limit = getPlanLimits(plan).maxCoaches;
   if (limit === Number.POSITIVE_INFINITY) return 10_000;
   return limit;
 }
@@ -233,8 +223,7 @@ function createAuth(polarClient: Polar) {
         invitationExpiresIn: 60 * 60 * 24 * 7,
         invitationLimit: 50,
         cancelPendingInvitationsOnReInvite: true,
-        membershipLimit: async (_user, org) =>
-          membershipLimitForOrg(org?.metadata ?? null),
+        membershipLimit: async (_user, org) => membershipLimitForOrg(org?.id),
         sendInvitationEmail: async (data) => {
           await sendCoachInvitation({
             email: data.email,
@@ -245,6 +234,19 @@ function createAuth(polarClient: Polar) {
           });
         },
         schema: {
+          organization: {
+            additionalFields: {
+              teamCode: { type: "string", required: false, input: true },
+              lscCode: { type: "string", required: false, input: true },
+              teamType: { type: "string", required: false, input: true },
+              addressLine1: { type: "string", required: false, input: true },
+              addressLine2: { type: "string", required: false, input: true },
+              city: { type: "string", required: false, input: true },
+              region: { type: "string", required: false, input: true },
+              postalCode: { type: "string", required: false, input: true },
+              country: { type: "string", required: false, input: true },
+            },
+          },
           member: {
             additionalFields: {
               title: { type: "string", required: false },

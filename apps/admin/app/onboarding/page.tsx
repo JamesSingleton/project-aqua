@@ -284,7 +284,7 @@ export default function OnboardingPage() {
     let result = await organization.create({
       name: values.teamName.trim(),
       slug,
-      metadata: { teamType: values.teamType, plan: values.plan },
+      teamType: values.teamType,
     });
 
     if (result.error?.message?.toLowerCase().includes("slug")) {
@@ -292,7 +292,7 @@ export default function OnboardingPage() {
       result = await organization.create({
         name: values.teamName.trim(),
         slug,
-        metadata: { teamType: values.teamType, plan: values.plan },
+        teamType: values.teamType,
       });
     }
 

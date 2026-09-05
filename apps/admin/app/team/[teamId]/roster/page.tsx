@@ -304,8 +304,7 @@ export default async function RosterPage({
   ]);
 
   const org = orgRows[0];
-  const metadata = org?.metadata ? JSON.parse(org.metadata) : {};
-  const teamType = parseTeamType(metadata.teamType);
+  const teamType = parseTeamType(org?.teamType);
   const showClassYear = supportsClassYear(teamType);
   const showCollegeEligibility = supportsCollegeEligibility(teamType);
   const showUsaSwimmingId = supportsUsaSwimmingIntegration(teamType);

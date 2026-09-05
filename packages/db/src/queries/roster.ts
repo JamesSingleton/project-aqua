@@ -1,5 +1,8 @@
 import { isMinorSwimmer } from "@project-aqua/swim-core/age";
-import { parseClassYear } from "@project-aqua/swim-core/team-types";
+import {
+  parseClassYear,
+  parseTeamType,
+} from "@project-aqua/swim-core/team-types";
 import type {
   RosterRow,
   SwimmerContactsInput,
@@ -679,7 +682,7 @@ export async function getSwimmerAffiliations(
     .select({
       organizationId: organization.id,
       name: organization.name,
-      metadata: organization.metadata,
+      teamType: organization.teamType,
       status: teamSwimmerMemberships.status,
       practiceGroup: teamSwimmerMemberships.practiceGroup,
       role: member.role,
@@ -698,16 +701,13 @@ export async function getSwimmerAffiliations(
     )
     .where(eq(teamSwimmerMemberships.swimmerId, swimmerId));
 
-  return rows.map((row) => {
-    const metadata = row.metadata ? JSON.parse(row.metadata) : {};
-    return {
-      organizationId: row.organizationId,
-      name: row.name,
-      teamType: (metadata.teamType as string) ?? "club",
-      status: row.status,
-      practiceGroup: row.practiceGroup,
-    };
-  });
+  return rows.map((row) => ({
+    organizationId: row.organizationId,
+    name: row.name,
+    teamType: parseTeamType(row.teamType),
+    status: row.status,
+    practiceGroup: row.practiceGroup,
+  }));
 }
 
 export async function getClubRegistrationForMembership(

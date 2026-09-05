@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { unzipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { detectCl2FileKind } from "../../src/cl2/kind";
 import { parseCl2Meet } from "../../src/cl2/parser";
@@ -12,6 +13,8 @@ import {
   exportHyv,
   exportMeetZip,
   exportSdif,
+  meetEntryPackBaseName,
+  meetZipDownloadFilename,
 } from "../../src/export/meet";
 import { parseHy3 } from "../../src/hy3/parser";
 import { extractAllMeetFilesFromZip } from "../../src/meet/zip";
@@ -115,6 +118,7 @@ describe("exportSdif", () => {
           swimmerName: "Ada Lovelace",
           place: 4,
           isDq: true,
+          resultType: "prelim",
         },
       ],
     });
@@ -309,6 +313,142 @@ describe("exportHy3", () => {
     ]);
   });
 
+  it("writes TM-style team identity, 130-char lines, and nested entries", () => {
+    const text = exportHy3({
+      ...baseMeet,
+      teamCode: "MARI",
+      lscCode: "AZ",
+      teamName: "Maricopa High School",
+      teamShortName: "MHS",
+      teamKind: "HS",
+      startDate: "2026-09-12",
+    });
+    const rows = text.split(/\r?\n/).filter(Boolean);
+    expect(rows.every((row) => row.length === 130)).toBe(true);
+    expect(text).toContain("C1MARI");
+    expect(text).toContain("Maricopa High School");
+    expect(text).toContain("AZ");
+    const c1 = rows.find((row) => row.startsWith("C1"))!;
+    expect(c1.slice(120, 122)).toBe("HS");
+    const d1Index = rows.findIndex((row) => row.startsWith("D1"));
+    expect(rows[d1Index + 1]?.startsWith("E1")).toBe(true);
+    expect(exportHy3({ ...baseMeet, teamCode: "   " })).toContain("C1TEAM");
+  });
+
+  it("writes C2/C3 from team address and head-coach email, and D1 DOB/age/class year", () => {
+    const text = exportHy3({
+      ...baseMeet,
+      teamCode: "MARI",
+      lscCode: "AZ",
+      teamName: "Maricopa High School",
+      teamShortName: "MHS",
+      teamKind: "HS",
+      teamAddressLine1: "45012 W Honeycutt Ave",
+      teamCity: "Maricopa",
+      teamRegion: "AZ",
+      teamPostalCode: "85139",
+      teamCountry: "USA",
+      teamContactName: "Meg O'Brien",
+      teamContactEmail: "coach@example.com",
+      startDate: "2026-09-12",
+      entries: [
+        {
+          eventNumber: 1,
+          swimmerName: "Ada Lovelace",
+          dateOfBirth: "2010-05-15",
+          classYear: "JR",
+          gender: "female",
+          usaMemberId: "USA123",
+          seedTime: "28.50",
+        },
+      ],
+    });
+    const rows = text.split(/\r?\n/).filter(Boolean);
+    const c1 = rows.find((row) => row.startsWith("C1"))!;
+    expect(c1.slice(55, 66)).toContain("Meg");
+    const c2 = rows.find((row) => row.startsWith("C2"))!;
+    expect(c2.slice(2, 24)).toContain("45012 W Honeycutt");
+    expect(c2.slice(62, 92)).toContain("Maricopa");
+    expect(c2.slice(92, 94)).toBe("AZ");
+    expect(c2.slice(94, 104)).toContain("85139");
+    expect(c2.slice(104, 107)).toBe("USA");
+    expect(c2.slice(108, 111)).toBe("USS");
+    const c3 = rows.find((row) => row.startsWith("C3"))!;
+    expect(c3.slice(92)).toContain("coach@example.com");
+    const d1 = rows.find((row) => row.startsWith("D1"))!;
+    expect(d1.slice(88, 96)).toBe("05152010");
+    expect(d1.slice(96, 99).trim()).toBe("16");
+    expect(d1.slice(99, 101)).toBe("JR");
+
+    const beforeBirthday = exportHy3({
+      ...baseMeet,
+      startDate: "2026-03-01",
+      entries: [
+        {
+          eventNumber: 1,
+          swimmerName: "Ada Lovelace",
+          dateOfBirth: "2010-05-15",
+          gender: "female",
+        },
+      ],
+    });
+    const d1Before = beforeBirthday
+      .split(/\r?\n/)
+      .find((row) => row.startsWith("D1"))!;
+    expect(d1Before.slice(96, 99).trim()).toBe("15");
+
+    const sameMonthBeforeDay = exportHy3({
+      ...baseMeet,
+      startDate: "2026-05-01",
+      entries: [
+        {
+          eventNumber: 1,
+          swimmerName: "Ada Lovelace",
+          dateOfBirth: "2010-05-15",
+          gender: "female",
+        },
+      ],
+    });
+    const d1SameMonth = sameMonthBeforeDay
+      .split(/\r?\n/)
+      .find((row) => row.startsWith("D1"))!;
+    expect(d1SameMonth.slice(96, 99).trim()).toBe("15");
+
+    const futureDob = exportHy3({
+      ...baseMeet,
+      startDate: "2000-01-01",
+      entries: [
+        {
+          eventNumber: 1,
+          swimmerName: "Ada Lovelace",
+          dateOfBirth: "2010-05-15",
+          gender: "female",
+        },
+      ],
+    });
+    const d1Future = futureDob
+      .split(/\r?\n/)
+      .find((row) => row.startsWith("D1"))!;
+    expect(d1Future.slice(96, 99).trim()).toBe("0");
+
+    const c2Usa = exportHy3({
+      ...baseMeet,
+      teamCity: "Maricopa",
+    });
+    expect(c2Usa).toContain("C2");
+    expect(c2Usa).toContain("USA");
+    expect(c2Usa).toContain("USS");
+
+    const c2Can = exportHy3({
+      ...baseMeet,
+      teamCity: "Calgary",
+      teamCountry: "CAN",
+    });
+    const canRow = c2Can.split(/\r?\n/).find((row) => row.startsWith("C2"))!;
+    expect(canRow.slice(104, 107)).toBe("CAN");
+    expect(canRow.slice(108, 111)).not.toBe("USS");
+  });
+
   it("round-trips all individual strokes and relay strokes for SCM/LCM courses", () => {
     for (const course of ["SCY", "SCM", "LCM"] as const) {
       const meet: ParsedMeet = {
@@ -479,7 +619,12 @@ describe("exportHy3", () => {
       notes: "High-altitude course",
       sanctionNumber: "AZ26-01",
       entries: [
-        { eventNumber: 1, swimmerName: "Ada Lovelace", gender: "female" },
+        {
+          eventNumber: 1,
+          swimmerName: "Ada Lovelace",
+          gender: "female",
+          classYear: "SR",
+        },
       ],
       results: [],
       relays: [],
@@ -488,6 +633,7 @@ describe("exportHy3", () => {
     const parsed = parseHy3(text);
     expect(parsed.sanctionNumber).toBe("AZ26-01");
     expect(parsed.notes).toContain("High-altitude course");
+    expect(text).toContain("0SR");
   });
 
   it("round-trips one-sided and ranged age groups on entries and relays", () => {
@@ -750,6 +896,9 @@ describe("exportCl2", () => {
   it("uses a medley-relay event code and 'F' gender letter for a female relay", () => {
     const meet: ParsedMeet = {
       ...baseMeet,
+      teamCode: "MARI",
+      lscCode: "AZ",
+      teamName: "Maricopa High School",
       events: [
         ...baseMeet.events,
         {
@@ -770,13 +919,79 @@ describe("exportCl2", () => {
       ],
     };
     const text = exportCl2(meet);
-    expect(text).toContain("F 2008");
+    expect(text).toContain("F 2007");
+    expect(text).toContain("AZMARI");
+    expect(text).toContain("Maricopa High School");
+    expect(parseCl2Meet(text).relays?.[0]?.swimmerNames.length).toBe(4);
+  });
+
+  it("aligns D0 event columns, emits one D3 per athlete, and checksums at 160 chars", () => {
+    const text = exportCl2({
+      ...baseMeet,
+      teamCode: "MARI",
+      lscCode: "AZ",
+      teamName: "Maricopa High School",
+      startDate: "2026-09-12",
+      events: [
+        {
+          eventNumber: 12,
+          distance: 100,
+          stroke: "free",
+          gender: "female",
+          eventKey: "100_free",
+        },
+        {
+          eventNumber: 17,
+          distance: 100,
+          stroke: "back",
+          gender: "female",
+          eventKey: "100_back",
+        },
+      ],
+      results: [],
+      relays: [],
+      entries: [
+        {
+          eventNumber: 12,
+          swimmerName: "Marlie McNamee",
+          gender: "female",
+          classYear: "JR",
+          seedTime: "1:11.01",
+        },
+        {
+          eventNumber: 17,
+          swimmerName: "Marlie McNamee",
+          gender: "female",
+          classYear: "JR",
+          seedTime: "1:27.44",
+        },
+      ],
+    });
+    const rows = text.split(/\r?\n/).filter(Boolean);
+    expect(rows.every((row) => row.length === 160)).toBe(true);
+    const d0s = rows.filter((row) => row.startsWith("D0"));
+    const d3s = rows.filter((row) => row.startsWith("D3"));
+    expect(d0s).toHaveLength(2);
+    expect(d3s).toHaveLength(1);
+    expect(rows[rows.indexOf(d0s[0]!) + 1]?.startsWith("D3")).toBe(true);
+    expect(d0s[0]!.slice(65, 67)).toBe("FF");
+    expect(d0s[0]!.slice(68, 72)).toBe("1001");
+    expect(d0s[0]!.slice(73, 75).trim()).toBe("12");
+    expect(d0s[0]!.slice(76, 80)).toBe("UNOV");
+    expect(d3s[0]!.endsWith("N50")).toBe(true);
+    const z0 = rows.find((row) => row.startsWith("Z0"))!;
+    expect(z0).toMatch(/Successful Build on \d{2}-\d{2}-\d{4}/);
+    expect(z0).toContain(
+      `${String(2).padStart(6)}${String(1).padStart(6)}${String(0).padStart(5)}`,
+    );
   });
 
   it("omits the seed-time and relay-seed suffixes when absent", () => {
     const meet: ParsedMeet = {
       ...baseMeet,
-      entries: [{ eventNumber: 1, swimmerName: "No Seed Cl2" }],
+      entries: [
+        { eventNumber: 1, swimmerName: "No Seed Cl2", seedTime: "0.00" },
+      ],
       results: [],
       relays: [{ eventNumber: 10, swimmerNames: ["A", "B", "C", "D"] }],
     };
@@ -1241,6 +1456,46 @@ describe("exportMeetZip", () => {
       "hyv",
     ]);
     expect(eventsBundle.primary.format).toBe("ev3");
+  });
+
+  it("names entry packs like Team Manager when team code and LSC are set", () => {
+    const meet: ParsedMeet = {
+      ...baseMeet,
+      teamCode: "MARI",
+      lscCode: "AZ",
+      startDate: "2026-09-12",
+      name: "2026 Croswhite Invite",
+    };
+    expect(meetEntryPackBaseName(meet)).toBe(
+      "MARI-AZ-Entries-2026 Croswhite Invite-12Sep2026-001",
+    );
+    expect(meetEntryPackBaseName({ ...meet, startDate: undefined })).toBe(
+      "MARI-AZ-Entries-2026 Croswhite Invite-001",
+    );
+    expect(
+      meetEntryPackBaseName({ ...meet, name: "???", startDate: "2026-13-01" }),
+    ).toBe("MARI-AZ-Entries-Meet-001");
+    expect(meetEntryPackBaseName({ ...meet, startDate: "nope" })).toBe(
+      "MARI-AZ-Entries-2026 Croswhite Invite-001",
+    );
+
+    const zip = exportMeetZip(meet, "entries");
+    const bundle = extractAllMeetFilesFromZip(zip);
+    const folder = "MARI-AZ-Entries-2026 Croswhite Invite-12Sep2026-001";
+    expect(meetZipDownloadFilename(meet, "entries")).toBe(`${folder}.zip`);
+    expect(meetZipDownloadFilename(meet, "results")).toBe(
+      "2026-croswhite-invite_results.zip",
+    );
+    expect(meetZipDownloadFilename(meet, "events")).toBe(
+      "2026-croswhite-invite_events.zip",
+    );
+    const paths = Object.keys(unzipSync(zip));
+    expect(paths).toContain(`${folder}/${folder}.HY3`);
+    expect(paths).toContain(`${folder}/${folder}.CL2`);
+    expect(bundle.files.map((f) => f.filename).sort()).toEqual([
+      `${folder}.CL2`,
+      `${folder}.HY3`,
+    ]);
   });
 });
 

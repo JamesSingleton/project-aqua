@@ -166,18 +166,12 @@ export async function getOrganizationTeamType(
   organizationId: string,
 ): Promise<TeamType> {
   const [org] = await db
-    .select({ metadata: organization.metadata })
+    .select({ teamType: organization.teamType })
     .from(organization)
     .where(eq(organization.id, organizationId))
     .limit(1);
 
-  if (!org?.metadata) return "club";
-  try {
-    const parsed = JSON.parse(org.metadata) as { teamType?: unknown };
-    return parseTeamType(parsed.teamType);
-  } catch {
-    return "club";
-  }
+  return parseTeamType(org?.teamType);
 }
 
 /** Default pool/venue for new practices and calendar events. */
@@ -185,26 +179,15 @@ export async function getDefaultPracticeLocation(
   organizationId: string,
 ): Promise<string | null> {
   const [org] = await db
-    .select({ metadata: organization.metadata })
+    .select({
+      defaultPracticeLocation: organization.defaultPracticeLocation,
+    })
     .from(organization)
     .where(eq(organization.id, organizationId))
     .limit(1);
 
-  if (!org?.metadata) return null;
-  try {
-    const parsed = JSON.parse(org.metadata) as {
-      defaultPracticeLocation?: unknown;
-    };
-    if (
-      typeof parsed.defaultPracticeLocation === "string" &&
-      parsed.defaultPracticeLocation.trim()
-    ) {
-      return parsed.defaultPracticeLocation.trim();
-    }
-    return null;
-  } catch {
-    return null;
-  }
+  const location = org?.defaultPracticeLocation?.trim();
+  return location || null;
 }
 
 export async function requireCoachSafeSportCurrent(

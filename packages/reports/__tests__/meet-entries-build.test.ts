@@ -131,6 +131,9 @@ describe("buildMeetEntriesReport", () => {
           lastName: "Anguiano",
         },
       ],
+      relayTeamSeeds: [
+        { meetEventId: "e1", relayLetter: "A", seedTimeMs: 112_540 },
+      ],
       athletesByMembershipId: new Map([
         [
           "m-juan",
@@ -160,6 +163,7 @@ describe("buildMeetEntriesReport", () => {
     const relay = report.events[0];
     expect(relay?.kind).toBe("relay");
     if (relay?.kind === "relay") {
+      expect(relay.teams[0]?.seedLabel).toBe("1:52.54Y");
       expect(relay.teams[0]?.legs).toHaveLength(2);
       expect(relay.teams[0]?.legs.map((l) => l.legOrder)).toEqual([1, 2]);
       expect(relay.teams[0]?.legs[0]?.name).toBe("Orion Chaturvedi (SR)");
