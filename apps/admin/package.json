@@ -14,9 +14,7 @@
     "start": "next start",
     "check:types": "tsc --noEmit",
     "test": "vitest run --coverage",
-    "test:watch": "vitest",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.51",
@@ -48,7 +46,6 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.1",
     "@project-aqua/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",

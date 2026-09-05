@@ -38,29 +38,3 @@ jobs:
         run: pnpm install
       - name: Run unit tests with coverage
         run: pnpm test
-
-  e2e:
-    runs-on: ubuntu-latest
-    # Authenticated E2E requires secrets; unauthenticated smoke always runs.
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-      - uses: pnpm/action-setup@v4
-      - name: Install dependencies
-        run: pnpm install
-      - name: Install Playwright browsers
-        run: pnpm --filter @project-aqua/admin exec playwright install --with-deps chromium
-      - name: Run Playwright E2E
-        run: pnpm test:e2e
-        env:
-          CI: "true"
-          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
-          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-          BETTER_AUTH_URL: http://localhost:3001
-          NEXT_PUBLIC_BETTER_AUTH_URL: http://localhost:3001

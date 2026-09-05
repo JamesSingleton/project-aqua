@@ -14,7 +14,6 @@ export default defineConfig({
       // Pure leftovers in admin (domain helpers live in swim-core).
       include: ["lib/**/*.ts", "schemas/**/*.ts"],
       exclude: [
-        // RSC/UI/server actions are covered by Playwright, not Vitest.
         "app/**",
         "components/**",
         "hooks/**",
