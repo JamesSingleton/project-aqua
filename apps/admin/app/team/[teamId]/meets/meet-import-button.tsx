@@ -50,6 +50,7 @@ import { useRouter } from "next/navigation";
 import { parseAsStringEnum, useQueryState } from "nuqs";
 import { useEffect, useId, useRef, useState } from "react";
 import { DatePickerField } from "@/components/date-picker-field";
+import { LabeledCombobox } from "@/components/labeled-combobox";
 import {
   type AthleteMapAction,
   importMeetFileAction,
@@ -760,33 +761,20 @@ export function MeetImportButton({
                                   : " · unmatched"}
                               </p>
                             </div>
-                            <Select
+                            <LabeledCombobox
                               items={selectItems}
                               value={value}
-                              onValueChange={(v) => {
-                                if (v == null) return;
+                              onChange={(v) => {
+                                if (!v) return;
                                 setAthleteMaps((prev) => ({
                                   ...prev,
                                   [athlete.key]: v as AthleteMapAction,
                                 }));
                               }}
-                            >
-                              <SelectTrigger className="h-8 w-full">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectGroup>
-                                  {selectItems.map((item) => (
-                                    <SelectItem
-                                      key={item.value}
-                                      value={item.value}
-                                    >
-                                      {item.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
+                              placeholder="Map athlete…"
+                              emptyText="No athletes found."
+                              showClear={false}
+                            />
                           </div>
                         );
                       })}

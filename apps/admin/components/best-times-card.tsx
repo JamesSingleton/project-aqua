@@ -20,14 +20,6 @@ import {
   CardTitle,
 } from "@project-aqua/ui/components/card";
 import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from "@project-aqua/ui/components/combobox";
-import {
   Dialog,
   DialogClose,
   DialogContent,
@@ -59,6 +51,7 @@ import {
   deleteSwimmerBestTimeAction,
   setSwimmerBestTimeAction,
 } from "@/app/team/[teamId]/progression/best-times-actions";
+import { LabeledCombobox } from "@/components/labeled-combobox";
 
 export type BestTimeRow = {
   id: string;
@@ -120,49 +113,6 @@ function AchievedDatePicker({
         />
       </PopoverContent>
     </Popover>
-  );
-}
-
-type EventOption = { value: string; label: string };
-
-function BestTimeEventCombobox({
-  id,
-  options,
-  value,
-  onChange,
-}: {
-  id: string;
-  options: EventOption[];
-  value: string;
-  onChange: (eventKey: string) => void;
-}) {
-  const selected = options.find((option) => option.value === value) ?? null;
-
-  return (
-    <Combobox
-      items={options}
-      value={selected}
-      onValueChange={(item) => onChange(item?.value ?? "")}
-      itemToStringValue={(item) => item.label}
-      isItemEqualToValue={(item, current) => item.value === current.value}
-    >
-      <ComboboxInput
-        id={id}
-        className="w-full"
-        placeholder="Search events…"
-        showClear
-      />
-      <ComboboxContent>
-        <ComboboxEmpty>No events found.</ComboboxEmpty>
-        <ComboboxList>
-          {(item) => (
-            <ComboboxItem key={item.value} value={item}>
-              {item.label}
-            </ComboboxItem>
-          )}
-        </ComboboxList>
-      </ComboboxContent>
-    </Combobox>
   );
 }
 
@@ -398,11 +348,13 @@ export function BestTimesCard({
                   disabled
                 />
               ) : (
-                <BestTimeEventCombobox
+                <LabeledCombobox
                   id="best-time-event"
-                  options={eventOptions}
+                  items={eventOptions}
                   value={eventKey}
                   onChange={setEventKey}
+                  placeholder="Search events…"
+                  emptyText="No events found."
                 />
               )}
             </div>

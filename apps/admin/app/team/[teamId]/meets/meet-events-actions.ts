@@ -452,6 +452,11 @@ export async function importMeetResultsCsvAction(
       continue;
     }
 
+    if (isRelayStroke(event.stroke, event.eventKey)) {
+      skipped.push(`Line ${row.line}: relay event #${row.eventNumber} skipped`);
+      continue;
+    }
+
     await addMeetResult(meetId, event.id, swimmer.swimmerId, row.timeMs, {
       place: row.place ?? undefined,
     });

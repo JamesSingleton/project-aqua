@@ -1,6 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { isRelayStroke } from "@project-aqua/swim-core/entry-limits";
+import {
+  RELAY_PRIMARY_LEG_COUNT,
+  RELAY_TEAM_LETTERS,
+  relayLegRoleLabel,
+} from "@project-aqua/swim-core/relay-legs";
 import { Button } from "@project-aqua/ui/components/button";
 import {
   Card,
@@ -26,13 +32,32 @@ import {
   SelectValue,
 } from "@project-aqua/ui/components/select";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useEffect, useMemo, useState } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
-import { addResultAction } from "../actions";
+import { LabeledCombobox } from "@/components/labeled-combobox";
+import { addRelayResultAction, addResultAction } from "../actions";
 
-type EventOption = { id: string; label: string };
-type SwimmerOption = { swimmerId: string; name: string };
+export type ResultEventOption = {
+  id: string;
+  label: string;
+  stroke: string;
+  eventKey: string;
+  distance: number;
+};
+
+export type ResultSwimmerOption = {
+  swimmerId: string;
+  membershipId: string;
+  name: string;
+};
+
+export type RelayLineupPrefill = {
+  meetEventId: string;
+  relayLetter: string;
+  legOrder: number;
+  membershipId: string;
+};
 
 const ROUND_OPTIONS = [
   { value: "", label: "—" },
@@ -41,16 +66,39 @@ const ROUND_OPTIONS = [
   { value: "finals", label: "Finals" },
 ] as const;
 
-const addResultSchema = z.object({
-  swimmerId: z.string().min(1, "Select a swimmer"),
-  meetEventId: z.string().min(1, "Select an event"),
-  time: z.string().trim().min(1, "Time is required"),
-  round: z.enum(["", "prelim", "swimoff", "finals"]),
-  heat: z.string(),
-  lane: z.string(),
-  exhibition: z.boolean(),
-  dqCode: z.string(),
-});
+const addResultSchema = z
+  .object({
+    swimmerId: z.string(),
+    membershipId: z.string(),
+    meetEventId: z.string().min(1, "Select an event"),
+    time: z.string().trim().min(1, "Time is required"),
+    round: z.enum(["", "prelim", "swimoff", "finals"]),
+    heat: z.string(),
+    lane: z.string(),
+    exhibition: z.boolean(),
+    dqCode: z.string(),
+    relayLetter: z.enum(["A", "B", "C"]),
+    legOrder: z.string(),
+    splitTime: z.string(),
+  })
+  .superRefine((values, ctx) => {
+    const membershipId = values.membershipId.trim();
+    const splitTime = values.splitTime.trim();
+    if (membershipId && !splitTime) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Enter the swimmer's split",
+        path: ["splitTime"],
+      });
+    }
+    if (splitTime && !membershipId) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Select a swimmer for the split",
+        path: ["membershipId"],
+      });
+    }
+  });
 
 type AddResultValues = z.infer<typeof addResultSchema>;
 
@@ -66,11 +114,13 @@ export function AddResultForm({
   meetId,
   events,
   swimmers,
+  relayLineup,
 }: {
   teamId: string;
   meetId: string;
-  events: EventOption[];
-  swimmers: SwimmerOption[];
+  events: ResultEventOption[];
+  swimmers: ResultSwimmerOption[];
+  relayLineup: RelayLineupPrefill[];
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -79,20 +129,73 @@ export function AddResultForm({
     register,
     handleSubmit,
     resetField,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<AddResultValues>({
     resolver: zodResolver(addResultSchema),
     defaultValues: {
-      meetEventId: events[0]?.id ?? "",
-      swimmerId: swimmers[0]?.swimmerId ?? "",
+      meetEventId: "",
+      swimmerId: "",
+      membershipId: "",
       time: "",
       round: "",
       heat: "",
       lane: "",
       exhibition: false,
       dqCode: "",
+      relayLetter: "A",
+      legOrder: "1",
+      splitTime: "",
     },
   });
+
+  const meetEventId = useWatch({ control, name: "meetEventId" });
+  const relayLetter = useWatch({ control, name: "relayLetter" });
+  const legOrder = useWatch({ control, name: "legOrder" });
+  const membershipId = useWatch({ control, name: "membershipId" });
+
+  const selectedEvent = events.find((event) => event.id === meetEventId);
+  const isRelay = selectedEvent
+    ? isRelayStroke(selectedEvent.stroke, selectedEvent.eventKey)
+    : false;
+
+  const eventItems = useMemo(
+    () => events.map((event) => ({ value: event.id, label: event.label })),
+    [events],
+  );
+  const swimmerItems = useMemo(
+    () =>
+      swimmers.map((swimmer) => ({
+        value: isRelay ? swimmer.membershipId : swimmer.swimmerId,
+        label: swimmer.name,
+      })),
+    [isRelay, swimmers],
+  );
+
+  const legItems = useMemo(() => {
+    const stroke = selectedEvent?.stroke ?? "free_relay";
+    return Array.from({ length: RELAY_PRIMARY_LEG_COUNT }, (_, index) => {
+      const order = index + 1;
+      return {
+        value: String(order),
+        label: `${order} · ${relayLegRoleLabel(stroke, order)}`,
+      };
+    });
+  }, [selectedEvent?.stroke]);
+
+  useEffect(() => {
+    if (!isRelay) return;
+    const order = Number.parseInt(legOrder, 10);
+    const match = relayLineup.find(
+      (slot) =>
+        slot.meetEventId === meetEventId &&
+        slot.relayLetter === relayLetter &&
+        slot.legOrder === order,
+    );
+    if (match) {
+      setValue("membershipId", match.membershipId);
+    }
+  }, [isRelay, meetEventId, relayLetter, legOrder, relayLineup, setValue]);
 
   if (events.length === 0 || swimmers.length === 0) {
     return null;
@@ -100,28 +203,51 @@ export function AddResultForm({
 
   async function onSubmit(values: AddResultValues) {
     setError(null);
+    const round =
+      values.round === ""
+        ? null
+        : (values.round as "prelim" | "swimoff" | "finals");
+    const meta = {
+      round,
+      heat: optionalInt(values.heat),
+      lane: optionalInt(values.lane),
+      exhibition: values.exhibition,
+      dqCode: values.dqCode.trim() || null,
+    };
     try {
-      await addResultAction(
-        teamId,
-        meetId,
-        values.meetEventId,
-        values.swimmerId,
-        values.time,
-        {
-          round:
-            values.round === ""
-              ? null
-              : (values.round as "prelim" | "swimoff" | "finals"),
-          heat: optionalInt(values.heat),
-          lane: optionalInt(values.lane),
-          exhibition: values.exhibition,
-          dqCode: values.dqCode.trim() || null,
-        },
-      );
-      resetField("time");
-      resetField("heat");
-      resetField("lane");
-      resetField("dqCode");
+      if (isRelay) {
+        await addRelayResultAction(teamId, meetId, {
+          meetEventId: values.meetEventId,
+          relayLetter: values.relayLetter,
+          overallTime: values.time,
+          ...meta,
+          membershipId: values.membershipId.trim() || null,
+          legOrder: optionalInt(values.legOrder),
+          splitTime: values.splitTime.trim() || null,
+        });
+        resetField("time");
+        resetField("splitTime");
+        resetField("heat");
+        resetField("lane");
+        resetField("dqCode");
+      } else {
+        if (!values.swimmerId) {
+          setError("Select a swimmer");
+          return;
+        }
+        await addResultAction(
+          teamId,
+          meetId,
+          values.meetEventId,
+          values.swimmerId,
+          values.time,
+          meta,
+        );
+        resetField("time");
+        resetField("heat");
+        resetField("lane");
+        resetField("dqCode");
+      }
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed");
@@ -133,55 +259,14 @@ export function AddResultForm({
       <CardHeader>
         <CardTitle>Add time</CardTitle>
         <CardDescription>
-          Manual result when you do not have a meet file. Updates best times.
+          {isRelay
+            ? "Team time is upserted for this letter and round. A named split is optional; only a lead-off (leg 1) counts as an official individual time."
+            : "Manual individual result when you do not have a meet file. Saving twice adds another row."}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)}>
           <FieldGroup className="sm:flex-row sm:flex-wrap sm:items-end">
-            <Controller
-              name="swimmerId"
-              control={control}
-              render={({ field, fieldState }) => (
-                <Field
-                  data-invalid={fieldState.invalid}
-                  className="min-w-40 flex-1"
-                >
-                  <FieldLabel htmlFor="result-swimmer">Swimmer</FieldLabel>
-                  <Select
-                    items={swimmers.map((swimmer) => ({
-                      value: swimmer.swimmerId,
-                      label: swimmer.name,
-                    }))}
-                    value={field.value}
-                    onValueChange={(value) => {
-                      if (value != null) field.onChange(value);
-                    }}
-                  >
-                    <SelectTrigger
-                      id="result-swimmer"
-                      className="w-full"
-                      aria-invalid={fieldState.invalid}
-                    >
-                      <SelectValue placeholder="Select swimmer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {swimmers.map((swimmer) => (
-                          <SelectItem
-                            key={swimmer.swimmerId}
-                            value={swimmer.swimmerId}
-                          >
-                            {swimmer.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  <FieldError errors={[fieldState.error]} />
-                </Field>
-              )}
-            />
             <Controller
               name="meetEventId"
               control={control}
@@ -191,48 +276,169 @@ export function AddResultForm({
                   className="min-w-40 flex-1"
                 >
                   <FieldLabel htmlFor="result-event">Event</FieldLabel>
-                  <Select
-                    items={events.map((event) => ({
-                      value: event.id,
-                      label: event.label,
-                    }))}
+                  <LabeledCombobox
+                    id="result-event"
+                    items={eventItems}
                     value={field.value}
-                    onValueChange={(value) => {
-                      if (value != null) field.onChange(value);
+                    onChange={(value) => {
+                      field.onChange(value);
+                      setValue("swimmerId", "");
+                      setValue("membershipId", "");
                     }}
-                  >
-                    <SelectTrigger
-                      id="result-event"
-                      className="w-full"
-                      aria-invalid={fieldState.invalid}
-                    >
-                      <SelectValue placeholder="Select event" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {events.map((event) => (
-                          <SelectItem key={event.id} value={event.id}>
-                            {event.label}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                    placeholder="Search events…"
+                    emptyText="No events found."
+                  />
                   <FieldError errors={[fieldState.error]} />
                 </Field>
               )}
             />
-            <Field data-invalid={!!errors.time} className="w-32">
-              <FieldLabel htmlFor="result-time">Time</FieldLabel>
-              <Input
-                id="result-time"
-                className="font-timing"
-                placeholder="1:02.45"
-                aria-invalid={!!errors.time}
-                {...register("time")}
-              />
-              <FieldError errors={[errors.time]} />
-            </Field>
+            {isRelay ? (
+              <>
+                <Controller
+                  name="relayLetter"
+                  control={control}
+                  render={({ field }) => (
+                    <Field className="w-24">
+                      <FieldLabel htmlFor="result-letter">Team</FieldLabel>
+                      <Select
+                        items={[...RELAY_TEAM_LETTERS].map((letter) => ({
+                          value: letter,
+                          label: letter,
+                        }))}
+                        value={field.value}
+                        onValueChange={(value) => {
+                          if (value === "A" || value === "B" || value === "C") {
+                            field.onChange(value);
+                          }
+                        }}
+                      >
+                        <SelectTrigger id="result-letter" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {RELAY_TEAM_LETTERS.map((letter) => (
+                              <SelectItem key={letter} value={letter}>
+                                {letter}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  )}
+                />
+                <Field data-invalid={!!errors.time} className="w-32">
+                  <FieldLabel htmlFor="result-time">Team time</FieldLabel>
+                  <Input
+                    id="result-time"
+                    className="font-timing"
+                    placeholder="1:42.10"
+                    aria-invalid={!!errors.time}
+                    {...register("time")}
+                  />
+                  <FieldError errors={[errors.time]} />
+                </Field>
+                <Controller
+                  name="membershipId"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <Field
+                      data-invalid={fieldState.invalid}
+                      className="min-w-40 flex-1"
+                    >
+                      <FieldLabel htmlFor="result-split-swimmer">
+                        Split swimmer
+                      </FieldLabel>
+                      <LabeledCombobox
+                        id="result-split-swimmer"
+                        items={swimmerItems}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Optional…"
+                        emptyText="No swimmers found."
+                      />
+                      <FieldError errors={[fieldState.error]} />
+                    </Field>
+                  )}
+                />
+                <Controller
+                  name="legOrder"
+                  control={control}
+                  render={({ field }) => (
+                    <Field className="w-36">
+                      <FieldLabel htmlFor="result-leg">Leg</FieldLabel>
+                      <Select
+                        items={legItems}
+                        value={field.value}
+                        onValueChange={(value) => {
+                          if (value != null) field.onChange(value);
+                        }}
+                      >
+                        <SelectTrigger id="result-leg" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {legItems.map((item) => (
+                              <SelectItem key={item.value} value={item.value}>
+                                {item.label}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  )}
+                />
+                <Field data-invalid={!!errors.splitTime} className="w-32">
+                  <FieldLabel htmlFor="result-split">Split</FieldLabel>
+                  <Input
+                    id="result-split"
+                    className="font-timing"
+                    placeholder={membershipId ? "24.19" : "—"}
+                    aria-invalid={!!errors.splitTime}
+                    {...register("splitTime")}
+                  />
+                  <FieldError errors={[errors.splitTime]} />
+                </Field>
+              </>
+            ) : (
+              <>
+                <Controller
+                  name="swimmerId"
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <Field
+                      data-invalid={fieldState.invalid}
+                      className="min-w-40 flex-1"
+                    >
+                      <FieldLabel htmlFor="result-swimmer">Swimmer</FieldLabel>
+                      <LabeledCombobox
+                        id="result-swimmer"
+                        items={swimmerItems}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Search swimmers…"
+                        emptyText="No swimmers found."
+                      />
+                      <FieldError errors={[fieldState.error]} />
+                    </Field>
+                  )}
+                />
+                <Field data-invalid={!!errors.time} className="w-32">
+                  <FieldLabel htmlFor="result-time">Time</FieldLabel>
+                  <Input
+                    id="result-time"
+                    className="font-timing"
+                    placeholder="1:02.45"
+                    aria-invalid={!!errors.time}
+                    {...register("time")}
+                  />
+                  <FieldError errors={[errors.time]} />
+                </Field>
+              </>
+            )}
             <Controller
               name="round"
               control={control}
@@ -310,7 +516,11 @@ export function AddResultForm({
             </Field>
             <Field className="w-auto">
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving…" : "Save time"}
+                {isSubmitting
+                  ? "Saving…"
+                  : isRelay
+                    ? "Save relay"
+                    : "Save time"}
               </Button>
             </Field>
           </FieldGroup>

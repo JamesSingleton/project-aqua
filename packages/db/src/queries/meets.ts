@@ -2,12 +2,17 @@ import {
   normalizeMeetEndDate,
   parseDateOnly,
 } from "@project-aqua/swim-core/calendar-date";
+import { isRelayStroke } from "@project-aqua/swim-core/entry-limits";
 import {
   formatEventName,
   parseEventGender,
 } from "@project-aqua/swim-core/events";
+import {
+  RELAY_PRIMARY_LEG_COUNT,
+  RELAY_TEAM_LETTERS,
+} from "@project-aqua/swim-core/relay-legs";
 import type { CreateMeetInput } from "@project-aqua/swim-core/validators";
-import { and, asc, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../client";
 import {
   type EntryLimitPackage,
@@ -16,6 +21,8 @@ import {
   meetEntries,
   meetEvents,
   meetRelayLegs,
+  meetRelayResultSplits,
+  meetRelayResults,
   meetRelayTeams,
   meetResults,
   meets,
@@ -663,12 +670,19 @@ export async function addMeetResult(
     .select({
       id: meetEvents.id,
       eventKey: meetEvents.eventKey,
+      stroke: meetEvents.stroke,
       course: swimEvents.course,
     })
     .from(meetEvents)
     .leftJoin(swimEvents, eq(swimEvents.eventKey, meetEvents.eventKey))
     .where(eq(meetEvents.id, meetEventId))
     .limit(1);
+
+  if (event && isRelayStroke(event.stroke, event.eventKey)) {
+    throw new Error(
+      "Relay times are recorded as team results, not individual swims.",
+    );
+  }
 
   const course = event?.course ?? meet?.course ?? "SCY";
 
@@ -883,6 +897,281 @@ export async function getMeetRelayLegsDetailed(meetId: string) {
     .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
     .where(eq(meetRelayLegs.meetId, meetId))
     .orderBy(asc(meetRelayLegs.relayLetter), asc(meetRelayLegs.legOrder));
+}
+
+export type MeetRelayResultSplitRow = {
+  id: string;
+  resultId: string;
+  membershipId: string;
+  swimmerId: string;
+  firstName: string;
+  lastName: string;
+  gender: "male" | "female";
+  legOrder: number;
+  timeMs: number;
+};
+
+export type MeetRelayResultRow = {
+  id: string;
+  meetEventId: string;
+  relayLetter: string;
+  round: MeetResultRound | null;
+  timeMs: number;
+  heat: number | null;
+  lane: number | null;
+  exhibition: boolean;
+  isDq: boolean;
+  dqCode: string | null;
+  eventNumber: number | null;
+  distance: number;
+  stroke: string;
+  gender: string;
+  ageGroup: string | null;
+  eventKey: string;
+  splits: MeetRelayResultSplitRow[];
+};
+
+export async function getMeetRelayResultsDetailed(
+  meetId: string,
+): Promise<MeetRelayResultRow[]> {
+  const resultRows = await db
+    .select({
+      id: meetRelayResults.id,
+      meetEventId: meetRelayResults.meetEventId,
+      relayLetter: meetRelayResults.relayLetter,
+      round: meetRelayResults.round,
+      timeMs: meetRelayResults.timeMs,
+      heat: meetRelayResults.heat,
+      lane: meetRelayResults.lane,
+      exhibition: meetRelayResults.exhibition,
+      isDq: meetRelayResults.isDq,
+      dqCode: meetRelayResults.dqCode,
+      eventNumber: meetEvents.eventNumber,
+      distance: meetEvents.distance,
+      stroke: meetEvents.stroke,
+      gender: meetEvents.gender,
+      ageGroup: meetEvents.ageGroup,
+      eventKey: meetEvents.eventKey,
+    })
+    .from(meetRelayResults)
+    .innerJoin(meetEvents, eq(meetRelayResults.meetEventId, meetEvents.id))
+    .where(eq(meetRelayResults.meetId, meetId))
+    .orderBy(
+      asc(meetEvents.eventNumber),
+      asc(meetRelayResults.relayLetter),
+      asc(meetRelayResults.round),
+    );
+
+  if (resultRows.length === 0) return [];
+
+  const splitRows = await db
+    .select({
+      id: meetRelayResultSplits.id,
+      resultId: meetRelayResultSplits.resultId,
+      membershipId: meetRelayResultSplits.membershipId,
+      swimmerId: teamSwimmerMemberships.swimmerId,
+      firstName: swimmers.firstName,
+      lastName: swimmers.lastName,
+      gender: swimmers.gender,
+      legOrder: meetRelayResultSplits.legOrder,
+      timeMs: meetRelayResultSplits.timeMs,
+    })
+    .from(meetRelayResultSplits)
+    .innerJoin(
+      teamSwimmerMemberships,
+      eq(meetRelayResultSplits.membershipId, teamSwimmerMemberships.id),
+    )
+    .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
+    .where(
+      inArray(
+        meetRelayResultSplits.resultId,
+        resultRows.map((row) => row.id),
+      ),
+    )
+    .orderBy(asc(meetRelayResultSplits.legOrder));
+
+  const splitsByResult = new Map<string, MeetRelayResultSplitRow[]>();
+  for (const split of splitRows) {
+    const list = splitsByResult.get(split.resultId) ?? [];
+    list.push(split);
+    splitsByResult.set(split.resultId, list);
+  }
+
+  return resultRows.map((row) => ({
+    ...row,
+    splits: splitsByResult.get(row.id) ?? [],
+  }));
+}
+
+export async function upsertMeetRelayResult(input: {
+  meetId: string;
+  meetEventId: string;
+  relayLetter: string;
+  round: MeetResultRound | null;
+  timeMs: number;
+  heat?: number | null;
+  lane?: number | null;
+  exhibition?: boolean;
+  isDq?: boolean;
+  dqCode?: string | null;
+  split?: {
+    membershipId: string;
+    swimmerId: string;
+    swimmerGender: "male" | "female";
+    legOrder: number;
+    timeMs: number;
+  } | null;
+}): Promise<{ resultId: string; creditedSwimmerIds: string[] }> {
+  const letter = input.relayLetter.trim().toUpperCase();
+  if (
+    !RELAY_TEAM_LETTERS.includes(letter as (typeof RELAY_TEAM_LETTERS)[number])
+  ) {
+    throw new Error("Relay team must be A, B, or C.");
+  }
+  if (input.split) {
+    if (
+      input.split.legOrder < 1 ||
+      input.split.legOrder > RELAY_PRIMARY_LEG_COUNT
+    ) {
+      throw new Error("Relay splits are racing legs 1–4.");
+    }
+  }
+
+  const [event] = await db
+    .select({
+      id: meetEvents.id,
+      eventKey: meetEvents.eventKey,
+      stroke: meetEvents.stroke,
+    })
+    .from(meetEvents)
+    .where(
+      and(
+        eq(meetEvents.id, input.meetEventId),
+        eq(meetEvents.meetId, input.meetId),
+      ),
+    )
+    .limit(1);
+  if (!event) throw new Error("Event not found");
+  if (!isRelayStroke(event.stroke, event.eventKey)) {
+    throw new Error("That event is not a relay.");
+  }
+
+  const creditedSwimmerIds = new Set<string>();
+
+  const resultId = await db.transaction(async (tx) => {
+    const roundClause =
+      input.round == null
+        ? isNull(meetRelayResults.round)
+        : eq(meetRelayResults.round, input.round);
+
+    const [existing] = await tx
+      .select()
+      .from(meetRelayResults)
+      .where(
+        and(
+          eq(meetRelayResults.meetId, input.meetId),
+          eq(meetRelayResults.meetEventId, input.meetEventId),
+          eq(meetRelayResults.relayLetter, letter),
+          roundClause,
+        ),
+      )
+      .limit(1);
+
+    const now = new Date();
+    const isDq = input.isDq ?? false;
+    const exhibition = input.exhibition ?? false;
+    const id = existing?.id ?? generateId();
+
+    if (existing) {
+      await tx
+        .update(meetRelayResults)
+        .set({
+          timeMs: input.timeMs,
+          heat: input.heat ?? null,
+          lane: input.lane ?? null,
+          exhibition,
+          isDq,
+          dqCode: input.dqCode ?? null,
+          updatedAt: now,
+        })
+        .where(eq(meetRelayResults.id, existing.id));
+    } else {
+      await tx.insert(meetRelayResults).values({
+        id,
+        meetId: input.meetId,
+        meetEventId: input.meetEventId,
+        relayLetter: letter,
+        round: input.round,
+        timeMs: input.timeMs,
+        heat: input.heat ?? null,
+        lane: input.lane ?? null,
+        exhibition,
+        isDq,
+        dqCode: input.dqCode ?? null,
+      });
+    }
+
+    if (input.split) {
+      const [existingSplit] = await tx
+        .select()
+        .from(meetRelayResultSplits)
+        .where(
+          and(
+            eq(meetRelayResultSplits.resultId, id),
+            eq(meetRelayResultSplits.legOrder, input.split.legOrder),
+          ),
+        )
+        .limit(1);
+
+      if (
+        existingSplit &&
+        existingSplit.membershipId !== input.split.membershipId
+      ) {
+        throw new Error(
+          "That relay leg already has a different swimmer's split.",
+        );
+      }
+
+      if (existingSplit) {
+        await tx
+          .update(meetRelayResultSplits)
+          .set({
+            timeMs: input.split.timeMs,
+            updatedAt: now,
+          })
+          .where(eq(meetRelayResultSplits.id, existingSplit.id));
+      } else {
+        await tx.insert(meetRelayResultSplits).values({
+          id: generateId(),
+          resultId: id,
+          membershipId: input.split.membershipId,
+          legOrder: input.split.legOrder,
+          timeMs: input.split.timeMs,
+        });
+      }
+
+      creditedSwimmerIds.add(input.split.swimmerId);
+    }
+
+    const splitSwimmers = await tx
+      .select({
+        swimmerId: teamSwimmerMemberships.swimmerId,
+      })
+      .from(meetRelayResultSplits)
+      .innerJoin(
+        teamSwimmerMemberships,
+        eq(meetRelayResultSplits.membershipId, teamSwimmerMemberships.id),
+      )
+      .where(eq(meetRelayResultSplits.resultId, id));
+
+    for (const row of splitSwimmers) {
+      creditedSwimmerIds.add(row.swimmerId);
+    }
+
+    return id;
+  });
+
+  return { resultId, creditedSwimmerIds: [...creditedSwimmerIds] };
 }
 
 export async function getMeetEventById(eventId: string, meetId: string) {

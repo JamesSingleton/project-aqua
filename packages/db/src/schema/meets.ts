@@ -265,6 +265,61 @@ export const meetRelayTeams = pgTable(
   ],
 );
 
+/** Recorded team result for a named relay; independent of lineup replace. */
+export const meetRelayResults = pgTable(
+  "meet_relay_results",
+  {
+    id: text("id").primaryKey(),
+    meetId: text("meet_id")
+      .notNull()
+      .references(() => meets.id, { onDelete: "cascade" }),
+    meetEventId: text("meet_event_id")
+      .notNull()
+      .references(() => meetEvents.id, { onDelete: "cascade" }),
+    relayLetter: text("relay_letter").notNull().default("A"),
+    round: meetResultRoundEnum("round"),
+    timeMs: integer("time_ms").notNull(),
+    heat: integer("heat"),
+    lane: integer("lane"),
+    exhibition: boolean("exhibition").notNull().default(false),
+    isDq: boolean("is_dq").notNull().default(false),
+    dqCode: text("dq_code"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("meet_relay_results_attempt_idx").on(
+      table.meetId,
+      table.meetEventId,
+      table.relayLetter,
+      table.round,
+    ),
+  ],
+);
+
+export const meetRelayResultSplits = pgTable(
+  "meet_relay_result_splits",
+  {
+    id: text("id").primaryKey(),
+    resultId: text("result_id")
+      .notNull()
+      .references(() => meetRelayResults.id, { onDelete: "cascade" }),
+    membershipId: text("membership_id")
+      .notNull()
+      .references(() => teamSwimmerMemberships.id, { onDelete: "cascade" }),
+    legOrder: integer("leg_order").notNull(),
+    timeMs: integer("time_ms").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("meet_relay_result_splits_leg_idx").on(
+      table.resultId,
+      table.legOrder,
+    ),
+  ],
+);
+
 export type MeetEventTemplateRow = {
   eventNumber: number;
   distance: number;
@@ -327,6 +382,7 @@ export const meetsRelations = relations(meets, ({ many, one }) => ({
   results: many(meetResults),
   relayLegs: many(meetRelayLegs),
   relayTeams: many(meetRelayTeams),
+  relayResults: many(meetRelayResults),
 }));
 
 export const meetCommitmentsRelations = relations(
@@ -352,6 +408,7 @@ export const meetEventsRelations = relations(meetEvents, ({ one, many }) => ({
   results: many(meetResults),
   relayLegs: many(meetRelayLegs),
   relayTeams: many(meetRelayTeams),
+  relayResults: many(meetRelayResults),
 }));
 
 export const meetEntriesRelations = relations(meetEntries, ({ one }) => ({
@@ -423,6 +480,35 @@ export const meetRelayTeamsRelations = relations(meetRelayTeams, ({ one }) => ({
     references: [meetEvents.id],
   }),
 }));
+
+export const meetRelayResultsRelations = relations(
+  meetRelayResults,
+  ({ one, many }) => ({
+    meet: one(meets, {
+      fields: [meetRelayResults.meetId],
+      references: [meets.id],
+    }),
+    meetEvent: one(meetEvents, {
+      fields: [meetRelayResults.meetEventId],
+      references: [meetEvents.id],
+    }),
+    splits: many(meetRelayResultSplits),
+  }),
+);
+
+export const meetRelayResultSplitsRelations = relations(
+  meetRelayResultSplits,
+  ({ one }) => ({
+    result: one(meetRelayResults, {
+      fields: [meetRelayResultSplits.resultId],
+      references: [meetRelayResults.id],
+    }),
+    membership: one(teamSwimmerMemberships, {
+      fields: [meetRelayResultSplits.membershipId],
+      references: [teamSwimmerMemberships.id],
+    }),
+  }),
+);
 
 export const meetEventTemplatesRelations = relations(
   meetEventTemplates,

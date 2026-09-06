@@ -31,6 +31,11 @@ import { cn } from "@project-aqua/ui/lib/utils";
 import { RabbitIcon, TargetIcon, TurtleIcon } from "lucide-react";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { getTimeStandardCutsAction } from "../../time-standards-actions";
+import type {
+  RelayLineupPrefill,
+  ResultEventOption,
+  ResultSwimmerOption,
+} from "../add-result-form";
 import { AddResultForm } from "../add-result-form";
 
 export type ResultRow = {
@@ -55,10 +60,40 @@ export type ResultRow = {
   gender: string;
   ageGroup: string | null;
   eventKey: string;
+  note?: string;
 };
 
-type EventOption = { id: string; label: string };
-type SwimmerOption = { swimmerId: string; name: string };
+export type RelayAttemptSplit = {
+  id: string;
+  resultId: string;
+  membershipId: string;
+  swimmerId: string;
+  firstName: string;
+  lastName: string;
+  gender: "male" | "female";
+  legOrder: number;
+  timeMs: number;
+};
+
+export type RelayAttempt = {
+  id: string;
+  meetEventId: string;
+  relayLetter: string;
+  round: ResultRow["round"];
+  timeMs: number;
+  heat: number | null;
+  lane: number | null;
+  exhibition: boolean;
+  isDq: boolean;
+  dqCode: string | null;
+  eventNumber: number | null;
+  distance: number;
+  stroke: string;
+  gender: string;
+  ageGroup: string | null;
+  eventKey: string;
+  splits: RelayAttemptSplit[];
+};
 
 type StandardSetOption = {
   id: string;
@@ -227,12 +262,18 @@ function ResultMetaBadges({ row }: { row: ResultRow }) {
     !hasHeatLane &&
     !row.round &&
     !row.exhibition &&
-    !(row.isDq && row.dqCode)
+    !(row.isDq && row.dqCode) &&
+    !row.note
   ) {
     return null;
   }
   return (
     <span className="mt-1 flex flex-wrap items-center gap-1">
+      {row.note ? (
+        <Badge variant="outline" className="h-4.5 px-1.5 text-[10px]">
+          {row.note}
+        </Badge>
+      ) : null}
       {row.round ? (
         <Badge variant="outline" className="h-4.5 px-1.5 text-[10px]">
           {ROUND_LABEL[row.round] ?? row.round}
@@ -307,6 +348,8 @@ export function ResultsWorkspace({
   results,
   events,
   swimmers,
+  relayLineup,
+  relayAttempts,
   standardSets,
 }: {
   teamId: string;
@@ -314,8 +357,10 @@ export function ResultsWorkspace({
   meetName: string;
   meetStartDate: Date;
   results: ResultRow[];
-  events: EventOption[];
-  swimmers: SwimmerOption[];
+  events: ResultEventOption[];
+  swimmers: ResultSwimmerOption[];
+  relayLineup: RelayLineupPrefill[];
+  relayAttempts: RelayAttempt[];
   standardSets: StandardSetOption[];
 }) {
   const [pbtsOnly, setPbtsOnly] = useState(false);
@@ -342,10 +387,50 @@ export function ResultsWorkspace({
     });
   }, [showStandards, selectedSetId, teamId]);
 
+  const individualResults = useMemo(
+    () => results.filter((row) => !isRelayStroke(row.stroke, row.eventKey)),
+    [results],
+  );
+
+  const splitRows = useMemo((): ResultRow[] => {
+    return relayAttempts.flatMap((attempt) =>
+      attempt.splits.map((split) => ({
+        id: split.id,
+        meetEventId: attempt.meetEventId,
+        swimmerId: split.swimmerId,
+        timeMs: split.timeMs,
+        previousBestTimeMs: null,
+        place: null,
+        isDq: attempt.isDq,
+        round: attempt.round,
+        heat: attempt.heat,
+        lane: attempt.lane,
+        exhibition: attempt.exhibition,
+        dqCode: attempt.dqCode,
+        firstName: split.firstName,
+        lastName: split.lastName,
+        dateOfBirth: null,
+        eventNumber: attempt.eventNumber,
+        distance: attempt.distance,
+        stroke: attempt.stroke,
+        gender: attempt.gender,
+        ageGroup: attempt.ageGroup,
+        eventKey: attempt.eventKey,
+        note:
+          split.legOrder === 1
+            ? `${attempt.relayLetter} lead-off`
+            : `${attempt.relayLetter} leg ${split.legOrder}`,
+      })),
+    );
+  }, [relayAttempts]);
+
   const availableRounds = useMemo(() => {
     const rounds = new Set<ResultRow["round"]>();
-    for (const row of results) {
+    for (const row of individualResults) {
       if (row.round) rounds.add(row.round);
+    }
+    for (const attempt of relayAttempts) {
+      if (attempt.round) rounds.add(attempt.round);
     }
     const order: Array<NonNullable<ResultRow["round"]>> = [
       "prelim",
@@ -353,26 +438,38 @@ export function ResultsWorkspace({
       "finals",
     ];
     return order.filter((r) => rounds.has(r));
-  }, [results]);
+  }, [individualResults, relayAttempts]);
 
   const filtered = useMemo(() => {
-    let rows = results;
+    let rows =
+      groupMode === "swimmer"
+        ? [...individualResults, ...splitRows]
+        : individualResults;
     if (roundFilter !== "all") {
       rows = rows.filter((r) => r.round === roundFilter);
     }
     if (!pbtsOnly) return rows;
     return rows.filter(isPersonalBest);
-  }, [results, roundFilter, pbtsOnly]);
+  }, [individualResults, splitRows, groupMode, roundFilter, pbtsOnly]);
+
+  const filteredRelayAttempts = useMemo(() => {
+    if (pbtsOnly) return [];
+    if (roundFilter === "all") return relayAttempts;
+    return relayAttempts.filter((attempt) => attempt.round === roundFilter);
+  }, [relayAttempts, pbtsOnly, roundFilter]);
 
   const summary = useMemo(() => {
-    const relayCount = results.filter((r) =>
-      isRelayStroke(r.stroke, r.eventKey),
-    ).length;
-    const individualCount = results.length - relayCount;
-    const athleteCount = new Set(results.map((r) => r.swimmerId)).size;
-    const pbtCount = results.filter(isPersonalBest).length;
-    return { individualCount, relayCount, athleteCount, pbtCount };
-  }, [results]);
+    const athleteIds = new Set(individualResults.map((r) => r.swimmerId));
+    for (const attempt of relayAttempts) {
+      for (const split of attempt.splits) athleteIds.add(split.swimmerId);
+    }
+    return {
+      individualCount: individualResults.length,
+      relayCount: relayAttempts.length,
+      athleteCount: athleteIds.size,
+      pbtCount: individualResults.filter(isPersonalBest).length,
+    };
+  }, [individualResults, relayAttempts]);
 
   const groups = useMemo(() => {
     if (groupMode === "swimmer") {
@@ -612,17 +709,84 @@ export function ResultsWorkspace({
         meetId={meetId}
         events={events}
         swimmers={swimmers}
+        relayLineup={relayLineup}
       />
 
-      {groups.length === 0 ? (
+      {groupMode === "event" && filteredRelayAttempts.length > 0 ? (
+        <div className="flex flex-col gap-3">
+          {filteredRelayAttempts.map((attempt) => {
+            const gender = formatGenderShort(attempt.gender);
+            const heading =
+              `#${attempt.eventNumber ?? "—"} ${gender} ${formatEventName(attempt.distance, attempt.stroke)} ${attempt.relayLetter}`.replace(
+                /\s+/g,
+                " ",
+              );
+            return (
+              <div
+                key={attempt.id}
+                className="border-border overflow-hidden rounded-lg border"
+              >
+                <div className="border-border bg-muted/30 flex flex-wrap items-baseline justify-between gap-2 border-b px-4 py-3">
+                  <div>
+                    <h3 className="text-sm font-semibold">{heading}</h3>
+                    <p className="text-muted-foreground text-xs">
+                      {attempt.round
+                        ? `${ROUND_LABEL[attempt.round] ?? attempt.round} · `
+                        : null}
+                      Team time
+                    </p>
+                  </div>
+                  <p
+                    className={cn(
+                      "font-timing text-lg tabular-nums",
+                      attempt.isDq && "text-destructive line-through",
+                    )}
+                  >
+                    {attempt.isDq
+                      ? `DQ ${formatTime(attempt.timeMs)}`
+                      : formatTime(attempt.timeMs)}
+                  </p>
+                </div>
+                {attempt.splits.length > 0 ? (
+                  <ul className="divide-border divide-y px-4 py-2 text-sm">
+                    {attempt.splits.map((split) => (
+                      <li
+                        key={split.id}
+                        className="flex flex-wrap items-baseline justify-between gap-2 py-1.5"
+                      >
+                        <span>
+                          {split.firstName} {split.lastName}
+                          <span className="text-muted-foreground ml-2 text-xs">
+                            Leg {split.legOrder}
+                            {split.legOrder === 1 ? " · lead-off" : ""}
+                          </span>
+                        </span>
+                        <span className="font-timing tabular-nums">
+                          {formatTime(split.timeMs)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-muted-foreground px-4 py-3 text-sm">
+                    No named splits yet. Save again with a swimmer and split.
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {groups.length === 0 && filteredRelayAttempts.length === 0 ? (
         <div className="border-border rounded-lg border px-4 py-8 text-center">
           <p className="text-muted-foreground text-sm">
-            {results.length === 0
+            {individualResults.length === 0 && relayAttempts.length === 0
               ? "No results yet. Import a meet file or add a time manually."
               : "No personal bests match this filter."}
           </p>
         </div>
-      ) : (
+      ) : groups.length === 0 ? null : (
         groups.map((group) => (
           <div
             key={group.label}

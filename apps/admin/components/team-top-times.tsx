@@ -23,6 +23,7 @@ import {
 import { XIcon } from "lucide-react";
 import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
+import { LabeledCombobox } from "@/components/labeled-combobox";
 
 export type TopTimeRow = {
   swimmerName: string;
@@ -219,27 +220,16 @@ export function TeamTopTimes({
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="top-times-event">Event</Label>
-          <Select
+          <LabeledCombobox
+            id="top-times-event"
+            className="w-[260px]"
             items={[{ value: "all", label: "All events" }, ...eventOptions]}
             value={eventFilter}
-            onValueChange={(value) => {
-              if (value != null) setEventFilter(value);
-            }}
-          >
-            <SelectTrigger id="top-times-event" className="w-[260px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="all">All events</SelectItem>
-                {eventOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+            onChange={setEventFilter}
+            placeholder="Search events…"
+            emptyText="No events found."
+            showClear={false}
+          />
         </div>
 
         <div className="flex w-[160px] flex-col gap-1.5">

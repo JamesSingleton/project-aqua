@@ -38,6 +38,7 @@ import { useRouter } from "next/navigation";
 import { useId, useRef, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
+import { LabeledCombobox } from "@/components/labeled-combobox";
 import {
   createTimeStandardSetAction,
   deleteTimeStandardCutAction,
@@ -593,38 +594,15 @@ export function TimeStandardsManager({
                           <FieldLabel htmlFor={`${inputId}-cut-event`}>
                             Event
                           </FieldLabel>
-                          <Select
+                          <LabeledCombobox
+                            id={`${inputId}-cut-event`}
                             items={eventOptions}
                             value={field.value}
-                            onValueChange={(value) => {
-                              if (value != null) field.onChange(value);
-                            }}
+                            onChange={field.onChange}
+                            placeholder="Select event"
+                            emptyText="No events found."
                             disabled={eventOptions.length === 0}
-                          >
-                            <SelectTrigger
-                              id={`${inputId}-cut-event`}
-                              className="w-full"
-                              aria-invalid={fieldState.invalid}
-                            >
-                              <SelectValue placeholder="Select event">
-                                {eventOptions.find(
-                                  (option) => option.value === field.value,
-                                )?.label ?? null}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                {eventOptions.map((option) => (
-                                  <SelectItem
-                                    key={option.value}
-                                    value={option.value}
-                                  >
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
+                          />
                           <FieldError errors={[fieldState.error]} />
                         </Field>
                       )}

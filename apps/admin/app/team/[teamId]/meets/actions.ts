@@ -34,6 +34,7 @@ import {
   updateMeetEntryStatus,
   updateMeetEvent,
   upsertMeetCommitment,
+  upsertMeetRelayResult,
 } from "@project-aqua/db/queries/meets";
 import { patchTeamUiPreferences } from "@project-aqua/db/queries/preferences";
 import { recomputeBestTimesForSwimmer } from "@project-aqua/db/queries/progression";
@@ -1347,6 +1348,11 @@ export async function importMeetFileAction(
       }
 
       const meetEventId = await eventIdFor(result.eventNumber);
+      const eventMeta = eventDetailById.get(meetEventId);
+      if (eventMeta && isRelayStroke(eventMeta.stroke, eventMeta.eventKey)) {
+        resultsSkipped++;
+        continue;
+      }
       const parsedMs = parseTime(result.time);
       const timeMs =
         Number.isFinite(parsedMs) && parsedMs > 0
@@ -2152,6 +2158,22 @@ export async function addResultAction(
   await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
   await assertFeature(teamId, "progression");
 
+  const meet = await getMeetById(meetId, teamId);
+  if (!meet) throw new Error("Meet not found");
+  const [events, roster] = await Promise.all([
+    getMeetEvents(meetId),
+    getRoster(teamId),
+  ]);
+  const event = events.find((item) => item.id === meetEventId);
+  if (!event) throw new Error("Event not found");
+  if (isRelayStroke(event.stroke, event.eventKey)) {
+    throw new Error(
+      "Relay times are recorded as team results, not individual swims.",
+    );
+  }
+  const swimmer = roster.find((member) => member.swimmerId === swimmerId);
+  if (!swimmer) throw new Error("Swimmer not found on roster");
+
   const timeMs = parseTime(time);
   const dqCode = options?.dqCode?.trim() || null;
   await addMeetResult(meetId, meetEventId, swimmerId, timeMs, {
@@ -2166,6 +2188,101 @@ export async function addResultAction(
   revalidateMeetPaths(teamId, meetId);
   revalidatePath(`/team/${teamId}/progression/${swimmerId}`);
   revalidatePath(`/team/${teamId}/swimmers/${swimmerId}/progression`);
+}
+
+export async function addRelayResultAction(
+  teamId: string,
+  meetId: string,
+  input: {
+    meetEventId: string;
+    relayLetter: string;
+    overallTime: string;
+    round?: "prelim" | "swimoff" | "finals" | null;
+    heat?: number | null;
+    lane?: number | null;
+    exhibition?: boolean;
+    dqCode?: string | null;
+    membershipId?: string | null;
+    legOrder?: number | null;
+    splitTime?: string | null;
+  },
+) {
+  const session = await getSession();
+  await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+  await assertFeature(teamId, "progression");
+
+  const meet = await getMeetById(meetId, teamId);
+  if (!meet) throw new Error("Meet not found");
+
+  const [events, roster] = await Promise.all([
+    getMeetEvents(meetId),
+    getRoster(teamId),
+  ]);
+  const event = events.find((item) => item.id === input.meetEventId);
+  if (!event) throw new Error("Event not found");
+  if (!isRelayStroke(event.stroke, event.eventKey)) {
+    throw new Error("That event is not a relay.");
+  }
+
+  const overallTimeMs = parseTime(input.overallTime);
+  if (!Number.isFinite(overallTimeMs) || overallTimeMs <= 0) {
+    throw new Error("Enter a valid team time.");
+  }
+
+  const dqCode = input.dqCode?.trim() || null;
+  const isDq = Boolean(dqCode);
+  const membershipId = input.membershipId?.trim() || "";
+  const splitRaw = input.splitTime?.trim() || "";
+  const hasSplit = Boolean(membershipId || splitRaw);
+
+  let split: {
+    membershipId: string;
+    swimmerId: string;
+    swimmerGender: "male" | "female";
+    legOrder: number;
+    timeMs: number;
+  } | null = null;
+
+  if (hasSplit) {
+    if (!membershipId) throw new Error("Select a swimmer for the split.");
+    if (input.legOrder == null) throw new Error("Select a relay leg.");
+    if (!splitRaw) throw new Error("Enter the swimmer's split time.");
+    const member = roster.find((row) => row.membershipId === membershipId);
+    if (!member) throw new Error("Swimmer not found on roster");
+    const splitTimeMs = parseTime(splitRaw);
+    if (!Number.isFinite(splitTimeMs) || splitTimeMs <= 0) {
+      throw new Error("Enter a valid split time.");
+    }
+    split = {
+      membershipId: member.membershipId,
+      swimmerId: member.swimmerId,
+      swimmerGender: member.gender,
+      legOrder: input.legOrder,
+      timeMs: splitTimeMs,
+    };
+  }
+
+  const { creditedSwimmerIds } = await upsertMeetRelayResult({
+    meetId,
+    meetEventId: event.id,
+    relayLetter: input.relayLetter,
+    round: input.round ?? null,
+    timeMs: overallTimeMs,
+    heat: input.heat ?? null,
+    lane: input.lane ?? null,
+    exhibition: input.exhibition ?? false,
+    isDq,
+    dqCode,
+    split,
+  });
+
+  for (const id of creditedSwimmerIds) {
+    await recomputeBestTimesForSwimmer(id);
+    revalidatePath(`/team/${teamId}/progression/${id}`);
+    revalidatePath(`/team/${teamId}/swimmers/${id}/progression`);
+  }
+
+  revalidateMeetPaths(teamId, meetId);
 }
 
 export type ImportJobHistoryItem = {

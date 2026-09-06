@@ -1,11 +1,18 @@
 import { isRelayStroke } from "@project-aqua/swim-core/entry-limits";
+import { getCatalogEvent } from "@project-aqua/swim-core/event-catalog";
 import type { Course } from "@project-aqua/swim-core/events";
+import {
+  individualEventKeyForRelayLeg,
+  shouldCreditRelayLeadOff,
+} from "@project-aqua/swim-core/relay-legs";
 import { isFasterTime } from "@project-aqua/swim-core/times";
 import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { db } from "../client";
 import { swimEvents } from "../schema/events";
 import {
   meetEvents,
+  meetRelayResultSplits,
+  meetRelayResults,
   meetResults,
   meets,
   swimmerBestTimes,
@@ -382,47 +389,171 @@ export async function getSwimmerBestTimes(swimmerId: string) {
  * Recompute PRs from all non-DQ meet results for a swimmer.
  * Fixes rows that missed upserts or used mismatched event keys.
  */
+/**
+ * Recompute PRs from individual meet results and credited relay lead-offs.
+ * Meet-sourced PRs can move slower when the source swim is corrected or DQ'd.
+ */
 export async function recomputeBestTimesForSwimmer(swimmerId: string) {
-  const rows = await db
-    .select({
-      eventKey: meetEvents.eventKey,
-      course: swimEvents.course,
-      meetCourse: meets.course,
-      timeMs: meetResults.timeMs,
-      meetId: meets.id,
-      achievedAt: meets.startDate,
-      stroke: meetEvents.stroke,
-      eventType: swimEvents.eventType,
-    })
-    .from(meetResults)
-    .innerJoin(meets, eq(meetResults.meetId, meets.id))
-    .innerJoin(meetEvents, eq(meetResults.meetEventId, meetEvents.id))
-    .leftJoin(swimEvents, eq(swimEvents.eventKey, meetEvents.eventKey))
-    .where(
-      and(eq(meetResults.swimmerId, swimmerId), eq(meetResults.isDq, false)),
-    )
-    .orderBy(asc(meetResults.timeMs));
+  const [resultRows, leadOffRows] = await Promise.all([
+    db
+      .select({
+        eventKey: meetEvents.eventKey,
+        course: swimEvents.course,
+        meetCourse: meets.course,
+        timeMs: meetResults.timeMs,
+        meetId: meets.id,
+        achievedAt: meets.startDate,
+        stroke: meetEvents.stroke,
+        eventType: swimEvents.eventType,
+        isDq: meetResults.isDq,
+        exhibition: meetResults.exhibition,
+      })
+      .from(meetResults)
+      .innerJoin(meets, eq(meetResults.meetId, meets.id))
+      .innerJoin(meetEvents, eq(meetResults.meetEventId, meetEvents.id))
+      .leftJoin(swimEvents, eq(swimEvents.eventKey, meetEvents.eventKey))
+      .where(eq(meetResults.swimmerId, swimmerId)),
+    db
+      .select({
+        timeMs: meetRelayResultSplits.timeMs,
+        meetId: meets.id,
+        achievedAt: meets.startDate,
+        meetCourse: meets.course,
+        relayEventKey: meetEvents.eventKey,
+        catalogCourse: swimEvents.course,
+        gender: swimmers.gender,
+        legOrder: meetRelayResultSplits.legOrder,
+        isDq: meetRelayResults.isDq,
+        exhibition: meetRelayResults.exhibition,
+      })
+      .from(meetRelayResultSplits)
+      .innerJoin(
+        meetRelayResults,
+        eq(meetRelayResultSplits.resultId, meetRelayResults.id),
+      )
+      .innerJoin(meets, eq(meetRelayResults.meetId, meets.id))
+      .innerJoin(meetEvents, eq(meetRelayResults.meetEventId, meetEvents.id))
+      .leftJoin(swimEvents, eq(swimEvents.eventKey, meetEvents.eventKey))
+      .innerJoin(
+        teamSwimmerMemberships,
+        eq(meetRelayResultSplits.membershipId, teamSwimmerMemberships.id),
+      )
+      .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
+      .where(eq(teamSwimmerMemberships.swimmerId, swimmerId)),
+  ]);
 
-  const seen = new Set<string>();
-  for (const row of rows) {
+  type Perf = {
+    eventKey: string;
+    course: Course;
+    timeMs: number;
+    meetId: string;
+    achievedAt: Date;
+  };
+
+  const performances: Perf[] = [];
+
+  for (const row of resultRows) {
+    if (row.isDq || row.exhibition || row.timeMs <= 0) continue;
+    if (row.eventType === "relay" || isRelayStroke(row.stroke, row.eventKey)) {
+      continue;
+    }
+    performances.push({
+      eventKey: row.eventKey,
+      course: (row.course ?? row.meetCourse ?? "SCY") as Course,
+      timeMs: row.timeMs,
+      meetId: row.meetId,
+      achievedAt: row.achievedAt,
+    });
+  }
+
+  for (const row of leadOffRows) {
     if (
-      row.eventType === "relay" ||
-      isRelayStroke(row.stroke, row.eventKey) ||
+      !shouldCreditRelayLeadOff({
+        legOrder: row.legOrder,
+        isDq: row.isDq,
+        exhibition: row.exhibition,
+      }) ||
       row.timeMs <= 0
     ) {
       continue;
     }
-    if (seen.has(row.eventKey)) continue;
-    seen.add(row.eventKey);
-
-    await upsertBestTime({
-      swimmerId,
-      eventKey: row.eventKey,
-      course: (row.course ?? row.meetCourse ?? "SCY") as Course,
-      timeMs: row.timeMs,
-      achievedAt: row.achievedAt,
-      meetId: row.meetId,
+    const eventKey = individualEventKeyForRelayLeg({
+      relayEventKey: row.relayEventKey,
+      legOrder: row.legOrder,
+      swimmerGender: row.gender,
     });
+    if (!eventKey) continue;
+    performances.push({
+      eventKey,
+      course: (row.catalogCourse ?? row.meetCourse ?? "SCY") as Course,
+      timeMs: row.timeMs,
+      meetId: row.meetId,
+      achievedAt: row.achievedAt,
+    });
+  }
+
+  const fastestByKey = new Map<string, Perf>();
+  const meetIdsByKey = new Map<string, Set<string>>();
+  for (const perf of performances) {
+    const ids = meetIdsByKey.get(perf.eventKey) ?? new Set<string>();
+    ids.add(perf.meetId);
+    meetIdsByKey.set(perf.eventKey, ids);
+    const current = fastestByKey.get(perf.eventKey);
+    if (!current || isFasterTime(perf.timeMs, current.timeMs)) {
+      fastestByKey.set(perf.eventKey, perf);
+    }
+  }
+
+  const keptIds = new Set<string>();
+
+  for (const [eventKey, fastest] of fastestByKey) {
+    const existing = await findSwimmerBestTime(swimmerId, eventKey);
+    const sourceMeetIds = meetIdsByKey.get(eventKey) ?? new Set();
+    if (!existing) {
+      await upsertBestTime({
+        swimmerId,
+        eventKey,
+        course: fastest.course,
+        timeMs: fastest.timeMs,
+        achievedAt: fastest.achievedAt,
+        meetId: fastest.meetId,
+      });
+      const created = await findSwimmerBestTime(swimmerId, eventKey);
+      if (created) keptIds.add(created.id);
+      continue;
+    }
+    keptIds.add(existing.id);
+    const sourceMeetGone =
+      existing.meetId != null && !sourceMeetIds.has(existing.meetId);
+    const fromSourceMeet =
+      existing.meetId != null && sourceMeetIds.has(existing.meetId);
+    if (
+      isFasterTime(fastest.timeMs, existing.timeMs) ||
+      sourceMeetGone ||
+      (fromSourceMeet && fastest.timeMs !== existing.timeMs)
+    ) {
+      await db
+        .update(swimmerBestTimes)
+        .set({
+          eventKey,
+          course: fastest.course,
+          timeMs: fastest.timeMs,
+          achievedAt: fastest.achievedAt,
+          meetId: fastest.meetId,
+          updatedAt: new Date(),
+        })
+        .where(eq(swimmerBestTimes.id, existing.id));
+    }
+  }
+
+  const existingBests = await db
+    .select()
+    .from(swimmerBestTimes)
+    .where(eq(swimmerBestTimes.swimmerId, swimmerId));
+
+  for (const best of existingBests) {
+    if (best.meetId == null || keptIds.has(best.id)) continue;
+    await db.delete(swimmerBestTimes).where(eq(swimmerBestTimes.id, best.id));
   }
 }
 
@@ -558,6 +689,7 @@ export async function getSwimmerTimeHistory(
   const meetConditions = [eq(meetResults.swimmerId, swimmerId)];
   const entryConditions = [eq(swimmerTimeEntries.swimmerId, swimmerId)];
 
+  const leadOffConditions = [eq(teamSwimmerMemberships.swimmerId, swimmerId)];
   if (range) {
     meetConditions.push(
       gte(meets.startDate, startOfDayUtc(range.startsOn)),
@@ -567,9 +699,13 @@ export async function getSwimmerTimeHistory(
       gte(swimmerTimeEntries.achievedAt, startOfDayUtc(range.startsOn)),
       lte(swimmerTimeEntries.achievedAt, endOfDayUtc(range.endsOn)),
     );
+    leadOffConditions.push(
+      gte(meets.startDate, startOfDayUtc(range.startsOn)),
+      lte(meets.startDate, endOfDayUtc(range.endsOn)),
+    );
   }
 
-  const [meetRows, entryRows] = await Promise.all([
+  const [meetRows, entryRows, leadOffRows] = await Promise.all([
     db
       .select({
         id: meetResults.id,
@@ -611,26 +747,96 @@ export async function getSwimmerTimeHistory(
         eq(swimEvents.eventKey, swimmerTimeEntries.eventKey),
       )
       .where(and(...entryConditions)),
+    db
+      .select({
+        id: meetRelayResultSplits.id,
+        timeMs: meetRelayResultSplits.timeMs,
+        isDq: meetRelayResults.isDq,
+        exhibition: meetRelayResults.exhibition,
+        meetId: meets.id,
+        meetName: meets.name,
+        achievedAt: meets.startDate,
+        course: meets.course,
+        relayEventKey: meetEvents.eventKey,
+        relayDistance: meetEvents.distance,
+        relayStroke: meetEvents.stroke,
+        eventNumber: meetEvents.eventNumber,
+        gender: swimmers.gender,
+        legOrder: meetRelayResultSplits.legOrder,
+      })
+      .from(meetRelayResultSplits)
+      .innerJoin(
+        meetRelayResults,
+        eq(meetRelayResultSplits.resultId, meetRelayResults.id),
+      )
+      .innerJoin(meets, eq(meetRelayResults.meetId, meets.id))
+      .innerJoin(meetEvents, eq(meetRelayResults.meetEventId, meetEvents.id))
+      .innerJoin(
+        teamSwimmerMemberships,
+        eq(meetRelayResultSplits.membershipId, teamSwimmerMemberships.id),
+      )
+      .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
+      .where(and(...leadOffConditions)),
   ]);
 
-  const merged: SwimmerTimeHistoryRow[] = [
-    ...meetRows.map((row) => ({
+  const leadOffHistory: SwimmerTimeHistoryRow[] = [];
+  for (const row of leadOffRows) {
+    if (
+      !shouldCreditRelayLeadOff({
+        legOrder: row.legOrder,
+        isDq: row.isDq,
+        exhibition: row.exhibition,
+      })
+    ) {
+      continue;
+    }
+    const eventKey = individualEventKeyForRelayLeg({
+      relayEventKey: row.relayEventKey,
+      legOrder: row.legOrder,
+      swimmerGender: row.gender,
+    });
+    if (!eventKey) continue;
+    const catalog = getCatalogEvent(eventKey);
+    leadOffHistory.push({
       id: row.id,
-      source: "meet" as const,
+      source: "meet",
       timeMs: row.timeMs,
-      place: row.place,
-      isDq: row.isDq,
+      place: null,
+      isDq: false,
       meetId: row.meetId,
-      label: row.label,
+      label: `Lead-off · ${row.meetName}`,
       achievedAt: row.achievedAt,
-      course: row.course,
-      eventKey: row.eventKey,
-      eventLabel: row.eventLabel,
-      eventGender: row.eventGender,
-      distance: row.distance,
-      stroke: row.stroke,
+      course: catalog?.course ?? row.course,
+      eventKey,
+      eventLabel: catalog?.label ?? null,
+      eventGender: catalog?.gender ?? null,
+      distance: catalog?.distance ?? null,
+      stroke: catalog?.stroke ?? null,
       eventNumber: row.eventNumber,
-    })),
+    });
+  }
+
+  const merged: SwimmerTimeHistoryRow[] = [
+    ...meetRows
+      .filter((row) => !isRelayStroke(row.stroke, row.eventKey))
+      .map((row) => ({
+        id: row.id,
+        source: "meet" as const,
+        timeMs: row.timeMs,
+        place: row.place,
+        isDq: row.isDq,
+        meetId: row.meetId,
+        label: row.label,
+        achievedAt: row.achievedAt,
+        course: row.course,
+        eventKey: row.eventKey,
+        eventLabel: row.eventLabel,
+        eventGender: row.eventGender,
+        distance: row.distance,
+        stroke: row.stroke,
+        eventNumber: row.eventNumber,
+      })),
+    ...leadOffHistory,
     ...entryRows.map((row) => ({
       id: row.id,
       source: "manual" as const,
@@ -692,6 +898,7 @@ export async function getTeamResultSeries(
       meetDate: meets.startDate,
       meetName: meets.name,
       isDq: meetResults.isDq,
+      stroke: meetEvents.stroke,
     })
     .from(meetResults)
     .innerJoin(meets, eq(meetResults.meetId, meets.id))
@@ -709,10 +916,13 @@ export async function getTeamResultSeries(
     )
     .orderBy(asc(meets.startDate));
 
+  const individual = rows.filter(
+    (r) => !r.isDq && !isRelayStroke(r.stroke, r.eventKey),
+  );
   if (eventKey) {
-    return rows.filter((r) => r.eventKey === eventKey && !r.isDq);
+    return individual.filter((r) => r.eventKey === eventKey);
   }
-  return rows.filter((r) => !r.isDq);
+  return individual;
 }
 
 export type SwimmerSeriesRow = {

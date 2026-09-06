@@ -1,4 +1,8 @@
-import { getMeetResultsDetailed } from "@project-aqua/db/queries/meets";
+import {
+  getMeetRelayLegs,
+  getMeetRelayResultsDetailed,
+  getMeetResultsDetailed,
+} from "@project-aqua/db/queries/meets";
 import { formatEventName } from "@project-aqua/swim-core/events";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -29,8 +33,10 @@ export default async function MeetResultsPage({
   if (!detail) notFound();
 
   const { meet, events, roster } = detail;
-  const [results, standardSets] = await Promise.all([
+  const [results, relayResults, relayLegs, standardSets] = await Promise.all([
     getMeetResultsDetailed(meetId),
+    getMeetRelayResultsDetailed(meetId),
+    getMeetRelayLegs(meetId),
     listTimeStandardSetsAction(teamId),
   ]);
 
@@ -89,11 +95,22 @@ export default async function MeetResultsPage({
           .map((event) => ({
             id: event.id,
             label: `#${event.eventNumber ?? "—"} ${formatEventName(event.distance, event.stroke)}`,
+            stroke: event.stroke,
+            eventKey: event.eventKey,
+            distance: event.distance,
           }))}
         swimmers={roster.map((r) => ({
           swimmerId: r.swimmerId,
+          membershipId: r.membershipId,
           name: `${r.firstName} ${r.lastName}`,
         }))}
+        relayLineup={relayLegs.map((leg) => ({
+          meetEventId: leg.meetEventId,
+          relayLetter: leg.relayLetter,
+          legOrder: leg.legOrder,
+          membershipId: leg.membershipId,
+        }))}
+        relayAttempts={relayResults}
         standardSets={standardSets.map((s) => ({
           id: s.id,
           name: s.name,

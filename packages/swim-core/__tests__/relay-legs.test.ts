@@ -3,6 +3,7 @@ import {
   canAssignRacingRelayLeg,
   deriveRelayLetter,
   formatAssignmentCountLine,
+  individualEventKeyForRelayLeg,
   isRelayAlternateSlot,
   racingRelayCount,
   racingRelayKeysByMember,
@@ -10,6 +11,7 @@ import {
   relayLegRoleLabel,
   relayLetterFromIndex,
   relaySlotLabel,
+  shouldCreditRelayLeadOff,
   strokeForRelayLeg,
 } from "../src/relay-legs";
 
@@ -126,5 +128,124 @@ describe("relay slots", () => {
         relayLetter: "A",
       }),
     ).toEqual({ ok: true });
+  });
+});
+
+describe("individualEventKeyForRelayLeg", () => {
+  it("maps free and medley lead-offs onto gendered individual keys", () => {
+    expect(
+      individualEventKeyForRelayLeg({
+        relayEventKey: "200_free_relay_scy_m",
+        legOrder: 1,
+        swimmerGender: "male",
+      }),
+    ).toBe("50_free_scy_m");
+    expect(
+      individualEventKeyForRelayLeg({
+        relayEventKey: "400_free_relay_scy_f",
+        legOrder: 1,
+        swimmerGender: "female",
+      }),
+    ).toBe("100_free_scy_f");
+    expect(
+      individualEventKeyForRelayLeg({
+        relayEventKey: "200_medley_relay_scy_m",
+        legOrder: 1,
+        swimmerGender: "male",
+      }),
+    ).toBe("50_back_scy_m");
+  });
+
+  it("uses the swimmer gender for mixed relays, not _x", () => {
+    expect(
+      individualEventKeyForRelayLeg({
+        relayEventKey: "200_medley_relay_scy_x",
+        legOrder: 1,
+        swimmerGender: "female",
+      }),
+    ).toBe("50_back_scy_f");
+    expect(
+      individualEventKeyForRelayLeg({
+        relayEventKey: "200_free_relay_scy_x",
+        legOrder: 1,
+        swimmerGender: "male",
+      }),
+    ).toBe("50_free_scy_m");
+  });
+
+  it("returns null for missing catalog keys, alternates, and non-lead-off mapping still works for later legs", () => {
+    expect(
+      individualEventKeyForRelayLeg({
+        relayEventKey: "not_an_event",
+        legOrder: 1,
+        swimmerGender: "male",
+      }),
+    ).toBeNull();
+    expect(
+      individualEventKeyForRelayLeg({
+        relayEventKey: "200_free_relay_scy_m",
+        legOrder: 5,
+        swimmerGender: "male",
+      }),
+    ).toBeNull();
+    expect(
+      individualEventKeyForRelayLeg({
+        relayEventKey: "200_free_relay_scy_f",
+        legOrder: 2,
+        swimmerGender: "female",
+      }),
+    ).toBe("50_free_scy_f");
+    expect(
+      individualEventKeyForRelayLeg({
+        relayEventKey: "200_free_relay_scy_m",
+        legOrder: 0,
+        swimmerGender: "male",
+      }),
+    ).toBeNull();
+    expect(
+      individualEventKeyForRelayLeg({
+        relayEventKey: "50_free_relay_scy_m",
+        legOrder: 1,
+        swimmerGender: "male",
+      }),
+    ).toBeNull();
+    expect(
+      individualEventKeyForRelayLeg({
+        relayEventKey: "100_free_relay_scy_m",
+        legOrder: 1,
+        swimmerGender: "male",
+      }),
+    ).toBeNull();
+  });
+
+  it("only credits racing leg 1 when the relay is legal and scored", () => {
+    expect(
+      shouldCreditRelayLeadOff({
+        legOrder: 1,
+        isDq: false,
+        exhibition: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldCreditRelayLeadOff({
+        legOrder: 2,
+        isDq: false,
+        exhibition: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldCreditRelayLeadOff({
+        legOrder: 1,
+        isDq: true,
+        exhibition: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldCreditRelayLeadOff({
+        legOrder: 1,
+        isDq: false,
+        exhibition: true,
+      }),
+    ).toBe(false);
   });
 });

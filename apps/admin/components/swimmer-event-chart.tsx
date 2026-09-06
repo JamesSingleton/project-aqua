@@ -14,15 +14,8 @@ import {
   YAxis,
 } from "@project-aqua/ui/components/chart";
 import { Label } from "@project-aqua/ui/components/label";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@project-aqua/ui/components/select";
 import { useMemo, useState } from "react";
+import { LabeledCombobox } from "@/components/labeled-combobox";
 
 export type SwimmerSeriesPoint = {
   eventKey: string;
@@ -154,26 +147,16 @@ export function SwimmerEventChart({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="swimmer-event">Event</Label>
-          <Select
+          <LabeledCombobox
+            id="swimmer-event"
+            className="w-full sm:w-[320px]"
             items={eventOptions}
             value={activeEvent}
-            onValueChange={(value) => {
-              if (value != null) setSelectedEvent(value);
-            }}
-          >
-            <SelectTrigger id="swimmer-event" className="w-full sm:w-[320px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {eventOptions.map((event) => (
-                  <SelectItem key={event.value} value={event.value}>
-                    {event.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+            onChange={setSelectedEvent}
+            placeholder="Search events…"
+            emptyText="No events found."
+            showClear={false}
+          />
         </div>
         <p className="text-muted-foreground text-sm">
           Lower is faster · {activeLabel}

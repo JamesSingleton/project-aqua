@@ -1,4 +1,11 @@
 import { canAddMeetEntry, type MeetEntryLimits } from "./entry-limits";
+import { getCatalogEvent } from "./event-catalog";
+import {
+  buildEventKey,
+  type Gender,
+  parseEventKey,
+  type Stroke,
+} from "./events";
 
 /** Four racing legs plus championship alternates #5–#8 (Hy-Tek F3). */
 export const RELAY_PRIMARY_LEG_COUNT = 4;
@@ -125,4 +132,46 @@ export function canAssignRacingRelayLeg(args: {
     { individual: args.individualCount, relay: keys.size },
     true,
   );
+}
+
+/** Lead-off (racing leg 1) on a legal, scored relay may update an official individual best. */
+export function shouldCreditRelayLeadOff(input: {
+  legOrder: number;
+  isDq: boolean;
+  exhibition: boolean;
+}): boolean {
+  return (
+    input.legOrder === 1 &&
+    !isRelayAlternateSlot(input.legOrder) &&
+    !input.isDq &&
+    !input.exhibition
+  );
+}
+
+/**
+ * Catalog individual event for a relay split. Uses the swimmer's gender, not
+ * the relay's (mixed relays have no mixed individual keys).
+ */
+export function individualEventKeyForRelayLeg(input: {
+  relayEventKey: string;
+  legOrder: number;
+  swimmerGender: Gender;
+}): string | null {
+  if (isRelayAlternateSlot(input.legOrder) || input.legOrder < 1) return null;
+  const parsed = parseEventKey(input.relayEventKey);
+  if (!parsed) return null;
+  const catalog = getCatalogEvent(input.relayEventKey);
+  const legs = catalog?.relayLegs ?? RELAY_PRIMARY_LEG_COUNT;
+  if (parsed.distance % legs !== 0) return null;
+  const legDistance = parsed.distance / legs;
+  const stroke = strokeForRelayLeg(parsed.stroke, input.legOrder);
+  const eventKey = buildEventKey(
+    legDistance,
+    stroke as Stroke,
+    parsed.course,
+    input.swimmerGender,
+  );
+  const individual = getCatalogEvent(eventKey);
+  if (!individual) return null;
+  return eventKey;
 }
