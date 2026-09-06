@@ -496,4 +496,82 @@ describe("buildSplitSheetReport", () => {
       ]);
     }
   });
+
+  it("applies a print-only interval override to individuals, not relays", () => {
+    const snapshot = buildMeetLineupSnapshot({
+      meet: { name: "Invite", startDate: "2026-09-12", course: "SCY" },
+      team: { name: "Maricopa" },
+      events: [
+        {
+          id: "e1",
+          eventNumber: 1,
+          stroke: "medley_relay",
+          distance: 200,
+          gender: "male",
+          eventKey: "200_medley_relay_scy_m",
+        },
+        {
+          id: "e21",
+          eventNumber: 21,
+          stroke: "free",
+          distance: 500,
+          gender: "female",
+          eventKey: "500_free_scy_f",
+        },
+      ],
+      entries: [
+        {
+          id: "a1",
+          meetEventId: "e21",
+          membershipId: "m1",
+          seedTimeMs: 320_000,
+          exhibition: false,
+          status: "entered",
+        },
+      ],
+      relayLegs: [
+        {
+          meetEventId: "e1",
+          relayLetter: "A",
+          legOrder: 1,
+          membershipId: "m1",
+        },
+      ],
+      relayTeams: [{ meetEventId: "e1", relayLetter: "A", seedTimeMs: null }],
+      members: [
+        {
+          membershipId: "m1",
+          swimmerId: "s1",
+          firstName: "Riley",
+          lastName: "Cain",
+          gender: "female",
+        },
+      ],
+    });
+
+    const report = buildSplitSheetReport(snapshot, { interval: 100 });
+    const relay = report.events[0];
+    expect(relay?.kind).toBe("relay");
+    if (relay?.kind === "relay") {
+      expect(relay.teams[0]?.marks.map((m) => m.label)).toEqual([
+        "50 (Back)",
+        "100 (Breast)",
+        "150 (Fly)",
+        "200 (Free)",
+        "Overall",
+      ]);
+    }
+    const five = report.events[1];
+    expect(five?.kind).toBe("individual");
+    if (five?.kind === "individual") {
+      expect(five.rows[0]?.marks.map((m) => m.label)).toEqual([
+        "100",
+        "200",
+        "300",
+        "400",
+        "500",
+        "Overall",
+      ]);
+    }
+  });
 });

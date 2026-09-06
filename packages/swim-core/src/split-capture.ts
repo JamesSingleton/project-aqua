@@ -12,7 +12,21 @@ export type SplitCapturePlan = {
   marks: SplitCaptureMark[];
 };
 
+export const SPLIT_CAPTURE_INTERVALS = [25, 50, 100] as const;
+export type SplitCaptureInterval = (typeof SPLIT_CAPTURE_INTERVALS)[number];
+
+/** Skip an override that would print more individual write-ins than this. */
+export const SPLIT_CAPTURE_MAX_INDIVIDUAL_MARKS = 20;
+
 const IM_STROKE_LABELS = ["Fly", "Back", "Breast", "Free"] as const;
+
+export function parseSplitCaptureInterval(
+  value: string | number | null | undefined,
+): SplitCaptureInterval | undefined {
+  const n = typeof value === "number" ? value : Number(value);
+  if (n === 25 || n === 50 || n === 100) return n;
+  return undefined;
+}
 
 function intervalForIndividual(distance: number, course: Course): number {
   if (distance === 50) {
@@ -22,14 +36,28 @@ function intervalForIndividual(distance: number, course: Course): number {
   return 100;
 }
 
+function resolvedIndividualInterval(
+  distance: number,
+  course: Course,
+  override?: SplitCaptureInterval,
+): number {
+  const auto = intervalForIndividual(distance, course);
+  if (override == null) return auto;
+  if (override > distance) return auto;
+  const markCount = Math.ceil(distance / override);
+  if (markCount > SPLIT_CAPTURE_MAX_INDIVIDUAL_MARKS) return auto;
+  return override;
+}
+
 function sentenceCase(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
 }
 
-function clampIndex(value: number): number {
-  if (value < 0) return 0;
-  if (value > 3) return 3;
-  return value;
+function clampIndex(value: number): 0 | 1 | 2 | 3 {
+  if (value <= 0) return 0;
+  if (value >= 3) return 3;
+  if (value === 1) return 1;
+  return 2;
 }
 
 /**
@@ -82,6 +110,8 @@ export function splitCapturePlan(options: {
   course: Course;
   isRelay?: boolean;
   relayLegCount?: number;
+  /** Individual events only. Relays stay one box per racing leg. */
+  interval?: SplitCaptureInterval;
 }): SplitCapturePlan {
   const { distance, course } = options;
   if (distance <= 0) {
@@ -105,7 +135,11 @@ export function splitCapturePlan(options: {
     return { interval, marks };
   }
 
-  const interval = intervalForIndividual(distance, course);
+  const interval = resolvedIndividualInterval(
+    distance,
+    course,
+    options.interval,
+  );
   const marks: SplitCaptureMark[] = [];
   let at = interval;
   while (at < distance) {

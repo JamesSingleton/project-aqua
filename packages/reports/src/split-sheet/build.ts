@@ -7,6 +7,7 @@ import {
 } from "@project-aqua/swim-core/relay-legs";
 import {
   formatSplitCaptureLabel,
+  type SplitCaptureInterval,
   splitCapturePlan,
   splitCaptureStrokeHint,
 } from "@project-aqua/swim-core/split-capture";
@@ -50,8 +51,9 @@ function individualMarks(
   distance: number,
   course: MeetLineupSnapshot["meet"]["course"],
   stroke: string,
+  interval?: SplitCaptureInterval,
 ): SplitSheetMark[] {
-  const plan = splitCapturePlan({ distance, course });
+  const plan = splitCapturePlan({ distance, course, interval });
   return withOverallBox(
     plan.marks.map((mark) => ({
       label: formatSplitCaptureLabel(
@@ -148,6 +150,8 @@ export type BuildSplitSheetReportOptions = {
   generatedAt?: Date;
   includeRelayAlternates?: boolean;
   groupBy?: "event" | "swimmer";
+  /** Individual events only. Omitted = auto cadence. */
+  interval?: SplitCaptureInterval;
 };
 
 function reportTeamCode(team: MeetLineupSnapshot["team"]): string | null {
@@ -295,7 +299,12 @@ export function buildSplitSheetReport(
 
     if (eventEntries.length === 0) continue;
 
-    const marks = individualMarks(event.distance, course, event.stroke);
+    const marks = individualMarks(
+      event.distance,
+      course,
+      event.stroke,
+      options.interval,
+    );
     events.push({
       kind: "individual",
       eventId: event.id,

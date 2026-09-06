@@ -4,6 +4,7 @@ import {
   buildSplitSheetReport,
   type SplitSheetReport,
 } from "@project-aqua/reports";
+import type { SplitCaptureInterval } from "@project-aqua/swim-core/split-capture";
 import { loadMeetLineupSnapshot } from "../../load-meet-lineup-snapshot";
 
 export async function loadSplitSheetReport(
@@ -12,6 +13,7 @@ export async function loadSplitSheetReport(
   options: {
     includeRelayAlternates?: boolean;
     groupBy?: "event" | "swimmer";
+    interval?: SplitCaptureInterval;
   } = {},
 ): Promise<SplitSheetReport | null> {
   const session = await getSession();
@@ -31,5 +33,6 @@ export async function loadSplitSheetReport(
     coachEmail: session?.user?.email ?? null,
     includeRelayAlternates: options.includeRelayAlternates === true,
     groupBy: options.groupBy === "swimmer" ? "swimmer" : "event",
+    interval: options.interval,
   });
 }

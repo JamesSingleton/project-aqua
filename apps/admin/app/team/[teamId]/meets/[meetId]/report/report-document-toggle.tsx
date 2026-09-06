@@ -12,8 +12,12 @@ export function ReportDocumentToggle() {
   function setDocument(next: string | null) {
     if (next !== "splits" && next !== "entries") return;
     const params = new URLSearchParams(searchParams.toString());
-    if (next === "entries") params.delete("doc");
-    else params.set("doc", "splits");
+    if (next === "entries") {
+      params.delete("doc");
+      params.delete("split");
+    } else {
+      params.set("doc", "splits");
+    }
     const query = params.toString();
     router.replace(query ? `${pathname}?${query}` : pathname);
   }

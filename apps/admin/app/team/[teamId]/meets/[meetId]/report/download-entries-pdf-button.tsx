@@ -1,5 +1,6 @@
 "use client";
 
+import type { SplitCaptureInterval } from "@project-aqua/swim-core/split-capture";
 import { Button } from "@project-aqua/ui/components/button";
 import { Download } from "lucide-react";
 import { useState } from "react";
@@ -12,6 +13,7 @@ export function DownloadEntriesPdfButton({
   includeRelayAlternates = false,
   groupBy = "event",
   documentKind = "entries",
+  splitInterval,
 }: {
   teamId: string;
   meetId: string;
@@ -19,6 +21,7 @@ export function DownloadEntriesPdfButton({
   includeRelayAlternates?: boolean;
   groupBy?: "event" | "swimmer";
   documentKind?: "entries" | "splits";
+  splitInterval?: SplitCaptureInterval;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -31,6 +34,9 @@ export function DownloadEntriesPdfButton({
       const params = new URLSearchParams();
       if (includeRelayAlternates) params.set("alts", "1");
       if (groupBy === "swimmer") params.set("group", "swimmer");
+      if (documentKind === "splits" && splitInterval) {
+        params.set("split", String(splitInterval));
+      }
       const query = params.toString();
       const slug = documentKind === "splits" ? "split-sheet" : "entries";
       const res = await fetch(

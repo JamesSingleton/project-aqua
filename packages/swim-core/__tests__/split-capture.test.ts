@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   formatSplitCaptureLabel,
+  parseSplitCaptureInterval,
   splitCapturePlan,
   splitCaptureStrokeHint,
 } from "../src/split-capture";
@@ -98,6 +99,60 @@ describe("splitCapturePlan", () => {
         relayLegCount: 0,
       }),
     ).toEqual({ interval: 0, marks: [] });
+  });
+
+  it("applies an individual interval override when it fits", () => {
+    expect(
+      distances(
+        splitCapturePlan({ distance: 200, course: "SCY", interval: 100 }),
+      ),
+    ).toEqual([100, 200]);
+    expect(
+      distances(
+        splitCapturePlan({ distance: 500, course: "SCY", interval: 100 }),
+      ),
+    ).toEqual([100, 200, 300, 400, 500]);
+    expect(
+      distances(
+        splitCapturePlan({ distance: 50, course: "LCM", interval: 25 }),
+      ),
+    ).toEqual([25, 50]);
+  });
+
+  it("falls back to auto when an override is too coarse or too fine", () => {
+    expect(
+      splitCapturePlan({ distance: 50, course: "SCY", interval: 100 }).interval,
+    ).toBe(25);
+    const mileAt25 = splitCapturePlan({
+      distance: 1650,
+      course: "SCY",
+      interval: 25,
+    });
+    expect(mileAt25.interval).toBe(100);
+    expect(mileAt25.marks).toHaveLength(17);
+  });
+
+  it("ignores interval override on relays", () => {
+    expect(
+      distances(
+        splitCapturePlan({
+          distance: 200,
+          course: "SCY",
+          isRelay: true,
+          interval: 100,
+        }),
+      ),
+    ).toEqual([50, 100, 150, 200]);
+  });
+});
+
+describe("parseSplitCaptureInterval", () => {
+  it("accepts 25, 50, and 100", () => {
+    expect(parseSplitCaptureInterval("25")).toBe(25);
+    expect(parseSplitCaptureInterval(50)).toBe(50);
+    expect(parseSplitCaptureInterval("100")).toBe(100);
+    expect(parseSplitCaptureInterval("auto")).toBeUndefined();
+    expect(parseSplitCaptureInterval(null)).toBeUndefined();
   });
 });
 

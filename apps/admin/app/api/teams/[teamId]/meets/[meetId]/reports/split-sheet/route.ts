@@ -1,5 +1,6 @@
 import { AuthError } from "@project-aqua/db/authz";
 import { renderToStream, SplitSheetPdfDocument } from "@project-aqua/reports";
+import { parseSplitCaptureInterval } from "@project-aqua/swim-core/split-capture";
 import { loadSplitSheetReport } from "@/app/team/[teamId]/meets/[meetId]/report/load-split-sheet-report";
 
 function safeFilename(name: string): string {
@@ -20,6 +21,7 @@ export async function GET(
       includeRelayAlternates,
       groupBy:
         url.searchParams.get("group") === "swimmer" ? "swimmer" : "event",
+      interval: parseSplitCaptureInterval(url.searchParams.get("split")),
     });
     if (!report) {
       return new Response("Meet not found", { status: 404 });
