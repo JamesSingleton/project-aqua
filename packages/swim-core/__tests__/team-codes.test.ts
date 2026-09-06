@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  cl2TeamId,
   normalizeLscCode,
   normalizeTeamCode,
   teamFilePrefix,
@@ -16,10 +15,7 @@ describe("team codes", () => {
     expect(normalizeLscCode("AZI")).toBeNull();
   });
 
-  it("builds CL2 and filename prefixes", () => {
-    expect(cl2TeamId("MARI", "AZ")).toBe("AZMARI");
-    expect(cl2TeamId("MARI", null)).toBe("MARI");
-    expect(cl2TeamId(null, "AZ")).toBe("AZTEAM");
+  it("builds filename prefixes", () => {
     expect(teamFilePrefix("MARI", "AZ")).toBe("MARI-AZ");
     expect(teamFilePrefix("MARI", null)).toBe("MARI");
     expect(teamFilePrefix(null, "AZ")).toBe("TEAM");

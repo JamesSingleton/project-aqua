@@ -661,7 +661,7 @@ function RelayTeamCard({
                 displayValue={
                   assigned
                     ? `${assigned.name}${split != null ? ` · ${formatTime(split)}` : ""}`
-                    : "Unassigned"
+                    : ""
                 }
                 disabled={pending || locked}
                 options={eligibleCandidates.map((candidate) => {

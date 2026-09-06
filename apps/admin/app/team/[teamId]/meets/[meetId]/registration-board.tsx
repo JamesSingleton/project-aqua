@@ -2,6 +2,11 @@
 
 import { swimmerAgeOnDate } from "@project-aqua/swim-core/age";
 import {
+  type AssociationEventCaps,
+  canAddScoringEntry,
+} from "@project-aqua/swim-core/association-event-caps";
+import { consecutivePairsForMember } from "@project-aqua/swim-core/consecutive-events";
+import {
   canAddMeetEntry,
   checkMeetEntryCounts,
   checkQualifyingTime,
@@ -328,12 +333,14 @@ export function RegistrationBoard({
   attendance,
   bestTimes,
   relayLegs,
+  associationCaps,
 }: {
   teamId: string;
   meetId: string;
   course: string;
   meetStartDate: Date;
   limits?: MeetEntryLimits | null;
+  associationCaps?: AssociationEventCaps | null;
   roster: RosterRow[];
   events: EventRow[];
   entries: EntryRow[];
@@ -348,9 +355,7 @@ export function RegistrationBoard({
   const [filter, setFilter] = useState<RosterFilter>("all");
   const [sort, setSort] = useState<RosterSort>("last_name");
   const [groupFilter, setGroupFilter] = useState<string>("all");
-  const [membershipId, setMembershipId] = useState(
-    roster[0]?.membershipId ?? "",
-  );
+  const [membershipId, setMembershipId] = useState("");
   const [seedDrafts, setSeedDrafts] = useState<Record<string, string>>({});
   const [exhibitionDrafts, setExhibitionDrafts] = useState<
     Record<string, boolean>
@@ -458,13 +463,11 @@ export function RegistrationBoard({
   ]);
 
   useEffect(() => {
-    if (
-      membershipId &&
-      filteredRoster.some((r) => r.membershipId === membershipId)
-    ) {
+    if (!membershipId) return;
+    if (filteredRoster.some((r) => r.membershipId === membershipId)) {
       return;
     }
-    setMembershipId(filteredRoster[0]?.membershipId ?? "");
+    setMembershipId("");
   }, [filteredRoster, membershipId]);
 
   const selectedSwimmer = roster.find((r) => r.membershipId === membershipId);
@@ -497,6 +500,40 @@ export function RegistrationBoard({
     () => new Set(swimmerEntries.map((e) => e.meetEventId)),
     [swimmerEntries],
   );
+
+  const consecutivePairs = useMemo(() => {
+    const ids = new Set(enteredEventIds);
+    for (const leg of swimmerRelayLegs) {
+      if (leg.legOrder >= 1 && leg.legOrder <= 4) {
+        ids.add(leg.meetEventId);
+      }
+    }
+    return consecutivePairsForMember(
+      ids,
+      events.map((event) => ({
+        id: event.id,
+        eventNumber: event.eventNumber,
+        gender: event.gender,
+      })),
+    );
+  }, [enteredEventIds, swimmerRelayLegs, events]);
+
+  const consecutiveAlert = useMemo(() => {
+    if (consecutivePairs.length === 0) return null;
+    const eventById = new Map(events.map((event) => [event.id, event]));
+    const lines = consecutivePairs.map((pair) => {
+      const first = eventById.get(pair.firstEventId);
+      const second = eventById.get(pair.secondEventId);
+      const firstName = first
+        ? `#${pair.firstEventNumber} ${formatEventName(first.distance, first.stroke)}`
+        : `#${pair.firstEventNumber}`;
+      const secondName = second
+        ? `#${pair.secondEventNumber} ${formatEventName(second.distance, second.stroke)}`
+        : `#${pair.secondEventNumber}`;
+      return `${firstName} then ${secondName}`;
+    });
+    return lines.join("; ");
+  }, [consecutivePairs, events]);
 
   const entryCounts = useMemo(() => {
     return {
@@ -644,6 +681,24 @@ export function RegistrationBoard({
     if (candidateIsRelay) return;
     const limitCheck = canAddMeetEntry(limits, entryCounts, candidateIsRelay);
     if (!limitCheck.ok) return;
+
+    if (associationCaps && exhibitionDrafts[event.id] !== true) {
+      const scoringCount = entries.filter(
+        (row) =>
+          row.meetEventId === event.id &&
+          row.status !== "scratched" &&
+          !row.exhibition,
+      ).length;
+      const capCheck = canAddScoringEntry({
+        cap: associationCaps.maxScoringEntriesPerIndividualEvent,
+        currentScoringCount: scoringCount,
+        candidateIsExhibition: false,
+      });
+      if (!capCheck.ok) {
+        setActionError(capCheck.reason);
+        return;
+      }
+    }
 
     const qtCheck = checkQualifyingTime(
       event.qualifyingTimeMs,
@@ -1039,6 +1094,17 @@ export function RegistrationBoard({
                   <AlertTriangleIcon />
                   <AlertTitle>Couldn't add entry</AlertTitle>
                   <AlertDescription>{actionError}</AlertDescription>
+                </Alert>
+              ) : null}
+              {consecutiveAlert ? (
+                <Alert>
+                  <InfoIcon />
+                  <AlertTitle>Back-to-back events</AlertTitle>
+                  <AlertDescription>
+                    This swimmer is entered in consecutive events for this
+                    gender&apos;s program: {consecutiveAlert}. This is a warning
+                    only.
+                  </AlertDescription>
                 </Alert>
               ) : null}
 

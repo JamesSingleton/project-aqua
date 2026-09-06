@@ -217,6 +217,11 @@ export function MeetEntriesHtmlReport({
               Location: {report.location}
             </div>
           ) : null}
+          {report.opponents ? (
+            <div style={{ fontSize: 13, color: muted }}>
+              Opponents: {report.opponents}
+            </div>
+          ) : null}
           <div
             style={{
               display: "flex",
@@ -248,9 +253,52 @@ export function MeetEntriesHtmlReport({
       </header>
 
       <div>
-        {report.events.map((event) => (
-          <EventSection key={event.eventId} event={event} />
-        ))}
+        {report.groupBy === "swimmer"
+          ? report.swimmers.map((swimmer) => (
+              <section key={swimmer.membershipId} style={{ marginBottom: 22 }}>
+                <div
+                  style={{
+                    borderBottom: `1px solid ${rule}`,
+                    paddingBottom: 6,
+                    marginBottom: 8,
+                    fontSize: 14,
+                    fontWeight: 600,
+                  }}
+                >
+                  {swimmer.name}
+                </div>
+                {swimmer.lines.map((line) => (
+                  <div
+                    key={`${line.eventId}-${line.kind}-${line.relayLetter ?? ""}-${line.isAlternate ? "alt" : "p"}`}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      padding: "3px 0",
+                      gap: 16,
+                    }}
+                  >
+                    <span>
+                      {line.eventNumber != null ? `#${line.eventNumber} ` : ""}
+                      {line.eventLabel}
+                      {line.kind === "relay"
+                        ? ` · ${line.relayLetter ?? "A"}${line.isAlternate ? " alt" : ""}`
+                        : ""}
+                      {line.exhibition ? " (ex)" : ""}
+                    </span>
+                    <span
+                      style={{
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      {line.seedLabel}
+                    </span>
+                  </div>
+                ))}
+              </section>
+            ))
+          : report.events.map((event) => (
+              <EventSection key={event.eventId} event={event} />
+            ))}
       </div>
 
       <footer

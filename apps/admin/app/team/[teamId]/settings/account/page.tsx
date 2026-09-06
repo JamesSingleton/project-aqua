@@ -1,13 +1,12 @@
-import { auth } from "@project-aqua/auth";
 import { getSession } from "@project-aqua/auth/session";
 import { getMember, requireTeamMember } from "@project-aqua/db/authz";
 import { db } from "@project-aqua/db/client";
 import { getNotificationPreferences } from "@project-aqua/db/queries/notifications";
 import { getUserPreferences } from "@project-aqua/db/queries/preferences";
+import { listActiveSessionsForUser } from "@project-aqua/db/queries/sessions";
 import { user } from "@project-aqua/db/schema";
 import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { EmailVerificationBanner } from "@/components/auth/email-verification-banner";
 import { SettingsSection } from "../settings-section";
 import { AccountAppearanceForm } from "./account-appearance-form";
@@ -44,8 +43,6 @@ export default async function AccountSettingsPage({
   }
   await requireTeamMember(session.user.id, teamId);
 
-  const requestHeaders = await headers();
-
   const [profile, membership, prefs, userPrefs, activeSessions] =
     await Promise.all([
       db
@@ -63,7 +60,7 @@ export default async function AccountSettingsPage({
       getMember(session.user.id, teamId),
       getNotificationPreferences(session.user.id),
       getUserPreferences(session.user.id),
-      auth.api.listSessions({ headers: requestHeaders }),
+      listActiveSessionsForUser(session.user.id),
     ]);
 
   const serializedSessions: ActiveSession[] = activeSessions.map((s) => ({

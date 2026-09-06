@@ -16,11 +16,6 @@ export type RelaySwimmerOption = {
   blocked?: string | null;
 };
 
-const UNASSIGNED: RelaySwimmerOption = {
-  membershipId: "",
-  label: "Unassigned",
-};
-
 /** Last name, then first, from `First Last` or `First Last · 1:12.50`. */
 function lastNameSortKey(label: string): string {
   const name = label.split("·")[0]?.trim() ?? "";
@@ -48,7 +43,7 @@ export function RelaySwimmerCombobox({
   const items = useMemo(() => {
     const named = [...options];
     if (value && !named.some((option) => option.membershipId === value)) {
-      named.push({ membershipId: value, label: displayValue });
+      named.push({ membershipId: value, label: displayValue || value });
     }
     named.sort((a, b) =>
       lastNameSortKey(a.label).localeCompare(
@@ -59,11 +54,12 @@ export function RelaySwimmerCombobox({
         },
       ),
     );
-    return [UNASSIGNED, ...named];
+    return named;
   }, [displayValue, options, value]);
 
-  const selected =
-    items.find((option) => option.membershipId === value) ?? UNASSIGNED;
+  const selected = value
+    ? (items.find((option) => option.membershipId === value) ?? null)
+    : null;
 
   return (
     <Combobox
@@ -78,7 +74,7 @@ export function RelaySwimmerCombobox({
     >
       <ComboboxInput
         className="w-full"
-        placeholder="Search swimmers…"
+        placeholder="Select a swimmer"
         aria-label={label}
         disabled={disabled}
         showClear
@@ -91,7 +87,7 @@ export function RelaySwimmerCombobox({
             const isCurrent = item.membershipId === value;
             return (
               <ComboboxItem
-                key={item.membershipId || "unassigned"}
+                key={item.membershipId}
                 value={item}
                 disabled={blocked && !isCurrent}
               >

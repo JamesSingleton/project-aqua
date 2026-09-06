@@ -16,6 +16,7 @@ export type MeetTableRow = {
   entryDeadline: string | null;
   course: "SCY" | "SCM" | "LCM";
   location: string | null;
+  opponents: string | null;
   seasonLabel: string | null;
 };
 
@@ -153,6 +154,16 @@ export function createMeetsColumns(
         <DataTableColumnHeader column={column} title="Location" />
       ),
       cell: ({ row }) => row.original.location ?? "—",
+      enableSorting: true,
+      enableColumnFilter: false,
+    },
+    {
+      id: "opponents",
+      accessorKey: "opponents",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Opponents" />
+      ),
+      cell: ({ row }) => row.original.opponents ?? "—",
       enableSorting: true,
       enableColumnFilter: false,
     },

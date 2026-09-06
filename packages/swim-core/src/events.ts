@@ -105,6 +105,24 @@ export function formatEventName(
   return `${distance} ${formatStrokeLabel(stroke)}`;
 }
 
+/** Events-table wording without event number, e.g. "Male 50 Freestyle". */
+export function formatProgramEventLabel(
+  gender: string,
+  distance: number,
+  stroke: string,
+): string {
+  return `${formatGenderLabel(gender)} ${formatEventName(distance, stroke)}`;
+}
+
+/** Typed confirmation for deleting a meet event. */
+export function formatMeetEventDeletePhrase(
+  gender: string,
+  distance: number,
+  stroke: string,
+): string {
+  return `Delete ${formatProgramEventLabel(gender, distance, stroke)}`;
+}
+
 export function buildEventKey(
   distance: number,
   stroke: Stroke | RelayStroke,

@@ -79,15 +79,43 @@ describe("resolveImportedEventForMerge", () => {
     );
   });
 
-  it("replaces when resolution is use_import", () => {
-    expect(resolveImportedEventForMerge(existing, imported, "use_import")).toBe(
-      "replace",
-    );
+  it("replaces imported rows when resolution is use_import", () => {
+    expect(
+      resolveImportedEventForMerge(
+        { ...existing, importedFromFile: true },
+        imported,
+        "use_import",
+      ),
+    ).toBe("replace");
+  });
+
+  it("does not rewrite hand-added events even when use_import is chosen", () => {
+    expect(
+      resolveImportedEventForMerge(
+        { ...existing, importedFromFile: false },
+        imported,
+        "use_import",
+      ),
+    ).toBe("skip");
+  });
+
+  it("refreshes matching imported events", () => {
+    expect(
+      resolveImportedEventForMerge(
+        { ...existing, importedFromFile: true },
+        existing,
+        undefined,
+      ),
+    ).toBe("refresh");
   });
 
   it("skips conflicts by default", () => {
-    expect(resolveImportedEventForMerge(existing, imported, undefined)).toBe(
-      "skip",
-    );
+    expect(
+      resolveImportedEventForMerge(
+        { ...existing, importedFromFile: true },
+        imported,
+        undefined,
+      ),
+    ).toBe("skip");
   });
 });

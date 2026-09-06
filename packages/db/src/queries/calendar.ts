@@ -231,7 +231,7 @@ export async function getTeamCalendarProjection(
         source: "meet" as const,
         title: m.name,
         location: m.location,
-        description: null as string | null,
+        description: m.opponents,
         startsAt: m.startDate,
         endsAt: m.endDate,
         eventType: "meet" as const,

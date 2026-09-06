@@ -27,16 +27,6 @@ export function normalizeLscCode(
   return code;
 }
 
-/** CL2 concatenates LSC + abbrev (`AZMARI`). HY3 uses abbrev alone (`MARI`). */
-export function cl2TeamId(
-  teamCode: string | null | undefined,
-  lscCode: string | null | undefined,
-): string {
-  const code = normalizeTeamCode(teamCode) ?? "TEAM";
-  const lsc = normalizeLscCode(lscCode);
-  return lsc ? `${lsc}${code}`.slice(0, 8) : code;
-}
-
 /** Folder/file stem like `MARI-AZ-Entries-…`. */
 export function teamFilePrefix(
   teamCode: string | null | undefined,

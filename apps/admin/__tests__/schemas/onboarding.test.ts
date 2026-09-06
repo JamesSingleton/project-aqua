@@ -5,6 +5,8 @@ describe("onboardingFormSchema", () => {
   const valid = {
     teamName: "Aqua Club",
     teamType: "club" as const,
+    maxScoringEntriesPerIndividualEvent: "",
+    maxRelayTeamsPerEvent: "",
     coachName: "Jamie Coach",
     coachTitle: "Head Coach",
     plan: "pro" as const,
@@ -39,8 +41,17 @@ describe("onboardingFormSchema", () => {
     expect(() =>
       onboardingFormSchema.parse({
         ...valid,
-        teamName: "x".repeat(101),
+        teamType: "high_school",
+        maxScoringEntriesPerIndividualEvent: "0",
       }),
     ).toThrow();
+    expect(
+      onboardingFormSchema.parse({
+        ...valid,
+        teamType: "high_school",
+        maxScoringEntriesPerIndividualEvent: "4",
+        maxRelayTeamsPerEvent: "1",
+      }).maxScoringEntriesPerIndividualEvent,
+    ).toBe("4");
   });
 });

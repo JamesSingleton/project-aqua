@@ -3,15 +3,20 @@
 import { Button } from "@project-aqua/ui/components/button";
 import { Download } from "lucide-react";
 import { useState } from "react";
+import { confirmMeetEntriesViewOnExport } from "../../meet-entries-view";
 
 export function DownloadEntriesPdfButton({
   teamId,
   meetId,
   meetName,
+  includeRelayAlternates = false,
+  groupBy = "event",
 }: {
   teamId: string;
   meetId: string;
   meetName: string;
+  includeRelayAlternates?: boolean;
+  groupBy?: "event" | "swimmer";
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -20,8 +25,13 @@ export function DownloadEntriesPdfButton({
     setLoading(true);
     setError("");
     try {
+      await confirmMeetEntriesViewOnExport(teamId);
+      const params = new URLSearchParams();
+      if (includeRelayAlternates) params.set("alts", "1");
+      if (groupBy === "swimmer") params.set("group", "swimmer");
+      const query = params.toString();
       const res = await fetch(
-        `/api/teams/${teamId}/meets/${meetId}/reports/entries`,
+        `/api/teams/${teamId}/meets/${meetId}/reports/entries${query ? `?${query}` : ""}`,
       );
       if (!res.ok) {
         throw new Error((await res.text()) || "Failed to download PDF");

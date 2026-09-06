@@ -22,6 +22,11 @@ export function MeetEntryNav({
       label: "Entries",
       href: `${base}/entries`,
     },
+    {
+      value: "reports",
+      label: "Reports",
+      href: `${base}/report`,
+    },
   ] as const;
 
   const active =

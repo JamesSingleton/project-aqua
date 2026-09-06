@@ -66,6 +66,7 @@ const createMeetFormSchema = z
     course: z.enum(["SCY", "SCM", "LCM"]),
     location: z.string(),
     address: z.string(),
+    opponents: z.string().max(500),
   })
   .refine(({ startDate, endDate }) => endDate === "" || endDate >= startDate, {
     message: "End date must be on or after the start date",
@@ -92,6 +93,7 @@ export function CreateMeetForm({ teamId }: { teamId: string }) {
       course: "SCY",
       location: "",
       address: "",
+      opponents: "",
     },
   });
 
@@ -243,6 +245,20 @@ export function CreateMeetForm({ teamId }: { teamId: string }) {
                 {...register("address")}
               />
               <FieldError errors={[errors.address]} />
+            </Field>
+            <Field data-invalid={!!errors.opponents} className="sm:col-span-2">
+              <FieldLabel htmlFor="meet-opponents">Opponents</FieldLabel>
+              <Input
+                id="meet-opponents"
+                placeholder="Optional — other teams at this meet"
+                maxLength={500}
+                aria-invalid={!!errors.opponents}
+                {...register("opponents")}
+              />
+              <FieldDescription>
+                Shown on the meet page and paper report. Not sent in host files.
+              </FieldDescription>
+              <FieldError errors={[errors.opponents]} />
             </Field>
 
             <Field orientation="horizontal" className="flex-wrap sm:col-span-2">

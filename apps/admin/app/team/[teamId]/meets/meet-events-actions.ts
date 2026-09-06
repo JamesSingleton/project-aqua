@@ -17,11 +17,9 @@ import {
   deleteMeetEvent,
   deleteMeetRelayLegsForEvent,
   getMeetById,
-  getMeetEntriesDetailed,
   getMeetEventById,
   getMeetEvents,
   getMeetRelayLegsDetailed,
-  getMeetRelayTeams,
   suggestMeetEventNumber,
   updateMeetEvent,
 } from "@project-aqua/db/queries/meets";
@@ -29,15 +27,15 @@ import { recomputeBestTimesForSwimmer } from "@project-aqua/db/queries/progressi
 import { getRoster } from "@project-aqua/db/queries/roster";
 import { isRelayStroke } from "@project-aqua/swim-core/entry-limits";
 import type { RelayStroke, Stroke } from "@project-aqua/swim-core/events";
-import { buildEventKey } from "@project-aqua/swim-core/events";
 import {
-  buildByEventCsv,
-  buildEntryListCsv,
-} from "@project-aqua/swim-core/meet-entry-export";
+  buildEventKey,
+  formatMeetEventDeletePhrase,
+} from "@project-aqua/swim-core/events";
 import {
   BUILT_IN_MEET_EVENT_PRESETS,
   type MeetEventPresetRow,
 } from "@project-aqua/swim-core/meet-event-presets";
+import { formatMeetLineupCsv } from "@project-aqua/swim-core/meet-lineup-snapshot";
 import { parseMeetResultsCsv } from "@project-aqua/swim-core/meet-results-csv";
 import { parseTime } from "@project-aqua/swim-core/times";
 import {
@@ -45,6 +43,19 @@ import {
   meetEventTemplateNameSchema,
 } from "@project-aqua/swim-core/validators";
 import { revalidatePath } from "next/cache";
+import { loadMeetLineupSnapshot } from "./load-meet-lineup-snapshot";
+
+function isFileBackedMeet(importSource: string | null | undefined) {
+  return Boolean(importSource?.trim());
+}
+
+function assertHandBuiltEventList(importSource: string | null | undefined) {
+  if (isFileBackedMeet(importSource)) {
+    throw new Error(
+      "This meet came from a file. Add events one at a time instead of applying a template.",
+    );
+  }
+}
 
 function revalidateMeetPaths(teamId: string, meetId: string) {
   revalidatePath(`/team/${teamId}/meets`);
@@ -163,6 +174,8 @@ export async function updateManualMeetEventAction(
     );
   const hasEntries = entryCount > 0 || hasRelayLegs;
 
+  const identityLocked = event.importedFromFile || hasEntries;
+
   const ageGroup = formData.get("ageGroup");
   const qualifyingTime = formData.get("qualifyingTime");
   const patch: Parameters<typeof updateMeetEvent>[2] = {
@@ -172,7 +185,7 @@ export async function updateManualMeetEventAction(
     ),
   };
 
-  if (!hasEntries) {
+  if (!identityLocked) {
     const parsed = manualMeetEventSchema.parse({
       eventNumber: formData.get("eventNumber"),
       stroke: formData.get("stroke"),
@@ -209,7 +222,7 @@ export async function deleteManualMeetEventAction(
   teamId: string,
   meetId: string,
   eventId: string,
-  options?: { force?: boolean },
+  options: { confirmPhrase: string },
 ) {
   const session = await getSession();
   await requireMeetImportAccess(teamId, session?.user?.id);
@@ -219,22 +232,17 @@ export async function deleteManualMeetEventAction(
   const event = await getMeetEventById(eventId, meetId);
   if (!event) throw new Error("Event not found");
 
-  const entryCount = await countMeetEntriesForEvent(eventId);
-  const relayLegCount = (await getMeetRelayLegsDetailed(meetId)).filter(
-    (leg) => leg.meetEventId === eventId,
-  ).length;
-
-  if ((entryCount > 0 || relayLegCount > 0) && !options?.force) {
-    throw new Error(
-      "This event has entries. Confirm removal to delete it and clear linked entries.",
-    );
+  const expected = formatMeetEventDeletePhrase(
+    event.gender,
+    event.distance,
+    event.stroke,
+  );
+  if (options.confirmPhrase.trim() !== expected) {
+    throw new Error(`Type ${expected} to delete this event.`);
   }
 
-  if (options?.force) {
-    await deleteMeetEntriesForEvent(eventId);
-    await deleteMeetRelayLegsForEvent(meetId, eventId);
-  }
-
+  await deleteMeetEntriesForEvent(eventId);
+  await deleteMeetRelayLegsForEvent(meetId, eventId);
   await deleteMeetEvent(eventId, meetId);
   revalidateMeetPaths(teamId, meetId);
 }
@@ -246,6 +254,7 @@ async function addPresetEvents(
 ) {
   const meet = await getMeetById(meetId, teamId);
   if (!meet) throw new Error("Meet not found");
+  assertHandBuiltEventList(meet.importSource);
 
   const existing = await getMeetEvents(meetId);
   const usedNumbers = new Set(
@@ -386,54 +395,12 @@ export async function listTeamEventTemplatesAction(teamId: string) {
 export async function exportMeetEntriesCsvAction(
   teamId: string,
   meetId: string,
-  format: "entry_list" | "by_event",
 ) {
   const session = await getSession();
   await requireMeetImportAccess(teamId, session?.user?.id);
-  const meet = await getMeetById(meetId, teamId);
-  if (!meet) throw new Error("Meet not found");
-
-  const [events, entries, relayLegs, relayTeams] = await Promise.all([
-    getMeetEvents(meetId),
-    getMeetEntriesDetailed(meetId),
-    getMeetRelayLegsDetailed(meetId),
-    getMeetRelayTeams(meetId),
-  ]);
-
-  const payload = {
-    events: events.map((event) => ({
-      id: event.id,
-      eventNumber: event.eventNumber,
-      stroke: event.stroke,
-      distance: event.distance,
-      gender: event.gender,
-      ageGroup: event.ageGroup,
-      eventKey: event.eventKey,
-    })),
-    entries: entries.map((entry) => ({
-      id: entry.id,
-      meetEventId: entry.meetEventId,
-      membershipId: entry.membershipId,
-      firstName: entry.firstName,
-      lastName: entry.lastName,
-      seedTimeMs: entry.seedTimeMs,
-      exhibition: entry.exhibition,
-      entryNotes: entry.entryNotes,
-      status: entry.status,
-      stroke: entry.stroke,
-      eventKey: entry.eventKey,
-    })),
-    relayLegs,
-    relayTeamSeeds: relayTeams.map((team) => ({
-      meetEventId: team.meetEventId,
-      relayLetter: team.relayLetter,
-      seedTimeMs: team.seedTimeMs,
-    })),
-  };
-
-  return format === "by_event"
-    ? buildByEventCsv(payload)
-    : buildEntryListCsv(payload);
+  const loaded = await loadMeetLineupSnapshot(teamId, meetId);
+  if (!loaded) throw new Error("Meet not found");
+  return formatMeetLineupCsv(loaded.snapshot);
 }
 
 export async function importMeetResultsCsvAction(

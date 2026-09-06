@@ -111,6 +111,12 @@ export const organization = pgTable("organization", {
   region: text("region"),
   postalCode: text("postal_code"),
   country: text("country"),
+  /** High-school association: max scoring (non-exhibition) names per individual event. */
+  maxScoringEntriesPerIndividualEvent: integer(
+    "max_scoring_entries_per_individual_event",
+  ),
+  /** High-school association: max A/B/C relay teams per relay event. */
+  maxRelayTeamsPerEvent: integer("max_relay_teams_per_event"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

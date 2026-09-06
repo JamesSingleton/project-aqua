@@ -146,6 +146,22 @@ describe("team UI preferences", () => {
     });
   });
 
+  it("patches meet entries view without dropping roster state", async () => {
+    limit.mockResolvedValueOnce([
+      { ui: { roster: { columnVisibility: { name: true } } } },
+    ]);
+    onConflictDoUpdate.mockResolvedValueOnce(undefined);
+
+    const result = await patchTeamUiPreferences("user-1", "org-1", {
+      meetEntriesView: "event",
+    });
+
+    expect(result).toEqual({
+      roster: { columnVisibility: { name: true } },
+      meetEntriesView: "event",
+    });
+  });
+
   it("patches without roster key leaves existing ui unchanged shape", async () => {
     limit.mockResolvedValueOnce([
       { ui: { roster: { columnVisibility: { name: true } } } },

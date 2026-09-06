@@ -1,72 +1,22 @@
-import { isRelayStroke } from "@project-aqua/swim-core/entry-limits";
 import {
   formatGenderLabel,
   formatStrokeLabel,
 } from "@project-aqua/swim-core/events";
+import type { MeetLineupSnapshot } from "@project-aqua/swim-core/meet-lineup-snapshot";
+import {
+  normalizeLscCode,
+  normalizeTeamCode,
+} from "@project-aqua/swim-core/team-codes";
 import { formatTime } from "@project-aqua/swim-core/times";
 import type {
   MeetEntriesReport,
-  MeetEntriesReportAthlete,
   MeetEntriesReportEvent,
   MeetEntriesReportIndividual,
   MeetEntriesReportRelayTeam,
+  MeetEntriesReportSwimmer,
+  MeetEntriesReportSwimmerLine,
   ReportCourse,
 } from "../types";
-
-export type MeetEntriesBuildEvent = {
-  id: string;
-  eventNumber: number | null;
-  stroke: string;
-  distance: number;
-  gender: string;
-  eventKey: string;
-};
-
-export type MeetEntriesBuildEntry = {
-  id: string;
-  meetEventId: string;
-  membershipId: string;
-  firstName: string;
-  lastName: string;
-  seedTimeMs: number | null;
-  exhibition: boolean;
-  status: string;
-  stroke: string;
-  eventKey: string;
-  gender: string;
-};
-
-export type MeetEntriesBuildRelayLeg = {
-  meetEventId: string;
-  relayLetter: string;
-  legOrder: number;
-  membershipId: string;
-  firstName: string;
-  lastName: string;
-};
-
-export type BuildMeetEntriesReportInput = {
-  meetName: string;
-  startDate: Date | string;
-  course: ReportCourse;
-  location?: string | null;
-  teamName: string;
-  teamCode?: string | null;
-  coachName?: string | null;
-  coachEmail?: string | null;
-  teamAddress?: string | null;
-  generatedAt?: Date;
-  events: MeetEntriesBuildEvent[];
-  entries: MeetEntriesBuildEntry[];
-  relayLegs: MeetEntriesBuildRelayLeg[];
-  relayTeamSeeds?: Array<{
-    meetEventId: string;
-    relayLetter: string;
-    seedTimeMs: number | null;
-  }>;
-  /** Optional roster map for class year / display enrichment. */
-  athletesByMembershipId?: Map<string, MeetEntriesReportAthlete>;
-};
 
 const SHORT_STROKE: Record<string, string> = {
   free: "Free",
@@ -151,65 +101,56 @@ export function formatReportEventTitle(
   return `${distance} ${short}`;
 }
 
-function sortEvents(
-  a: MeetEntriesBuildEvent,
-  b: MeetEntriesBuildEvent,
-): number {
-  const an = a.eventNumber ?? Number.MAX_SAFE_INTEGER;
-  const bn = b.eventNumber ?? Number.MAX_SAFE_INTEGER;
-  if (an !== bn) return an - bn;
-  return a.id.localeCompare(b.id);
-}
-
 function seedSortKey(seedTimeMs: number | null): number {
   if (seedTimeMs == null || seedTimeMs <= 0) return Number.MAX_SAFE_INTEGER;
   return seedTimeMs;
 }
 
-function athleteMeta(
-  membershipId: string,
-  firstName: string,
-  lastName: string,
-  map?: Map<string, MeetEntriesReportAthlete>,
-): { name: string; classYear: string | null } {
-  const fromMap = map?.get(membershipId);
-  const classYear = fromMap?.classYear ?? null;
-  return {
-    name: formatAthleteDisplayName(
-      fromMap?.firstName ?? firstName,
-      fromMap?.lastName ?? lastName,
-      classYear,
-    ),
-    classYear,
-  };
+function reportTeamCode(team: MeetLineupSnapshot["team"]): string | null {
+  const code = normalizeTeamCode(team.teamCode);
+  if (!code) return null;
+  const lsc = normalizeLscCode(team.lscCode);
+  return lsc ? `${code}-${lsc}` : code;
 }
 
+function reportTeamAddress(
+  team: MeetLineupSnapshot["team"],
+  override?: string | null,
+): string | null {
+  if (override?.trim()) return override.trim();
+  const cityLine = [team.city, team.region, team.postalCode]
+    .filter(Boolean)
+    .join(", ");
+  const parts = [
+    team.addressLine1,
+    team.addressLine2,
+    cityLine || null,
+    team.country,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : null;
+}
+
+export type BuildMeetEntriesReportOptions = {
+  coachName?: string | null;
+  coachEmail?: string | null;
+  teamAddress?: string | null;
+  generatedAt?: Date;
+  /** TM Show Eight: include relay legs 5–8 labeled [Alt]. Default omits them. */
+  includeRelayAlternates?: boolean;
+  /** Paper grouping. Default event. */
+  groupBy?: "event" | "swimmer";
+};
+
 /**
- * Build a Team Manager–style Individual Meet Entries report model
- * (by event, A-relay legs 1–4 only).
+ * Team Manager–style paper model. Consumes a meet lineup snapshot;
+ * does not regroup relays.
  */
 export function buildMeetEntriesReport(
-  input: BuildMeetEntriesReportInput,
+  snapshot: MeetLineupSnapshot,
+  options: BuildMeetEntriesReportOptions = {},
 ): MeetEntriesReport {
-  const {
-    meetName,
-    startDate,
-    course,
-    location,
-    teamName,
-    teamCode,
-    coachName,
-    coachEmail,
-    teamAddress,
-    events,
-    entries,
-    relayLegs,
-    relayTeamSeeds = [],
-    athletesByMembershipId,
-  } = input;
-
-  const generatedAt = input.generatedAt ?? new Date();
-  const activeEntries = entries.filter((e) => e.status !== "scratched");
+  const course = snapshot.meet.course;
+  const generatedAt = options.generatedAt ?? new Date();
   const reportEvents: MeetEntriesReportEvent[] = [];
 
   let femaleIndividualEntries = 0;
@@ -217,54 +158,35 @@ export function buildMeetEntriesReport(
   let totalRelayEntries = 0;
   const athleteIds = new Set<string>();
 
-  for (const event of [...events].sort(sortEvents)) {
-    const isRelay = isRelayStroke(event.stroke, event.eventKey);
+  for (const event of snapshot.events) {
     const genderLabel = formatGenderLabel(event.gender);
     const title = formatReportEventTitle(event.distance, event.stroke);
 
-    if (isRelay) {
-      const legsForEvent = relayLegs.filter(
-        (leg) =>
-          leg.meetEventId === event.id &&
-          leg.legOrder >= 1 &&
-          leg.legOrder <= 4,
-      );
-      const byLetter = new Map<string, MeetEntriesBuildRelayLeg[]>();
-      for (const leg of legsForEvent) {
-        const list = byLetter.get(leg.relayLetter) ?? [];
-        list.push(leg);
-        byLetter.set(leg.relayLetter, list);
-      }
-
-      const seedByLetter = new Map(
-        relayTeamSeeds
-          .filter((team) => team.meetEventId === event.id)
-          .map((team) => [team.relayLetter, team.seedTimeMs] as const),
-      );
-
-      const teams: MeetEntriesReportRelayTeam[] = [...byLetter.entries()]
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([letter, legs]) => {
-          const sorted = [...legs].sort((a, b) => a.legOrder - b.legOrder);
-          for (const leg of sorted) athleteIds.add(leg.membershipId);
+    if (event.isRelay) {
+      const teams: MeetEntriesReportRelayTeam[] = snapshot.relayTeams
+        .filter((team) => team.meetEventId === event.id)
+        .map((team) => {
+          const maxLeg = options.includeRelayAlternates ? 8 : 4;
+          const legs = team.legs.filter(
+            (leg) => leg.legOrder >= 1 && leg.legOrder <= maxLeg,
+          );
+          for (const leg of legs) athleteIds.add(leg.membershipId);
           return {
-            letter,
-            seedLabel: formatSeedLabel(
-              seedByLetter.get(letter) ?? null,
-              course,
-            ),
-            legs: sorted.map((leg) => {
-              const meta = athleteMeta(
-                leg.membershipId,
+            letter: team.letter,
+            seedLabel: formatSeedLabel(team.seedTimeMs, course),
+            legs: legs.map((leg) => {
+              const isAlternate = leg.legOrder >= 5;
+              const name = formatAthleteDisplayName(
                 leg.firstName,
                 leg.lastName,
-                athletesByMembershipId,
+                leg.classYear,
               );
               return {
                 legOrder: leg.legOrder,
                 membershipId: leg.membershipId,
-                name: meta.name,
-                classYear: meta.classYear,
+                name: isAlternate ? `${name} [Alt]` : name,
+                classYear: leg.classYear,
+                isAlternate,
               };
             }),
           };
@@ -284,8 +206,11 @@ export function buildMeetEntriesReport(
       continue;
     }
 
-    const eventEntries = activeEntries
-      .filter((e) => e.meetEventId === event.id)
+    const eventEntries = snapshot.individuals
+      .filter(
+        (entry) => entry.meetEventId === event.id && !entry.inclusion.scratched,
+      )
+      .slice()
       .sort((a, b) => {
         const seed = seedSortKey(a.seedTimeMs) - seedSortKey(b.seedTimeMs);
         if (seed !== 0) return seed;
@@ -302,16 +227,14 @@ export function buildMeetEntriesReport(
         if (entry.gender === "female") femaleIndividualEntries += 1;
         else if (entry.gender === "male") maleIndividualEntries += 1;
 
-        const meta = athleteMeta(
-          entry.membershipId,
-          entry.firstName,
-          entry.lastName,
-          athletesByMembershipId,
-        );
         return {
           membershipId: entry.membershipId,
-          name: meta.name,
-          classYear: meta.classYear,
+          name: formatAthleteDisplayName(
+            entry.firstName,
+            entry.lastName,
+            entry.classYear,
+          ),
+          classYear: entry.classYear,
           seedLabel: formatSeedLabel(
             entry.seedTimeMs,
             course,
@@ -332,23 +255,28 @@ export function buildMeetEntriesReport(
     });
   }
 
+  const swimmers = groupReportBySwimmer(reportEvents);
+
   return {
     reportTitle: "Individual Meet Entries Report",
-    meetName,
-    meetDateLabel: formatMeetDateCompact(startDate),
+    meetName: snapshot.meet.name,
+    meetDateLabel: formatMeetDateCompact(snapshot.meet.startDate),
     courseLabel: formatCourseLabel(course),
-    location: location ?? null,
-    teamName,
-    teamCode: teamCode ?? null,
-    coachName: coachName ?? null,
-    coachEmail: coachEmail ?? null,
-    teamAddress: teamAddress ?? null,
+    location: snapshot.meet.location ?? null,
+    opponents: snapshot.meet.opponents ?? null,
+    teamName: snapshot.team.name ?? "Team",
+    teamCode: reportTeamCode(snapshot.team),
+    coachName: options.coachName ?? snapshot.team.contactName ?? null,
+    coachEmail: options.coachEmail ?? snapshot.team.contactEmail ?? null,
+    teamAddress: reportTeamAddress(snapshot.team, options.teamAddress),
     generatedAtLabel: generatedAt.toLocaleDateString("en-US", {
       month: "numeric",
       day: "numeric",
       year: "numeric",
     }),
+    groupBy: options.groupBy === "swimmer" ? "swimmer" : "event",
     events: reportEvents,
+    swimmers,
     summary: {
       femaleIndividualEntries,
       maleIndividualEntries,
@@ -357,4 +285,56 @@ export function buildMeetEntriesReport(
       totalAthletes: athleteIds.size,
     },
   };
+}
+
+function groupReportBySwimmer(
+  events: MeetEntriesReportEvent[],
+): MeetEntriesReportSwimmer[] {
+  const byId = new Map<string, MeetEntriesReportSwimmer>();
+
+  function lineFor(
+    membershipId: string,
+    name: string,
+    line: MeetEntriesReportSwimmerLine,
+  ) {
+    const current = byId.get(membershipId) ?? {
+      membershipId,
+      name,
+      lines: [],
+    };
+    current.lines.push(line);
+    byId.set(membershipId, current);
+  }
+
+  for (const event of events) {
+    const eventLabel = `${event.genderLabel} ${event.title}`;
+    if (event.kind === "individual") {
+      for (const athlete of event.athletes) {
+        lineFor(athlete.membershipId, athlete.name, {
+          eventId: event.eventId,
+          eventNumber: event.eventNumber,
+          eventLabel,
+          seedLabel: athlete.seedLabel,
+          kind: "individual",
+          exhibition: athlete.exhibition,
+        });
+      }
+      continue;
+    }
+    for (const team of event.teams) {
+      for (const leg of team.legs) {
+        lineFor(leg.membershipId, leg.name, {
+          eventId: event.eventId,
+          eventNumber: event.eventNumber,
+          eventLabel,
+          seedLabel: team.seedLabel,
+          kind: "relay",
+          relayLetter: team.letter,
+          isAlternate: leg.isAlternate,
+        });
+      }
+    }
+  }
+
+  return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
 }

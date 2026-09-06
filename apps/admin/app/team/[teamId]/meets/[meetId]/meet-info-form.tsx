@@ -81,6 +81,9 @@ const meetInfoSchema = z
     maxIndividualEntries: optionalLimitSchema,
     maxRelayEntries: optionalLimitSchema,
     maxCombinedEntries: optionalLimitSchema,
+    maxScoringEntriesPerIndividualEvent: optionalLimitSchema,
+    maxRelayTeamsPerEvent: optionalLimitSchema,
+    opponents: z.string().max(500),
   })
   .refine(({ startDate, endDate }) => endDate === "" || endDate >= startDate, {
     message: "End date must be on or after the start date",
@@ -88,6 +91,12 @@ const meetInfoSchema = z
   });
 
 type MeetInfoValues = z.infer<typeof meetInfoSchema>;
+
+const COURSE_ITEMS = [
+  { value: "SCY", label: "SCY" },
+  { value: "SCM", label: "SCM" },
+  { value: "LCM", label: "LCM" },
+] as const;
 
 function optionalNumberDefault(value: number | null | undefined) {
   return value != null ? String(value) : "";
@@ -97,6 +106,7 @@ export function MeetInfoForm({
   teamId,
   meetId,
   meet,
+  teamCaps,
 }: {
   teamId: string;
   meetId: string;
@@ -114,8 +124,16 @@ export function MeetInfoForm({
     maxCombinedEntries: number | null;
     entryLimitPackages: Array<{ individual: number; relay: number }> | null;
     entryLimitsSource: string | null;
+    maxScoringEntriesPerIndividualEvent: number | null;
+    maxRelayTeamsPerEvent: number | null;
+    opponents: string | null;
+  };
+  teamCaps?: {
+    maxScoringEntriesPerIndividualEvent: number | null;
+    maxRelayTeamsPerEvent: number | null;
   };
 }) {
+  const fileBacked = Boolean(meet.importSource?.trim());
   const router = useRouter();
   const [error, setError] = useState("");
   const {
@@ -138,6 +156,11 @@ export function MeetInfoForm({
       maxIndividualEntries: optionalNumberDefault(meet.maxIndividualEntries),
       maxRelayEntries: optionalNumberDefault(meet.maxRelayEntries),
       maxCombinedEntries: optionalNumberDefault(meet.maxCombinedEntries),
+      maxScoringEntriesPerIndividualEvent: optionalNumberDefault(
+        meet.maxScoringEntriesPerIndividualEvent,
+      ),
+      maxRelayTeamsPerEvent: optionalNumberDefault(meet.maxRelayTeamsPerEvent),
+      opponents: meet.opponents ?? "",
     },
   });
 
@@ -160,15 +183,17 @@ export function MeetInfoForm({
       <CardHeader>
         <CardTitle>Meet details</CardTitle>
         <CardDescription>
-          Name, dates, and venue. Event lists still come from imported meet
-          files.
+          Name, dates, and venue
           {meet.importSource ? (
             <>
-              {" "}
-              Imported from{" "}
+              . Course and per-athlete entry limits come from{" "}
               <span className="font-medium">{meet.importSource}</span>.
             </>
-          ) : null}
+          ) : (
+            <>
+              . Event lists can be built by hand or imported from a meet file.
+            </>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -250,7 +275,9 @@ export function MeetInfoForm({
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="meet-course">Course</FieldLabel>
                   <Select
+                    items={[...COURSE_ITEMS]}
                     value={field.value}
+                    disabled={fileBacked}
                     onValueChange={(value) => {
                       if (value != null) field.onChange(value);
                     }}
@@ -258,18 +285,26 @@ export function MeetInfoForm({
                     <SelectTrigger
                       id="meet-course"
                       className="w-full"
+                      disabled={fileBacked}
                       aria-invalid={fieldState.invalid}
                     >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
-                        <SelectItem value="SCY">SCY</SelectItem>
-                        <SelectItem value="SCM">SCM</SelectItem>
-                        <SelectItem value="LCM">LCM</SelectItem>
+                        {COURSE_ITEMS.map((course) => (
+                          <SelectItem key={course.value} value={course.value}>
+                            {course.label}
+                          </SelectItem>
+                        ))}
                       </SelectGroup>
                     </SelectContent>
                   </Select>
+                  {fileBacked ? (
+                    <FieldDescription>
+                      Course comes from the meet file.
+                    </FieldDescription>
+                  ) : null}
                   <FieldError errors={[fieldState.error]} />
                 </Field>
               )}
@@ -294,6 +329,20 @@ export function MeetInfoForm({
               />
               <FieldError errors={[errors.address]} />
             </Field>
+            <Field data-invalid={!!errors.opponents} className="sm:col-span-2">
+              <FieldLabel htmlFor="meet-opponents">Opponents</FieldLabel>
+              <Input
+                id="meet-opponents"
+                placeholder="Optional — other teams at this meet"
+                maxLength={500}
+                aria-invalid={!!errors.opponents}
+                {...register("opponents")}
+              />
+              <FieldDescription>
+                Coach-owned. Does not go in the host entry file.
+              </FieldDescription>
+              <FieldError errors={[errors.opponents]} />
+            </Field>
 
             <FieldSet className="sm:col-span-2">
               <FieldLegend
@@ -306,8 +355,9 @@ export function MeetInfoForm({
                 ) : null}
               </FieldLegend>
               <FieldDescription>
-                Leave blank for no limit. Overrides apply when packages are not
-                set from the meet file.
+                {fileBacked
+                  ? "Max individual, relay, and combined limits come from the meet file."
+                  : "Leave blank for no limit. Overrides apply when packages are not set from the meet file."}
               </FieldDescription>
               {meet.entryLimitPackages && meet.entryLimitPackages.length > 0 ? (
                 <p className="text-sm">
@@ -328,6 +378,7 @@ export function MeetInfoForm({
                     min={0}
                     placeholder="None"
                     aria-invalid={!!errors.maxIndividualEntries}
+                    disabled={fileBacked}
                     {...register("maxIndividualEntries")}
                   />
                   <FieldError errors={[errors.maxIndividualEntries]} />
@@ -340,6 +391,7 @@ export function MeetInfoForm({
                     min={0}
                     placeholder="None"
                     aria-invalid={!!errors.maxRelayEntries}
+                    disabled={fileBacked}
                     {...register("maxRelayEntries")}
                   />
                   <FieldError errors={[errors.maxRelayEntries]} />
@@ -352,9 +404,56 @@ export function MeetInfoForm({
                     min={0}
                     placeholder="None"
                     aria-invalid={!!errors.maxCombinedEntries}
+                    disabled={fileBacked}
                     {...register("maxCombinedEntries")}
                   />
                   <FieldError errors={[errors.maxCombinedEntries]} />
+                </Field>
+              </FieldGroup>
+            </FieldSet>
+
+            <FieldSet className="sm:col-span-2">
+              <FieldLegend variant="label">Association caps</FieldLegend>
+              <FieldDescription>
+                Optional override for this meet. Leave blank to inherit the team
+                default
+                {teamCaps
+                  ? ` (${teamCaps.maxScoringEntriesPerIndividualEvent ?? "unlimited"} scoring / ${teamCaps.maxRelayTeamsPerEvent ?? "unlimited"} relay teams)`
+                  : ""}
+                . Counts scoring names only; exhibition can still be added.
+              </FieldDescription>
+              <FieldGroup className="grid gap-4 sm:grid-cols-2">
+                <Field
+                  data-invalid={!!errors.maxScoringEntriesPerIndividualEvent}
+                >
+                  <FieldLabel htmlFor="max-scoring-event">
+                    Scoring names per individual event
+                  </FieldLabel>
+                  <Input
+                    id="max-scoring-event"
+                    type="number"
+                    min={1}
+                    placeholder="Inherit team"
+                    aria-invalid={!!errors.maxScoringEntriesPerIndividualEvent}
+                    {...register("maxScoringEntriesPerIndividualEvent")}
+                  />
+                  <FieldError
+                    errors={[errors.maxScoringEntriesPerIndividualEvent]}
+                  />
+                </Field>
+                <Field data-invalid={!!errors.maxRelayTeamsPerEvent}>
+                  <FieldLabel htmlFor="max-relay-teams">
+                    Relay teams per event
+                  </FieldLabel>
+                  <Input
+                    id="max-relay-teams"
+                    type="number"
+                    min={1}
+                    placeholder="Inherit team"
+                    aria-invalid={!!errors.maxRelayTeamsPerEvent}
+                    {...register("maxRelayTeamsPerEvent")}
+                  />
+                  <FieldError errors={[errors.maxRelayTeamsPerEvent]} />
                 </Field>
               </FieldGroup>
             </FieldSet>

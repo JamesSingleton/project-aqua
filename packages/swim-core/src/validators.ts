@@ -157,6 +157,7 @@ export const createMeetSchema = z.object({
   course: z.enum(COURSES),
   location: z.string().optional(),
   address: z.string().optional(),
+  opponents: z.string().max(500).optional(),
 });
 
 export type CreateMeetInput = z.infer<typeof createMeetSchema>;

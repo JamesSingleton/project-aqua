@@ -12,6 +12,8 @@
     "./draft-quota": "./src/draft-quota.ts",
     "./event-catalog": "./src/event-catalog.ts",
     "./entry-limits": "./src/entry-limits.ts",
+    "./association-event-caps": "./src/association-event-caps.ts",
+    "./consecutive-events": "./src/consecutive-events.ts",
     "./relay-legs": "./src/relay-legs.ts",
     "./best-times": "./src/best-times.ts",
     "./lineup-suggest": "./src/lineup-suggest.ts",
@@ -25,7 +27,7 @@
     "./team-codes": "./src/team-codes.ts",
     "./workout-parser": "./src/workout-parser.ts",
     "./meet-event-presets": "./src/meet-event-presets.ts",
-    "./meet-entry-export": "./src/meet-entry-export.ts",
+    "./meet-lineup-snapshot": "./src/meet-lineup-snapshot.ts",
     "./meet-results-csv": "./src/meet-results-csv.ts",
     "./meet-import-merge": "./src/meet-import-merge.ts"
   },

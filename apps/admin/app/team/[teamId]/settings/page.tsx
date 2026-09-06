@@ -11,6 +11,7 @@ import {
 import { eq } from "drizzle-orm";
 import { AlertCircle } from "lucide-react";
 import type { Metadata } from "next";
+import { AssociationCapsForm } from "./association-caps-form";
 import { PracticeDefaultsForm } from "./practice-defaults-form";
 import { SettingsSection } from "./settings-section";
 import { TeamDangerZone } from "./team-danger-zone";
@@ -113,6 +114,22 @@ export default async function TeamSettingsPage({
       >
         <TeamTypeForm teamId={teamId} teamType={teamType} />
       </SettingsSection>
+
+      {teamType === "high_school" ? (
+        <SettingsSection
+          title="Association event caps"
+          description="Max scoring names per individual event and relay teams per event for your high-school association. Not the per-athlete limits on a meet file."
+          showSeparator
+        >
+          <AssociationCapsForm
+            teamId={teamId}
+            maxScoringEntriesPerIndividualEvent={
+              org?.maxScoringEntriesPerIndividualEvent ?? null
+            }
+            maxRelayTeamsPerEvent={org?.maxRelayTeamsPerEvent ?? null}
+          />
+        </SettingsSection>
+      ) : null}
 
       {isOwner && currentOwner ? (
         <SettingsSection

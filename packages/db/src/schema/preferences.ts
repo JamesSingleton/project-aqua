@@ -15,8 +15,11 @@ export type RosterUiState = {
   sorting?: { id: string; desc: boolean }[];
 };
 
+export type MeetEntriesView = "swimmer" | "event";
+
 export type TeamUiState = {
   roster?: RosterUiState;
+  meetEntriesView?: MeetEntriesView;
 };
 
 export const userPreferences = pgTable("user_preferences", {

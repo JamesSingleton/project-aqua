@@ -20,6 +20,19 @@ export type ActiveSession = {
   expiresAt: string;
 };
 
+function sessionManageError(
+  error: { message?: string; code?: string },
+  fallback: string,
+) {
+  if (
+    error.code === "SESSION_NOT_FRESH" ||
+    error.message === "Session is not fresh"
+  ) {
+    return "Sign in again to end sessions on other devices.";
+  }
+  return error.message ?? fallback;
+}
+
 function parseSessionLabel(userAgent: string | null): {
   device: "mobile" | "desktop";
   label: string;
@@ -94,7 +107,7 @@ export function AccountSessionsForm({
     startTransition(async () => {
       const result = await revokeSession({ token: session.token });
       if (result.error) {
-        setError(result.error.message ?? "Could not end session");
+        setError(sessionManageError(result.error, "Could not end session"));
         return;
       }
       removeLocal(session.id);
@@ -108,7 +121,9 @@ export function AccountSessionsForm({
     startTransition(async () => {
       const result = await revokeSessions();
       if (result.error) {
-        setError(result.error.message ?? "Could not end other sessions");
+        setError(
+          sessionManageError(result.error, "Could not end other sessions"),
+        );
         return;
       }
       setSessions((current) =>

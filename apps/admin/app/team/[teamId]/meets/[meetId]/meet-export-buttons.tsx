@@ -21,18 +21,17 @@ import {
   DropdownMenuTrigger,
 } from "@project-aqua/ui/components/dropdown-menu";
 import { Separator } from "@project-aqua/ui/components/separator";
-import { ChevronDown, Download, FileText } from "lucide-react";
-import Link from "next/link";
+import { ChevronDown, Download } from "lucide-react";
 import { useState } from "react";
 import { exportMeetAction, exportMeetZipAction } from "../actions";
+import { confirmMeetEntriesViewOnExport } from "../meet-entries-view";
 import { exportMeetEntriesCsvAction } from "../meet-events-actions";
 
-type TextFormat = "sdif" | "hy3" | "cl2" | "ev3" | "hyv";
-type CsvFormat = "entry_list" | "by_event";
-type ZipKind = "entries" | "results" | "events";
+type TextFormat = "sdif" | "hy3" | "cl2";
+type ZipKind = "entries" | "results";
 type ExportJob =
   | { kind: "text"; format: TextFormat }
-  | { kind: "csv"; format: CsvFormat }
+  | { kind: "csv" }
   | { kind: "zip"; zip: ZipKind };
 
 type ExportAction = {
@@ -40,7 +39,6 @@ type ExportAction = {
   label: string;
   needsLineup?: boolean;
   job?: ExportJob;
-  report?: boolean;
 };
 
 const TEXT_FORMAT_META: Record<
@@ -50,18 +48,14 @@ const TEXT_FORMAT_META: Record<
   hy3: { label: "For Meet Manager (HY3)", extension: "hy3" },
   sdif: { label: "For SwimTopia / SDIF (SD3)", extension: "sd3" },
   cl2: { label: "CL2 (SDIF entries/results)", extension: "cl2" },
-  ev3: { label: "EV3 (event template)", extension: "ev3" },
-  hyv: { label: "HYV (qualifying times)", extension: "hyv" },
 };
 
 const ZIP_KIND_META: Record<ZipKind, { label: string }> = {
   entries: { label: "Entries pack (HY3 + CL2)" },
   results: { label: "Results pack (HY3 + CL2)" },
-  events: { label: "Events pack (EV3 + HYV + HY3 + CL2)" },
 };
 
 const LINEUP_ACTIONS: ExportAction[] = [
-  { key: "report", label: "Entry report", needsLineup: true, report: true },
   {
     key: "hy3",
     label: TEXT_FORMAT_META.hy3.label,
@@ -78,32 +72,13 @@ const LINEUP_ACTIONS: ExportAction[] = [
     key: "csv-entries",
     label: "Entries CSV",
     needsLineup: true,
-    job: { kind: "csv", format: "entry_list" },
-  },
-  {
-    key: "csv-event",
-    label: "By event CSV",
-    needsLineup: true,
-    job: { kind: "csv", format: "by_event" },
+    job: { kind: "csv" },
   },
   {
     key: "cl2",
     label: TEXT_FORMAT_META.cl2.label,
     needsLineup: true,
     job: { kind: "text", format: "cl2" },
-  },
-];
-
-const EVENT_FILE_ACTIONS: ExportAction[] = [
-  {
-    key: "ev3",
-    label: TEXT_FORMAT_META.ev3.label,
-    job: { kind: "text", format: "ev3" },
-  },
-  {
-    key: "hyv",
-    label: TEXT_FORMAT_META.hyv.label,
-    job: { kind: "text", format: "hyv" },
   },
 ];
 
@@ -120,16 +95,11 @@ const ZIP_ACTIONS: ExportAction[] = [
     needsLineup: true,
     job: { kind: "zip", zip: "results" },
   },
-  {
-    key: "zip-events",
-    label: ZIP_KIND_META.events.label,
-    job: { kind: "zip", zip: "events" },
-  },
 ];
 
 function jobKey(job: ExportJob): string {
   if (job.kind === "text") return `text:${job.format}`;
-  if (job.kind === "csv") return `csv:${job.format}`;
+  if (job.kind === "csv") return "csv";
   return `zip:${job.zip}`;
 }
 
@@ -172,21 +142,14 @@ export function MeetExportButtons({
   const [loading, setLoading] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const baseName = meetName.replace(/[^\w.-]+/g, "_");
-  const reportHref = `/team/${teamId}/meets/${meetId}/report`;
 
   async function runJob(job: ExportJob) {
-    const needsLineup =
-      job.kind === "csv" ||
-      (job.kind === "text" &&
-        (job.format === "hy3" ||
-          job.format === "sdif" ||
-          job.format === "cl2")) ||
-      (job.kind === "zip" && job.zip !== "events");
-    if (needsLineup && !hasLineup) return;
+    if (hasLineup === false) return;
 
     setLoading(jobKey(job));
     setError("");
     try {
+      await confirmMeetEntriesViewOnExport(teamId);
       if (job.kind === "text") {
         const content = await exportMeetAction(teamId, meetId, job.format);
         const { extension } = TEXT_FORMAT_META[job.format];
@@ -195,15 +158,10 @@ export function MeetExportButtons({
           `${baseName}.${extension}`,
         );
       } else if (job.kind === "csv") {
-        const content = await exportMeetEntriesCsvAction(
-          teamId,
-          meetId,
-          job.format,
-        );
-        const suffix = job.format === "by_event" ? "by_event" : "entries";
+        const content = await exportMeetEntriesCsvAction(teamId, meetId);
         downloadBlob(
           new Blob([content], { type: "text/csv;charset=utf-8" }),
-          `${baseName}_${suffix}.csv`,
+          `${baseName}_entries.csv`,
         );
       } else {
         const { base64, filename } = await exportMeetZipAction(
@@ -226,10 +184,6 @@ export function MeetExportButtons({
   }
 
   function choose(action: ExportAction) {
-    if (action.report) {
-      setDrawerOpen(false);
-      return;
-    }
     if (action.job) {
       setDrawerOpen(false);
       void runJob(action.job);
@@ -246,16 +200,10 @@ export function MeetExportButtons({
         key={action.key}
         disabled={actionDisabled(action, busy, lineupLocked)}
         closeOnClick
-        render={
-          action.report && !lineupLocked ? (
-            <Link href={reportHref} />
-          ) : undefined
-        }
         onClick={() => {
           if (action.job) void runJob(action.job);
         }}
       >
-        {action.report ? <FileText data-icon="inline-start" /> : null}
         {action.label}
       </DropdownMenuItem>
     ));
@@ -264,21 +212,6 @@ export function MeetExportButtons({
   function renderDrawerItems(actions: ExportAction[]) {
     return actions.map((action) => {
       const disabled = actionDisabled(action, busy, lineupLocked);
-      if (action.report && !disabled) {
-        return (
-          <Button
-            key={action.key}
-            variant="ghost"
-            className="w-full justify-start"
-            nativeButton={false}
-            render={<Link href={reportHref} />}
-            onClick={() => setDrawerOpen(false)}
-          >
-            <FileText data-icon="inline-start" />
-            {action.label}
-          </Button>
-        );
-      }
       return (
         <Button
           key={action.key}
@@ -288,7 +221,6 @@ export function MeetExportButtons({
           disabled={disabled}
           onClick={() => choose(action)}
         >
-          {action.report ? <FileText data-icon="inline-start" /> : null}
           {action.label}
         </Button>
       );
@@ -320,11 +252,6 @@ export function MeetExportButtons({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuLabel>Event files</DropdownMenuLabel>
-              {renderMenuItems(EVENT_FILE_ACTIONS)}
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
               <DropdownMenuLabel>ZIP packs</DropdownMenuLabel>
               {renderMenuItems(ZIP_ACTIONS)}
             </DropdownMenuGroup>
@@ -346,7 +273,7 @@ export function MeetExportButtons({
             <DrawerHeader className="text-left">
               <DrawerTitle>Export</DrawerTitle>
               <DrawerDescription>
-                Meet Manager, SwimTopia, CSVs, and event files.
+                Meet Manager, SwimTopia, and entry reports.
               </DrawerDescription>
             </DrawerHeader>
             <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
@@ -356,11 +283,6 @@ export function MeetExportButtons({
                   <p className="text-muted-foreground text-sm">{lineupHint}</p>
                 ) : null}
                 {renderDrawerItems(LINEUP_ACTIONS)}
-              </div>
-              <Separator />
-              <div className="flex flex-col gap-1">
-                <p className="text-muted-foreground text-xs">Event files</p>
-                {renderDrawerItems(EVENT_FILE_ACTIONS)}
               </div>
               <Separator />
               <div className="flex flex-col gap-1">

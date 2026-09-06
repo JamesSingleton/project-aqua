@@ -61,6 +61,11 @@ export function ReportHeader({ report }: { report: MeetEntriesReport }) {
             Location: {report.location}
           </Text>
         ) : null}
+        {report.opponents ? (
+          <Text style={{ fontSize: 9, color: colors.muted }}>
+            Opponents: {report.opponents}
+          </Text>
+        ) : null}
         <View
           style={{
             flexDirection: "row",

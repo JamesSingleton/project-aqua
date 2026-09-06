@@ -26,6 +26,7 @@
     "./queries/ai-quota": "./src/queries/ai-quota.ts",
     "./queries/notifications": "./src/queries/notifications.ts",
     "./queries/preferences": "./src/queries/preferences.ts",
+    "./queries/sessions": "./src/queries/sessions.ts",
     "./calendar-ics": "./src/calendar-ics.ts"
   },
   "scripts": {

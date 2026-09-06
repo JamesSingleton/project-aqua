@@ -85,6 +85,7 @@ type ReviewState = {
   course: "SCY" | "SCM" | "LCM";
   location: string;
   address: string;
+  opponents: string;
   maxIndividualEntries: string;
   maxRelayEntries: string;
   maxCombinedEntries: string;
@@ -289,6 +290,7 @@ export function MeetImportButton({
         course: parsed.course,
         location: parsed.location ?? "",
         address: parsed.address ?? "",
+        opponents: "",
         maxIndividualEntries:
           parsed.entryLimits?.maxIndividualEntries?.toString() ?? "",
         maxRelayEntries: parsed.entryLimits?.maxRelayEntries?.toString() ?? "",
@@ -331,6 +333,7 @@ export function MeetImportButton({
           course: review.course,
           location: review.location || undefined,
           address: review.address || undefined,
+          opponents: review.opponents.trim() || undefined,
           maxIndividualEntries: optionalLimit(review.maxIndividualEntries),
           maxRelayEntries: optionalLimit(review.maxRelayEntries),
           maxCombinedEntries: optionalLimit(review.maxCombinedEntries),
@@ -587,7 +590,8 @@ export function MeetImportButton({
                     <p className="text-sm font-medium">Event conflicts</p>
                     <p className="text-muted-foreground text-sm">
                       These event numbers already exist on the meet with
-                      different strokes. Choose which version to keep.
+                      different strokes. Hand-added events keep their identity.
+                      Imported events can be replaced from the file.
                     </p>
                   </div>
                   <div className="max-h-64 space-y-2 overflow-y-auto">
@@ -601,8 +605,11 @@ export function MeetImportButton({
                             Event #{conflict.eventNumber}
                           </p>
                           <p className="text-muted-foreground">
-                            Manual: {conflict.manual.distance}{" "}
+                            Current: {conflict.manual.distance}{" "}
                             {conflict.manual.stroke} ({conflict.manual.gender})
+                            {conflict.manual.importedFromFile
+                              ? ""
+                              : " — hand-added"}
                           </p>
                           <p className="text-muted-foreground">
                             Import: {conflict.imported.distance}{" "}
@@ -610,35 +617,51 @@ export function MeetImportButton({
                             {conflict.imported.gender})
                           </p>
                         </div>
-                        <Select
-                          value={
-                            eventConflictResolutions[conflict.eventNumber] ??
-                            "keep_manual"
-                          }
-                          onValueChange={(value) => {
-                            if (!value) return;
-                            setEventConflictResolutions((current) => ({
-                              ...current,
-                              [conflict.eventNumber]: value as
-                                | "keep_manual"
-                                | "use_import",
-                            }));
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              <SelectItem value="keep_manual">
-                                Keep manual event
-                              </SelectItem>
-                              <SelectItem value="use_import">
-                                Use imported event
-                              </SelectItem>
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
+                        {conflict.manual.importedFromFile ? (
+                          <Select
+                            items={[
+                              {
+                                value: "keep_manual",
+                                label: "Keep current event",
+                              },
+                              {
+                                value: "use_import",
+                                label: "Use imported event",
+                              },
+                            ]}
+                            value={
+                              eventConflictResolutions[conflict.eventNumber] ??
+                              "keep_manual"
+                            }
+                            onValueChange={(value) => {
+                              if (!value) return;
+                              setEventConflictResolutions((current) => ({
+                                ...current,
+                                [conflict.eventNumber]: value as
+                                  | "keep_manual"
+                                  | "use_import",
+                              }));
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                <SelectItem value="keep_manual">
+                                  Keep current event
+                                </SelectItem>
+                                <SelectItem value="use_import">
+                                  Use imported event
+                                </SelectItem>
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <p className="text-muted-foreground text-sm">
+                            Hand-added events keep their identity.
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -889,6 +912,20 @@ export function MeetImportButton({
                     onChange={(e) =>
                       setReview((prev) =>
                         prev ? { ...prev, address: e.target.value } : prev,
+                      )
+                    }
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor={`${inputId}-opponents`}>Opponents</Label>
+                  <Input
+                    id={`${inputId}-opponents`}
+                    maxLength={500}
+                    placeholder="Optional"
+                    value={review.opponents}
+                    onChange={(e) =>
+                      setReview((prev) =>
+                        prev ? { ...prev, opponents: e.target.value } : prev,
                       )
                     }
                   />

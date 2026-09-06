@@ -1,15 +1,12 @@
 export { renderToBuffer, renderToStream } from "@react-pdf/renderer";
 export {
-  type BuildMeetEntriesReportInput,
+  type BuildMeetEntriesReportOptions,
   buildMeetEntriesReport,
   formatAthleteDisplayName,
   formatCourseLabel,
   formatMeetDateCompact,
   formatReportEventTitle,
   formatSeedLabel,
-  type MeetEntriesBuildEntry,
-  type MeetEntriesBuildEvent,
-  type MeetEntriesBuildRelayLeg,
 } from "./meet-entries/build";
 export { MeetEntriesHtmlReport } from "./templates/html/meet-entries";
 export {
@@ -20,9 +17,11 @@ export type {
   MeetEntriesReport,
   MeetEntriesReportAthlete,
   MeetEntriesReportEvent,
+  MeetEntriesReportGroupBy,
   MeetEntriesReportIndividual,
   MeetEntriesReportRelayLeg,
   MeetEntriesReportRelayTeam,
   MeetEntriesReportSummary,
+  MeetEntriesReportSwimmer,
   ReportCourse,
 } from "./types";

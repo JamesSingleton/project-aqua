@@ -46,7 +46,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { uploadTeamLogoAction } from "@/app/team/[teamId]/settings/actions";
+import {
+  updateTeamAssociationCapsAction,
+  uploadTeamLogoAction,
+} from "@/app/team/[teamId]/settings/actions";
 import {
   BILLING_STEP_FIELDS,
   COACH_STEP_FIELDS,
@@ -204,6 +207,8 @@ export default function OnboardingPage() {
     defaultValues: {
       teamName: "",
       teamType: "club",
+      maxScoringEntriesPerIndividualEvent: "",
+      maxRelayTeamsPerEvent: "",
       coachName: "",
       coachTitle: "",
       plan: "free",
@@ -308,6 +313,20 @@ export default function OnboardingPage() {
     }
 
     await organization.setActive({ organizationId: teamId });
+
+    if (values.teamType === "high_school") {
+      const caps = await updateTeamAssociationCapsAction(teamId, {
+        maxScoringEntriesPerIndividualEvent:
+          values.maxScoringEntriesPerIndividualEvent,
+        maxRelayTeamsPerEvent: values.maxRelayTeamsPerEvent,
+      });
+      if (!caps.ok) {
+        setSubmitError(caps.error);
+        router.push(`/team/${teamId}/settings`);
+        router.refresh();
+        return;
+      }
+    }
 
     const coachResult = await updateOnboardingCoachAction({
       teamId,
@@ -438,6 +457,60 @@ export default function OnboardingPage() {
                     ) : null}
                     <FieldError>{errors.teamType?.message}</FieldError>
                   </Field>
+
+                  {teamType === "high_school" ? (
+                    <>
+                      <Field
+                        data-invalid={
+                          !!errors.maxScoringEntriesPerIndividualEvent
+                        }
+                      >
+                        <FieldLabel htmlFor="maxScoringEntriesPerIndividualEvent">
+                          Scoring swimmers per individual event
+                        </FieldLabel>
+                        <Input
+                          id="maxScoringEntriesPerIndividualEvent"
+                          type="number"
+                          min={1}
+                          inputMode="numeric"
+                          placeholder="Unlimited"
+                          aria-invalid={
+                            !!errors.maxScoringEntriesPerIndividualEvent
+                          }
+                          {...register("maxScoringEntriesPerIndividualEvent")}
+                        />
+                        <FieldDescription>
+                          Max scoring names from this school in one event (for
+                          example 4). Leave blank for unlimited. Exhibition does
+                          not count.
+                        </FieldDescription>
+                        <FieldError>
+                          {errors.maxScoringEntriesPerIndividualEvent?.message}
+                        </FieldError>
+                      </Field>
+                      <Field data-invalid={!!errors.maxRelayTeamsPerEvent}>
+                        <FieldLabel htmlFor="maxRelayTeamsPerEvent">
+                          Teams per relay event
+                        </FieldLabel>
+                        <Input
+                          id="maxRelayTeamsPerEvent"
+                          type="number"
+                          min={1}
+                          inputMode="numeric"
+                          placeholder="Unlimited"
+                          aria-invalid={!!errors.maxRelayTeamsPerEvent}
+                          {...register("maxRelayTeamsPerEvent")}
+                        />
+                        <FieldDescription>
+                          Max relay teams (A/B/C) this school may enter in one
+                          relay. Leave blank for unlimited.
+                        </FieldDescription>
+                        <FieldError>
+                          {errors.maxRelayTeamsPerEvent?.message}
+                        </FieldError>
+                      </Field>
+                    </>
+                  ) : null}
 
                   <Field className="sm:col-span-2">
                     <FieldLabel htmlFor="teamLogo">

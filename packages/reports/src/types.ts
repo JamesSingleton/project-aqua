@@ -24,12 +24,13 @@ export type MeetEntriesReportRelayLeg = {
   membershipId: string;
   name: string;
   classYear?: string | null;
+  isAlternate?: boolean;
 };
 
 export type MeetEntriesReportRelayTeam = {
   letter: string;
   seedLabel: string;
-  /** Primary legs only (1–4). Alternates are omitted to match TM paper reports. */
+  /** Racing legs 1–4, plus 5–8 when includeRelayAlternates is on. */
   legs: MeetEntriesReportRelayLeg[];
 };
 
@@ -59,6 +60,25 @@ export type MeetEntriesReportSummary = {
   totalAthletes: number;
 };
 
+export type MeetEntriesReportGroupBy = "event" | "swimmer";
+
+export type MeetEntriesReportSwimmerLine = {
+  eventId: string;
+  eventNumber: number | null;
+  eventLabel: string;
+  seedLabel: string;
+  kind: "individual" | "relay";
+  exhibition?: boolean;
+  relayLetter?: string;
+  isAlternate?: boolean;
+};
+
+export type MeetEntriesReportSwimmer = {
+  membershipId: string;
+  name: string;
+  lines: MeetEntriesReportSwimmerLine[];
+};
+
 export type MeetEntriesReport = {
   reportTitle: string;
   meetName: string;
@@ -66,12 +86,15 @@ export type MeetEntriesReport = {
   meetDateLabel: string;
   courseLabel: string;
   location?: string | null;
+  opponents?: string | null;
   teamName: string;
   teamCode?: string | null;
   coachName?: string | null;
   coachEmail?: string | null;
   teamAddress?: string | null;
   generatedAtLabel: string;
+  groupBy: MeetEntriesReportGroupBy;
   events: MeetEntriesReportEvent[];
+  swimmers: MeetEntriesReportSwimmer[];
   summary: MeetEntriesReportSummary;
 };

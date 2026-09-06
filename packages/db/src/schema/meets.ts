@@ -69,6 +69,8 @@ export const meets = pgTable("meets", {
   course: courseEnum("course").notNull().default("SCY"),
   location: text("location"),
   address: text("address"),
+  /** Coach-owned opponents line; not overwritten by meet-file import. */
+  opponents: text("opponents"),
   importSource: text("import_source"),
   rawFilePath: text("raw_file_path"),
   maxIndividualEntries: integer("max_individual_entries"),
@@ -78,6 +80,12 @@ export const meets = pgTable("meets", {
     EntryLimitPackage[] | null
   >(),
   entryLimitsSource: text("entry_limits_source"),
+  /** Meet override for association scoring cap; null inherits the team default. */
+  maxScoringEntriesPerIndividualEvent: integer(
+    "max_scoring_entries_per_individual_event",
+  ),
+  /** Meet override for association relay-team cap; null inherits the team default. */
+  maxRelayTeamsPerEvent: integer("max_relay_teams_per_event"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -101,6 +109,8 @@ export const meetEvents = pgTable("meet_events", {
   eventKind: meetEventKindEnum("event_kind").notNull().default("swim"),
   /** Number of dives (EV3/HYV dive-count field), diving events only. */
   diveCount: integer("dive_count"),
+  /** True when this row came from a meet file, not Add event. */
+  importedFromFile: boolean("imported_from_file").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

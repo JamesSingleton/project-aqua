@@ -88,6 +88,7 @@ export default async function MeetEventsPage({
     qualifyingTimeMs: event.qualifyingTimeMs,
     eventKey: event.eventKey,
     entryCount: entryCountByEvent.get(event.id) ?? 0,
+    importedFromFile: event.importedFromFile,
   }));
 
   const importedFromFile = Boolean(meet.importSource);
@@ -99,7 +100,7 @@ export default async function MeetEventsPage({
         <CardDescription>
           {events.length} event{events.length === 1 ? "" : "s"}
           {importedFromFile
-            ? " from the meet file. You can still add or edit events manually."
+            ? " from the meet file. Event number, stroke, distance, and gender stay locked on imported events. You can still add events, and edit age group and qualifying time."
             : ". Add events manually or import a meet file."}
         </CardDescription>
       </CardHeader>
@@ -116,6 +117,7 @@ export default async function MeetEventsPage({
             events: template.events,
           }))}
           otherMeets={otherMeets}
+          fileBackedMeet={importedFromFile}
         />
       </CardContent>
     </Card>

@@ -31,6 +31,7 @@ export function MeetMasthead({
   entryDeadline,
   location,
   address,
+  opponents,
 }: {
   startDate: Date;
   endDate: Date | null;
@@ -38,6 +39,7 @@ export function MeetMasthead({
   entryDeadline: Date | null;
   location: string | null;
   address: string | null;
+  opponents: string | null;
 }) {
   const venue = location?.trim() || null;
   const street = address?.trim() || null;
@@ -73,6 +75,14 @@ export function MeetMasthead({
         <div>
           <dt className="sr-only">Address</dt>
           <dd className="text-muted-foreground text-pretty">{street}</dd>
+        </div>
+      ) : null}
+      {opponents?.trim() ? (
+        <div>
+          <dt className="sr-only">Opponents</dt>
+          <dd className="text-muted-foreground text-pretty">
+            vs {opponents.trim()}
+          </dd>
         </div>
       ) : null}
     </dl>

@@ -112,6 +112,7 @@ export async function getMeets(
       course: meets.course,
       location: meets.location,
       address: meets.address,
+      opponents: meets.opponents,
       importSource: meets.importSource,
       rawFilePath: meets.rawFilePath,
       maxIndividualEntries: meets.maxIndividualEntries,
@@ -194,6 +195,7 @@ export async function createMeet(
     course: data.course,
     location: data.location ?? null,
     address: data.address ?? null,
+    opponents: data.opponents?.trim() || null,
     importSource: data.importSource ?? null,
     maxIndividualEntries: data.maxIndividualEntries ?? null,
     maxRelayEntries: data.maxRelayEntries ?? null,
@@ -209,11 +211,14 @@ export async function updateMeet(
   organizationId: string,
   data: CreateMeetInput & {
     seasonId?: string;
+    importSource?: string | null;
     maxIndividualEntries?: number | null;
     maxRelayEntries?: number | null;
     maxCombinedEntries?: number | null;
     entryLimitPackages?: EntryLimitPackage[] | null;
     entryLimitsSource?: string | null;
+    maxScoringEntriesPerIndividualEvent?: number | null;
+    maxRelayTeamsPerEvent?: number | null;
   },
 ) {
   const meet = await getMeetById(meetId, organizationId);
@@ -231,6 +236,12 @@ export async function updateMeet(
       course: data.course,
       location: data.location ?? null,
       address: data.address ?? null,
+      ...(data.opponents !== undefined
+        ? { opponents: data.opponents?.trim() || null }
+        : {}),
+      ...(data.importSource !== undefined
+        ? { importSource: data.importSource }
+        : {}),
       ...(data.seasonId !== undefined ? { seasonId: data.seasonId } : {}),
       ...(data.maxIndividualEntries !== undefined
         ? { maxIndividualEntries: data.maxIndividualEntries }
@@ -247,11 +258,64 @@ export async function updateMeet(
       ...(data.entryLimitsSource !== undefined
         ? { entryLimitsSource: data.entryLimitsSource }
         : {}),
+      ...(data.maxScoringEntriesPerIndividualEvent !== undefined
+        ? {
+            maxScoringEntriesPerIndividualEvent:
+              data.maxScoringEntriesPerIndividualEvent,
+          }
+        : {}),
+      ...(data.maxRelayTeamsPerEvent !== undefined
+        ? { maxRelayTeamsPerEvent: data.maxRelayTeamsPerEvent }
+        : {}),
       updatedAt: new Date(),
     })
     .where(eq(meets.id, meetId));
 
   return true;
+}
+
+export async function updateMeetRelayTeamSeed(
+  meetId: string,
+  meetEventId: string,
+  relayLetter: string,
+  seedTimeMs: number | null,
+) {
+  const letter = relayLetter.trim().toUpperCase() || "A";
+  const now = new Date();
+  const [existing] = await db
+    .select({ id: meetRelayTeams.id })
+    .from(meetRelayTeams)
+    .where(
+      and(
+        eq(meetRelayTeams.meetId, meetId),
+        eq(meetRelayTeams.meetEventId, meetEventId),
+        eq(meetRelayTeams.relayLetter, letter),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(meetRelayTeams)
+      .set({
+        seedTimeMs,
+        seedTimeSource:
+          seedTimeMs != null && seedTimeMs > 0 ? "manual" : "no_time",
+        updatedAt: now,
+      })
+      .where(eq(meetRelayTeams.id, existing.id));
+    return;
+  }
+
+  await db.insert(meetRelayTeams).values({
+    id: generateId(),
+    meetId,
+    meetEventId,
+    relayLetter: letter,
+    seedTimeMs,
+    seedTimeSource: seedTimeMs != null && seedTimeMs > 0 ? "manual" : "no_time",
+    updatedAt: now,
+  });
 }
 
 /** Meets with result/athlete counts for the Results hub list. */
@@ -307,6 +371,7 @@ export async function addMeetEvent(
     qualifyingTimeMs?: number | null;
     eventKind?: "swim" | "dive";
     diveCount?: number | null;
+    importedFromFile?: boolean;
   },
 ) {
   const gender = parseEventGender(event.gender);
@@ -331,6 +396,7 @@ export async function addMeetEvent(
     qualifyingTimeMs: event.qualifyingTimeMs ?? null,
     eventKind: event.eventKind ?? "swim",
     diveCount: event.diveCount ?? null,
+    importedFromFile: event.importedFromFile ?? false,
   });
   return id;
 }

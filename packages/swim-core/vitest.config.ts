@@ -13,7 +13,6 @@ export default defineConfig({
         "src/**/index.ts",
         "src/meet-athlete-match.ts",
         "src/meet-event-presets.ts",
-        "src/meet-entry-export.ts",
         "src/meet-import-merge.ts",
         "src/meet-results-csv.ts",
       ],

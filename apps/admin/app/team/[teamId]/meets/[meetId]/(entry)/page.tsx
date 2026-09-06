@@ -1,3 +1,4 @@
+import { getOrganizationAssociationCaps } from "@project-aqua/db/authz";
 import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -28,11 +29,13 @@ export default async function MeetInformationPage({
   if (!detail) notFound();
 
   const { meet } = detail;
+  const teamCaps = await getOrganizationAssociationCaps(teamId);
 
   return (
     <MeetInfoForm
       teamId={teamId}
       meetId={meetId}
+      teamCaps={teamCaps}
       meet={{
         name: meet.name,
         startDate: meet.startDate,
@@ -47,6 +50,10 @@ export default async function MeetInformationPage({
         maxCombinedEntries: meet.maxCombinedEntries,
         entryLimitPackages: meet.entryLimitPackages,
         entryLimitsSource: meet.entryLimitsSource,
+        maxScoringEntriesPerIndividualEvent:
+          meet.maxScoringEntriesPerIndividualEvent,
+        maxRelayTeamsPerEvent: meet.maxRelayTeamsPerEvent,
+        opponents: meet.opponents,
       }}
     />
   );

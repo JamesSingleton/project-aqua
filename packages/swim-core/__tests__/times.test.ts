@@ -16,6 +16,12 @@ describe("parseTime", () => {
     expect(parseTime("1:23.45")).toBe(83450);
   });
 
+  it("parses times without hundredths", () => {
+    expect(parseTime("2:39")).toBe(159_000);
+    expect(parseTime("1:02")).toBe(62_000);
+    expect(parseTime("58")).toBe(58_000);
+  });
+
   it("parses hh:mm:ss and bare minutes", () => {
     expect(parseTime("1:02:03.50")).toBe(3723500);
     expect(parseTime("2:03.50")).toBe(123500);

@@ -70,6 +70,11 @@ export type BestTimeRow = {
   achievedAt: Date;
 };
 
+type EditorMode =
+  | { kind: "closed" }
+  | { kind: "add" }
+  | { kind: "edit"; row: BestTimeRow };
+
 function AchievedDatePicker({
   id,
   value,

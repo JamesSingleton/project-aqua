@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { formatTime } from "@project-aqua/swim-core/times";
+import { formatTime, parseTime } from "@project-aqua/swim-core/times";
 import { Button } from "@project-aqua/ui/components/button";
 import {
   Card,
@@ -92,7 +92,11 @@ const manualCutSchema = z.object({
   time: z
     .string()
     .trim()
-    .regex(/^(?:\d+:)?\d{1,2}\.\d{1,2}$/, "Use a time like 58.11 or 1:02.50"),
+    .min(1, "Enter a qualifying time")
+    .refine((value) => {
+      const ms = parseTime(value);
+      return Number.isFinite(ms) && ms > 0;
+    }, "Use a time like 2:39, 58.11, or 1:02.50"),
 });
 
 type ManualCutValues = z.infer<typeof manualCutSchema>;
@@ -175,6 +179,8 @@ export function TimeStandardsManager({
 
   const manualForm = useForm<ManualCutValues>({
     resolver: zodResolver(manualCutSchema),
+    mode: "onSubmit",
+    reValidateMode: "onSubmit",
     defaultValues: {
       setId: selectedSetId ?? sets[0]?.id ?? "",
       gender: initialGender,
@@ -496,7 +502,6 @@ export function TimeStandardsManager({
                                   value,
                                   manualForm.getValues("gender"),
                                 ),
-                                { shouldValidate: true },
                               );
                             }}
                           >
@@ -548,7 +553,6 @@ export function TimeStandardsManager({
                                   manualForm.getValues("setId"),
                                   value,
                                 ),
-                                { shouldValidate: true },
                               );
                             }}
                           >
@@ -636,7 +640,9 @@ export function TimeStandardsManager({
                         id={`${inputId}-cut-age`}
                         placeholder="Open"
                         aria-invalid={!!manualForm.formState.errors.ageGroup}
-                        {...manualForm.register("ageGroup")}
+                        {...manualForm.register("ageGroup", {
+                          onChange: () => manualForm.clearErrors("ageGroup"),
+                        })}
                       />
                       <FieldError
                         errors={[manualForm.formState.errors.ageGroup]}
@@ -652,9 +658,11 @@ export function TimeStandardsManager({
                       <Input
                         id={`${inputId}-cut-time`}
                         className="font-timing"
-                        placeholder="1:02.50"
+                        placeholder="2:39.00"
                         aria-invalid={!!manualForm.formState.errors.time}
-                        {...manualForm.register("time")}
+                        {...manualForm.register("time", {
+                          onChange: () => manualForm.clearErrors("time"),
+                        })}
                       />
                       <FieldError errors={[manualForm.formState.errors.time]} />
                     </Field>

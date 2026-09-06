@@ -15,8 +15,10 @@ import {
   getRosterBestTimesForEvents,
   replaceMeetRelayLegs,
   replaceMeetRelayTeams,
+  updateMeetRelayTeamSeed,
 } from "@project-aqua/db/queries/meets";
 import { getRoster } from "@project-aqua/db/queries/roster";
+import { associationCountWithinCap } from "@project-aqua/swim-core/association-event-caps";
 import type { SharedDraftQuota } from "@project-aqua/swim-core/draft-quota";
 import {
   checkMeetEntryCounts,
@@ -32,6 +34,7 @@ import {
   deriveRelayLetter,
   RELAY_MAX_LEGS,
   RELAY_PRIMARY_LEG_COUNT,
+  RELAY_TEAM_LETTERS,
   racingRelayKeysByMember,
   strokeForRelayLeg,
 } from "@project-aqua/swim-core/relay-legs";
@@ -39,8 +42,7 @@ import { blocksMeetEntries } from "@project-aqua/swim-core/team-types";
 import { formatTime } from "@project-aqua/swim-core/times";
 import { generateText } from "ai";
 import { revalidatePath } from "next/cache";
-
-const TEAM_LETTERS = ["A", "B", "C"] as const;
+import { resolvedAssociationCapsForMeet } from "./association-caps";
 
 export type RelaySuggestInput = {
   meetId: string;
@@ -102,6 +104,21 @@ export async function saveMeetRelayLegsAction(
       stroke: leg.stroke,
       reasoning: leg.reasoning,
     }));
+
+  const racingLetters = new Set(
+    cleaned
+      .filter(
+        (leg) => leg.legOrder >= 1 && leg.legOrder <= RELAY_PRIMARY_LEG_COUNT,
+      )
+      .map((leg) => leg.relayLetter),
+  );
+  const caps = await resolvedAssociationCapsForMeet(teamId, meet);
+  const relayCapCheck = associationCountWithinCap(
+    caps.maxRelayTeamsPerEvent,
+    racingLetters.size,
+    "relay",
+  );
+  if (!relayCapCheck.ok) throw new Error(relayCapCheck.reason);
 
   const [existingLegs, entries, roster] = await Promise.all([
     getMeetRelayLegs(meetId),
@@ -187,6 +204,164 @@ export async function saveMeetRelayLegsAction(
   revalidatePath(`/team/${teamId}/meets/${meetId}`);
   revalidatePath(`/team/${teamId}/meets/${meetId}/entries`);
   revalidatePath(`/team/${teamId}/meets/${meetId}/report`);
+}
+
+export async function assignRacingRelaySwimmerAction(
+  teamId: string,
+  meetId: string,
+  meetEventId: string,
+  membershipId: string,
+  relayLetter: string,
+) {
+  const session = await getSession();
+  await requireTeamRole(session?.user?.id, teamId, [
+    "owner",
+    "head_coach",
+    "assistant_coach",
+  ]);
+  const meet = await getMeetById(meetId, teamId);
+  if (!meet) throw new Error("Meet not found");
+
+  const letter = deriveRelayLetter(relayLetter, 1);
+  const [legs, teams] = await Promise.all([
+    getMeetRelayLegs(meetId),
+    getMeetRelayTeams(meetId),
+  ]);
+  const eventLegs = legs.filter((leg) => leg.meetEventId === meetEventId);
+  const racing = eventLegs.filter(
+    (leg) =>
+      deriveRelayLetter(leg.relayLetter, leg.legOrder) === letter &&
+      leg.legOrder >= 1 &&
+      leg.legOrder <= RELAY_PRIMARY_LEG_COUNT,
+  );
+  if (racing.some((leg) => leg.membershipId === membershipId)) {
+    throw new Error("That swimmer is already on this relay team.");
+  }
+  const used = new Set(racing.map((leg) => leg.legOrder));
+  let nextOrder = 1;
+  while (used.has(nextOrder) && nextOrder <= RELAY_PRIMARY_LEG_COUNT) {
+    nextOrder += 1;
+  }
+  if (nextOrder > RELAY_PRIMARY_LEG_COUNT) {
+    throw new Error(
+      `Relay ${letter} already has four racing legs. Edit order in Relay lineup.`,
+    );
+  }
+
+  const nextLegs = [
+    ...eventLegs.map((leg) => ({
+      membershipId: leg.membershipId,
+      legOrder: leg.legOrder,
+      relayLetter: deriveRelayLetter(leg.relayLetter, leg.legOrder),
+      stroke: leg.stroke ?? undefined,
+      reasoning: leg.reasoning ?? undefined,
+    })),
+    {
+      membershipId,
+      legOrder: nextOrder,
+      relayLetter: letter,
+    },
+  ];
+  const eventTeams = teams.filter((team) => team.meetEventId === meetEventId);
+  const nextTeams = eventTeams.some(
+    (team) => deriveRelayLetter(team.relayLetter, 1) === letter,
+  )
+    ? eventTeams.map((team) => ({
+        relayLetter: deriveRelayLetter(team.relayLetter, 1),
+        seedTimeMs: team.seedTimeMs,
+        seedTimeSource: team.seedTimeSource ?? "no_time",
+      }))
+    : [
+        ...eventTeams.map((team) => ({
+          relayLetter: deriveRelayLetter(team.relayLetter, 1),
+          seedTimeMs: team.seedTimeMs,
+          seedTimeSource: team.seedTimeSource ?? "no_time",
+        })),
+        { relayLetter: letter },
+      ];
+
+  await saveMeetRelayLegsAction(
+    teamId,
+    meetId,
+    meetEventId,
+    nextLegs,
+    nextTeams,
+  );
+}
+
+export async function setMeetRelaySlotAction(
+  teamId: string,
+  meetId: string,
+  meetEventId: string,
+  relayLetter: string,
+  legOrder: number,
+  membershipId: string,
+) {
+  const session = await getSession();
+  await requireTeamRole(session?.user?.id, teamId, [
+    "owner",
+    "head_coach",
+    "assistant_coach",
+  ]);
+  const meet = await getMeetById(meetId, teamId);
+  if (!meet) throw new Error("Meet not found");
+  if (legOrder < 1 || legOrder > RELAY_MAX_LEGS) {
+    throw new Error("Invalid relay slot");
+  }
+
+  const letter = deriveRelayLetter(relayLetter, legOrder);
+  const [legs, teams] = await Promise.all([
+    getMeetRelayLegs(meetId),
+    getMeetRelayTeams(meetId),
+  ]);
+  const eventLegs = legs.filter((leg) => leg.meetEventId === meetEventId);
+  const nextLegs = eventLegs
+    .filter(
+      (leg) =>
+        !(
+          deriveRelayLetter(leg.relayLetter, leg.legOrder) === letter &&
+          leg.legOrder === legOrder
+        ),
+    )
+    .map((leg) => ({
+      membershipId: leg.membershipId,
+      legOrder: leg.legOrder,
+      relayLetter: deriveRelayLetter(leg.relayLetter, leg.legOrder),
+      stroke: leg.stroke ?? undefined,
+      reasoning: leg.reasoning ?? undefined,
+    }));
+  if (membershipId) {
+    const onTeam = nextLegs.some(
+      (leg) => leg.relayLetter === letter && leg.membershipId === membershipId,
+    );
+    if (onTeam) {
+      throw new Error("That swimmer is already on this relay team.");
+    }
+    nextLegs.push({
+      membershipId,
+      legOrder,
+      relayLetter: letter,
+      stroke: undefined,
+      reasoning: undefined,
+    });
+  }
+  const eventTeams = teams.filter((team) => team.meetEventId === meetEventId);
+  const mappedTeams = eventTeams.map((team) => ({
+    relayLetter: deriveRelayLetter(team.relayLetter, 1),
+    seedTimeMs: team.seedTimeMs,
+    seedTimeSource: team.seedTimeSource ?? "no_time",
+  }));
+  const nextTeams = mappedTeams.some((team) => team.relayLetter === letter)
+    ? mappedTeams
+    : [...mappedTeams, { relayLetter: letter }];
+
+  await saveMeetRelayLegsAction(
+    teamId,
+    meetId,
+    meetEventId,
+    nextLegs,
+    nextTeams,
+  );
 }
 
 export async function removeMeetRelaySlotAction(
@@ -355,7 +530,7 @@ export async function suggestRelayOrderAction(
     })
     .join("\n");
 
-  const letters = TEAM_LETTERS.slice(0, numberOfRelays).join(", ");
+  const letters = RELAY_TEAM_LETTERS.slice(0, numberOfRelays).join(", ");
   const isMedley =
     event.stroke === "medley_relay" || event.eventKey.includes("medley");
 
@@ -408,7 +583,8 @@ ${swimmerLines}`,
   const usageCount = new Map<string, number>();
 
   parsed.teams.slice(0, numberOfRelays).forEach((team, teamIndex) => {
-    const letter = team.letter?.toUpperCase() || TEAM_LETTERS[teamIndex] || "A";
+    const letter =
+      team.letter?.toUpperCase() || RELAY_TEAM_LETTERS[teamIndex] || "A";
     const order = (team.order ?? []).slice(0, RELAY_PRIMARY_LEG_COUNT);
     if (order.length < RELAY_PRIMARY_LEG_COUNT) {
       throw new Error(
@@ -485,4 +661,25 @@ export async function getMeetRelayTeamsAction(teamId: string, meetId: string) {
   const meet = await getMeetById(meetId, teamId);
   if (!meet) throw new Error("Meet not found");
   return getMeetRelayTeams(meetId);
+}
+
+export async function updateMeetRelayTeamSeedAction(
+  teamId: string,
+  meetId: string,
+  meetEventId: string,
+  relayLetter: string,
+  seedTimeMs: number | null,
+) {
+  const session = await getSession();
+  await requireTeamRole(session?.user?.id, teamId, [
+    "owner",
+    "head_coach",
+    "assistant_coach",
+  ]);
+  const meet = await getMeetById(meetId, teamId);
+  if (!meet) throw new Error("Meet not found");
+  await updateMeetRelayTeamSeed(meetId, meetEventId, relayLetter, seedTimeMs);
+  revalidatePath(`/team/${teamId}/meets/${meetId}`);
+  revalidatePath(`/team/${teamId}/meets/${meetId}/entries`);
+  revalidatePath(`/team/${teamId}/meets/${meetId}/report`);
 }

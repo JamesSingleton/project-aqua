@@ -1,5 +1,8 @@
 import { Text, View } from "@react-pdf/renderer";
-import type { MeetEntriesReportEvent } from "../../../types";
+import type {
+  MeetEntriesReportEvent,
+  MeetEntriesReportSwimmer,
+} from "../../../types";
 import { reportColors as colors } from "./chrome";
 
 function EventHeading({
@@ -122,6 +125,52 @@ export function EventBlock({ event }: { event: MeetEntriesReportEvent }) {
             </View>
           ))}
           <AthleteCount count={team.legs.length} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+export function SwimmerBlock({
+  swimmer,
+}: {
+  swimmer: MeetEntriesReportSwimmer;
+}) {
+  return (
+    <View wrap={false} style={{ marginBottom: 12 }}>
+      <View
+        style={{
+          borderBottomWidth: 0.5,
+          borderBottomColor: colors.rule,
+          paddingBottom: 4,
+          marginBottom: 6,
+        }}
+      >
+        <Text style={{ fontSize: 10, fontWeight: 600, color: colors.ink }}>
+          {swimmer.name}
+        </Text>
+      </View>
+      {swimmer.lines.map((line) => (
+        <View
+          key={`${line.eventId}-${line.kind}-${line.relayLetter ?? ""}-${line.isAlternate ? "a" : "p"}`}
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            paddingVertical: 2,
+            gap: 8,
+          }}
+        >
+          <Text style={{ fontSize: 9, color: colors.ink, flex: 1 }}>
+            {line.eventNumber != null ? `#${line.eventNumber} ` : ""}
+            {line.eventLabel}
+            {line.kind === "relay"
+              ? ` · ${line.relayLetter ?? "A"}${line.isAlternate ? " alt" : ""}`
+              : ""}
+            {line.exhibition ? " (ex)" : ""}
+          </Text>
+          <Text style={{ fontSize: 9, color: colors.ink }}>
+            {line.seedLabel}
+          </Text>
         </View>
       ))}
     </View>

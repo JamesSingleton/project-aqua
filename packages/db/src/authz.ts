@@ -174,6 +174,24 @@ export async function getOrganizationTeamType(
   return parseTeamType(org?.teamType);
 }
 
+export async function getOrganizationAssociationCaps(organizationId: string) {
+  const [org] = await db
+    .select({
+      maxScoringEntriesPerIndividualEvent:
+        organization.maxScoringEntriesPerIndividualEvent,
+      maxRelayTeamsPerEvent: organization.maxRelayTeamsPerEvent,
+    })
+    .from(organization)
+    .where(eq(organization.id, organizationId))
+    .limit(1);
+
+  return {
+    maxScoringEntriesPerIndividualEvent:
+      org?.maxScoringEntriesPerIndividualEvent ?? null,
+    maxRelayTeamsPerEvent: org?.maxRelayTeamsPerEvent ?? null,
+  };
+}
+
 /** Default pool/venue for new practices and calendar events. */
 export async function getDefaultPracticeLocation(
   organizationId: string,

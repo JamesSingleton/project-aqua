@@ -1,4 +1,4 @@
-/** Parse swim time string (e.g. "1:23.45", "23.45", "59.12") to milliseconds */
+/** Parse swim time string (e.g. "2:39", "1:23.45", "58.11") to milliseconds */
 export function parseTime(time: string): number {
   const trimmed = time.trim();
   if (!trimmed) return 0;

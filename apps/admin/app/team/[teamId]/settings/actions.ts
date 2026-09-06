@@ -135,6 +135,65 @@ export async function updateTeamTypeAction(
   revalidatePath(`/team/${teamId}/roster`);
 }
 
+function parseAssociationCap(
+  value: string | number | null | undefined,
+): { ok: true; value: number | null } | { ok: false; error: string } {
+  if (value == null || value === "") return { ok: true, value: null };
+  const n =
+    typeof value === "number"
+      ? value
+      : Number.parseInt(String(value).trim(), 10);
+  if (!Number.isInteger(n) || n < 1) {
+    return {
+      ok: false,
+      error: "Enter a whole number of 1 or more, or leave blank for unlimited",
+    };
+  }
+  return { ok: true, value: n };
+}
+
+export async function updateTeamAssociationCapsAction(
+  teamId: string,
+  input: {
+    maxScoringEntriesPerIndividualEvent?: string | number | null;
+    maxRelayTeamsPerEvent?: string | number | null;
+  },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const session = await getSession();
+    await requireTeamRole(session?.user?.id, teamId, [
+      "owner",
+      "admin",
+      "head_coach",
+    ]);
+
+    const individual = parseAssociationCap(
+      input.maxScoringEntriesPerIndividualEvent,
+    );
+    if (!individual.ok) return individual;
+    const relays = parseAssociationCap(input.maxRelayTeamsPerEvent);
+    if (!relays.ok) return relays;
+
+    await db
+      .update(organization)
+      .set({
+        maxScoringEntriesPerIndividualEvent: individual.value,
+        maxRelayTeamsPerEvent: relays.value,
+      })
+      .where(eq(organization.id, teamId));
+
+    revalidatePath(`/team/${teamId}`);
+    revalidatePath(`/team/${teamId}/settings`);
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error:
+        err instanceof Error ? err.message : "Failed to save association caps",
+    };
+  }
+}
+
 const MAX_PRACTICE_LOCATION_LENGTH = 200;
 
 export async function updateDefaultPracticeLocationAction(

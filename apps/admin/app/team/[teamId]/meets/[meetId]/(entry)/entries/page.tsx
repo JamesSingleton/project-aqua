@@ -1,5 +1,7 @@
+import { getSession } from "@project-aqua/auth/session";
 import { getAiQuotaStatus } from "@project-aqua/db/queries/ai-quota";
 import { getTeamPlan } from "@project-aqua/db/queries/billing";
+import { getTeamUiPreferences } from "@project-aqua/db/queries/preferences";
 import {
   formatEntryLimitsSummary,
   isRelayStroke,
@@ -11,14 +13,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { toSharedDraftQuota } from "@/lib/draft-quota";
 import { getMeetDetailAction } from "../../../actions";
+import { resolvedAssociationCapsForMeet } from "../../../association-caps";
 import {
   getMeetRelayLegsAction,
   getMeetRelayTeamsAction,
 } from "../../../relay-actions";
-import { EntryMatrix } from "../../entry-matrix";
-import { LineupSuggestPanel } from "../../lineup-suggest-panel";
-import { RegistrationBoard } from "../../registration-board";
-import { RelaySuggestPanel } from "../../relay-suggest-panel";
+import { EntriesWorkspace } from "../../entries-workspace";
 
 export async function generateMetadata({
   params,
@@ -50,6 +50,7 @@ export default async function MeetEntriesPage({
   params: Promise<{ teamId: string; meetId: string }>;
 }) {
   const { teamId, meetId } = await params;
+  const session = await getSession();
   const detail = await getMeetDetailAction(teamId, meetId);
   if (!detail) notFound();
 
@@ -69,9 +70,6 @@ export default async function MeetEntriesPage({
   const events = allEvents.filter((e) => e.eventKind !== "dive");
   const relayLegs = await getMeetRelayLegsAction(teamId, meetId);
   const relayTeams = await getMeetRelayTeamsAction(teamId, meetId);
-  const relayLegMembershipIds = [
-    ...new Set(relayLegs.map((leg) => leg.membershipId)),
-  ];
   const nameByMembership = new Map(
     roster.map(
       (r) => [r.membershipId, `${r.firstName} ${r.lastName}`] as const,
@@ -90,15 +88,6 @@ export default async function MeetEntriesPage({
       !blocksMeetEntries(r.eligibilityStatus),
   );
 
-  const enteredMembershipIds = new Set([
-    ...entries
-      .filter(
-        (e) => e.status !== "scratched" && !isRelayStroke(e.stroke, e.eventKey),
-      )
-      .map((e) => e.membershipId),
-    ...relayLegMembershipIds,
-  ]);
-
   const individualCountByMembership: Record<string, number> = {};
   for (const entry of entries) {
     if (entry.status === "scratched") continue;
@@ -114,6 +103,11 @@ export default async function MeetEntriesPage({
     entryLimitPackages: meet.entryLimitPackages,
   };
   const meetLimitsLine = formatEntryLimitsSummary(meetLimits);
+  const caps = await resolvedAssociationCapsForMeet(teamId, meet);
+  const ui = session?.user?.id
+    ? await getTeamUiPreferences(session.user.id, teamId)
+    : {};
+  const initialView = ui.meetEntriesView === "event" ? "event" : "swimmer";
 
   const relayEvents = events.filter(isRelayEvent).map((event) => {
     const gender =
@@ -134,19 +128,20 @@ export default async function MeetEntriesPage({
   });
 
   return (
-    <div className="flex min-w-0 flex-col gap-8">
-      {meetLimitsLine ? (
-        <p className="text-muted-foreground text-sm">
-          Meet allows {meetLimitsLine}.
-        </p>
-      ) : null}
-      <RegistrationBoard
-        teamId={teamId}
-        meetId={meetId}
-        course={meet.course}
-        meetStartDate={meet.startDate}
-        limits={meetLimits}
-        roster={roster.map((r) => ({
+    <EntriesWorkspace
+      teamId={teamId}
+      meetId={meetId}
+      initialView={initialView}
+      caps={caps}
+      meetLimitsLine={meetLimitsLine}
+      canSuggestLineup={canSuggestLineup}
+      registration={{
+        teamId,
+        meetId,
+        course: meet.course,
+        meetStartDate: meet.startDate,
+        limits: meetLimits,
+        roster: roster.map((r) => ({
           membershipId: r.membershipId,
           swimmerId: r.swimmerId,
           firstName: r.firstName,
@@ -159,8 +154,8 @@ export default async function MeetEntriesPage({
           dateOfBirth: r.dateOfBirth,
           eligibilityStatus: r.eligibilityStatus,
           eligibilityNotes: r.eligibilityNotes,
-        }))}
-        events={events.map((e) => ({
+        })),
+        events: events.map((e) => ({
           id: e.id,
           eventNumber: e.eventNumber,
           distance: e.distance,
@@ -169,8 +164,8 @@ export default async function MeetEntriesPage({
           ageGroup: e.ageGroup,
           eventKey: e.eventKey,
           qualifyingTimeMs: e.qualifyingTimeMs ?? null,
-        }))}
-        entries={entries.map((e) => ({
+        })),
+        entries: entries.map((e) => ({
           id: e.id,
           meetEventId: e.meetEventId,
           membershipId: e.membershipId,
@@ -185,108 +180,104 @@ export default async function MeetEntriesPage({
           eventNumber: e.eventNumber,
           gender: e.gender,
           eventKey: e.eventKey,
-        }))}
-        attendance={commitments.map((c) => ({
+        })),
+        attendance: commitments.map((c) => ({
           membershipId: c.membershipId,
           status: c.status,
           notes: c.notes,
           firstName: c.firstName,
           lastName: c.lastName,
-        }))}
-        bestTimes={bestTimes.map((b) => ({
+        })),
+        bestTimes: bestTimes.map((b) => ({
           membershipId: b.membershipId,
           eventKey: b.eventKey,
           timeMs: b.timeMs,
-        }))}
-        relayLegs={relayLegs.map((leg) => ({
+        })),
+        relayLegs: relayLegs.map((leg) => ({
           meetEventId: leg.meetEventId,
           membershipId: leg.membershipId,
           legOrder: leg.legOrder,
           relayLetter: leg.relayLetter,
           stroke: leg.stroke,
-        }))}
-      />
-
-      <EntryMatrix
-        teamId={teamId}
-        meetId={meetId}
-        limits={meetLimits}
-        events={events.map((e) => ({
+        })),
+      }}
+      program={{
+        teamId,
+        meetId,
+        roster: roster.map((r) => ({
+          membershipId: r.membershipId,
+          firstName: r.firstName,
+          lastName: r.lastName,
+          gender: r.gender,
+          eligibilityStatus: r.eligibilityStatus,
+        })),
+        events: events.map((e) => ({
           id: e.id,
           eventNumber: e.eventNumber,
           distance: e.distance,
           stroke: e.stroke,
           gender: e.gender,
           eventKey: e.eventKey,
-          qualifyingTimeMs: e.qualifyingTimeMs ?? null,
-        }))}
-        swimmers={activeRoster
-          .filter((r) => enteredMembershipIds.has(r.membershipId))
-          .map((r) => ({
-            membershipId: r.membershipId,
-            firstName: r.firstName,
-            lastName: r.lastName,
-          }))}
-        entries={entries
-          .filter((e) => !isRelayStroke(e.stroke, e.eventKey))
-          .map((e) => ({
-            id: e.id,
-            meetEventId: e.meetEventId,
-            membershipId: e.membershipId,
-            status: e.status,
-            seedTimeMs: e.seedTimeMs,
-            exhibition: e.exhibition,
-          }))}
-        relayLegs={relayLegs.map((leg) => ({
-          id: `relay:${leg.meetEventId}:${leg.relayLetter}:${leg.legOrder}:${leg.membershipId}`,
+        })),
+        entries: entries.map((e) => ({
+          id: e.id,
+          meetEventId: e.meetEventId,
+          membershipId: e.membershipId,
+          firstName: e.firstName,
+          lastName: e.lastName,
+          status: e.status,
+          exhibition: e.exhibition,
+          seedTimeMs: e.seedTimeMs,
+        })),
+        relayLegs: relayLegs.map((leg) => ({
           meetEventId: leg.meetEventId,
           membershipId: leg.membershipId,
-          relayLetter: leg.relayLetter,
           legOrder: leg.legOrder,
-          stroke: leg.stroke,
-        }))}
-      />
-
-      <LineupSuggestPanel
-        teamId={teamId}
-        meetId={meetId}
-        available={canSuggestLineup}
-      />
-
-      {relayEvents.length > 0 ? (
-        <RelaySuggestPanel
-          teamId={teamId}
-          meetId={meetId}
-          events={relayEvents}
-          initialLegs={relayLegs.map((leg) => ({
-            meetEventId: leg.meetEventId,
-            membershipId: leg.membershipId,
-            legOrder: leg.legOrder,
-            relayLetter: leg.relayLetter,
-            stroke: leg.stroke,
-            reasoning: leg.reasoning,
-            name: nameByMembership.get(leg.membershipId) ?? "Unknown",
-          }))}
-          initialTeams={relayTeams.map((team) => ({
-            meetEventId: team.meetEventId,
-            relayLetter: team.relayLetter,
-            seedTimeMs: team.seedTimeMs,
-          }))}
-          limits={meetLimits}
-          individualCountByMembership={individualCountByMembership}
-          candidates={activeRoster.map((r) => ({
-            membershipId: r.membershipId,
-            name: `${r.firstName} ${r.lastName}`,
-            gender: r.gender,
-          }))}
-          bestTimes={bestTimes.map((b) => ({
-            membershipId: b.membershipId,
-            eventKey: b.eventKey,
-            timeMs: b.timeMs,
-          }))}
-          draftQuota={draftQuota}
-        />
-      ) : null}
-    </div>
+          relayLetter: leg.relayLetter,
+        })),
+        relayTeams: relayTeams.map((team) => ({
+          meetEventId: team.meetEventId,
+          relayLetter: team.relayLetter,
+          seedTimeMs: team.seedTimeMs,
+        })),
+        notGoingMembershipIds: [...notGoingMembershipIds],
+      }}
+      relayPanel={
+        relayEvents.length > 0
+          ? {
+              teamId,
+              meetId,
+              events: relayEvents,
+              initialLegs: relayLegs.map((leg) => ({
+                meetEventId: leg.meetEventId,
+                membershipId: leg.membershipId,
+                legOrder: leg.legOrder,
+                relayLetter: leg.relayLetter,
+                stroke: leg.stroke,
+                reasoning: leg.reasoning,
+                name: nameByMembership.get(leg.membershipId) ?? "Unknown",
+              })),
+              initialTeams: relayTeams.map((team) => ({
+                meetEventId: team.meetEventId,
+                relayLetter: team.relayLetter,
+                seedTimeMs: team.seedTimeMs,
+              })),
+              limits: meetLimits,
+              individualCountByMembership,
+              candidates: activeRoster.map((r) => ({
+                membershipId: r.membershipId,
+                name: `${r.firstName} ${r.lastName}`,
+                gender: r.gender,
+              })),
+              bestTimes: bestTimes.map((b) => ({
+                membershipId: b.membershipId,
+                eventKey: b.eventKey,
+                timeMs: b.timeMs,
+              })),
+              draftQuota,
+            }
+          : null
+      }
+    />
   );
 }

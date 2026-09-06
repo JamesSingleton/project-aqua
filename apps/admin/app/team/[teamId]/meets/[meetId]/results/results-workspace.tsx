@@ -2,6 +2,7 @@
 
 import { swimmerAgeOnDate } from "@project-aqua/swim-core/age";
 import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
+import { isRelayStroke } from "@project-aqua/swim-core/entry-limits";
 import {
   formatEventName,
   formatGenderShort,
@@ -122,15 +123,6 @@ function formatImprovement(
     return `${seconds} (${pctSign}${pct.toFixed(1)}%)`;
   }
   return seconds;
-}
-
-function isRelayStroke(stroke: string, eventKey: string) {
-  return (
-    stroke.includes("relay") ||
-    eventKey.includes("relay") ||
-    stroke === "free_relay" ||
-    stroke === "medley_relay"
-  );
 }
 
 function ageGroupCandidates(

@@ -70,6 +70,9 @@ function mergeTeamUi(existing: TeamUiState, patch: TeamUiState): TeamUiState {
       ...patch.roster,
     };
   }
+  if (patch.meetEntriesView) {
+    next.meetEntriesView = patch.meetEntriesView;
+  }
 
   return next;
 }

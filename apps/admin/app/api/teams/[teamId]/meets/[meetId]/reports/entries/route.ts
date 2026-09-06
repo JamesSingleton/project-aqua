@@ -13,9 +13,14 @@ export async function GET(
   const { teamId, meetId } = await context.params;
   const url = new URL(request.url);
   const preview = url.searchParams.get("preview") === "true";
+  const includeRelayAlternates = url.searchParams.get("alts") === "1";
 
   try {
-    const report = await loadMeetEntriesReport(teamId, meetId);
+    const report = await loadMeetEntriesReport(teamId, meetId, {
+      includeRelayAlternates,
+      groupBy:
+        url.searchParams.get("group") === "swimmer" ? "swimmer" : "event",
+    });
     if (!report) {
       return new Response("Meet not found", { status: 404 });
     }

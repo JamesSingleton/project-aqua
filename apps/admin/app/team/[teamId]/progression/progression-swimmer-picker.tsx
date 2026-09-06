@@ -1,20 +1,14 @@
 "use client";
 
-import { Button } from "@project-aqua/ui/components/button";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@project-aqua/ui/components/command";
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@project-aqua/ui/components/combobox";
 import { Label } from "@project-aqua/ui/components/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@project-aqua/ui/components/popover";
 import {
   Select,
   SelectContent,
@@ -23,8 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@project-aqua/ui/components/select";
-import { cn } from "@project-aqua/ui/lib/utils";
-import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -40,6 +32,12 @@ import {
 const ALL_GROUPS = "__all__";
 const NO_GROUP = "__none__";
 
+type SwimmerOption = {
+  id: string;
+  label: string;
+  groupName: string | null;
+};
+
 function filterByGroup(
   swimmers: ProgressionSwimmer[],
   groupKey: string,
@@ -49,6 +47,14 @@ function filterByGroup(
     return swimmers.filter((s) => !s.groupName);
   }
   return swimmers.filter((s) => s.groupName === groupKey);
+}
+
+function toOption(swimmer: ProgressionSwimmer): SwimmerOption {
+  return {
+    id: swimmer.swimmerId,
+    label: formatSwimmerLastFirst(swimmer),
+    groupName: swimmer.groupName,
+  };
 }
 
 export function ProgressionSwimmerPicker({
@@ -69,7 +75,6 @@ export function ProgressionSwimmerPicker({
 }) {
   const router = useRouter();
   const [groupKey, setGroupKey] = useState(ALL_GROUPS);
-  const [swimmerOpen, setSwimmerOpen] = useState(false);
 
   const sorted = useMemo(() => sortProgressionSwimmers(swimmers), [swimmers]);
 
@@ -106,7 +111,21 @@ export function ProgressionSwimmerPicker({
     [sorted, groupKey],
   );
 
-  const selected = sorted.find((s) => s.swimmerId === selectedId);
+  const selectedSwimmer =
+    sorted.find((s) => s.swimmerId === selectedId) ?? null;
+
+  const items = useMemo(() => {
+    const options = filtered.map(toOption);
+    if (
+      selectedSwimmer &&
+      !options.some((option) => option.id === selectedSwimmer.swimmerId)
+    ) {
+      return [toOption(selectedSwimmer), ...options];
+    }
+    return options;
+  }, [filtered, selectedSwimmer]);
+
+  const selected = items.find((option) => option.id === selectedId) ?? null;
 
   // If the current swimmer falls outside the group filter, jump to the first match.
   useEffect(() => {
@@ -118,7 +137,6 @@ export function ProgressionSwimmerPicker({
   }, [filtered, selectedId, teamId, router, seasonQuery]);
 
   function goToSwimmer(swimmerId: string) {
-    setSwimmerOpen(false);
     if (swimmerId === selectedId) return;
     router.push(progressionHref(swimmerId));
   }
@@ -165,68 +183,43 @@ export function ProgressionSwimmerPicker({
 
       <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-md">
         <Label htmlFor="progression-swimmer">Swimmer</Label>
-        <Popover open={swimmerOpen} onOpenChange={setSwimmerOpen}>
-          <PopoverTrigger
-            render={
-              <Button
-                id="progression-swimmer"
-                variant="outline"
-                role="combobox"
-                aria-expanded={swimmerOpen}
-                className="w-full justify-between font-normal"
-                disabled={filtered.length === 0}
-              />
+        <Combobox
+          items={items}
+          value={selected}
+          onValueChange={(item) => {
+            if (item) goToSwimmer(item.id);
+          }}
+          itemToStringValue={(item) => item.label}
+          itemToStringLabel={(item) => item.label}
+          isItemEqualToValue={(item, current) => item.id === current.id}
+          disabled={filtered.length === 0}
+        >
+          <ComboboxInput
+            id="progression-swimmer"
+            className="w-full"
+            placeholder={
+              filtered.length === 0 ? "No swimmers in group" : "Select swimmer…"
             }
-          >
-            <span className="truncate">
-              {selected
-                ? formatSwimmerLastFirst(selected)
-                : filtered.length === 0
-                  ? "No swimmers in group"
-                  : "Select swimmer…"}
-            </span>
-            <ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
-          </PopoverTrigger>
-          <PopoverContent
-            align="start"
-            className="w-[var(--anchor-width)] p-0 sm:w-[320px]"
-          >
-            <Command>
-              <CommandInput placeholder="Search swimmers…" />
-              <CommandList>
-                <CommandEmpty>No swimmers found.</CommandEmpty>
-                <CommandGroup>
-                  {filtered.map((s) => {
-                    const label = formatSwimmerLastFirst(s);
-                    const isSelected = s.swimmerId === selectedId;
-                    return (
-                      <CommandItem
-                        key={s.swimmerId}
-                        value={`${s.lastName} ${s.firstName} ${s.preferredName ?? ""} ${s.groupName ?? ""}`}
-                        onSelect={() => goToSwimmer(s.swimmerId)}
-                      >
-                        <CheckIcon
-                          className={cn(
-                            "size-4",
-                            isSelected ? "opacity-100" : "opacity-0",
-                          )}
-                        />
-                        <span className="flex min-w-0 flex-col">
-                          <span className="truncate">{label}</span>
-                          {s.groupName && groupKey === ALL_GROUPS ? (
-                            <span className="text-muted-foreground truncate text-xs">
-                              {s.groupName}
-                            </span>
-                          ) : null}
-                        </span>
-                      </CommandItem>
-                    );
-                  })}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+            disabled={filtered.length === 0}
+          />
+          <ComboboxContent>
+            <ComboboxEmpty>No swimmers found.</ComboboxEmpty>
+            <ComboboxList>
+              {(item) => (
+                <ComboboxItem key={item.id} value={item}>
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate">{item.label}</span>
+                    {item.groupName && groupKey === ALL_GROUPS ? (
+                      <span className="text-muted-foreground truncate text-xs">
+                        {item.groupName}
+                      </span>
+                    ) : null}
+                  </span>
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
       </div>
     </div>
   );

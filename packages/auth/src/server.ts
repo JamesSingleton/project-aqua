@@ -153,6 +153,9 @@ function createAuth(polarClient: Polar) {
         enabled: true,
         maxAge: 5 * 60,
       },
+      // Password, 2FA, and revoke-session still require a recent login.
+      // Listing sessions on Account uses the DB, not listSessions (freshAge).
+      freshAge: 60 * 60 * 24,
     },
     emailAndPassword: {
       enabled: true,

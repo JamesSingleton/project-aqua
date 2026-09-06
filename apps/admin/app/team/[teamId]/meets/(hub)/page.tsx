@@ -47,6 +47,7 @@ export default async function MeetsEntriesPage({
       : null,
     course: meet.course,
     location: meet.location,
+    opponents: meet.opponents,
     seasonLabel: meet.seasonLabel,
   }));
 

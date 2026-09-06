@@ -8,6 +8,8 @@ import {
   formatEventName,
   formatGenderLabel,
   formatGenderShort,
+  formatMeetEventDeletePhrase,
+  formatProgramEventLabel,
   formatStrokeLabel,
   isSwimmerEligibleForEvent,
   parseEventGender,
@@ -118,6 +120,15 @@ describe("gender display helpers", () => {
     expect(formatGenderLabel("mixed")).toBe("Mixed");
     expect(formatGenderLabel("male")).toBe("Male");
     expect(formatGenderLabel("custom")).toBe("custom");
+  });
+
+  it("formatMeetEventDeletePhrase omits the event number", () => {
+    expect(formatProgramEventLabel("male", 50, "free")).toBe(
+      "Male 50 Freestyle",
+    );
+    expect(formatMeetEventDeletePhrase("male", 50, "free")).toBe(
+      "Delete Male 50 Freestyle",
+    );
   });
 });
 

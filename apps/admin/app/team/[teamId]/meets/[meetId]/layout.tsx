@@ -56,6 +56,7 @@ export default async function MeetDetailLayout({
             entryDeadline={meet.entryDeadline}
             location={meet.location}
             address={meet.address}
+            opponents={meet.opponents}
           />
         }
         actions={

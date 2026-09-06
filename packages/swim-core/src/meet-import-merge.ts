@@ -4,6 +4,7 @@ export type MeetEventSnapshot = {
   stroke: string;
   distance: number;
   gender: string;
+  importedFromFile?: boolean;
 };
 
 export type MeetEventImportConflict = {
@@ -24,6 +25,7 @@ function snapshot(
     stroke: event.stroke,
     distance: event.distance,
     gender: event.gender,
+    importedFromFile: event.importedFromFile,
   };
 }
 
@@ -65,10 +67,12 @@ export function resolveImportedEventForMerge(
   existing: MeetEventSnapshot | undefined,
   imported: MeetEventSnapshot,
   resolution: EventConflictResolution | undefined,
-): "skip" | "add" | "replace" {
+): "skip" | "add" | "replace" | "refresh" {
   if (!existing) return "add";
-  if (eventsMatch(existing, imported)) return "skip";
+  if (eventsMatch(existing, imported)) {
+    return existing.importedFromFile ? "refresh" : "skip";
+  }
+  if (!existing.importedFromFile) return "skip";
   if (resolution === "use_import") return "replace";
-  if (resolution === "keep_manual") return "skip";
   return "skip";
 }
