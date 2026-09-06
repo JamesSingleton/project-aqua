@@ -440,8 +440,7 @@ export async function removeMeetRelayTeamAction(
   const nextLegs = legs
     .filter((leg) => leg.meetEventId === meetEventId)
     .filter(
-      (leg) =>
-        !dropping.has(deriveRelayLetter(leg.relayLetter, leg.legOrder)),
+      (leg) => !dropping.has(deriveRelayLetter(leg.relayLetter, leg.legOrder)),
     )
     .map((leg) => ({
       membershipId: leg.membershipId,

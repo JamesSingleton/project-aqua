@@ -47,8 +47,8 @@ import {
 } from "@/components/draft-quota-hint";
 import {
   type RelayLegSuggestion,
-  saveMeetRelayLegsAction,
   removeMeetRelayTeamAction,
+  saveMeetRelayLegsAction,
   suggestRelayOrderAction,
 } from "../relay-actions";
 import { RelaySwimmerCombobox } from "./relay-swimmer-combobox";
@@ -371,9 +371,7 @@ export function RelaySuggestPanel({
 
     setHiddenByEvent((prev) => ({
       ...prev,
-      [meetEventId]: [
-        ...new Set([...(prev[meetEventId] ?? []), ...dropping]),
-      ],
+      [meetEventId]: [...new Set([...(prev[meetEventId] ?? []), ...dropping])],
     }));
     setLegsByEvent((prev) => ({
       ...prev,
@@ -482,9 +480,14 @@ export function RelaySuggestPanel({
                   const next = Number(v) as 1 | 2 | 3;
                   const previous = numberOfRelays;
                   setNumberOfRelays(next);
-                  const kept = new Set<string>(RELAY_TEAM_LETTERS.slice(0, next));
+                  const kept = new Set<string>(
+                    RELAY_TEAM_LETTERS.slice(0, next),
+                  );
                   if (next > previous) {
-                    const newly = RELAY_TEAM_LETTERS.slice(previous, next) as readonly string[];
+                    const newly = RELAY_TEAM_LETTERS.slice(
+                      previous,
+                      next,
+                    ) as readonly string[];
                     setHiddenByEvent((prev) => {
                       const updated: Record<string, string[]> = {};
                       for (const [eventId, hidden] of Object.entries(prev)) {
