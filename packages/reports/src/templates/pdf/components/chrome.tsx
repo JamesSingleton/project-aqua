@@ -1,5 +1,5 @@
 import { Text, View } from "@react-pdf/renderer";
-import type { MeetEntriesReport } from "../../../types";
+import type { ReportChrome } from "../../../types";
 
 const colors = {
   ink: "#111111",
@@ -8,7 +8,7 @@ const colors = {
   accent: "#0B4F6C",
 };
 
-export function ReportHeader({ report }: { report: MeetEntriesReport }) {
+export function ReportHeader({ report }: { report: ReportChrome }) {
   const teamLine = report.teamCode
     ? `${report.teamName} [${report.teamCode}]`
     : report.teamName;
@@ -100,7 +100,7 @@ export function ReportHeader({ report }: { report: MeetEntriesReport }) {
   );
 }
 
-export function ReportFooter({ report }: { report: MeetEntriesReport }) {
+export function ReportFooter({ report }: { report: ReportChrome }) {
   return (
     <View
       fixed

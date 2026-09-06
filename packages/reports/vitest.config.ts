@@ -7,7 +7,11 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "lcov"],
-      include: ["src/meet-entries/**/*.ts", "src/types.ts"],
+      include: [
+        "src/meet-entries/**/*.ts",
+        "src/split-sheet/**/*.ts",
+        "src/types.ts",
+      ],
       exclude: ["src/templates/**"],
       thresholds: {
         lines: 90,

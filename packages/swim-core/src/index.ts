@@ -9,6 +9,7 @@ export * from "./lineup-suggest";
 export * from "./people";
 export * from "./plans";
 export * from "./relay-legs";
+export * from "./split-capture";
 export * from "./team-types";
 export * from "./text";
 export * from "./times";

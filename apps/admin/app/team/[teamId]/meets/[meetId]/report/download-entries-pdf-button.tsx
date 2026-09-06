@@ -11,12 +11,14 @@ export function DownloadEntriesPdfButton({
   meetName,
   includeRelayAlternates = false,
   groupBy = "event",
+  documentKind = "entries",
 }: {
   teamId: string;
   meetId: string;
   meetName: string;
   includeRelayAlternates?: boolean;
   groupBy?: "event" | "swimmer";
+  documentKind?: "entries" | "splits";
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -30,8 +32,9 @@ export function DownloadEntriesPdfButton({
       if (includeRelayAlternates) params.set("alts", "1");
       if (groupBy === "swimmer") params.set("group", "swimmer");
       const query = params.toString();
+      const slug = documentKind === "splits" ? "split-sheet" : "entries";
       const res = await fetch(
-        `/api/teams/${teamId}/meets/${meetId}/reports/entries${query ? `?${query}` : ""}`,
+        `/api/teams/${teamId}/meets/${meetId}/reports/${slug}${query ? `?${query}` : ""}`,
       );
       if (!res.ok) {
         throw new Error((await res.text()) || "Failed to download PDF");
@@ -40,7 +43,7 @@ export function DownloadEntriesPdfButton({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${meetName.replace(/[^\w.-]+/g, "_")}_entries.pdf`;
+      a.download = `${meetName.replace(/[^\w.-]+/g, "_")}_${slug}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {

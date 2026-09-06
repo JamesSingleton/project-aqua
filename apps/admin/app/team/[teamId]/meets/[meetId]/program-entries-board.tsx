@@ -58,6 +58,7 @@ import {
   updateMeetEntryAction,
 } from "../actions";
 import {
+  removeMeetRelayTeamAction,
   setMeetRelaySlotAction,
   updateMeetRelayTeamSeedAction,
 } from "../relay-actions";
@@ -451,6 +452,17 @@ export function ProgramEntriesBoard({
                   letter,
                   legOrder,
                   membershipId,
+                );
+              });
+            }}
+            onRemoveTeam={(letter) => {
+              setError(null);
+              runInBackground(async () => {
+                await removeMeetRelayTeamAction(
+                  teamId,
+                  meetId,
+                  selected.id,
+                  letter,
                 );
               });
             }}
@@ -922,6 +934,7 @@ function RelayProgramEvent({
   onSeedDraft,
   onSeedCommit,
   onAssign,
+  onRemoveTeam,
   onError,
 }: {
   event: EventRow;
@@ -938,10 +951,11 @@ function RelayProgramEvent({
   onSeedDraft: (letter: string, value: string) => void;
   onSeedCommit: (letter: string, raw: string) => void;
   onAssign: (membershipId: string, letter: string, legOrder: number) => void;
+  onRemoveTeam: (letter: string) => void;
   onError: (message: string | null) => void;
 }) {
-  const [addedTeams, setAddedTeams] = useState(0);
-  const usedLetterIndexes = useMemo(() => {
+  const [extraLetters, setExtraLetters] = useState<string[]>([]);
+  const persistedLetters = useMemo(() => {
     const letters = new Set<string>();
     for (const leg of relayLegs) {
       letters.add(deriveRelayLetter(leg.relayLetter, leg.legOrder));
@@ -949,19 +963,27 @@ function RelayProgramEvent({
     for (const team of relayTeams) {
       letters.add(deriveRelayLetter(team.relayLetter, 1));
     }
-    let highest = 0;
-    for (const [index, letter] of RELAY_TEAM_LETTERS.entries()) {
-      if (letters.has(letter)) highest = index + 1;
-    }
-    return Math.max(1, highest);
+    return letters;
   }, [relayLegs, relayTeams]);
+  useEffect(() => {
+    setExtraLetters((current) =>
+      current.filter((letter) => !persistedLetters.has(letter)),
+    );
+  }, [persistedLetters]);
+  const letters = useMemo(() => {
+    const visible = new Set(persistedLetters);
+    for (const letter of extraLetters) visible.add(letter);
+    if (visible.size === 0) visible.add("A");
+    return RELAY_TEAM_LETTERS.filter((letter) => visible.has(letter));
+  }, [persistedLetters, extraLetters]);
   const cap = caps.maxRelayTeamsPerEvent;
   const maxTeams =
     cap != null && cap > 0
       ? Math.min(cap, RELAY_TEAM_LETTERS.length)
       : RELAY_TEAM_LETTERS.length;
-  const visibleCount = Math.min(maxTeams, usedLetterIndexes + addedTeams);
-  const letters = RELAY_TEAM_LETTERS.slice(0, visibleCount);
+  const nextLetter = RELAY_TEAM_LETTERS.find(
+    (letter) => !letters.includes(letter),
+  );
   const racingLetters = new Set(
     relayLegs
       .filter(
@@ -1015,14 +1037,43 @@ function RelayProgramEvent({
             <div key={letter} className="flex flex-col gap-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm font-medium">Team {letter}</p>
-                <Input
-                  aria-label={`Team ${letter} seed`}
-                  className="font-timing h-8 w-28 tabular-nums"
-                  value={seedValue}
-                  placeholder="NT"
-                  onChange={(e) => onSeedDraft(letter, e.target.value)}
-                  onBlur={() => onSeedCommit(letter, seedValue)}
-                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    aria-label={`Team ${letter} seed`}
+                    className="font-timing h-8 w-28 tabular-nums"
+                    value={seedValue}
+                    placeholder="NT"
+                    onChange={(e) => onSeedDraft(letter, e.target.value)}
+                    onBlur={() => onSeedCommit(letter, seedValue)}
+                  />
+                  {letters.indexOf(letter) > 0 ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Remove Team ${letter}`}
+                      onClick={() => {
+                        onError(null);
+                        const fromIndex = RELAY_TEAM_LETTERS.indexOf(letter);
+                        const dropping = new Set<string>(
+                          RELAY_TEAM_LETTERS.slice(fromIndex),
+                        );
+                        setExtraLetters((current) =>
+                          current.filter((item) => !dropping.has(item)),
+                        );
+                        if (
+                          [...dropping].some((item) =>
+                            persistedLetters.has(item),
+                          )
+                        ) {
+                          onRemoveTeam(letter);
+                        }
+                      }}
+                    >
+                      <Minus />
+                    </Button>
+                  ) : null}
+                </div>
               </div>
               <ol className="flex flex-col gap-2">
                 {slots.map((slot) => {
@@ -1081,15 +1132,21 @@ function RelayProgramEvent({
             </div>
           );
         })}
-        {visibleCount < maxTeams && addTeamCheck.ok ? (
+        {nextLetter && letters.length < maxTeams && addTeamCheck.ok ? (
           <Button
             type="button"
             variant="outline"
             size="sm"
             className="self-start"
-            onClick={() => setAddedTeams((count) => count + 1)}
+            onClick={() =>
+              setExtraLetters((current) =>
+                current.includes(nextLetter)
+                  ? current
+                  : [...current, nextLetter],
+              )
+            }
           >
-            Add Team {RELAY_TEAM_LETTERS[visibleCount]}
+            Add Team {nextLetter}
           </Button>
         ) : null}
       </div>

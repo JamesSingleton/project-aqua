@@ -7,9 +7,12 @@
     ".": "./src/index.ts",
     "./types": "./src/types.ts",
     "./meet-entries": "./src/meet-entries/build.ts",
+    "./split-sheet": "./src/split-sheet/build.ts",
     "./templates/pdf": "./src/templates/pdf/index.ts",
     "./templates/pdf/meet-entries": "./src/templates/pdf/meet-entries.tsx",
-    "./templates/html/meet-entries": "./src/templates/html/meet-entries.tsx"
+    "./templates/pdf/split-sheet": "./src/templates/pdf/split-sheet.tsx",
+    "./templates/html/meet-entries": "./src/templates/html/meet-entries.tsx",
+    "./templates/html/split-sheet": "./src/templates/html/split-sheet.tsx"
   },
   "scripts": {
     "check:types": "tsc --noEmit",

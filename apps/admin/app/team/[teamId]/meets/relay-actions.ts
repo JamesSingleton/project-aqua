@@ -409,6 +409,65 @@ export async function removeMeetRelaySlotAction(
   revalidatePath(`/team/${teamId}/meets/${meetId}/report`);
 }
 
+export async function removeMeetRelayTeamAction(
+  teamId: string,
+  meetId: string,
+  meetEventId: string,
+  relayLetter: string,
+) {
+  const session = await getSession();
+  await requireTeamRole(session?.user?.id, teamId, [
+    "owner",
+    "head_coach",
+    "assistant_coach",
+  ]);
+  const meet = await getMeetById(meetId, teamId);
+  if (!meet) throw new Error("Meet not found");
+
+  const fromLetter = deriveRelayLetter(relayLetter, 1);
+  const fromIndex = (RELAY_TEAM_LETTERS as readonly string[]).indexOf(
+    fromLetter,
+  );
+  if (fromIndex < 0) {
+    throw new Error("Unknown relay team");
+  }
+  const dropping = new Set<string>(RELAY_TEAM_LETTERS.slice(fromIndex));
+
+  const [legs, teams] = await Promise.all([
+    getMeetRelayLegs(meetId),
+    getMeetRelayTeams(meetId),
+  ]);
+  const nextLegs = legs
+    .filter((leg) => leg.meetEventId === meetEventId)
+    .filter(
+      (leg) =>
+        !dropping.has(deriveRelayLetter(leg.relayLetter, leg.legOrder)),
+    )
+    .map((leg) => ({
+      membershipId: leg.membershipId,
+      legOrder: leg.legOrder,
+      relayLetter: deriveRelayLetter(leg.relayLetter, leg.legOrder),
+      stroke: leg.stroke ?? undefined,
+      reasoning: leg.reasoning ?? undefined,
+    }));
+  const nextTeams = teams
+    .filter((team) => team.meetEventId === meetEventId)
+    .filter((team) => !dropping.has(deriveRelayLetter(team.relayLetter, 1)))
+    .map((team) => ({
+      relayLetter: deriveRelayLetter(team.relayLetter, 1),
+      seedTimeMs: team.seedTimeMs,
+      seedTimeSource: team.seedTimeSource ?? "no_time",
+    }));
+
+  await saveMeetRelayLegsAction(
+    teamId,
+    meetId,
+    meetEventId,
+    nextLegs,
+    nextTeams,
+  );
+}
+
 export async function suggestRelayOrderAction(
   teamId: string,
   input: RelaySuggestInput,

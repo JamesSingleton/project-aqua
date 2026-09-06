@@ -37,7 +37,7 @@ import {
   SelectValue,
 } from "@project-aqua/ui/components/select";
 import { cn } from "@project-aqua/ui/lib/utils";
-import { Lock, LockOpen, RefreshCw, Save } from "lucide-react";
+import { Lock, LockOpen, Minus, RefreshCw, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
@@ -48,6 +48,7 @@ import {
 import {
   type RelayLegSuggestion,
   saveMeetRelayLegsAction,
+  removeMeetRelayTeamAction,
   suggestRelayOrderAction,
 } from "../relay-actions";
 import { RelaySwimmerCombobox } from "./relay-swimmer-combobox";
@@ -139,6 +140,9 @@ export function RelaySuggestPanel({
     {},
   );
   const [error, setError] = useState<string | null>(null);
+  const [hiddenByEvent, setHiddenByEvent] = useState<Record<string, string[]>>(
+    {},
+  );
 
   const initialLegSerial = useMemo(
     () => serializeGroupedLegs(groupInitialLegs(initialLegs)),
@@ -333,14 +337,82 @@ export function RelaySuggestPanel({
     });
   }
 
+  function visibleLettersForEvent(meetEventId: string): string[] {
+    const hidden = new Set(hiddenByEvent[meetEventId] ?? []);
+    const shown = RELAY_TEAM_LETTERS.slice(0, numberOfRelays).filter(
+      (letter) => !hidden.has(letter),
+    );
+    return shown.length > 0 ? shown : ["A"];
+  }
+
+  function persistedLettersForEvent(meetEventId: string): Set<string> {
+    const letters = new Set<string>();
+    for (const leg of initialLegs) {
+      if (leg.meetEventId !== meetEventId) continue;
+      letters.add(deriveRelayLetter(leg.relayLetter, leg.legOrder));
+    }
+    for (const team of initialTeams) {
+      if (team.meetEventId !== meetEventId) continue;
+      letters.add(deriveRelayLetter(team.relayLetter, 1));
+    }
+    return letters;
+  }
+
+  function dropRelayTeams(meetEventId: string, fromLetter: string) {
+    const fromIndex = (RELAY_TEAM_LETTERS as readonly string[]).indexOf(
+      fromLetter,
+    );
+    if (fromIndex < 0) return;
+    const dropping = RELAY_TEAM_LETTERS.slice(fromIndex);
+    const dropSet = new Set<string>(dropping);
+    const wasDirty = dirtyByEvent[meetEventId] ?? false;
+    const persisted = persistedLettersForEvent(meetEventId);
+    const shouldPersist = dropping.some((letter) => persisted.has(letter));
+
+    setHiddenByEvent((prev) => ({
+      ...prev,
+      [meetEventId]: [
+        ...new Set([...(prev[meetEventId] ?? []), ...dropping]),
+      ],
+    }));
+    setLegsByEvent((prev) => ({
+      ...prev,
+      [meetEventId]: (prev[meetEventId] ?? []).filter(
+        (leg) => !dropSet.has(leg.teamLetter),
+      ),
+    }));
+    setSeedByEvent((prev) => {
+      const seeds = { ...(prev[meetEventId] ?? {}) };
+      for (const letter of dropping) delete seeds[letter];
+      return { ...prev, [meetEventId]: seeds };
+    });
+
+    if (!wasDirty && shouldPersist) {
+      setError(null);
+      startTransition(async () => {
+        try {
+          await removeMeetRelayTeamAction(
+            teamId,
+            meetId,
+            meetEventId,
+            fromLetter,
+          );
+          router.refresh();
+        } catch (err) {
+          setError(
+            err instanceof Error ? err.message : "Failed to remove relay team",
+          );
+        }
+      });
+    }
+  }
+
   function saveEvent(meetEventId: string) {
     const legs = legsByEvent[meetEventId] ?? [];
     const seeds = seedByEvent[meetEventId] ?? {};
-    const lettersUsed = new Set([
-      ...RELAY_TEAM_LETTERS.slice(0, numberOfRelays),
-      ...legs.map((leg) => leg.teamLetter),
-      ...Object.keys(seeds),
-    ]);
+    const visibleLetters = visibleLettersForEvent(meetEventId);
+    const visible = new Set(visibleLetters);
+    const keptLegs = legs.filter((leg) => visible.has(leg.teamLetter));
     setError(null);
     startTransition(async () => {
       try {
@@ -348,14 +420,14 @@ export function RelaySuggestPanel({
           teamId,
           meetId,
           meetEventId,
-          legs.map((leg) => ({
+          keptLegs.map((leg) => ({
             membershipId: leg.membershipId,
             legOrder: leg.legOrder,
             relayLetter: leg.teamLetter,
             stroke: leg.stroke,
             reasoning: leg.reasoning,
           })),
-          [...lettersUsed].map((letter) => ({
+          visibleLetters.map((letter) => ({
             relayLetter: letter,
             ...parseSeedFields(seeds[letter] ?? ""),
           })),
@@ -381,7 +453,6 @@ export function RelaySuggestPanel({
     );
   }
 
-  const letters = RELAY_TEAM_LETTERS.slice(0, numberOfRelays);
   const maxRelayEntries = limits?.maxRelayEntries;
 
   return (
@@ -408,7 +479,52 @@ export function RelaySuggestPanel({
               value={String(numberOfRelays)}
               onValueChange={(v) => {
                 if (v === "1" || v === "2" || v === "3") {
-                  setNumberOfRelays(Number(v) as 1 | 2 | 3);
+                  const next = Number(v) as 1 | 2 | 3;
+                  const previous = numberOfRelays;
+                  setNumberOfRelays(next);
+                  const kept = new Set<string>(RELAY_TEAM_LETTERS.slice(0, next));
+                  if (next > previous) {
+                    const newly = RELAY_TEAM_LETTERS.slice(previous, next) as readonly string[];
+                    setHiddenByEvent((prev) => {
+                      const updated: Record<string, string[]> = {};
+                      for (const [eventId, hidden] of Object.entries(prev)) {
+                        updated[eventId] = hidden.filter(
+                          (letter) => !newly.includes(letter),
+                        );
+                      }
+                      return updated;
+                    });
+                  } else {
+                    setHiddenByEvent((prev) => {
+                      const updated: Record<string, string[]> = {};
+                      for (const [eventId, hidden] of Object.entries(prev)) {
+                        updated[eventId] = hidden.filter((letter) =>
+                          kept.has(letter),
+                        );
+                      }
+                      return updated;
+                    });
+                  }
+                  setLegsByEvent((prev) => {
+                    const updated: Record<string, RelayLegSuggestion[]> = {};
+                    for (const [eventId, legs] of Object.entries(prev)) {
+                      updated[eventId] = legs.filter((leg) =>
+                        kept.has(leg.teamLetter),
+                      );
+                    }
+                    return updated;
+                  });
+                  setSeedByEvent((prev) => {
+                    const updated: Record<string, Record<string, string>> = {};
+                    for (const [eventId, seeds] of Object.entries(prev)) {
+                      updated[eventId] = Object.fromEntries(
+                        Object.entries(seeds).filter(([letter]) =>
+                          kept.has(letter),
+                        ),
+                      );
+                    }
+                    return updated;
+                  });
                 }
               }}
             >
@@ -477,6 +593,10 @@ export function RelaySuggestPanel({
           const locked = lockedByEvent[event.id] ?? false;
           const legs = legsByEvent[event.id] ?? [];
           const dirty = dirtyByEvent[event.id] ?? false;
+          const letters = visibleLettersForEvent(event.id);
+          const nextLetter = RELAY_TEAM_LETTERS.find(
+            (letter) => !letters.includes(letter),
+          );
           const eligibleCandidates = candidates.filter((candidate) =>
             isSwimmerEligibleForEvent(candidate.gender, event.gender),
           );
@@ -531,7 +651,7 @@ export function RelaySuggestPanel({
                   </Button>
                 </CardAction>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex flex-col gap-4">
                 <div className="grid grid-cols-1 gap-4 @min-[17rem]/relay-event:grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))]">
                   {letters.map((letter) => (
                     <RelayTeamCard
@@ -542,6 +662,7 @@ export function RelaySuggestPanel({
                       seedValue={seedByEvent[event.id]?.[letter] ?? ""}
                       pending={pending}
                       locked={locked}
+                      canRemove={letters.indexOf(letter) > 0}
                       eligibleCandidates={eligibleCandidates}
                       splitMs={splitMs}
                       assignBlockedReason={assignBlockedReason}
@@ -554,6 +675,7 @@ export function RelaySuggestPanel({
                           },
                         }))
                       }
+                      onRemove={() => dropRelayTeams(event.id, letter)}
                       onAssign={(slot, membershipId) => {
                         if (!membershipId) {
                           setError(null);
@@ -576,6 +698,31 @@ export function RelaySuggestPanel({
                     />
                   ))}
                 </div>
+                {nextLetter && letters.length < RELAY_TEAM_LETTERS.length ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="self-start"
+                    disabled={pending || locked}
+                    onClick={() => {
+                      setHiddenByEvent((prev) => ({
+                        ...prev,
+                        [event.id]: (prev[event.id] ?? []).filter(
+                          (letter) => letter !== nextLetter,
+                        ),
+                      }));
+                      const idx = (
+                        RELAY_TEAM_LETTERS as readonly string[]
+                      ).indexOf(nextLetter);
+                      if (idx >= 0 && idx + 1 > numberOfRelays) {
+                        setNumberOfRelays((idx + 1) as 1 | 2 | 3);
+                      }
+                    }}
+                  >
+                    Add Team {nextLetter}
+                  </Button>
+                ) : null}
               </CardContent>
             </Card>
           );
@@ -598,10 +745,12 @@ function RelayTeamCard({
   seedValue,
   pending,
   locked,
+  canRemove,
   eligibleCandidates,
   splitMs,
   assignBlockedReason,
   onSeedChange,
+  onRemove,
   onAssign,
 }: {
   letter: string;
@@ -610,6 +759,7 @@ function RelayTeamCard({
   seedValue: string;
   pending: boolean;
   locked: boolean;
+  canRemove: boolean;
   eligibleCandidates: Candidate[];
   splitMs: (
     membershipId: string,
@@ -623,20 +773,35 @@ function RelayTeamCard({
     membershipId: string,
   ) => string | null;
   onSeedChange: (value: string) => void;
+  onRemove: () => void;
   onAssign: (slot: number, membershipId: string) => void;
 }) {
   return (
     <div className="min-w-0 rounded-md border p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="min-w-0 truncate text-sm font-medium">Team {letter}</p>
-        <Input
-          className="font-timing h-8 w-24 shrink-0 text-sm tabular-nums"
-          placeholder="NT"
-          disabled={pending || locked}
-          value={seedValue}
-          onChange={(e) => onSeedChange(e.target.value)}
-          aria-label={`Team ${letter} seed time`}
-        />
+        <div className="flex shrink-0 items-center gap-2">
+          <Input
+            className="font-timing h-8 w-24 text-sm tabular-nums"
+            placeholder="NT"
+            disabled={pending || locked}
+            value={seedValue}
+            onChange={(e) => onSeedChange(e.target.value)}
+            aria-label={`Team ${letter} seed time`}
+          />
+          {canRemove ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              disabled={pending || locked}
+              aria-label={`Remove Team ${letter}`}
+              onClick={onRemove}
+            >
+              <Minus />
+            </Button>
+          ) : null}
+        </div>
       </div>
       <ol className="flex flex-col gap-2">
         {SLOTS.map((slot) => {
