@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  index,
   integer,
   jsonb,
   pgEnum,
@@ -28,29 +29,40 @@ export const calendarConnectionStatusEnum = pgEnum(
   ["active", "error", "disconnected"],
 );
 
-export const teamCalendarEvents = pgTable("team_calendar_events", {
-  id: text("id").primaryKey(),
-  organizationId: text("organization_id")
-    .notNull()
-    .references(() => organization.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  description: text("description"),
-  location: text("location"),
-  startsAt: timestamp("starts_at").notNull(),
-  endsAt: timestamp("ends_at"),
-  eventType: calendarEventTypeEnum("event_type").notNull().default("other"),
-  practiceSessionId: text("practice_session_id").references(
-    () => practiceSessions.id,
-    { onDelete: "set null" },
-  ),
-  meetId: text("meet_id").references(() => meets.id, { onDelete: "set null" }),
-  createdByUserId: text("created_by_user_id").references(() => user.id, {
-    onDelete: "set null",
-  }),
-  aquaVersion: integer("aqua_version").notNull().default(1),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+export const teamCalendarEvents = pgTable(
+  "team_calendar_events",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    location: text("location"),
+    startsAt: timestamp("starts_at").notNull(),
+    endsAt: timestamp("ends_at"),
+    eventType: calendarEventTypeEnum("event_type").notNull().default("other"),
+    practiceSessionId: text("practice_session_id").references(
+      () => practiceSessions.id,
+      { onDelete: "set null" },
+    ),
+    meetId: text("meet_id").references(() => meets.id, {
+      onDelete: "set null",
+    }),
+    createdByUserId: text("created_by_user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    aquaVersion: integer("aqua_version").notNull().default(1),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("team_calendar_events_org_starts_at_idx").on(
+      table.organizationId,
+      table.startsAt,
+    ),
+  ],
+);
 
 export const calendarFeedTokens = pgTable(
   "calendar_feed_tokens",
@@ -67,7 +79,10 @@ export const calendarFeedTokens = pgTable(
     revokedAt: timestamp("revoked_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  (table) => [uniqueIndex("calendar_feed_tokens_token_idx").on(table.token)],
+  (table) => [
+    uniqueIndex("calendar_feed_tokens_token_idx").on(table.token),
+    index("calendar_feed_tokens_organization_id_idx").on(table.organizationId),
+  ],
 );
 
 export const calendarConnections = pgTable(
@@ -127,26 +142,38 @@ export const calendarEventLinks = pgTable(
       table.connectionId,
       table.externalEventId,
     ),
+    index("calendar_event_links_aqua_event_id_idx").on(table.aquaEventId),
   ],
 );
 
-export const calendarSyncConflicts = pgTable("calendar_sync_conflicts", {
-  id: text("id").primaryKey(),
-  organizationId: text("organization_id")
-    .notNull()
-    .references(() => organization.id, { onDelete: "cascade" }),
-  aquaEventId: text("aqua_event_id").references(() => teamCalendarEvents.id, {
-    onDelete: "set null",
-  }),
-  connectionId: text("connection_id").references(() => calendarConnections.id, {
-    onDelete: "set null",
-  }),
-  provider: calendarProviderEnum("provider").notNull(),
-  externalEventId: text("external_event_id"),
-  resolution: text("resolution").notNull().default("aqua_wins"),
-  details: jsonb("details"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const calendarSyncConflicts = pgTable(
+  "calendar_sync_conflicts",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    aquaEventId: text("aqua_event_id").references(() => teamCalendarEvents.id, {
+      onDelete: "set null",
+    }),
+    connectionId: text("connection_id").references(
+      () => calendarConnections.id,
+      {
+        onDelete: "set null",
+      },
+    ),
+    provider: calendarProviderEnum("provider").notNull(),
+    externalEventId: text("external_event_id"),
+    resolution: text("resolution").notNull().default("aqua_wins"),
+    details: jsonb("details"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("calendar_sync_conflicts_organization_id_idx").on(
+      table.organizationId,
+    ),
+  ],
+);
 
 export const teamCalendarEventsRelations = relations(
   teamCalendarEvents,

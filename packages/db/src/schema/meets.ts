@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import {
   boolean,
+  index,
   integer,
   jsonb,
   pgEnum,
@@ -53,130 +54,167 @@ export const meetEventKindEnum = pgEnum("meet_event_kind", ["swim", "dive"]);
 
 export type MeetEventKind = (typeof meetEventKindEnum.enumValues)[number];
 
-export const meets = pgTable("meets", {
-  id: text("id").primaryKey(),
-  organizationId: text("organization_id")
-    .notNull()
-    .references(() => organization.id, { onDelete: "cascade" }),
-  seasonId: text("season_id")
-    .notNull()
-    .references(() => teamSeasons.id, { onDelete: "restrict" }),
-  name: text("name").notNull(),
-  startDate: timestamp("start_date").notNull(),
-  endDate: timestamp("end_date"),
-  /** Deadline for entries to the meet host (from EV3 when imported). */
-  entryDeadline: timestamp("entry_deadline"),
-  course: courseEnum("course").notNull().default("SCY"),
-  location: text("location"),
-  address: text("address"),
-  /** Coach-owned opponents line; not overwritten by meet-file import. */
-  opponents: text("opponents"),
-  importSource: text("import_source"),
-  rawFilePath: text("raw_file_path"),
-  maxIndividualEntries: integer("max_individual_entries"),
-  maxRelayEntries: integer("max_relay_entries"),
-  maxCombinedEntries: integer("max_combined_entries"),
-  entryLimitPackages: jsonb("entry_limit_packages").$type<
-    EntryLimitPackage[] | null
-  >(),
-  entryLimitsSource: text("entry_limits_source"),
-  /** Meet override for association scoring cap; null inherits the team default. */
-  maxScoringEntriesPerIndividualEvent: integer(
-    "max_scoring_entries_per_individual_event",
-  ),
-  /** Meet override for association relay-team cap; null inherits the team default. */
-  maxRelayTeamsPerEvent: integer("max_relay_teams_per_event"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+export const meets = pgTable(
+  "meets",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    seasonId: text("season_id")
+      .notNull()
+      .references(() => teamSeasons.id, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    startDate: timestamp("start_date").notNull(),
+    endDate: timestamp("end_date"),
+    /** Deadline for entries to the meet host (from EV3 when imported). */
+    entryDeadline: timestamp("entry_deadline"),
+    course: courseEnum("course").notNull().default("SCY"),
+    location: text("location"),
+    address: text("address"),
+    /** Coach-owned opponents line; not overwritten by meet-file import. */
+    opponents: text("opponents"),
+    importSource: text("import_source"),
+    rawFilePath: text("raw_file_path"),
+    maxIndividualEntries: integer("max_individual_entries"),
+    maxRelayEntries: integer("max_relay_entries"),
+    maxCombinedEntries: integer("max_combined_entries"),
+    entryLimitPackages: jsonb("entry_limit_packages").$type<
+      EntryLimitPackage[] | null
+    >(),
+    entryLimitsSource: text("entry_limits_source"),
+    /** Meet override for association scoring cap; null inherits the team default. */
+    maxScoringEntriesPerIndividualEvent: integer(
+      "max_scoring_entries_per_individual_event",
+    ),
+    /** Meet override for association relay-team cap; null inherits the team default. */
+    maxRelayTeamsPerEvent: integer("max_relay_teams_per_event"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("meets_org_start_date_idx").on(table.organizationId, table.startDate),
+    index("meets_season_id_idx").on(table.seasonId),
+  ],
+);
 
-export const meetEvents = pgTable("meet_events", {
-  id: text("id").primaryKey(),
-  meetId: text("meet_id")
-    .notNull()
-    .references(() => meets.id, { onDelete: "cascade" }),
-  eventNumber: integer("event_number"),
-  stroke: text("stroke").notNull(),
-  distance: integer("distance").notNull(),
-  gender: eventGenderEnum("gender").notNull(),
-  ageGroup: text("age_group"),
-  eventKey: text("event_key")
-    .notNull()
-    .references(() => swimEvents.eventKey),
-  /** Meet-specific entry qualifying cut (from EV3/HYV), milliseconds. */
-  qualifyingTimeMs: integer("qualifying_time_ms"),
-  /** Diving events (Hy-Tek EV3 `F` / HYV `6`) are unscored, distance-0 rows. */
-  eventKind: meetEventKindEnum("event_kind").notNull().default("swim"),
-  /** Number of dives (EV3/HYV dive-count field), diving events only. */
-  diveCount: integer("dive_count"),
-  /** True when this row came from a meet file, not Add event. */
-  importedFromFile: boolean("imported_from_file").notNull().default(false),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const meetEvents = pgTable(
+  "meet_events",
+  {
+    id: text("id").primaryKey(),
+    meetId: text("meet_id")
+      .notNull()
+      .references(() => meets.id, { onDelete: "cascade" }),
+    eventNumber: integer("event_number"),
+    stroke: text("stroke").notNull(),
+    distance: integer("distance").notNull(),
+    gender: eventGenderEnum("gender").notNull(),
+    ageGroup: text("age_group"),
+    eventKey: text("event_key")
+      .notNull()
+      .references(() => swimEvents.eventKey),
+    /** Meet-specific entry qualifying cut (from EV3/HYV), milliseconds. */
+    qualifyingTimeMs: integer("qualifying_time_ms"),
+    /** Diving events (Hy-Tek EV3 `F` / HYV `6`) are unscored, distance-0 rows. */
+    eventKind: meetEventKindEnum("event_kind").notNull().default("swim"),
+    /** Number of dives (EV3/HYV dive-count field), diving events only. */
+    diveCount: integer("dive_count"),
+    /** True when this row came from a meet file, not Add event. */
+    importedFromFile: boolean("imported_from_file").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [index("meet_events_meet_id_idx").on(table.meetId)],
+);
 
-export const meetCommitments = pgTable("meet_commitments", {
-  id: text("id").primaryKey(),
-  meetId: text("meet_id")
-    .notNull()
-    .references(() => meets.id, { onDelete: "cascade" }),
-  membershipId: text("membership_id")
-    .notNull()
-    .references(() => teamSwimmerMemberships.id, { onDelete: "cascade" }),
-  status: meetCommitmentStatusEnum("status").notNull(),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+export const meetCommitments = pgTable(
+  "meet_commitments",
+  {
+    id: text("id").primaryKey(),
+    meetId: text("meet_id")
+      .notNull()
+      .references(() => meets.id, { onDelete: "cascade" }),
+    membershipId: text("membership_id")
+      .notNull()
+      .references(() => teamSwimmerMemberships.id, { onDelete: "cascade" }),
+    status: meetCommitmentStatusEnum("status").notNull(),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("meet_commitments_meet_membership_idx").on(
+      table.meetId,
+      table.membershipId,
+    ),
+    index("meet_commitments_membership_id_idx").on(table.membershipId),
+  ],
+);
 
-export const meetEntries = pgTable("meet_entries", {
-  id: text("id").primaryKey(),
-  meetId: text("meet_id")
-    .notNull()
-    .references(() => meets.id, { onDelete: "cascade" }),
-  meetEventId: text("meet_event_id")
-    .notNull()
-    .references(() => meetEvents.id, { onDelete: "cascade" }),
-  membershipId: text("membership_id")
-    .notNull()
-    .references(() => teamSwimmerMemberships.id, { onDelete: "cascade" }),
-  seedTimeMs: integer("seed_time_ms"),
-  seedTimeSource: seedTimeSourceEnum("seed_time_source")
-    .notNull()
-    .default("no_time"),
-  entryNotes: text("entry_notes"),
-  status: meetEntryStatusEnum("status").notNull().default("draft"),
-  /** Swum outside the scored field (Hy-Tek E1 col 84 `X`). */
-  exhibition: boolean("exhibition").notNull().default(false),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+export const meetEntries = pgTable(
+  "meet_entries",
+  {
+    id: text("id").primaryKey(),
+    meetId: text("meet_id")
+      .notNull()
+      .references(() => meets.id, { onDelete: "cascade" }),
+    meetEventId: text("meet_event_id")
+      .notNull()
+      .references(() => meetEvents.id, { onDelete: "cascade" }),
+    membershipId: text("membership_id")
+      .notNull()
+      .references(() => teamSwimmerMemberships.id, { onDelete: "cascade" }),
+    seedTimeMs: integer("seed_time_ms"),
+    seedTimeSource: seedTimeSourceEnum("seed_time_source")
+      .notNull()
+      .default("no_time"),
+    entryNotes: text("entry_notes"),
+    status: meetEntryStatusEnum("status").notNull().default("draft"),
+    /** Swum outside the scored field (Hy-Tek E1 col 84 `X`). */
+    exhibition: boolean("exhibition").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("meet_entries_meet_id_idx").on(table.meetId),
+    index("meet_entries_membership_id_idx").on(table.membershipId),
+    index("meet_entries_meet_event_id_idx").on(table.meetEventId),
+  ],
+);
 
-export const meetResults = pgTable("meet_results", {
-  id: text("id").primaryKey(),
-  meetId: text("meet_id")
-    .notNull()
-    .references(() => meets.id, { onDelete: "cascade" }),
-  meetEventId: text("meet_event_id")
-    .notNull()
-    .references(() => meetEvents.id, { onDelete: "cascade" }),
-  swimmerId: text("swimmer_id")
-    .notNull()
-    .references(() => swimmers.id, { onDelete: "cascade" }),
-  timeMs: integer("time_ms").notNull(),
-  previousBestTimeMs: integer("previous_best_time_ms"),
-  place: integer("place"),
-  isDq: boolean("is_dq").notNull().default(false),
-  splitTimes: jsonb("split_times"),
-  /** Championship round when known (Hy-Tek E2/HYV): prelim/swimoff/finals. */
-  round: meetResultRoundEnum("round"),
-  heat: integer("heat"),
-  lane: integer("lane"),
-  /** Swum outside the scored field (Hy-Tek E1 col 84 `X`). */
-  exhibition: boolean("exhibition").notNull().default(false),
-  /** Hy-Tek DQ reason code (E2/H1), e.g. "1F" false start, "2K" kick. */
-  dqCode: text("dq_code"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const meetResults = pgTable(
+  "meet_results",
+  {
+    id: text("id").primaryKey(),
+    meetId: text("meet_id")
+      .notNull()
+      .references(() => meets.id, { onDelete: "cascade" }),
+    meetEventId: text("meet_event_id")
+      .notNull()
+      .references(() => meetEvents.id, { onDelete: "cascade" }),
+    swimmerId: text("swimmer_id")
+      .notNull()
+      .references(() => swimmers.id, { onDelete: "cascade" }),
+    timeMs: integer("time_ms").notNull(),
+    previousBestTimeMs: integer("previous_best_time_ms"),
+    place: integer("place"),
+    isDq: boolean("is_dq").notNull().default(false),
+    splitTimes: jsonb("split_times"),
+    /** Championship round when known (Hy-Tek E2/HYV): prelim/swimoff/finals. */
+    round: meetResultRoundEnum("round"),
+    heat: integer("heat"),
+    lane: integer("lane"),
+    /** Swum outside the scored field (Hy-Tek E1 col 84 `X`). */
+    exhibition: boolean("exhibition").notNull().default(false),
+    /** Hy-Tek DQ reason code (E2/H1), e.g. "1F" false start, "2K" kick. */
+    dqCode: text("dq_code"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("meet_results_meet_id_idx").on(table.meetId),
+    index("meet_results_swimmer_id_idx").on(table.swimmerId),
+    index("meet_results_meet_event_id_idx").on(table.meetEventId),
+  ],
+);
 
 export const swimmerBestTimes = pgTable("swimmer_best_times", {
   id: text("id").primaryKey(),
@@ -218,24 +256,32 @@ export const swimmerTimeEntries = pgTable("swimmer_time_entries", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const meetRelayLegs = pgTable("meet_relay_legs", {
-  id: text("id").primaryKey(),
-  meetId: text("meet_id")
-    .notNull()
-    .references(() => meets.id, { onDelete: "cascade" }),
-  meetEventId: text("meet_event_id")
-    .notNull()
-    .references(() => meetEvents.id, { onDelete: "cascade" }),
-  /** A / B / C — one Hy-Tek F1 relay; legs 1–4 primary, 5–8 alternates. */
-  relayLetter: text("relay_letter").notNull().default("A"),
-  legOrder: integer("leg_order").notNull(),
-  membershipId: text("membership_id")
-    .notNull()
-    .references(() => teamSwimmerMemberships.id, { onDelete: "cascade" }),
-  stroke: text("stroke"),
-  reasoning: text("reasoning"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const meetRelayLegs = pgTable(
+  "meet_relay_legs",
+  {
+    id: text("id").primaryKey(),
+    meetId: text("meet_id")
+      .notNull()
+      .references(() => meets.id, { onDelete: "cascade" }),
+    meetEventId: text("meet_event_id")
+      .notNull()
+      .references(() => meetEvents.id, { onDelete: "cascade" }),
+    /** A / B / C — one Hy-Tek F1 relay; legs 1–4 primary, 5–8 alternates. */
+    relayLetter: text("relay_letter").notNull().default("A"),
+    legOrder: integer("leg_order").notNull(),
+    membershipId: text("membership_id")
+      .notNull()
+      .references(() => teamSwimmerMemberships.id, { onDelete: "cascade" }),
+    stroke: text("stroke"),
+    reasoning: text("reasoning"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("meet_relay_legs_meet_idx").on(table.meetId),
+    index("meet_relay_legs_membership_id_idx").on(table.membershipId),
+    index("meet_relay_legs_meet_event_id_idx").on(table.meetEventId),
+  ],
+);
 
 /** One named relay (event + A/B/C) — team seed for Hy-Tek F1. */
 export const meetRelayTeams = pgTable(
@@ -262,6 +308,8 @@ export const meetRelayTeams = pgTable(
       table.meetEventId,
       table.relayLetter,
     ),
+    index("meet_relay_teams_meet_idx").on(table.meetId),
+    index("meet_relay_teams_meet_event_id_idx").on(table.meetEventId),
   ],
 );
 
@@ -294,6 +342,8 @@ export const meetRelayResults = pgTable(
       table.relayLetter,
       table.round,
     ),
+    index("meet_relay_results_meet_idx").on(table.meetId),
+    index("meet_relay_results_meet_event_id_idx").on(table.meetEventId),
   ],
 );
 
@@ -317,6 +367,7 @@ export const meetRelayResultSplits = pgTable(
       table.resultId,
       table.legOrder,
     ),
+    index("meet_relay_result_splits_membership_id_idx").on(table.membershipId),
   ],
 );
 
@@ -329,43 +380,65 @@ export type MeetEventTemplateRow = {
   qualifyingTimeMs?: number | null;
 };
 
-export const meetEventTemplates = pgTable("meet_event_templates", {
-  id: text("id").primaryKey(),
-  organizationId: text("organization_id")
-    .notNull()
-    .references(() => organization.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  course: courseEnum("course").notNull().default("SCY"),
-  events: jsonb("events").$type<MeetEventTemplateRow[]>().notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+export const meetEventTemplates = pgTable(
+  "meet_event_templates",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    course: courseEnum("course").notNull().default("SCY"),
+    events: jsonb("events").$type<MeetEventTemplateRow[]>().notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [index("meet_event_templates_org_idx").on(table.organizationId)],
+);
 
-export const timeStandardSets = pgTable("time_standard_sets", {
-  id: text("id").primaryKey(),
-  organizationId: text("organization_id")
-    .notNull()
-    .references(() => organization.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  course: courseEnum("course").notNull().default("SCY"),
-  seasonLabel: text("season_label"),
-  sourceFilePath: text("source_file_path"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+export const timeStandardSets = pgTable(
+  "time_standard_sets",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    course: courseEnum("course").notNull().default("SCY"),
+    seasonLabel: text("season_label"),
+    sourceFilePath: text("source_file_path"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("time_standard_sets_organization_id_idx").on(table.organizationId),
+  ],
+);
 
-export const timeStandardCuts = pgTable("time_standard_cuts", {
-  id: text("id").primaryKey(),
-  setId: text("set_id")
-    .notNull()
-    .references(() => timeStandardSets.id, { onDelete: "cascade" }),
-  eventKey: text("event_key")
-    .notNull()
-    .references(() => swimEvents.eventKey),
-  gender: eventGenderEnum("gender").notNull(),
-  ageGroup: text("age_group").notNull(),
-  timeMs: integer("time_ms").notNull(),
-});
+export const timeStandardCuts = pgTable(
+  "time_standard_cuts",
+  {
+    id: text("id").primaryKey(),
+    setId: text("set_id")
+      .notNull()
+      .references(() => timeStandardSets.id, { onDelete: "cascade" }),
+    eventKey: text("event_key")
+      .notNull()
+      .references(() => swimEvents.eventKey),
+    gender: eventGenderEnum("gender").notNull(),
+    ageGroup: text("age_group").notNull(),
+    timeMs: integer("time_ms").notNull(),
+  },
+  (table) => [
+    index("time_standard_cuts_set_id_idx").on(table.setId),
+    index("time_standard_cuts_lookup_idx").on(
+      table.setId,
+      table.eventKey,
+      table.gender,
+      table.ageGroup,
+    ),
+  ],
+);
 
 export const meetsRelations = relations(meets, ({ many, one }) => ({
   organization: one(organization, {

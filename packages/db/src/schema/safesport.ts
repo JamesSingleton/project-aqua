@@ -1,5 +1,13 @@
 import { relations } from "drizzle-orm";
-import { jsonb, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  index,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 import { member, organization } from "./auth";
 import { teamSeasons } from "./seasons";
 import { teamSwimmerMemberships } from "./swimmers";
@@ -48,70 +56,104 @@ export const reportStatusEnum = pgEnum("report_status", [
   "referred_to_center",
 ]);
 
-export const staffCredentials = pgTable("staff_credentials", {
-  id: text("id").primaryKey(),
-  memberId: text("member_id")
-    .notNull()
-    .references(() => member.id, { onDelete: "cascade" }),
-  credentialType: credentialTypeEnum("credential_type").notNull(),
-  status: credentialStatusEnum("status").notNull().default("not_started"),
-  completedAt: timestamp("completed_at"),
-  expiresAt: timestamp("expires_at"),
-  externalId: text("external_id"),
-  verifiedBy: credentialVerifiedByEnum("verified_by")
-    .notNull()
-    .default("manual_upload"),
-  documentUrl: text("document_url"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+export const staffCredentials = pgTable(
+  "staff_credentials",
+  {
+    id: text("id").primaryKey(),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => member.id, { onDelete: "cascade" }),
+    credentialType: credentialTypeEnum("credential_type").notNull(),
+    status: credentialStatusEnum("status").notNull().default("not_started"),
+    completedAt: timestamp("completed_at"),
+    expiresAt: timestamp("expires_at"),
+    externalId: text("external_id"),
+    verifiedBy: credentialVerifiedByEnum("verified_by")
+      .notNull()
+      .default("manual_upload"),
+    documentUrl: text("document_url"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_staff_credentials_member").on(
+      table.memberId,
+      table.credentialType,
+    ),
+  ],
+);
 
-export const maappAcknowledgments = pgTable("maapp_acknowledgments", {
-  id: text("id").primaryKey(),
-  membershipId: text("membership_id")
-    .notNull()
-    .references(() => teamSwimmerMemberships.id, { onDelete: "cascade" }),
-  seasonId: text("season_id")
-    .notNull()
-    .references(() => teamSeasons.id, { onDelete: "restrict" }),
-  acknowledgedBy: acknowledgmentByEnum("acknowledged_by").notNull(),
-  signerName: text("signer_name").notNull(),
-  signerEmail: text("signer_email").notNull(),
-  acknowledgedAt: timestamp("acknowledged_at").notNull().defaultNow(),
-  documentVersion: text("document_version").notNull().default("2025"),
-  ipAddress: text("ip_address"),
-  userAgent: text("user_agent"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const maappAcknowledgments = pgTable(
+  "maapp_acknowledgments",
+  {
+    id: text("id").primaryKey(),
+    membershipId: text("membership_id")
+      .notNull()
+      .references(() => teamSwimmerMemberships.id, { onDelete: "cascade" }),
+    seasonId: text("season_id")
+      .notNull()
+      .references(() => teamSeasons.id, { onDelete: "restrict" }),
+    acknowledgedBy: acknowledgmentByEnum("acknowledged_by").notNull(),
+    signerName: text("signer_name").notNull(),
+    signerEmail: text("signer_email").notNull(),
+    acknowledgedAt: timestamp("acknowledged_at").notNull().defaultNow(),
+    documentVersion: text("document_version").notNull().default("2025"),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("idx_maapp_ack_membership_season").on(
+      table.membershipId,
+      table.seasonId,
+    ),
+    index("maapp_acknowledgments_season_id_idx").on(table.seasonId),
+  ],
+);
 
-export const safesportReports = pgTable("safesport_reports", {
-  id: text("id").primaryKey(),
-  organizationId: text("organization_id")
-    .notNull()
-    .references(() => organization.id, { onDelete: "cascade" }),
-  reportedByUserId: text("reported_by_user_id").notNull(),
-  subjectDescription: text("subject_description").notNull(),
-  category: reportCategoryEnum("category").notNull(),
-  status: reportStatusEnum("status").notNull().default("submitted"),
-  referredToCenterAt: timestamp("referred_to_center_at"),
-  resolutionNotes: text("resolution_notes"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  resolvedAt: timestamp("resolved_at"),
-});
+export const safesportReports = pgTable(
+  "safesport_reports",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    reportedByUserId: text("reported_by_user_id").notNull(),
+    subjectDescription: text("subject_description").notNull(),
+    category: reportCategoryEnum("category").notNull(),
+    status: reportStatusEnum("status").notNull().default("submitted"),
+    referredToCenterAt: timestamp("referred_to_center_at"),
+    resolutionNotes: text("resolution_notes"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    resolvedAt: timestamp("resolved_at"),
+  },
+  (table) => [
+    index("safesport_reports_organization_id_idx").on(table.organizationId),
+  ],
+);
 
-export const auditLog = pgTable("audit_log", {
-  id: text("id").primaryKey(),
-  organizationId: text("organization_id")
-    .notNull()
-    .references(() => organization.id, { onDelete: "cascade" }),
-  actorUserId: text("actor_user_id").notNull(),
-  action: text("action").notNull(),
-  resourceType: text("resource_type").notNull(),
-  resourceId: text("resource_id").notNull(),
-  metadata: jsonb("metadata"),
-  ipAddress: text("ip_address"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const auditLog = pgTable(
+  "audit_log",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    actorUserId: text("actor_user_id").notNull(),
+    action: text("action").notNull(),
+    resourceType: text("resource_type").notNull(),
+    resourceId: text("resource_id").notNull(),
+    metadata: jsonb("metadata"),
+    ipAddress: text("ip_address"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_audit_log_org_created").on(
+      table.organizationId,
+      table.createdAt,
+    ),
+  ],
+);
 
 export const staffCredentialsRelations = relations(
   staffCredentials,

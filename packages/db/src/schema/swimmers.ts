@@ -1,7 +1,8 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   date,
+  index,
   pgEnum,
   pgTable,
   text,
@@ -70,6 +71,11 @@ export const teamSwimmerMemberships = pgTable(
       table.organizationId,
       table.swimmerId,
     ),
+    index("idx_team_swimmer_memberships_org").on(table.organizationId),
+    index("team_swimmer_memberships_swimmer_id_idx").on(table.swimmerId),
+    index("team_swimmer_memberships_org_active_idx")
+      .on(table.organizationId)
+      .where(sql`${table.status} = 'active'`),
   ],
 );
 

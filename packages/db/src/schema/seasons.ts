@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import {
   boolean,
   date,
+  index,
   integer,
   pgEnum,
   pgTable,
@@ -75,6 +76,11 @@ export const seasonEnrollments = pgTable(
       table.seasonId,
       table.membershipId,
     ),
+    index("season_enrollments_season_status_idx").on(
+      table.seasonId,
+      table.status,
+    ),
+    index("season_enrollments_membership_idx").on(table.membershipId),
   ],
 );
 
