@@ -16,6 +16,7 @@ import { DownloadEntriesPdfButton } from "./download-entries-pdf-button";
 import { loadMeetEntriesReport } from "./load-meet-entries-report";
 import { loadSplitSheetReport } from "./load-split-sheet-report";
 import { ReportAlternatesToggle } from "./report-alternates-toggle";
+import { ReportBlankRelaysToggle } from "./report-blank-relays-toggle";
 import { ReportDocumentToggle } from "./report-document-toggle";
 import { ReportGroupToggle } from "./report-group-toggle";
 import { ReportSplitIntervalToggle } from "./report-split-interval-toggle";
@@ -48,6 +49,7 @@ function ReportToolbar({
   groupBy,
   documentKind,
   splitInterval,
+  blankRelayLines,
   title,
   description,
 }: {
@@ -58,6 +60,7 @@ function ReportToolbar({
   groupBy: "event" | "swimmer";
   documentKind: "entries" | "splits";
   splitInterval?: SplitCaptureInterval;
+  blankRelayLines?: boolean;
   title: string;
   description: string;
 }) {
@@ -80,6 +83,11 @@ function ReportToolbar({
               <ReportSplitIntervalToggle />
             </Suspense>
           ) : null}
+          {documentKind === "splits" ? (
+            <Suspense>
+              <ReportBlankRelaysToggle />
+            </Suspense>
+          ) : null}
           <Suspense>
             <ReportAlternatesToggle />
           </Suspense>
@@ -93,6 +101,7 @@ function ReportToolbar({
         groupBy={groupBy}
         documentKind={documentKind}
         splitInterval={splitInterval}
+        blankRelayLines={blankRelayLines}
       />
     </div>
   );
@@ -108,11 +117,13 @@ export default async function MeetEntryReportPage({
     group?: string;
     doc?: string;
     split?: string;
+    blankRelays?: string;
   }>;
 }) {
   const { teamId, meetId } = await params;
-  const { alts, group, doc, split } = await searchParams;
+  const { alts, group, doc, split, blankRelays } = await searchParams;
   const includeRelayAlternates = alts === "1";
+  const blankRelayLines = blankRelays === "1";
   const groupBy: "event" | "swimmer" =
     group === "swimmer" ? "swimmer" : "event";
   const splitInterval = parseSplitCaptureInterval(split);
@@ -122,7 +133,7 @@ export default async function MeetEntryReportPage({
     const report: SplitSheetReport | null = await loadSplitSheetReport(
       teamId,
       meetId,
-      { ...reportOptions, interval: splitInterval },
+      { ...reportOptions, interval: splitInterval, blankRelayLines },
     );
     if (!report) notFound();
     const wide = report.pageOrientation === "landscape";
@@ -144,6 +155,7 @@ export default async function MeetEntryReportPage({
             groupBy={groupBy}
             documentKind="splits"
             splitInterval={splitInterval}
+            blankRelayLines={blankRelayLines}
             title="Split sheet"
             description="Blank boxes for writing splits on paper. Times are not saved in Aqua."
           />

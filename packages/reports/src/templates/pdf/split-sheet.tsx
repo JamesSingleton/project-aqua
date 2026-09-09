@@ -7,12 +7,22 @@ import {
 } from "./components/chrome";
 import { ensureReportFonts } from "./fonts";
 
+function relayLineupLabel(marks: SplitSheetMark[]): string | null {
+  const names = marks.flatMap((mark) =>
+    mark.athleteName?.trim() ? [mark.athleteName.trim()] : [],
+  );
+  if (names.length === 0) return null;
+  return `Lineup: ${names.join(" · ")}`;
+}
+
 function SplitBoxes({
   marks,
   named = false,
+  blankNames = false,
 }: {
   marks: SplitSheetMark[];
   named?: boolean;
+  blankNames?: boolean;
 }) {
   return (
     <View
@@ -50,7 +60,15 @@ function SplitBoxes({
               {mark.label}
             </Text>
           </View>
-          {named ? (
+          {named && blankNames ? (
+            <View
+              style={{
+                height: 12,
+                borderBottomWidth: mark.isFinal ? 0 : 0.8,
+                borderBottomColor: colors.ink,
+              }}
+            />
+          ) : named ? (
             <Text
               wrap={false}
               style={{
@@ -62,7 +80,7 @@ function SplitBoxes({
             >
               {mark.athleteName ?? " "}
             </Text>
-          ) : mark.athleteName ? (
+          ) : !named && mark.athleteName ? (
             <Text
               style={{
                 fontSize: 6.5,
@@ -258,7 +276,22 @@ export function SplitSheetPdfDocument({
                           title={`${event.title} ${team.letter}`}
                           trailing={team.seedLabel}
                         />
-                        <SplitBoxes marks={team.marks} named />
+                        {report.blankRelayLines ? (
+                          <Text
+                            style={{
+                              fontSize: 8,
+                              color: colors.muted,
+                              marginBottom: 4,
+                            }}
+                          >
+                            {relayLineupLabel(team.marks) ?? ""}
+                          </Text>
+                        ) : null}
+                        <SplitBoxes
+                          marks={team.marks}
+                          named
+                          blankNames={report.blankRelayLines}
+                        />
                       </View>
                     ))}
                   </View>

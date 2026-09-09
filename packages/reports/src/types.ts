@@ -165,6 +165,8 @@ export type SplitSheetSwimmer = {
 export type SplitSheetReport = ReportChrome & {
   groupBy: MeetEntriesReportGroupBy;
   pageOrientation: SplitSheetPageOrientation;
+  /** When true, relay boxes are blank; planned names print as a lineup line. */
+  blankRelayLines: boolean;
   events: SplitSheetEvent[];
   swimmers: SplitSheetSwimmer[];
 };

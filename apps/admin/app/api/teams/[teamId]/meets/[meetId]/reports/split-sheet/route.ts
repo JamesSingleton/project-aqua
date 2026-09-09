@@ -15,6 +15,7 @@ export async function GET(
   const url = new URL(request.url);
   const preview = url.searchParams.get("preview") === "true";
   const includeRelayAlternates = url.searchParams.get("alts") === "1";
+  const blankRelayLines = url.searchParams.get("blankRelays") === "1";
 
   try {
     const report = await loadSplitSheetReport(teamId, meetId, {
@@ -22,6 +23,7 @@ export async function GET(
       groupBy:
         url.searchParams.get("group") === "swimmer" ? "swimmer" : "event",
       interval: parseSplitCaptureInterval(url.searchParams.get("split")),
+      blankRelayLines,
     });
     if (!report) {
       return new Response("Meet not found", { status: 404 });

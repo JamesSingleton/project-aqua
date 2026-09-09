@@ -151,6 +151,7 @@ describe("buildSplitSheetReport", () => {
     expect(report.reportTitle).toBe("Split sheet");
     expect(report.pageOrientation).toBe("portrait");
     expect(report.groupBy).toBe("event");
+    expect(report.blankRelayLines).toBe(false);
     expect(report.teamCode).toBe("MARI-AZ");
     expect(report.location).toBe("Chandler High School");
 
@@ -202,6 +203,68 @@ describe("buildSplitSheetReport", () => {
         "Overall",
       ]);
       expect(relayAlts.teams[0]?.marks[4]?.athleteName).toContain("Ruben");
+    }
+  });
+
+  it("keeps planned relay names when blankRelayLines is on", () => {
+    const snapshot = buildMeetLineupSnapshot({
+      meet: { name: "Dual", startDate: "2026-09-12", course: "SCY" },
+      team: { name: "Maricopa" },
+      events: [
+        {
+          id: "e1",
+          eventNumber: 1,
+          stroke: "medley_relay",
+          distance: 200,
+          gender: "male",
+          eventKey: "200_medley_relay_scy_m",
+        },
+      ],
+      entries: [],
+      relayLegs: [
+        {
+          meetEventId: "e1",
+          relayLetter: "A",
+          legOrder: 1,
+          membershipId: "m-orion",
+        },
+        {
+          meetEventId: "e1",
+          relayLetter: "A",
+          legOrder: 2,
+          membershipId: "m-dante",
+        },
+      ],
+      relayTeams: [
+        { meetEventId: "e1", relayLetter: "A", seedTimeMs: 112_540 },
+      ],
+      members: [
+        {
+          membershipId: "m-orion",
+          swimmerId: "s-orion",
+          firstName: "Orion",
+          lastName: "Chaturvedi",
+          gender: "male",
+          classYear: "SR",
+        },
+        {
+          membershipId: "m-dante",
+          swimmerId: "s-dante",
+          firstName: "Dante",
+          lastName: "Flores",
+          gender: "male",
+        },
+      ],
+    });
+
+    const report = buildSplitSheetReport(snapshot, { blankRelayLines: true });
+    expect(report.blankRelayLines).toBe(true);
+    const relay = report.events[0];
+    expect(relay?.kind).toBe("relay");
+    if (relay?.kind === "relay") {
+      expect(
+        relay.teams[0]?.marks.map((m) => m.athleteName).filter(Boolean),
+      ).toEqual(["Orion Chaturvedi (SR)", "Dante Flores"]);
     }
   });
 

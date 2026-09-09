@@ -61,13 +61,24 @@ function EventHeading({
   );
 }
 
+function relayLineupLabel(marks: SplitSheetMark[]): string | null {
+  const names = marks.flatMap((mark) =>
+    mark.athleteName?.trim() ? [mark.athleteName.trim()] : [],
+  );
+  if (names.length === 0) return null;
+  return `Lineup: ${names.join(" · ")}`;
+}
+
 function SplitBoxes({
   marks,
   named = false,
+  blankNames = false,
 }: {
   marks: SplitSheetMark[];
   /** Relay legs: share the row and set names at reading size. */
   named?: boolean;
+  /** Write-in underline instead of the planned name. */
+  blankNames?: boolean;
 }) {
   return (
     <div
@@ -111,7 +122,14 @@ function SplitBoxes({
               {mark.label}
             </span>
           </div>
-          {named ? (
+          {named && blankNames ? (
+            <div
+              style={{
+                height: 18,
+                borderBottom: mark.isFinal ? "none" : `1px solid ${ink}`,
+              }}
+            />
+          ) : named ? (
             <div
               style={{
                 fontSize: 12,
@@ -125,7 +143,7 @@ function SplitBoxes({
             >
               {mark.athleteName ?? "\u00a0"}
             </div>
-          ) : mark.athleteName ? (
+          ) : !named && mark.athleteName ? (
             <div style={{ fontSize: 10, lineHeight: 1.25 }}>
               {mark.athleteName}
             </div>
@@ -144,7 +162,13 @@ function SplitBoxes({
   );
 }
 
-function EventSection({ event }: { event: SplitSheetEvent }) {
+function EventSection({
+  event,
+  blankRelayLines,
+}: {
+  event: SplitSheetEvent;
+  blankRelayLines: boolean;
+}) {
   if (event.kind === "individual") {
     return (
       <section style={{ marginBottom: 22 }}>
@@ -196,7 +220,19 @@ function EventSection({ event }: { event: SplitSheetEvent }) {
             title={`${event.title} ${team.letter}`}
             trailing={team.seedLabel}
           />
-          <SplitBoxes marks={team.marks} named />
+          {blankRelayLines ? (
+            <div
+              style={{
+                fontSize: 12,
+                color: muted,
+                marginBottom: 8,
+                marginTop: -4,
+              }}
+            >
+              {relayLineupLabel(team.marks)}
+            </div>
+          ) : null}
+          <SplitBoxes marks={team.marks} named blankNames={blankRelayLines} />
         </div>
       ))}
     </section>
@@ -362,7 +398,11 @@ export function SplitSheetHtmlReport({
               </section>
             ))
           : report.events.map((event) => (
-              <EventSection key={event.eventId} event={event} />
+              <EventSection
+                key={event.eventId}
+                event={event}
+                blankRelayLines={report.blankRelayLines}
+              />
             ))}
       </div>
     </article>

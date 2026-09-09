@@ -14,6 +14,7 @@ export function DownloadEntriesPdfButton({
   groupBy = "event",
   documentKind = "entries",
   splitInterval,
+  blankRelayLines = false,
 }: {
   teamId: string;
   meetId: string;
@@ -22,6 +23,7 @@ export function DownloadEntriesPdfButton({
   groupBy?: "event" | "swimmer";
   documentKind?: "entries" | "splits";
   splitInterval?: SplitCaptureInterval;
+  blankRelayLines?: boolean;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -36,6 +38,9 @@ export function DownloadEntriesPdfButton({
       if (groupBy === "swimmer") params.set("group", "swimmer");
       if (documentKind === "splits" && splitInterval) {
         params.set("split", String(splitInterval));
+      }
+      if (documentKind === "splits" && blankRelayLines) {
+        params.set("blankRelays", "1");
       }
       const query = params.toString();
       const slug = documentKind === "splits" ? "split-sheet" : "entries";

@@ -152,6 +152,8 @@ export type BuildSplitSheetReportOptions = {
   groupBy?: "event" | "swimmer";
   /** Individual events only. Omitted = auto cadence. */
   interval?: SplitCaptureInterval;
+  /** Blank relay boxes; planned lineup still listed under the heading. */
+  blankRelayLines?: boolean;
 };
 
 function reportTeamCode(team: MeetLineupSnapshot["team"]): string | null {
@@ -344,6 +346,7 @@ export function buildSplitSheetReport(
     }),
     groupBy: options.groupBy === "swimmer" ? "swimmer" : "event",
     pageOrientation: pageOrientationFor(events),
+    blankRelayLines: options.blankRelayLines === true,
     events,
     swimmers: groupSplitSheetBySwimmer(events),
   };

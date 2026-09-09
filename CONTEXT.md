@@ -13,7 +13,7 @@ The Hy-Tek / SDIF files a coach sends to a meet host (HY3, CL2, SDIF). Built by 
 _Avoid_: event file, EV3, HYV
 
 **Paper report**:
-The Team Manager–style individual meet entries document a coach reviews, plus a split sheet with blank write-in boxes for race splits. Both read the same meet lineup snapshot and do not drop not-going swimmers. Default omits relay alternates; coaches can include them. Split cadence (25/50/100) is a print-only override and is not saved.
+The Team Manager–style individual meet entries document a coach reviews, plus a split sheet with blank write-in boxes for race splits. Both read the same meet lineup snapshot and do not drop not-going swimmers. Default omits relay alternates; coaches can include them. Split cadence (25/50/100) is a print-only override and is not saved. Blank relay lines (names off the boxes, planned lineup still listed) is opt-in and off by default.
 _Avoid_: CSV, host pack, timing console
 
 **Program view**:

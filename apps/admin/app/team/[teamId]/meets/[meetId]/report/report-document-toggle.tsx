@@ -15,6 +15,7 @@ export function ReportDocumentToggle() {
     if (next === "entries") {
       params.delete("doc");
       params.delete("split");
+      params.delete("blankRelays");
     } else {
       params.set("doc", "splits");
     }

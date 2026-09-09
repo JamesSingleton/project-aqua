@@ -14,6 +14,7 @@ export async function loadSplitSheetReport(
     includeRelayAlternates?: boolean;
     groupBy?: "event" | "swimmer";
     interval?: SplitCaptureInterval;
+    blankRelayLines?: boolean;
   } = {},
 ): Promise<SplitSheetReport | null> {
   const session = await getSession();
@@ -34,5 +35,6 @@ export async function loadSplitSheetReport(
     includeRelayAlternates: options.includeRelayAlternates === true,
     groupBy: options.groupBy === "swimmer" ? "swimmer" : "event",
     interval: options.interval,
+    blankRelayLines: options.blankRelayLines === true,
   });
 }
