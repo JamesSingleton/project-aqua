@@ -106,6 +106,18 @@ function seedSortKey(seedTimeMs: number | null): number {
   return seedTimeMs;
 }
 
+/** Keep the first row per swimmer (call after seed sort). Duplicate entries collapse. */
+export function uniqueIndividualsByMembership<
+  T extends { membershipId: string },
+>(entries: T[]): T[] {
+  const seen = new Set<string>();
+  return entries.filter((entry) => {
+    if (seen.has(entry.membershipId)) return false;
+    seen.add(entry.membershipId);
+    return true;
+  });
+}
+
 function reportTeamCode(team: MeetLineupSnapshot["team"]): string | null {
   const code = normalizeTeamCode(team.teamCode);
   if (!code) return null;
@@ -206,18 +218,21 @@ export function buildMeetEntriesReport(
       continue;
     }
 
-    const eventEntries = snapshot.individuals
-      .filter(
-        (entry) => entry.meetEventId === event.id && !entry.inclusion.scratched,
-      )
-      .slice()
-      .sort((a, b) => {
-        const seed = seedSortKey(a.seedTimeMs) - seedSortKey(b.seedTimeMs);
-        if (seed !== 0) return seed;
-        return `${a.lastName}${a.firstName}`.localeCompare(
-          `${b.lastName}${b.firstName}`,
-        );
-      });
+    const eventEntries = uniqueIndividualsByMembership(
+      snapshot.individuals
+        .filter(
+          (entry) =>
+            entry.meetEventId === event.id && !entry.inclusion.scratched,
+        )
+        .slice()
+        .sort((a, b) => {
+          const seed = seedSortKey(a.seedTimeMs) - seedSortKey(b.seedTimeMs);
+          if (seed !== 0) return seed;
+          return `${a.lastName}${a.firstName}`.localeCompare(
+            `${b.lastName}${b.firstName}`,
+          );
+        }),
+    );
 
     if (eventEntries.length === 0) continue;
 
@@ -228,6 +243,7 @@ export function buildMeetEntriesReport(
         else if (entry.gender === "male") maleIndividualEntries += 1;
 
         return {
+          entryId: entry.id,
           membershipId: entry.membershipId,
           name: formatAthleteDisplayName(
             entry.firstName,

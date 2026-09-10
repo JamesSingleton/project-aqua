@@ -14,10 +14,6 @@ import { notFound } from "next/navigation";
 import { toSharedDraftQuota } from "@/lib/draft-quota";
 import { getMeetDetailAction } from "../../../actions";
 import { resolvedAssociationCapsForMeet } from "../../../association-caps";
-import {
-  getMeetRelayLegsAction,
-  getMeetRelayTeamsAction,
-} from "../../../relay-actions";
 import { EntriesWorkspace } from "../../entries-workspace";
 
 export async function generateMetadata({
@@ -51,12 +47,14 @@ export default async function MeetEntriesPage({
 }) {
   const { teamId, meetId } = await params;
   const session = await getSession();
-  const detail = await getMeetDetailAction(teamId, meetId);
+  const [detail, plan, draftQuotaStatus] = await Promise.all([
+    getMeetDetailAction(teamId, meetId),
+    getTeamPlan(teamId),
+    getAiQuotaStatus(teamId),
+  ]);
   if (!detail) notFound();
 
-  const plan = await getTeamPlan(teamId);
   const canSuggestLineup = planHasFeature(plan, "lineup_suggestions");
-  const draftQuotaStatus = await getAiQuotaStatus(teamId);
   const draftQuota = toSharedDraftQuota(draftQuotaStatus);
 
   const {
@@ -66,10 +64,10 @@ export default async function MeetEntriesPage({
     commitments,
     roster,
     bestTimes,
+    relayLegs,
+    relayTeams,
   } = detail;
   const events = allEvents.filter((e) => e.eventKind !== "dive");
-  const relayLegs = await getMeetRelayLegsAction(teamId, meetId);
-  const relayTeams = await getMeetRelayTeamsAction(teamId, meetId);
   const nameByMembership = new Map(
     roster.map(
       (r) => [r.membershipId, `${r.firstName} ${r.lastName}`] as const,

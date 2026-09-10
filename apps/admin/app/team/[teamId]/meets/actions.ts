@@ -25,6 +25,7 @@ import {
   getMeetEntriesDetailed,
   getMeetEvents,
   getMeetRelayLegs,
+  getMeetRelayTeams,
   getMeets,
   getRosterBestTimesForEvents,
   replaceMeetRelayLegs,
@@ -93,6 +94,7 @@ import {
 } from "@project-aqua/swim-formats/meet";
 import { exportSdif } from "@project-aqua/swim-formats/sdif";
 import { revalidatePath } from "next/cache";
+import { cache } from "react";
 import { resolvedAssociationCapsForMeet } from "./association-caps";
 import {
   loadMeetLineupSnapshot,
@@ -1198,7 +1200,11 @@ export async function importMeetFileAction(
       });
     }
 
-    async function eventIdFor(num?: number) {
+    async function eventIdFor(
+      num?: number,
+      options?: { allowFallback?: boolean },
+    ) {
+      const allowFallback = options?.allowFallback !== false;
       if (num != null && eventIdByNumber.has(num)) {
         return eventIdByNumber.get(num)!;
       }
@@ -1223,6 +1229,7 @@ export async function importMeetFileAction(
         fallbackEventId ??= eventId;
         return eventId;
       }
+      if (!allowFallback) return undefined;
       if (fallbackEventId) return fallbackEventId;
       const fallbackKey = `50_free_${parsed.course.toLowerCase()}_m`;
       const eventId = await addMeetEvent(meetId!, {
@@ -1270,6 +1277,10 @@ export async function importMeetFileAction(
       }
 
       const meetEventId = await eventIdFor(entry.eventNumber);
+      if (!meetEventId) {
+        entriesSkipped++;
+        continue;
+      }
       const eventDetail = eventDetailById.get(meetEventId);
       if (!eventDetail) {
         entriesSkipped++;
@@ -1318,7 +1329,7 @@ export async function importMeetFileAction(
         meetEventId,
         resolved.membershipId,
         seedTimeMs,
-        entry.swimmerName,
+        undefined,
         "draft",
         seedTimeMs != null && seedTimeMs > 0 ? "personal_best" : "no_time",
         entry.exhibition,
@@ -1352,6 +1363,10 @@ export async function importMeetFileAction(
       }
 
       const meetEventId = await eventIdFor(result.eventNumber);
+      if (!meetEventId) {
+        resultsSkipped++;
+        continue;
+      }
       const eventMeta = eventDetailById.get(meetEventId);
       if (eventMeta && isRelayStroke(eventMeta.stroke, eventMeta.eventKey)) {
         resultsSkipped++;
@@ -1420,7 +1435,10 @@ export async function importMeetFileAction(
       }>
     >();
     for (const relay of parsed.relays ?? []) {
-      const meetEventId = await eventIdFor(relay.eventNumber);
+      const meetEventId = await eventIdFor(relay.eventNumber, {
+        allowFallback: false,
+      });
+      if (!meetEventId) continue;
       const letter = deriveRelayLetter(relay.relayLetter, 1);
       const legs = relayLegsByEvent.get(meetEventId) ?? [];
       let matched = 0;
@@ -1613,7 +1631,10 @@ export async function getMeetsAction(teamId: string) {
   return getMeets(teamId);
 }
 
-export async function getMeetDetailAction(teamId: string, meetId: string) {
+export const getMeetDetailAction = cache(async function getMeetDetailAction(
+  teamId: string,
+  meetId: string,
+) {
   const session = await getSession();
   await requireTeamRole(session?.user?.id, teamId, [
     "owner",
@@ -1626,12 +1647,15 @@ export async function getMeetDetailAction(teamId: string, meetId: string) {
   const meet = await getMeetById(meetId, teamId);
   if (!meet) return null;
 
-  const [events, entries, commitments, roster] = await Promise.all([
-    getMeetEvents(meetId),
-    getMeetEntriesDetailed(meetId),
-    getMeetCommitments(meetId),
-    getRoster(teamId),
-  ]);
+  const [events, entries, commitments, roster, relayLegs, relayTeams] =
+    await Promise.all([
+      getMeetEvents(meetId),
+      getMeetEntriesDetailed(meetId),
+      getMeetCommitments(meetId),
+      getRoster(teamId),
+      getMeetRelayLegs(meetId),
+      getMeetRelayTeams(meetId),
+    ]);
 
   const eventKeys = events.map((e) => e.eventKey);
   const splitKeys = events.flatMap((e) => {
@@ -1644,8 +1668,17 @@ export async function getMeetDetailAction(teamId: string, meetId: string) {
     ...new Set([...eventKeys, ...splitKeys]),
   ]);
 
-  return { meet, events, entries, commitments, roster, bestTimes };
-}
+  return {
+    meet,
+    events,
+    entries,
+    commitments,
+    roster,
+    bestTimes,
+    relayLegs,
+    relayTeams,
+  };
+});
 
 export async function setMeetAttendanceAction(
   teamId: string,

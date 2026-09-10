@@ -736,7 +736,7 @@ function cl2RelayEventCode(event: ParsedEvent | undefined): string {
   return `${event?.distance ?? 200}${digit}`;
 }
 
-/** `" FF 501"` / `" MM 1002"` — satisfies both `genderFromLine` and `extractEventCode`. */
+/** `" FF 501"` / `" MM 1002"` — satisfies both `genderFromLine` and `extractD0Event`. */
 function cl2EventToken(
   code: string | undefined,
   gender: "male" | "female" | undefined,

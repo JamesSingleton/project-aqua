@@ -179,7 +179,7 @@ function EventSection({
         />
         {event.rows.map((row) => (
           <div
-            key={`${event.eventId}-${row.membershipId}`}
+            key={`${event.eventId}-${row.entryId}`}
             style={{
               display: "flex",
               gap: 12,

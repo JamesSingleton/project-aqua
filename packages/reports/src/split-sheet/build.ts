@@ -21,6 +21,7 @@ import {
   formatMeetDateCompact,
   formatReportEventTitle,
   formatSeedLabel,
+  uniqueIndividualsByMembership,
 } from "../meet-entries/build";
 import type {
   SplitSheetEvent,
@@ -286,18 +287,21 @@ export function buildSplitSheetReport(
       continue;
     }
 
-    const eventEntries = snapshot.individuals
-      .filter(
-        (entry) => entry.meetEventId === event.id && !entry.inclusion.scratched,
-      )
-      .slice()
-      .sort((a, b) => {
-        const seed = seedSortKey(a.seedTimeMs) - seedSortKey(b.seedTimeMs);
-        if (seed !== 0) return seed;
-        return `${a.lastName}${a.firstName}`.localeCompare(
-          `${b.lastName}${b.firstName}`,
-        );
-      });
+    const eventEntries = uniqueIndividualsByMembership(
+      snapshot.individuals
+        .filter(
+          (entry) =>
+            entry.meetEventId === event.id && !entry.inclusion.scratched,
+        )
+        .slice()
+        .sort((a, b) => {
+          const seed = seedSortKey(a.seedTimeMs) - seedSortKey(b.seedTimeMs);
+          if (seed !== 0) return seed;
+          return `${a.lastName}${a.firstName}`.localeCompare(
+            `${b.lastName}${b.firstName}`,
+          );
+        }),
+    );
 
     if (eventEntries.length === 0) continue;
 
@@ -314,6 +318,7 @@ export function buildSplitSheetReport(
       title,
       genderLabel,
       rows: eventEntries.map((entry) => ({
+        entryId: entry.id,
         membershipId: entry.membershipId,
         name: formatAthleteDisplayName(
           entry.firstName,

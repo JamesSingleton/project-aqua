@@ -238,7 +238,7 @@ export function SplitSheetPdfDocument({
                     />
                     {event.rows.map((row) => (
                       <View
-                        key={`${event.eventId}-${row.membershipId}`}
+                        key={`${event.eventId}-${row.entryId}`}
                         wrap={false}
                         style={{
                           flexDirection: "row",

@@ -1,22 +1,20 @@
-import { bindRequestUser, unbindRequestUser } from "@project-aqua/db/client";
 import { headers } from "next/headers";
-import { after } from "next/server";
+import { cache } from "react";
 import { auth } from "./server";
 
-export async function getSession() {
-  const session = await auth.api.getSession({
+/**
+ * One Better Auth session lookup per request.
+ *
+ * Do not pin `aqua_app` / SET ROLE here. `bindRequestUser` reserves a single
+ * postgres.js connection for the whole request, which serializes every
+ * `Promise.all` query and can stall the pool until nothing renders.
+ * Page/action authz stays in `requireTeamRole` / `requireTeamMember`.
+ */
+export const getSession = cache(async () => {
+  return auth.api.getSession({
     headers: await headers(),
   });
-
-  if (session?.user?.id) {
-    await bindRequestUser(session.user.id);
-    after(() => {
-      void unbindRequestUser();
-    });
-  }
-
-  return session;
-}
+});
 
 export async function requireSession() {
   const session = await getSession();

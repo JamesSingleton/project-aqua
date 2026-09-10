@@ -241,6 +241,69 @@ describe("mergeParsedMeets", () => {
     });
   });
 
+  it("orders merged events by event number", () => {
+    const merged = mergeParsedMeets(
+      {
+        name: "Primary",
+        course: "SCY",
+        events: [
+          {
+            eventNumber: 22,
+            distance: 400,
+            stroke: "free_relay",
+            gender: "female",
+            eventKey: "e22",
+          },
+          {
+            eventNumber: 3,
+            distance: 200,
+            stroke: "free",
+            gender: "male",
+            eventKey: "e3",
+          },
+        ],
+        entries: [],
+        results: [],
+      },
+      [
+        {
+          name: "Supplement",
+          course: "SCY",
+          events: [
+            {
+              eventNumber: 1,
+              distance: 200,
+              stroke: "medley_relay",
+              gender: "male",
+              eventKey: "e1",
+            },
+            {
+              distance: 50,
+              stroke: "free",
+              gender: "mixed",
+              eventKey: "z-open",
+            },
+            {
+              distance: 100,
+              stroke: "free",
+              gender: "mixed",
+              eventKey: "a-open",
+            },
+          ],
+          entries: [],
+          results: [],
+        },
+      ],
+    );
+    expect(merged.events.map((e) => e.eventNumber ?? e.eventKey)).toEqual([
+      1,
+      3,
+      22,
+      "a-open",
+      "z-open",
+    ]);
+  });
+
   it("keeps primary importKind when supplement is only entries", () => {
     const merged = mergeParsedMeets({ ...primary, importKind: undefined }, [
       { ...supplement, importKind: "entries" },
@@ -276,6 +339,201 @@ describe("mergeParsedMeets", () => {
       supplement,
     ]);
     expect(merged.relays).toHaveLength(1);
+  });
+
+  it("merges companion relays that omit event number, team, and letter", () => {
+    const merged = mergeParsedMeets({ ...primary, relays: undefined }, [
+      {
+        ...supplement,
+        relays: [{ swimmerNames: ["Pat Relay"] }],
+      },
+    ]);
+    expect(merged.relays?.[0]?.swimmerNames).toEqual(["Pat Relay"]);
+  });
+
+  it("keeps primary relay legs when a companion file repeats the same team", () => {
+    const merged = mergeParsedMeets(
+      {
+        ...primary,
+        relays: [
+          {
+            eventNumber: 10,
+            teamCode: "AZMARI",
+            relayLetter: "A",
+            swimmerNames: ["Orion Chaturvedi"],
+          },
+        ],
+      },
+      [
+        {
+          ...supplement,
+          relays: [
+            {
+              eventNumber: 10,
+              teamCode: "AZMARI",
+              relayLetter: "A",
+              swimmerNames: ["Orion MARIAChaturvedi"],
+              seedTime: "1:40.00",
+            },
+          ],
+        },
+      ],
+    );
+    expect(merged.relays).toHaveLength(1);
+    expect(merged.relays?.[0]).toMatchObject({
+      swimmerNames: ["Orion Chaturvedi"],
+      seedTime: "1:40.00",
+    });
+  });
+
+  it("treats HY3 MARI and CL2 AZMARI as the same relay team", () => {
+    const merged = mergeParsedMeets(
+      {
+        ...primary,
+        relays: [
+          {
+            eventNumber: 15,
+            teamCode: "MARI",
+            relayLetter: "A",
+            swimmerNames: ["Bennett Munkirs"],
+          },
+        ],
+      },
+      [
+        {
+          ...supplement,
+          relays: [
+            {
+              eventNumber: 15,
+              teamCode: "AZMARI",
+              relayLetter: "A",
+              swimmerNames: ["Someone Else"],
+            },
+          ],
+        },
+      ],
+    );
+    expect(merged.relays).toHaveLength(1);
+    expect(merged.relays?.[0]?.swimmerNames).toEqual(["Bennett Munkirs"]);
+  });
+
+  it("matches CL2 AZMARI onto an HY3 MARI relay when the LSC prefix is reversed", () => {
+    const merged = mergeParsedMeets(
+      {
+        ...primary,
+        relays: [
+          {
+            eventNumber: 15,
+            teamCode: "AZMARI",
+            relayLetter: "A",
+            swimmerNames: ["Bennett Munkirs"],
+          },
+        ],
+      },
+      [
+        {
+          ...supplement,
+          relays: [
+            {
+              eventNumber: 15,
+              teamCode: "MARI",
+              relayLetter: "A",
+              swimmerNames: ["Someone Else"],
+            },
+          ],
+        },
+      ],
+    );
+    expect(merged.relays).toHaveLength(1);
+    expect(merged.relays?.[0]?.swimmerNames).toEqual(["Bennett Munkirs"]);
+  });
+
+  it("does not merge a named relay team with a team-less companion row", () => {
+    const merged = mergeParsedMeets(
+      {
+        ...primary,
+        relays: [
+          {
+            eventNumber: 15,
+            teamCode: "MARI",
+            relayLetter: "A",
+            swimmerNames: ["Bennett Munkirs"],
+          },
+        ],
+      },
+      [
+        {
+          ...supplement,
+          relays: [
+            {
+              eventNumber: 15,
+              relayLetter: "A",
+              swimmerNames: ["Someone Else"],
+            },
+          ],
+        },
+      ],
+    );
+    expect(merged.relays).toHaveLength(2);
+  });
+
+  it("does not merge a team-less primary relay with a named companion team", () => {
+    const merged = mergeParsedMeets(
+      {
+        ...primary,
+        relays: [
+          {
+            eventNumber: 15,
+            relayLetter: "A",
+            swimmerNames: ["Bennett Munkirs"],
+          },
+        ],
+      },
+      [
+        {
+          ...supplement,
+          relays: [
+            {
+              eventNumber: 15,
+              teamCode: "MARI",
+              relayLetter: "A",
+              swimmerNames: ["Someone Else"],
+            },
+          ],
+        },
+      ],
+    );
+    expect(merged.relays).toHaveLength(2);
+  });
+
+  it("fills empty primary relay legs from the companion file", () => {
+    const merged = mergeParsedMeets(
+      {
+        ...primary,
+        relays: [
+          {
+            eventNumber: 10,
+            teamCode: "AZMARI",
+            relayLetter: "A",
+            swimmerNames: [],
+          },
+        ],
+      },
+      [
+        {
+          ...supplement,
+          relays: [
+            {
+              eventNumber: 10,
+              teamCode: "AZMARI",
+              relayLetter: "A",
+              swimmerNames: ["Orion Chaturvedi"],
+            },
+          ],
+        },
+      ],
+    );
+    expect(merged.relays?.[0]?.swimmerNames).toEqual(["Orion Chaturvedi"]);
   });
 
   it("indexes entries and results that omit an event number", () => {

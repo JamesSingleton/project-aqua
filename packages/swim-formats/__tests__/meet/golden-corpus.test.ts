@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { strToU8, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { parseEv3, parseHyv } from "../../src/ev3/parser";
 import {
@@ -36,6 +37,23 @@ describe("golden corpus — entries packs", () => {
     expect(meet.entries.length).toBeGreaterThan(0);
     expect(meet.results.length).toBe(0);
     expect(meet.sourceFiles?.length).toBeGreaterThan(1);
+  });
+
+  it("splits Team Manager F0 team+letter glue in a HY3+CL2 entries zip", () => {
+    const hy3 = readFileSync(join(fixturesDir, "mari-entries.hy3"), "utf8");
+    const cl2 = readFileSync(join(fixturesDir, "mari-entries.cl2"), "utf8");
+    const bytes = zipSync({
+      "mari-entries.hy3": strToU8(hy3),
+      "mari-entries.cl2": strToU8(cl2),
+    });
+    const meet = parseMeetFileFromBytes(bytes, "mari-entries.zip");
+    const names = [
+      ...meet.entries.map((e) => e.swimmerName),
+      ...(meet.relays ?? []).flatMap((r) => r.swimmerNames),
+      ...(meet.athletes ?? []).map((a) => a.name),
+    ];
+    expect(names.some((name) => /MARIA/i.test(name))).toBe(false);
+    expect(names).toContain("Marlie McNamee");
   });
 });
 

@@ -342,4 +342,58 @@ describe("buildMeetEntriesReport", () => {
       expect(report.events[0].athletes[0]?.seedLabel).toBe("28.00S ex");
     }
   });
+
+  it("keeps one athlete per swimmer when the same event is entered twice", () => {
+    const snapshot = buildMeetLineupSnapshot({
+      meet: { name: "Dual", startDate: "2026-09-12", course: "SCY" },
+      team: { name: "Maricopa" },
+      events: [
+        {
+          id: "e7",
+          eventNumber: 7,
+          stroke: "free",
+          distance: 50,
+          gender: "male",
+          eventKey: "50_free_scy_m",
+        },
+      ],
+      entries: [
+        {
+          id: "dup-slow",
+          meetEventId: "e7",
+          membershipId: "m-juan",
+          seedTimeMs: 40_000,
+          exhibition: false,
+          status: "entered",
+        },
+        {
+          id: "dup-fast",
+          meetEventId: "e7",
+          membershipId: "m-juan",
+          seedTimeMs: 35_160,
+          exhibition: false,
+          status: "entered",
+        },
+      ],
+      relayLegs: [],
+      members: [
+        {
+          membershipId: "m-juan",
+          swimmerId: "s-juan",
+          firstName: "Juan",
+          lastName: "Trejo",
+          gender: "male",
+        },
+      ],
+    });
+
+    const report = buildMeetEntriesReport(snapshot);
+    expect(report.events[0]?.kind).toBe("individual");
+    if (report.events[0]?.kind === "individual") {
+      expect(report.events[0].athletes).toHaveLength(1);
+      expect(report.events[0].athletes[0]?.entryId).toBe("dup-fast");
+      expect(report.events[0].athletes[0]?.seedLabel).toBe("35.16Y");
+    }
+    expect(report.summary.totalIndividualEntries).toBe(1);
+  });
 });

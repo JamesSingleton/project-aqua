@@ -54,7 +54,7 @@ function decodeEventCode(code: string): {
   relay?: boolean;
 } | null {
   const digits = code.replace(/\D/g, "");
-  // extractEventCode / relay parsers only pass digit strings.
+  // extractD0Event / relay parsers only pass digit strings.
   const eventNumber = Number.parseInt(digits, 10);
   if (!Number.isFinite(eventNumber) || eventNumber <= 0) return null;
 
@@ -178,12 +178,43 @@ function isDqTime(time: string, line: string): boolean {
   return /^(DQ|NS|SCR|DNF)$/i.test(time.trim()) || /\bDQ\b/i.test(line);
 }
 
-/** Event code after FF/MM on D0 lines, e.g. `FF 1003 17` or `MM  501 18`. */
-function extractEventCode(line: string): string | undefined {
+function looksLikeHytekStrokeCode(code: string): boolean {
+  const decoded = decodeEventCode(code);
+  return Boolean(decoded?.distance && decoded.stroke);
+}
+
+function parsePositiveInt(raw: string): number | undefined {
+  const n = Number.parseInt(raw.trim(), 10);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
+/**
+ * D0 packs `FF 1003 20` as stroke *code* then meet event number (cols 69–72 / 73–76).
+ * 1001/501/2005 are Hy-Tek stroke codes, not program event numbers.
+ */
+function extractD0Event(line: string): {
+  eventCode?: string;
+  eventNumber?: number;
+} {
+  const colCode = line.slice(68, 72).trim();
+  const colNum = parsePositiveInt(line.slice(72, 76));
+  if (looksLikeHytekStrokeCode(colCode) && colNum != null) {
+    return { eventCode: colCode, eventNumber: colNum };
+  }
+
   const m =
-    line.match(/\b(?:FF|MM|XF|FM|MF)\s+(\d{3,4})\b/) ??
-    line.match(/\d{2}(?:FF|MM)\s+(\d{3,4})\b/);
-  return m?.[1];
+    line.match(/\b(?:FF|MM|XF|FM|MF)\s+(\d{3,4})(?:\s+(\d{1,4}))?\b/) ??
+    line.match(/\d{2}(?:FF|MM)\s+(\d{3,4})(?:\s+(\d{1,4}))?\b/);
+  if (!m) return {};
+  const first = m[1]!;
+  const second = m[2] ? parsePositiveInt(m[2]) : undefined;
+  if (looksLikeHytekStrokeCode(first) && second != null) {
+    return { eventCode: first, eventNumber: second };
+  }
+  return {
+    eventCode: first,
+    eventNumber: parsePositiveInt(first),
+  };
 }
 
 function ensureEvent(
@@ -218,41 +249,85 @@ function ensureEvent(
 }
 
 function parseRelayTeamLine(line: string): ParsedRelayEntry | null {
-  const m = line.match(/^E0\S*\s+([A-Z])\s*([A-Z0-9]+)\s+([A-Z])\s+(\d{3,4})/i);
-  if (!m) return null;
-  const decoded = decodeEventCode(m[4]!);
+  const letter = line.slice(11, 12).trim().toUpperCase();
+  const teamCode = line.slice(12, 18).trim();
+  const eventNumber = Number.parseInt(line.slice(26, 30).trim(), 10);
   const times = extractTimes(line);
   const seed = times.find((t) => !isNoTime(t.time) && t.time !== "NT");
+
+  if (letter && teamCode && Number.isFinite(eventNumber) && eventNumber > 0) {
+    return {
+      eventNumber,
+      swimmerNames: [],
+      seedTime: seed?.time,
+      teamCode,
+      relayLetter: letter,
+    };
+  }
+
+  // Vendor rows that are not column-aligned: letter, team, gender, code, meet event #.
+  const m = line.match(
+    /^E0\S*\s+([A-Z])\s*([A-Z0-9]+)\s+([A-Z])\s+(\d{3,4})\s+(\d{1,4})/i,
+  );
+  if (!m) return null;
+  const fallbackNumber = Number.parseInt(m[5]!, 10);
+  if (!Number.isFinite(fallbackNumber) || fallbackNumber <= 0) return null;
   return {
-    eventNumber: decoded?.eventNumber,
+    eventNumber: fallbackNumber,
     swimmerNames: [],
     seedTime: seed?.time,
     teamCode: m[2],
-    relayLetter: m[1],
+    relayLetter: m[1]!.toUpperCase(),
   };
 }
 
+function relayEventFromLine(line: string): {
+  eventNumber: number;
+  distance?: number;
+  stroke?: string;
+  gender?: EventGender;
+} | null {
+  const eventCode = line.slice(22, 26).trim();
+  const eventNumber = Number.parseInt(line.slice(26, 30).trim(), 10);
+  if (!Number.isFinite(eventNumber) || eventNumber <= 0) return null;
+  const decoded = eventCode ? decodeEventCode(eventCode) : null;
+  const genderLetter = line.slice(20, 21).toUpperCase();
+  const gender: EventGender | undefined =
+    genderLetter === "F" ? "female" : genderLetter === "M" ? "male" : undefined;
+  return {
+    eventNumber,
+    distance: decoded?.distance,
+    stroke: decoded?.stroke,
+    gender,
+  };
+}
+
+/**
+ * Team Manager F0 (SDIF): team code cols 16–21, relay letter col 22,
+ * `Last, First` cols 23–62. TM writes these with no separators, so
+ * `AZMARI` + `A` + `Chaturvedi, Orion` looks like `AZMARIAChaturvedi, Orion`.
+ */
 function parseRelayLegLine(line: string): {
   teamCode?: string;
   relayLetter?: string;
   swimmerName: string;
   legOrder?: number;
 } | null {
-  const m = line.match(
-    /^F0\S*\s+(\d+)\s+([A-Z0-9]+?)([A-Z])([A-Za-z][^,]*,\s*\S+)/,
-  );
-  if (!m) {
-    const name = parseHytekSwimmerName(line);
-    if (!name.swimmerName) return null;
-    return { swimmerName: name.swimmerName };
+  const teamCode = line.slice(15, 21).trim();
+  const relayLetter = line.slice(21, 22).trim();
+  const nameField = line.slice(22, 62).trim();
+  if (/^[A-Za-z].*,\s*[A-Za-z]/.test(nameField)) {
+    const parsed = parseLastFirstName(nameField);
+    return {
+      teamCode: teamCode || undefined,
+      relayLetter: relayLetter || undefined,
+      swimmerName: `${parsed.firstName} ${parsed.lastName}`.trim(),
+    };
   }
-  const parsed = parseLastFirstName(m[4]!);
-  return {
-    legOrder: Number.parseInt(m[1]!, 10) || undefined,
-    teamCode: m[2],
-    relayLetter: m[3],
-    swimmerName: `${parsed.firstName} ${parsed.lastName}`.trim(),
-  };
+
+  const name = parseHytekSwimmerName(line);
+  if (!name.swimmerName) return null;
+  return { swimmerName: name.swimmerName };
 }
 
 function parseG0Result(line: string): ParsedResult | null {
@@ -269,8 +344,7 @@ function parseG0Result(line: string): ParsedResult | null {
     special;
 
   const time = primary!.time;
-  const eventCode = extractEventCode(line);
-  let eventNumber = eventCode ? Number.parseInt(eventCode, 10) : undefined;
+  let eventNumber = extractD0Event(line).eventNumber;
   if (eventNumber == null) {
     const raw = line.substring(2, 6).trim();
     if (/^\d+$/.test(raw)) eventNumber = Number.parseInt(raw, 10);
@@ -313,7 +387,7 @@ function parseD0Athlete(
   const { swimmerName, usaMemberId } = parseHytekSwimmerName(line);
   if (!swimmerName) return;
 
-  const eventCode = extractEventCode(line);
+  const { eventCode, eventNumber } = extractD0Event(line);
   const decoded = eventCode ? decodeEventCode(eventCode) : null;
   const gender = genderFromLine(line);
   const times = extractTimes(line);
@@ -328,23 +402,16 @@ function parseD0Athlete(
     teamCode,
   });
 
-  if (
-    decoded?.eventNumber &&
-    decoded.distance &&
-    decoded.stroke &&
-    !decoded.relay
-  ) {
-    ensureEvent(meet, decoded.eventNumber, {
+  if (eventNumber && decoded?.distance && decoded.stroke && !decoded.relay) {
+    ensureEvent(meet, eventNumber, {
       distance: decoded.distance,
       stroke: decoded.stroke,
       gender,
       course,
     });
-  } else if (decoded?.eventNumber) {
-    ensureEvent(meet, decoded.eventNumber, { gender, course });
+  } else if (eventNumber) {
+    ensureEvent(meet, eventNumber, { gender, course });
   }
-
-  const eventNumber = decoded?.eventNumber;
   const swimTimes = times.filter((t) => !isNoTime(t.time) && t.time !== "NT");
   const special = times.find((t) => /^(DQ|NS|SCR|DNF)$/i.test(t.time));
   const seedTime = swimTimes[0]?.time;
@@ -484,7 +551,18 @@ export function parseCl2Meet(content: string): ParsedMeet {
       }
     } else if (type === "E0") {
       const relay = parseRelayTeamLine(line);
-      if (relay) relays.push(relay);
+      if (relay) {
+        const event = relayEventFromLine(line);
+        if (event) {
+          ensureEvent(meet, event.eventNumber, {
+            distance: event.distance,
+            stroke: event.stroke,
+            gender: event.gender,
+            course: meet.course,
+          });
+        }
+        relays.push(relay);
+      }
     } else if (type === "F0") {
       const leg = parseRelayLegLine(line);
       if (!leg) continue;

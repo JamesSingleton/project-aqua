@@ -66,7 +66,7 @@ function EventSection({ event }: { event: MeetEntriesReportEvent }) {
         />
         {event.athletes.map((athlete) => (
           <div
-            key={`${event.eventId}-${athlete.membershipId}`}
+            key={`${event.eventId}-${athlete.entryId}`}
             style={{
               display: "flex",
               justifyContent: "space-between",

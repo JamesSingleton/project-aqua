@@ -15,7 +15,9 @@ const client =
   globalForDb.client ??
   postgresClient(connectionString, {
     prepare: false,
-    max: 10,
+    max: 25,
+    idle_timeout: 20,
+    connect_timeout: 10,
   });
 
 globalForDb.client = client;
@@ -51,7 +53,8 @@ function drizzleFromReserved(reserved: ReservedSql): typeof dbAdmin {
 
 /**
  * Bind the current async context to aqua_app + app.user_id for org RLS.
- * Pair with {@link unbindRequestUser} (e.g. Next.js `after()`).
+ * Do not call from `getSession` — a reserved connection serializes the
+ * request. Use {@link runAsUser} for explicit RLS-scoped work.
  */
 export async function bindRequestUser(userId: string): Promise<void> {
   const existing = rlsStorage.getStore();

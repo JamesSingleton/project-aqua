@@ -473,7 +473,9 @@ function parseF3(line: string, state: ParseState): void {
   if (!entry?.relay) return;
   for (let x = 0; x < 8; x++) {
     const offset = x * 13;
-    const meetId = safeInt(extract(line, 4 + offset, 5), -1);
+    const meetIdRaw = extract(line, 4 + offset, 5);
+    if (!meetIdRaw) break;
+    const meetId = safeInt(meetIdRaw, -1);
     if (meetId < 0) break;
     const leg = safeInt(extract(line, 15 + offset, 1), x + 1);
     entry.legSwimmers.set(leg, meetId);

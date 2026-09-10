@@ -28,13 +28,16 @@
     "drizzle-orm": "catalog:"
   },
   "peerDependencies": {
-    "next": "catalog:"
+    "next": "catalog:",
+    "react": "catalog:"
   },
   "devDependencies": {
     "@project-aqua/typescript-config": "workspace:*",
     "@types/node": "catalog:",
+    "@types/react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "next": "catalog:",
+    "react": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

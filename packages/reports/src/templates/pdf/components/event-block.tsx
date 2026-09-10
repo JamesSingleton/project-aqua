@@ -67,7 +67,7 @@ export function EventBlock({ event }: { event: MeetEntriesReportEvent }) {
         />
         {event.athletes.map((athlete) => (
           <View
-            key={`${event.eventId}-${athlete.membershipId}`}
+            key={`${event.eventId}-${athlete.entryId}`}
             style={{
               flexDirection: "row",
               justifyContent: "space-between",

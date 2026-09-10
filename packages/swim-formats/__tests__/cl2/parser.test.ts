@@ -63,6 +63,29 @@ describe("parseCl2Meet", () => {
     expect(meet.entries[0]?.swimmerName).toMatch(/\S+\s+\S+/);
     expect(meet.results.length).toBe(0);
     expect(meet.relays?.length).toBeGreaterThan(0);
+    expect(meet.relays?.flatMap((r) => r.swimmerNames)).toContain(
+      "Marlie McNamee",
+    );
+    expect(
+      meet.relays
+        ?.flatMap((r) => r.swimmerNames)
+        .some((name) => /MARIA/i.test(name)),
+    ).toBe(false);
+    const relayNumbers = new Set(
+      meet.relays?.map((r) => r.eventNumber).filter((n) => n != null),
+    );
+    expect(relayNumbers.has(2007)).toBe(false);
+    expect(relayNumbers.has(1)).toBe(true);
+    expect(meet.events.every((e) => e.eventNumber < 500)).toBe(true);
+    expect(
+      meet.entries.some(
+        (e) =>
+          e.swimmerName.includes("Marlie") &&
+          e.swimmerName.includes("McNamee") &&
+          e.eventNumber === 11,
+      ),
+    ).toBe(true);
+    expect(meet.entries.every((e) => (e.eventNumber ?? 0) < 500)).toBe(true);
   });
 
   it("parses modern azsi results via G0 lines", () => {
@@ -199,6 +222,29 @@ describe("parseCl2Meet", () => {
     expect(meet.relays?.[0]?.swimmerNames.length).toBeGreaterThan(0);
   });
 
+  it("uses meet event number after Hy-Tek D0 stroke codes", () => {
+    const meet = parseCl2Meet(
+      [
+        "A01V3      02Meet Entries                  Hy-Tek",
+        "D01AZ  JR  McNamee, Marlie                                       FF 1001 11 UNOV         1:16.69Y",
+        "D01AZ  JR  Flores, Dante                                         MM 5001 13 UNOV             NT",
+        "D01AZ  FR  Horner, Liem                                          MM  501  8 UNOV           51.43Y",
+      ].join("\n"),
+    );
+    expect(
+      meet.events.map((e) => e.eventNumber).toSorted((a, b) => a - b),
+    ).toEqual([8, 11, 13]);
+    expect(
+      meet.entries
+        .map((e) => e.eventNumber)
+        .toSorted((a, b) => (a ?? 0) - (b ?? 0)),
+    ).toEqual([8, 11, 13]);
+    expect(meet.events.find((e) => e.eventNumber === 11)?.stroke).toBe("free");
+    expect(meet.events.find((e) => e.eventNumber === 11)?.distance).toBe(100);
+    expect(meet.events.find((e) => e.eventNumber === 8)?.distance).toBe(50);
+    expect(meet.events.find((e) => e.eventNumber === 13)?.distance).toBe(500);
+  });
+
   it("handles event codes with zero distance and unknown stroke digits", () => {
     const content = [
       "A01V3      02Meet Entries                  Hy-Tek",
@@ -257,7 +303,8 @@ describe("parseCl2Meet", () => {
     expect(meet.endDate).toBe("2025-02-02");
     expect(meet.course).toBe("SCM");
     expect(meet.results[0]?.teamCode).toMatch(/GACTCC/i);
-    expect(meet.relays?.[0]?.swimmerNames.join(" ")).toMatch(/Liz/);
+    expect(meet.relays?.[0]?.swimmerNames).toContain("Liz Aitkens");
+    expect(meet.relays?.[0]?.eventNumber).toBe(1);
   });
 
   it("handles D0 entries without an event code and invalid B1 end dates", () => {
@@ -272,6 +319,17 @@ describe("parseCl2Meet", () => {
     expect(meet.course).toBe("LCM");
     expect(meet.entries).toHaveLength(1);
     expect(meet.entries[0]?.eventNumber).toBeUndefined();
+  });
+
+  it("parses F0 last, first names when team code columns are blank", () => {
+    const meet = parseCl2Meet(
+      [
+        "A01V3      02Meet Entries                  Hy-Tek",
+        "E01GA      AGACTCC  F 1006  1 UN06   06012002     NT",
+        `${"F01AZ".padEnd(22, " ")}Someone, Else`,
+      ].join("\n"),
+    );
+    expect(meet.relays?.[0]?.swimmerNames).toContain("Else Someone");
   });
 
   it("attaches unmatched F0 legs to the most recent relay shell", () => {
@@ -333,7 +391,72 @@ describe("parseCl2Meet", () => {
         "F01GA        1 GACTCCAAitkens, Liz                               04291996 6F000",
       ].join("\n"),
     );
-    expect(meet.relays?.[0]?.swimmerNames.join(" ")).toMatch(/Liz/);
+    expect(meet.relays?.[0]?.swimmerNames).toContain("Liz Aitkens");
+    expect(meet.relays?.[0]?.eventNumber).toBe(1);
+  });
+
+  it("uses the meet event number on E0 rows, not the Hy-Tek stroke code", () => {
+    const meet = parseCl2Meet(
+      [
+        "A01V3      02Meet Entries                  Hy-Tek",
+        "E01AZ      AAZMARI  M 2006 15 UNOV   09102026     NT",
+        "F01AZ       15 AZMARIAMunkirs, Bennett                                     M000",
+        "E01AZ      BAZMARI  M 4006 21 UNOV   09102026     NT",
+        "F01AZ       21 AZMARIBMunkirs, Bennett                                     M000",
+      ].join("\n"),
+    );
+    expect(
+      meet.relays
+        ?.map((r) => r.eventNumber)
+        .toSorted((a, b) => (a ?? 0) - (b ?? 0)),
+    ).toEqual([15, 21]);
+    expect(meet.relays?.find((r) => r.eventNumber === 15)).toMatchObject({
+      relayLetter: "A",
+      swimmerNames: ["Bennett Munkirs"],
+    });
+    expect(meet.relays?.find((r) => r.eventNumber === 21)).toMatchObject({
+      relayLetter: "B",
+      swimmerNames: ["Bennett Munkirs"],
+    });
+  });
+
+  it("parses loosely spaced E0 rows via letter/team/code/event fields", () => {
+    const meet = parseCl2Meet(
+      [
+        "A01V3      02Meet Entries                  Hy-Tek",
+        "E01AZ                     A AZMARI M 2007 12 leftover",
+        "F01AZ       12 AZMARIACain, Riley                                          F000",
+      ].join("\n"),
+    );
+    expect(meet.relays?.[0]?.eventNumber).toBe(12);
+    expect(meet.relays?.[0]?.teamCode).toBe("AZMARI");
+    expect(meet.relays?.[0]?.swimmerNames).toContain("Riley Cain");
+  });
+
+  it("skips event metadata on loosely spaced E0 rows and X gender codes", () => {
+    const meet = parseCl2Meet(
+      [
+        "A01V3      02Meet Entries                  Hy-Tek",
+        "E01AZ      AAZMARI  X 2007  8 UNOV   09102026     NT",
+        "E01AZ      AAZMARI  M      9 UNOV   09102026     NT",
+        "E01AZ                     A AZMARI M 2007 12 leftover",
+      ].join("\n"),
+    );
+    expect(
+      meet.relays
+        ?.map((r) => r.eventNumber)
+        .toSorted((a, b) => (a ?? 0) - (b ?? 0)),
+    ).toEqual([8, 9, 12]);
+  });
+
+  it("ignores loosely spaced E0 rows whose meet event number is zero", () => {
+    const meet = parseCl2Meet(
+      [
+        "A01V3      02Meet Entries                  Hy-Tek",
+        "E01AZ                     A AZMARI M 2007 0 leftover",
+      ].join("\n"),
+    );
+    expect(meet.relays ?? []).toEqual([]);
   });
 
   it("embeds seed and final times on legacy D0-only result files", () => {
@@ -450,7 +573,7 @@ describe("parseCl2Meet", () => {
         "F00GA        0 GACTCCAAitkens, Liz                               04291996 6F000",
       ].join("\n"),
     );
-    expect(relay.relays?.[0]?.swimmerNames.join(" ")).toMatch(/Liz/);
+    expect(relay.relays?.[0]?.swimmerNames).toContain("Liz Aitkens");
 
     const g0 = parseCl2Meet(
       [

@@ -1,6 +1,7 @@
 import { unzipSync } from "fflate";
 import { detectCl2FileKind } from "../cl2/kind";
-import type { ParsedMeet } from "../types";
+import type { ParsedMeet, ParsedRelayEntry } from "../types";
+import { withEventsSortedByNumber } from "./sort-events";
 
 export type MeetZipFormat = "sdif" | "hy3" | "ev3" | "hyv" | "cl2" | "xls";
 
@@ -77,7 +78,7 @@ function formatForFilename(filename: string): MeetZipFormat | null {
 }
 
 function decodeText(bytes: Uint8Array): string {
-  return new TextDecoder("utf-8").decode(bytes);
+  return new TextDecoder("latin1").decode(bytes);
 }
 
 function isRosterOnlyContent(filename: string, bytes: Uint8Array): boolean {
@@ -225,6 +226,51 @@ function indexKey(name: string, eventNumber?: number): string {
   return `${(eventNumber ?? "").toString()}|${name.trim().toLowerCase()}`;
 }
 
+function relayTeamCodesMatch(a: string, b: string): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.endsWith(b) || b.endsWith(a);
+}
+
+function findMergedRelayIndex(
+  merged: ParsedRelayEntry[],
+  relay: ParsedRelayEntry,
+): number {
+  const eventNumber = relay.eventNumber ?? "";
+  const letter = (relay.relayLetter ?? "").trim().toUpperCase();
+  const team = (relay.teamCode ?? "").trim().toLowerCase();
+  return merged.findIndex(
+    (existing) =>
+      (existing.eventNumber ?? "") === eventNumber &&
+      (existing.relayLetter ?? "").trim().toUpperCase() === letter &&
+      relayTeamCodesMatch((existing.teamCode ?? "").trim().toLowerCase(), team),
+  );
+}
+
+function mergeRelayEntries(
+  primary: ParsedRelayEntry[] | undefined,
+  extra: ParsedRelayEntry[],
+): ParsedRelayEntry[] {
+  const merged = primary ? primary.map((relay) => ({ ...relay })) : [];
+
+  for (const relay of extra) {
+    const existingIndex = findMergedRelayIndex(merged, relay);
+    if (existingIndex < 0) {
+      merged.push({ ...relay, swimmerNames: [...relay.swimmerNames] });
+      continue;
+    }
+    const existing = merged[existingIndex]!;
+    if (!existing.seedTime && relay.seedTime) {
+      existing.seedTime = relay.seedTime;
+    }
+    if (existing.swimmerNames.length === 0 && relay.swimmerNames.length > 0) {
+      existing.swimmerNames = [...relay.swimmerNames];
+    }
+  }
+
+  return merged;
+}
+
 /**
  * Merge supplemental ParsedMeet data into a primary meet.
  * Primary wins for conflicts; supplements fill missing athlete IDs / entries / events.
@@ -302,7 +348,7 @@ export function mergeParsedMeets(
     }
 
     if (extra.relays?.length) {
-      merged.relays = [...(merged.relays ?? []), ...extra.relays];
+      merged.relays = mergeRelayEntries(merged.relays, extra.relays);
     }
 
     if (extra.athletes?.length) {
@@ -335,5 +381,5 @@ export function mergeParsedMeets(
     }
   }
 
-  return merged;
+  return withEventsSortedByNumber(merged);
 }

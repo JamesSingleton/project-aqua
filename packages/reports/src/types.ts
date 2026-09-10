@@ -29,6 +29,7 @@ export type MeetEntriesReportAthlete = {
 };
 
 export type MeetEntriesReportIndividual = {
+  entryId: string;
   membershipId: string;
   name: string;
   classYear?: string | null;
@@ -113,6 +114,7 @@ export type SplitSheetMark = {
 };
 
 export type SplitSheetIndividualRow = {
+  entryId: string;
   membershipId: string;
   name: string;
   seedLabel: string;

@@ -86,6 +86,24 @@ describe("parseMeetFile", () => {
     expect(parseMeetFile(sd3, "sdif").entries.length).toBeGreaterThan(0);
   });
 
+  it("lists imported events in numerical order", () => {
+    const meet = parseMeetFile(
+      [
+        "A01V3      02Meet Entries                  Hy-Tek",
+        "D01AZ  JR  McNamee, Marlie                                       FF 1001 11 UNOV         1:16.69Y",
+        "D01AZ  FR  Horner, Liem                                          MM  501  8 UNOV           51.43Y",
+      ].join("\n"),
+      "cl2",
+    );
+    expect(meet.events.map((e) => e.eventNumber)).toEqual([8, 11]);
+
+    const hy3 = readFileSync(join(fixturesDir, "mari-entries.hy3"), "utf8");
+    const numbers = parseMeetFile(hy3, "hy3")
+      .events.map((e) => e.eventNumber)
+      .filter((n): n is number => n != null);
+    expect(numbers).toEqual([...numbers].toSorted((a, b) => a - b));
+  });
+
   it("throws for XLS text path and unsupported format", () => {
     expect(() => parseMeetFile("x", "xls")).toThrow(/binary input/);
     expect(() => parseMeetFile("x", "unknown" as never)).toThrow(
@@ -283,6 +301,9 @@ describe("parseMeetFilesFromBytes", () => {
       "mari-entries.cl2",
       "mari-entries.hy3",
     ]);
+    const relayNames = merged.relays?.flatMap((r) => r.swimmerNames) ?? [];
+    expect(relayNames.some((name) => /MARIA/i.test(name))).toBe(false);
+    expect(relayNames).toContain("Marlie McNamee");
   });
 
   it("rejects mixing a ZIP with other files", () => {

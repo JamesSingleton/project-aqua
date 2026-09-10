@@ -923,6 +923,7 @@ describe("exportCl2", () => {
     expect(text).toContain("AZMARI");
     expect(text).toContain("Maricopa High School");
     expect(parseCl2Meet(text).relays?.[0]?.swimmerNames.length).toBe(4);
+    expect(parseCl2Meet(text).relays?.[0]?.eventNumber).toBe(20);
   });
 
   it("aligns D0 event columns, emits one D3 per athlete, and checksums at 160 chars", () => {

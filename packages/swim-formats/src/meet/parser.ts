@@ -4,6 +4,7 @@ import { parseHy3 } from "../hy3/parser";
 import { parseSdif } from "../sdif/parser";
 import type { ParsedMeet } from "../types";
 import { parseEventExportXls } from "../xls/parser";
+import { withEventsSortedByNumber } from "./sort-events";
 import {
   type ExtractedMeetFile,
   extractAllMeetFilesFromZip,
@@ -60,23 +61,28 @@ export function parseMeetFile(
   content: string,
   format: MeetFileFormat,
 ): ParsedMeet {
+  let meet: ParsedMeet;
   switch (format) {
     case "sdif":
-      return parseSdif(content);
+      meet = parseSdif(content);
+      break;
     case "hy3": {
-      const meet = parseHy3(content);
+      meet = parseHy3(content);
       // Meet import path only — roster import still uses parseHy3 / parseHy3Roster directly.
       if (meet.importKind === "roster") {
         throw new Error(ROSTER_ONLY_HY3_ERROR);
       }
-      return meet;
+      break;
     }
     case "ev3":
-      return parseEv3(content);
+      meet = parseEv3(content);
+      break;
     case "hyv":
-      return parseHyv(content);
+      meet = parseHyv(content);
+      break;
     case "cl2":
-      return parseCl2Meet(content);
+      meet = parseCl2Meet(content);
+      break;
     case "xls":
       throw new Error(
         "XLS meet reports require binary input. Use parseMeetFileFromBytes.",
@@ -84,13 +90,14 @@ export function parseMeetFile(
     default:
       throw new Error(`Unsupported meet format: ${format}`);
   }
+  return withEventsSortedByNumber(meet);
 }
 
 function parseExtractedFile(file: ExtractedMeetFile): ParsedMeet {
   if (file.format === "xls") {
-    return parseEventExportXls(file.bytes);
+    return withEventsSortedByNumber(parseEventExportXls(file.bytes));
   }
-  const content = new TextDecoder("utf-8").decode(file.bytes);
+  const content = new TextDecoder("latin1").decode(file.bytes);
   return parseMeetFile(content, file.format);
 }
 
@@ -145,12 +152,12 @@ export function parseMeetFileFromBytes(
 
   const format = detectMeetFileFormat(filename);
   if (format === "xls") {
-    return parseEventExportXls(bytes);
+    return withEventsSortedByNumber(parseEventExportXls(bytes));
   }
   if (!format) {
     throw new Error(UNSUPPORTED_MEET_FILE);
   }
-  const content = new TextDecoder("utf-8").decode(bytes);
+  const content = new TextDecoder("latin1").decode(bytes);
   return parseMeetFile(content, format);
 }
 
