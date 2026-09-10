@@ -9,6 +9,7 @@
     "./schema": "./src/schema/index.ts",
     "./authz": "./src/authz.ts",
     "./queries/roster": "./src/queries/roster.ts",
+    "./queries/swimmer-merge": "./src/queries/swimmer-merge.ts",
     "./queries/seasons": "./src/queries/seasons.ts",
     "./queries/meets": "./src/queries/meets.ts",
     "./queries/meet-event-templates": "./src/queries/meet-event-templates.ts",

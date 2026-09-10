@@ -53,9 +53,10 @@ export const rosterRowSchema = z
     contacts: swimmerContactsSchema.optional(),
     medical: swimmerMedicalSchema.optional(),
     linkExistingSwimmerId: z.string().optional(),
+    /** Skip coach-scoped name+DOB auto-link when creating a new person on purpose. */
+    forceNewPerson: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
-    const memberId = data.governingBodyId ?? data.usaMemberId;
     if (isMinorSwimmer(data.dateOfBirth) && !data.linkExistingSwimmerId) {
       const parentEmail = data.contacts?.parentEmail;
       const parentName = data.contacts?.parentName;
@@ -67,12 +68,6 @@ export const rosterRowSchema = z
           path: ["contacts", "parentEmail"],
         });
       }
-    }
-    if (memberId && data.linkExistingSwimmerId) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Cannot link existing swimmer and provide a new member ID",
-      });
     }
   });
 

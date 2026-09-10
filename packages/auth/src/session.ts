@@ -1,6 +1,6 @@
+import { bindRequestUser, unbindRequestUser } from "@project-aqua/db/client";
 import { headers } from "next/headers";
 import { after } from "next/server";
-import { bindRequestUser, unbindRequestUser } from "@project-aqua/db/client";
 import { auth } from "./server";
 
 export async function getSession() {

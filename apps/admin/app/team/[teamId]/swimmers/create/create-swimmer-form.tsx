@@ -31,14 +31,28 @@ import { cn } from "@project-aqua/ui/lib/utils";
 import { CheckIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { DatePickerField } from "@/components/date-picker-field";
 import {
   type CreateSwimmerFormValues,
   createSwimmerFormSchema,
 } from "@/schemas";
-import { createSwimmerAction, lookupUsaSwimmerAction } from "./actions";
+import {
+  createSwimmerAction,
+  lookupLinkableSwimmerAction,
+  lookupUsaSwimmerAction,
+} from "./actions";
+
+type IdentityMatch = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+  dateOfBirth: string;
+  governingBodyId: string | null;
+  teamNames: string[];
+};
 
 const STEPS = [
   {
@@ -176,7 +190,9 @@ export default function CreateSwimmerForm({
     lastName: string;
     dateOfBirth: string;
   } | null>(null);
+  const [identityMatches, setIdentityMatches] = useState<IdentityMatch[]>([]);
   const [linkExisting, setLinkExisting] = useState(false);
+  const declinedIdentityKeyRef = useRef<string | null>(null);
 
   const form = useForm<CreateSwimmerFormValues>({
     resolver: zodResolver(createSwimmerFormSchema),
@@ -198,33 +214,120 @@ export default function CreateSwimmerForm({
   const isMinor = dateOfBirth ? isMinorSwimmer(dateOfBirth) : false;
   const currentStep = STEPS[stepIndex]?.id ?? "profile";
 
+  function identityLookupKey(identity: {
+    firstName: string;
+    lastName: string;
+    preferredName?: string;
+    dateOfBirth: string;
+  }) {
+    return [
+      identity.firstName.trim().toLowerCase(),
+      identity.lastName.trim().toLowerCase(),
+      (identity.preferredName ?? "").trim().toLowerCase(),
+      identity.dateOfBirth.trim().slice(0, 10),
+    ].join("|");
+  }
+
+  function clearLinkState() {
+    setUsaLookup(null);
+    setIdentityMatches([]);
+    setLinkExisting(false);
+    setValue("linkExistingSwimmerId", undefined);
+    setValue("forceNewPerson", undefined);
+  }
+
+  function applyLink(match: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+  }) {
+    setLinkExisting(true);
+    declinedIdentityKeyRef.current = null;
+    setValue("firstName", match.firstName, { shouldValidate: true });
+    setValue("lastName", match.lastName, { shouldValidate: true });
+    setValue("dateOfBirth", match.dateOfBirth, { shouldValidate: true });
+    setValue("linkExistingSwimmerId", match.id);
+    setValue("forceNewPerson", undefined);
+  }
+
   async function handleUsaBlur(usaId: string) {
     if (!usaId.trim()) {
-      setUsaLookup(null);
-      setLinkExisting(false);
-      setValue("linkExistingSwimmerId", undefined);
+      clearLinkState();
+      void lookupIdentityMatches();
       return;
     }
 
     try {
       const found = await lookupUsaSwimmerAction(teamId, usaId);
+      setIdentityMatches([]);
       setUsaLookup(found);
-      const shouldLink = Boolean(found);
-      setLinkExisting(shouldLink);
-
       if (found) {
-        setValue("firstName", found.firstName, { shouldValidate: true });
-        setValue("lastName", found.lastName, { shouldValidate: true });
-        setValue("dateOfBirth", found.dateOfBirth, { shouldValidate: true });
-        setValue("linkExistingSwimmerId", found.id);
+        applyLink(found);
       } else {
+        setLinkExisting(false);
         setValue("linkExistingSwimmerId", undefined);
+        void lookupIdentityMatches();
       }
     } catch {
-      setUsaLookup(null);
-      setLinkExisting(false);
-      setValue("linkExistingSwimmerId", undefined);
+      clearLinkState();
     }
+  }
+
+  async function lookupIdentityMatches() {
+    const values = form.getValues();
+    if (values.usaMemberId?.trim()) return;
+    if (values.linkExistingSwimmerId) return;
+
+    const identity = {
+      firstName: values.firstName ?? "",
+      lastName: values.lastName ?? "",
+      preferredName: values.preferredName || undefined,
+      dateOfBirth: values.dateOfBirth ?? "",
+    };
+    if (
+      !identity.firstName.trim() ||
+      !identity.lastName.trim() ||
+      !identity.dateOfBirth.trim()
+    ) {
+      setIdentityMatches([]);
+      return;
+    }
+
+    const key = identityLookupKey(identity);
+    if (declinedIdentityKeyRef.current === key) {
+      setIdentityMatches([]);
+      return;
+    }
+
+    try {
+      const matches = await lookupLinkableSwimmerAction(teamId, identity);
+      setIdentityMatches(matches);
+      if (matches.length === 1 && matches[0]) {
+        applyLink(matches[0]);
+      }
+    } catch {
+      setIdentityMatches([]);
+    }
+  }
+
+  function chooseIdentityMatch(match: IdentityMatch) {
+    setIdentityMatches([match]);
+    applyLink(match);
+  }
+
+  function declineIdentityLink() {
+    const values = form.getValues();
+    declinedIdentityKeyRef.current = identityLookupKey({
+      firstName: values.firstName ?? "",
+      lastName: values.lastName ?? "",
+      preferredName: values.preferredName || undefined,
+      dateOfBirth: values.dateOfBirth ?? "",
+    });
+    setIdentityMatches([]);
+    setLinkExisting(false);
+    setValue("linkExistingSwimmerId", undefined);
+    setValue("forceNewPerson", true);
   }
 
   async function goNext() {
@@ -351,8 +454,9 @@ export default function CreateSwimmerForm({
             <FieldSet>
               <FieldLegend>Identity</FieldLegend>
               <FieldDescription>
-                Start with USA Swimming ID if you have it — we&apos;ll fill what
-                we can.
+                Prefer USA Swimming ID when you have it. Otherwise we&apos;ll
+                look for the same person on your other teams by name and date of
+                birth.
               </FieldDescription>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field className="sm:col-span-2">
@@ -367,16 +471,83 @@ export default function CreateSwimmerForm({
                   <FieldDescription>
                     {usaLookup
                       ? `Matched ${usaLookup.firstName} ${usaLookup.lastName} — this will link their existing profile to your team.`
-                      : "Leave blank to create a brand-new swimmer profile."}
+                      : "Leave blank if you do not have it — name and DOB can still link across your teams."}
                   </FieldDescription>
                 </Field>
+                {!usaLookup &&
+                identityMatches.length === 1 &&
+                identityMatches[0] ? (
+                  <div className="bg-muted sm:col-span-2 flex flex-col gap-2 rounded-lg px-3 py-2 text-sm">
+                    <p>
+                      Found{" "}
+                      <span className="font-medium">
+                        {identityMatches[0].firstName}{" "}
+                        {identityMatches[0].lastName}
+                      </span>{" "}
+                      on {identityMatches[0].teamNames.join(", ")}. Linking
+                      keeps one profile across your teams.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={declineIdentityLink}
+                      >
+                        Create as new person
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+                {!usaLookup && identityMatches.length > 1 ? (
+                  <div className="bg-muted sm:col-span-2 flex flex-col gap-2 rounded-lg px-3 py-2 text-sm">
+                    <p>
+                      Several people on your other teams match this name and
+                      date of birth. Pick who to link, or create a new profile.
+                    </p>
+                    <ul className="flex flex-col gap-2">
+                      {identityMatches.map((match) => (
+                        <li
+                          key={match.id}
+                          className="flex flex-wrap items-center justify-between gap-2"
+                        >
+                          <span>
+                            {match.firstName} {match.lastName}
+                            {match.governingBodyId
+                              ? ` · USA ${match.governingBodyId}`
+                              : ""}{" "}
+                            · {match.teamNames.join(", ")}
+                          </span>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => chooseIdentityMatch(match)}
+                          >
+                            Link this person
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="w-fit"
+                      onClick={declineIdentityLink}
+                    >
+                      Create as new person
+                    </Button>
+                  </div>
+                ) : null}
                 <Field data-invalid={!!errors.firstName}>
                   <FieldLabel htmlFor="firstName">First name</FieldLabel>
                   <Input
                     id="firstName"
                     aria-invalid={!!errors.firstName}
                     readOnly={linkExisting}
-                    {...register("firstName")}
+                    {...register("firstName", {
+                      onBlur: () => void lookupIdentityMatches(),
+                    })}
                   />
                   <FieldError errors={[errors.firstName]} />
                 </Field>
@@ -386,7 +557,9 @@ export default function CreateSwimmerForm({
                     id="lastName"
                     aria-invalid={!!errors.lastName}
                     readOnly={linkExisting}
-                    {...register("lastName")}
+                    {...register("lastName", {
+                      onBlur: () => void lookupIdentityMatches(),
+                    })}
                   />
                   <FieldError errors={[errors.lastName]} />
                 </Field>
@@ -405,7 +578,9 @@ export default function CreateSwimmerForm({
                   <Input
                     id="preferredName"
                     placeholder="Optional"
-                    {...register("preferredName")}
+                    {...register("preferredName", {
+                      onBlur: () => void lookupIdentityMatches(),
+                    })}
                   />
                 </Field>
               </div>
@@ -423,7 +598,11 @@ export default function CreateSwimmerForm({
                       <DatePickerField
                         id="dateOfBirth"
                         value={field.value}
-                        onChange={field.onChange}
+                        onChange={(value) => {
+                          field.onChange(value);
+                          if (linkExisting) return;
+                          queueMicrotask(() => void lookupIdentityMatches());
+                        }}
                         disabled={linkExisting}
                         disableFuture
                         labelMonth="long"

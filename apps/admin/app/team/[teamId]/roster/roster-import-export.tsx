@@ -1,6 +1,9 @@
 "use client";
 
-import { detectRosterFileFormat } from "@project-aqua/swim-formats/roster";
+import {
+  detectRosterFileFormat,
+  isRosterSharePack,
+} from "@project-aqua/swim-formats/roster";
 import { Button } from "@project-aqua/ui/components/button";
 import {
   Dialog,
@@ -26,7 +29,7 @@ import { useId, useRef, useState } from "react";
 import { importRosterFileAction } from "./actions";
 
 const ROSTER_ACCEPT =
-  ".csv,.sd3,.sdif,.cl2,.hy3,.zip,application/vnd.ms-excel,text/csv,text/plain";
+  ".csv,.sd3,.sdif,.cl2,.hy3,.zip,.json,.aqua.json,application/json,application/vnd.ms-excel,text/csv,text/plain";
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 type ImportEntry = {
@@ -112,22 +115,24 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
         encoding = "base64";
       } else {
         content = await file.text();
-        const format = detectRosterFileFormat(file.name, content);
-        if (!format) {
-          setEntries((prev) =>
-            prev.map((entry) =>
-              entry.id === id
-                ? {
-                    ...entry,
-                    status: "failed",
-                    progress: 100,
-                    message:
-                      "Not a roster file. Use Team Manager Swimmers Only (CL2/HY3), CSV, or a roster ZIP.",
-                  }
-                : entry,
-            ),
-          );
-          return;
+        if (!isRosterSharePack(content)) {
+          const format = detectRosterFileFormat(file.name, content);
+          if (!format) {
+            setEntries((prev) =>
+              prev.map((entry) =>
+                entry.id === id
+                  ? {
+                      ...entry,
+                      status: "failed",
+                      progress: 100,
+                      message:
+                        "Not a roster file. Use a Project Aqua share pack (.aqua.json), Team Manager Swimmers Only (CL2/HY3), CSV, or a roster ZIP.",
+                    }
+                  : entry,
+              ),
+            );
+            return;
+          }
         }
       }
 
@@ -143,6 +148,28 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
         content,
         encoding,
       );
+      let successMessage = `Imported ${result.added} swimmers`;
+      if ("sourceTeamName" in result) {
+        const parts: string[] = [`From ${result.sourceTeamName}`];
+        if (result.merged > 0) {
+          parts.push(
+            `merged ${result.merged} duplicate${result.merged === 1 ? "" : "s"}`,
+          );
+        }
+        if (result.linked > 0) {
+          parts.push(`linked ${result.linked} new`);
+        }
+        if (result.merged === 0 && result.linked === 0) {
+          parts.push(`processed ${result.added}`);
+        }
+        if (result.alreadyOnTeam > 0) {
+          parts.push(`${result.alreadyOnTeam} already on team`);
+        }
+        if (result.failed.length > 0) {
+          parts.push(`${result.failed.length} failed`);
+        }
+        successMessage = parts.join(" · ");
+      }
       setEntries((prev) =>
         prev.map((entry) =>
           entry.id === id
@@ -150,7 +177,7 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
                 ...entry,
                 status: "success",
                 progress: 100,
-                message: `Imported ${result.added} swimmers`,
+                message: successMessage,
               }
             : entry,
         ),
@@ -193,8 +220,10 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
         <DialogHeader>
           <DialogTitle>Import roster</DialogTitle>
           <DialogDescription>
-            Import CSV, SD3, CL2, or HY3 roster files from Team Manager. EV3/HYV
-            meet event files are not roster imports.
+            Import a Project Aqua share pack (.aqua.json) to link athletes by
+            opaque ID. If this team already has the same person (name + DOB), we
+            merge into the shared profile instead of creating a duplicate. CSV /
+            SD3 / CL2 / HY3 from Team Manager are also supported.
           </DialogDescription>
         </DialogHeader>
 
@@ -255,7 +284,8 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
               Drag &amp; Drop or Choose file to upload
             </p>
             <p className="text-muted-foreground text-sm">
-              CSV, SD3, CL2, or HY3 · Up to {MAX_FILE_BYTES / (1024 * 1024)} MB
+              Share pack, CSV, SD3, CL2, or HY3 · Up to{" "}
+              {MAX_FILE_BYTES / (1024 * 1024)} MB
             </p>
           </div>
 

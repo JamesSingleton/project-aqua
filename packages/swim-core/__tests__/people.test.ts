@@ -3,12 +3,45 @@ import {
   formatSwimmerLastFirst,
   normalizePersonName,
   sortSwimmersByLastName,
+  swimmerIdentitiesMatch,
 } from "../src/people";
 
 describe("normalizePersonName", () => {
   it("lowercases and strips punctuation", () => {
     expect(normalizePersonName("O'Brien, James")).toBe("o brien james");
     expect(normalizePersonName("  A   B  ")).toBe("a b");
+  });
+});
+
+describe("swimmerIdentitiesMatch", () => {
+  const base = {
+    firstName: "Jane",
+    lastName: "Doe",
+    dateOfBirth: "2012-04-15",
+  };
+
+  it("matches exact name and DOB without USA ID", () => {
+    expect(swimmerIdentitiesMatch(base, { ...base })).toBe(true);
+  });
+
+  it("matches preferred name against legal first name", () => {
+    expect(
+      swimmerIdentitiesMatch(base, {
+        firstName: "Janet",
+        preferredName: "Jane",
+        lastName: "Doe",
+        dateOfBirth: "2012-04-15T00:00:00.000Z",
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects different DOB or last name", () => {
+    expect(
+      swimmerIdentitiesMatch(base, { ...base, dateOfBirth: "2012-04-16" }),
+    ).toBe(false);
+    expect(swimmerIdentitiesMatch(base, { ...base, lastName: "Smith" })).toBe(
+      false,
+    );
   });
 });
 

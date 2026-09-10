@@ -10,6 +10,7 @@ import {
 import { db } from "@project-aqua/db/client";
 import {
   addSwimmer,
+  searchLinkableSwimmersByIdentity,
   searchSwimmerByUsaId,
 } from "@project-aqua/db/queries/roster";
 import { organization } from "@project-aqua/db/schema";
@@ -26,14 +27,15 @@ export async function createSwimmerAction(
   input: CreateSwimmerFormValues,
 ) {
   const session = await getSession();
-  await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+  const userId = session?.user?.id;
+  await requireTeamRole(userId, teamId, ["owner", "head_coach"]);
 
   const parsed = createSwimmerFormSchema.parse(
     normalizeCreateSwimmerFormValues(input),
   );
 
   if (isMinorSwimmer(parsed.dateOfBirth)) {
-    await requireCoachSafeSportCurrent(session?.user?.id, teamId);
+    await requireCoachSafeSportCurrent(userId, teamId);
   }
 
   const canAdd = await canAddSwimmer(teamId);
@@ -43,7 +45,9 @@ export async function createSwimmerAction(
     );
   }
 
-  const result = await addSwimmer(teamId, parsed);
+  const result = await addSwimmer(teamId, parsed, {
+    viewerUserId: userId,
+  });
 
   if (
     isMinorSwimmer(parsed.dateOfBirth) &&
@@ -78,4 +82,28 @@ export async function lookupUsaSwimmerAction(
   await requireTeamMember(session?.user?.id, teamId);
   if (!usaMemberId.trim()) return null;
   return searchSwimmerByUsaId(usaMemberId.trim());
+}
+
+export async function lookupLinkableSwimmerAction(
+  teamId: string,
+  identity: {
+    firstName: string;
+    lastName: string;
+    preferredName?: string;
+    dateOfBirth: string;
+  },
+) {
+  const session = await getSession();
+  const userId = session?.user?.id;
+  await requireTeamMember(userId, teamId);
+  if (!userId) return [];
+  if (
+    !identity.firstName.trim() ||
+    !identity.lastName.trim() ||
+    !identity.dateOfBirth.trim()
+  ) {
+    return [];
+  }
+
+  return searchLinkableSwimmersByIdentity(userId, teamId, identity);
 }

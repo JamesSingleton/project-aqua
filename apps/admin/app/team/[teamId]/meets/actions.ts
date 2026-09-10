@@ -240,13 +240,17 @@ async function createAthleteFromFile(
     await requireCoachSafeSportCurrent(userId, teamId);
   }
 
-  const added = await addSwimmer(teamId, {
-    firstName,
-    lastName,
-    dateOfBirth: athlete.dateOfBirth,
-    gender: athlete.gender,
-    usaMemberId: athlete.usaMemberId,
-  });
+  const added = await addSwimmer(
+    teamId,
+    {
+      firstName,
+      lastName,
+      dateOfBirth: athlete.dateOfBirth,
+      gender: athlete.gender,
+      usaMemberId: athlete.usaMemberId,
+    },
+    { viewerUserId: userId },
+  );
 
   createdKeys.add(dedupeKey);
   roster.push({

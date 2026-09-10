@@ -45,6 +45,16 @@ export {
   type RosterFileFormat,
   rosterImportErrorForFile,
 } from "./roster/parser";
+export {
+  buildRosterSharePack,
+  isRosterSharePack,
+  isRosterSharePackFilename,
+  parseRosterSharePack,
+  type RosterSharePack,
+  type RosterSharePackAthlete,
+  rosterSharePackFilename,
+  serializeRosterSharePack,
+} from "./roster/share-pack";
 export { exportSdif, parseSdif } from "./sdif/parser";
 export * from "./types";
 export { ExportXlsParseError, parseEventExportXls } from "./xls/parser";

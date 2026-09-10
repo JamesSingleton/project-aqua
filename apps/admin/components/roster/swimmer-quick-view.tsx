@@ -1,6 +1,10 @@
 "use client";
 
 import {
+  formatBestTimeAchievedLabel,
+  formatDateOnlyLabel,
+} from "@project-aqua/swim-core/calendar-date";
+import {
   ACADEMIC_STANDING_LABELS,
   type AcademicStanding,
   ELIGIBILITY_STATUS_LABELS,
@@ -433,8 +437,22 @@ export function SwimmerQuickView({
                     key={`${record.eventKey}-${record.course}`}
                     label={`${record.eventLabel} · ${record.course}`}
                     value={
-                      <span className="font-timing">
-                        {formatTime(record.timeMs)}
+                      <span className="flex flex-col items-end gap-0.5">
+                        <span className="font-timing">
+                          {formatTime(record.timeMs)}
+                        </span>
+                        <span className="text-muted-foreground font-normal text-xs">
+                          {formatBestTimeAchievedLabel(
+                            new Date(record.achievedAt),
+                            record.meetName,
+                            (date) =>
+                              formatDateOnlyLabel(date, undefined, {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              }),
+                          )}
+                        </span>
                       </span>
                     }
                   />

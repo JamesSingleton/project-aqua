@@ -20,11 +20,18 @@ import {
 } from "@project-aqua/ui/components/select";
 import { Separator } from "@project-aqua/ui/components/separator";
 import type { Table } from "@tanstack/react-table";
-import { DownloadIcon, Trash2Icon, UsersIcon, XIcon } from "lucide-react";
+import {
+  DownloadIcon,
+  Share2Icon,
+  Trash2Icon,
+  UsersIcon,
+  XIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
   exportRosterCsvAction,
+  exportRosterSharePackAction,
   removeSwimmersAction,
 } from "@/app/team/[teamId]/roster/actions";
 import { assignGroupsBulkAction } from "@/app/team/[teamId]/roster/groups-actions";
@@ -80,7 +87,7 @@ export function RosterActionBar({
     });
   }
 
-  function handleExport() {
+  function handleExportCsv() {
     startTransition(async () => {
       const csv = await exportRosterCsvAction(teamId, { swimmerIds, seasonId });
       const blob = new Blob([csv], { type: "text/csv" });
@@ -90,6 +97,29 @@ export function RosterActionBar({
       a.download = "roster-selection.csv";
       a.click();
       URL.revokeObjectURL(url);
+    });
+  }
+
+  function handleExportSharePack() {
+    setError("");
+    startTransition(async () => {
+      try {
+        const { content, filename } = await exportRosterSharePackAction(
+          teamId,
+          { swimmerIds, seasonId },
+        );
+        const blob = new Blob([content], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to export share pack",
+        );
+      }
     });
   }
 
@@ -136,10 +166,21 @@ export function RosterActionBar({
           variant="secondary"
           size="sm"
           disabled={pending}
-          onClick={handleExport}
+          onClick={handleExportCsv}
         >
           <DownloadIcon data-icon="inline-start" />
-          Export
+          Export CSV
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          disabled={pending}
+          onClick={handleExportSharePack}
+          title="Share selected swimmers with another Project Aqua team via opaque IDs"
+        >
+          <Share2Icon data-icon="inline-start" />
+          Share pack
         </Button>
         <div className="flex items-center gap-1.5">
           <Select
@@ -186,6 +227,15 @@ export function RosterActionBar({
           Remove
         </Button>
       </div>
+
+      {error && !removeOpen ? (
+        <p
+          className="bg-destructive/10 text-destructive fixed inset-x-0 bottom-20 z-50 mx-auto w-fit max-w-[calc(100%-2rem)] rounded-lg px-3 py-2 text-sm shadow-lg"
+          role="alert"
+        >
+          {error}
+        </p>
+      ) : null}
 
       <Dialog open={removeOpen} onOpenChange={setRemoveOpen}>
         <DialogContent>

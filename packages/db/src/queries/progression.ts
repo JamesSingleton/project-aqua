@@ -1,3 +1,4 @@
+import { snapshotBestTimeMeetName } from "@project-aqua/swim-core/calendar-date";
 import { isRelayStroke } from "@project-aqua/swim-core/entry-limits";
 import { getCatalogEvent } from "@project-aqua/swim-core/event-catalog";
 import type { Course } from "@project-aqua/swim-core/events";
@@ -23,6 +24,23 @@ import { swimmers, teamSwimmerMemberships } from "../schema/swimmers";
 function generateId(): string {
   return crypto.randomUUID();
 }
+
+async function resolveMeetName(
+  meetId: string | null | undefined,
+): Promise<string | null> {
+  if (!meetId) return null;
+  const [row] = await db
+    .select({ name: meets.name })
+    .from(meets)
+    .where(eq(meets.id, meetId))
+    .limit(1);
+  return row?.name ?? null;
+}
+
+export {
+  formatBestTimeAchievedLabel,
+  snapshotBestTimeMeetName,
+} from "@project-aqua/swim-core/calendar-date";
 
 /**
  * Resolve the swimmer's current PR row for a meet/catalog event.
@@ -75,6 +93,7 @@ export async function findSwimmerBestTime(
       timeMs: swimmerBestTimes.timeMs,
       achievedAt: swimmerBestTimes.achievedAt,
       meetId: swimmerBestTimes.meetId,
+      meetName: swimmerBestTimes.meetName,
       createdAt: swimmerBestTimes.createdAt,
       updatedAt: swimmerBestTimes.updatedAt,
     })
@@ -102,6 +121,7 @@ export async function upsertBestTime(data: {
   timeMs: number;
   achievedAt: Date;
   meetId?: string;
+  meetName?: string | null;
 }) {
   if (data.timeMs <= 0) return null;
 
@@ -133,6 +153,15 @@ export async function upsertBestTime(data: {
         course: catalog.course,
       }
     : null;
+  const resolvedName =
+    data.meetName === undefined
+      ? await resolveMeetName(data.meetId)
+      : data.meetName;
+  const meetName = snapshotBestTimeMeetName({
+    nextMeetId: data.meetId ?? null,
+    resolvedName,
+    existing,
+  });
 
   let bestTimeId: string;
 
@@ -154,6 +183,7 @@ export async function upsertBestTime(data: {
         timeMs: data.timeMs,
         achievedAt: data.achievedAt,
         meetId: data.meetId ?? null,
+        meetName,
         updatedAt: new Date(),
       })
       .where(eq(swimmerBestTimes.id, existing.id));
@@ -168,6 +198,7 @@ export async function upsertBestTime(data: {
       timeMs: data.timeMs,
       achievedAt: data.achievedAt,
       meetId: data.meetId ?? null,
+      meetName,
     });
   }
 
@@ -259,6 +290,13 @@ export async function setBestTime(data: {
     !existing || isFasterTime(data.timeMs, existing.timeMs);
 
   let bestTimeId: string;
+  const nextMeetId =
+    data.meetId === undefined ? (existing?.meetId ?? null) : data.meetId;
+  const meetName = snapshotBestTimeMeetName({
+    nextMeetId,
+    resolvedName: await resolveMeetName(nextMeetId),
+    existing,
+  });
 
   if (existing) {
     await db
@@ -268,7 +306,8 @@ export async function setBestTime(data: {
         course: data.course,
         timeMs: data.timeMs,
         achievedAt: data.achievedAt,
-        meetId: data.meetId === undefined ? existing.meetId : data.meetId,
+        meetId: nextMeetId,
+        meetName,
         updatedAt: new Date(),
       })
       .where(eq(swimmerBestTimes.id, existing.id));
@@ -282,7 +321,8 @@ export async function setBestTime(data: {
       course: data.course,
       timeMs: data.timeMs,
       achievedAt: data.achievedAt,
-      meetId: data.meetId ?? null,
+      meetId: nextMeetId,
+      meetName,
     });
   }
 
@@ -305,6 +345,7 @@ export async function setBestTime(data: {
   if (shouldRecordProgression) {
     await insertTimeEntry({
       swimmerId: data.swimmerId,
+      membershipId: membership.id,
       eventKey: data.eventKey,
       course: data.course,
       timeMs: data.timeMs,
@@ -318,6 +359,7 @@ export async function setBestTime(data: {
 
 export async function insertTimeEntry(data: {
   swimmerId: string;
+  membershipId: string;
   eventKey: string;
   course: Course;
   timeMs: number;
@@ -328,6 +370,7 @@ export async function insertTimeEntry(data: {
   await db.insert(swimmerTimeEntries).values({
     id,
     swimmerId: data.swimmerId,
+    membershipId: data.membershipId,
     eventKey: data.eventKey,
     course: data.course,
     timeMs: data.timeMs,
@@ -376,6 +419,7 @@ export async function getSwimmerBestTimes(swimmerId: string) {
       timeMs: swimmerBestTimes.timeMs,
       achievedAt: swimmerBestTimes.achievedAt,
       meetId: swimmerBestTimes.meetId,
+      meetName: swimmerBestTimes.meetName,
       createdAt: swimmerBestTimes.createdAt,
       updatedAt: swimmerBestTimes.updatedAt,
     })
@@ -402,6 +446,7 @@ export async function recomputeBestTimesForSwimmer(swimmerId: string) {
         meetCourse: meets.course,
         timeMs: meetResults.timeMs,
         meetId: meets.id,
+        meetName: meets.name,
         achievedAt: meets.startDate,
         stroke: meetEvents.stroke,
         eventType: swimEvents.eventType,
@@ -417,6 +462,7 @@ export async function recomputeBestTimesForSwimmer(swimmerId: string) {
       .select({
         timeMs: meetRelayResultSplits.timeMs,
         meetId: meets.id,
+        meetName: meets.name,
         achievedAt: meets.startDate,
         meetCourse: meets.course,
         relayEventKey: meetEvents.eventKey,
@@ -447,6 +493,7 @@ export async function recomputeBestTimesForSwimmer(swimmerId: string) {
     course: Course;
     timeMs: number;
     meetId: string;
+    meetName: string | null;
     achievedAt: Date;
   };
 
@@ -462,6 +509,7 @@ export async function recomputeBestTimesForSwimmer(swimmerId: string) {
       course: (row.course ?? row.meetCourse ?? "SCY") as Course,
       timeMs: row.timeMs,
       meetId: row.meetId,
+      meetName: row.meetName,
       achievedAt: row.achievedAt,
     });
   }
@@ -488,6 +536,7 @@ export async function recomputeBestTimesForSwimmer(swimmerId: string) {
       course: (row.catalogCourse ?? row.meetCourse ?? "SCY") as Course,
       timeMs: row.timeMs,
       meetId: row.meetId,
+      meetName: row.meetName,
       achievedAt: row.achievedAt,
     });
   }
@@ -517,6 +566,7 @@ export async function recomputeBestTimesForSwimmer(swimmerId: string) {
         timeMs: fastest.timeMs,
         achievedAt: fastest.achievedAt,
         meetId: fastest.meetId,
+        meetName: fastest.meetName,
       });
       const created = await findSwimmerBestTime(swimmerId, eventKey);
       if (created) keptIds.add(created.id);
@@ -540,6 +590,7 @@ export async function recomputeBestTimesForSwimmer(swimmerId: string) {
           timeMs: fastest.timeMs,
           achievedAt: fastest.achievedAt,
           meetId: fastest.meetId,
+          meetName: fastest.meetName,
           updatedAt: new Date(),
         })
         .where(eq(swimmerBestTimes.id, existing.id));
@@ -681,15 +732,26 @@ export type SwimmerTimeHistoryRow = {
   eventNumber: number | null;
 };
 
-/** Unified meet + manual history for a swimmer (newest first). */
+/** Unified meet + manual history for a swimmer (newest first), scoped to one team. */
 export async function getSwimmerTimeHistory(
   swimmerId: string,
+  organizationId: string,
   range?: ProgressionDateRange,
 ): Promise<SwimmerTimeHistoryRow[]> {
-  const meetConditions = [eq(meetResults.swimmerId, swimmerId)];
-  const entryConditions = [eq(swimmerTimeEntries.swimmerId, swimmerId)];
+  const meetConditions = [
+    eq(meetResults.swimmerId, swimmerId),
+    eq(meets.organizationId, organizationId),
+  ];
+  const entryConditions = [
+    eq(swimmerTimeEntries.swimmerId, swimmerId),
+    eq(teamSwimmerMemberships.organizationId, organizationId),
+  ];
 
-  const leadOffConditions = [eq(teamSwimmerMemberships.swimmerId, swimmerId)];
+  const leadOffConditions = [
+    eq(teamSwimmerMemberships.swimmerId, swimmerId),
+    eq(teamSwimmerMemberships.organizationId, organizationId),
+    eq(meets.organizationId, organizationId),
+  ];
   if (range) {
     meetConditions.push(
       gte(meets.startDate, startOfDayUtc(range.startsOn)),
@@ -742,6 +804,10 @@ export async function getSwimmerTimeHistory(
         label: swimmerTimeEntries.label,
       })
       .from(swimmerTimeEntries)
+      .innerJoin(
+        teamSwimmerMemberships,
+        eq(swimmerTimeEntries.membershipId, teamSwimmerMemberships.id),
+      )
       .leftJoin(
         swimEvents,
         eq(swimEvents.eventKey, swimmerTimeEntries.eventKey),
@@ -860,8 +926,11 @@ export async function getSwimmerTimeHistory(
 }
 
 /** @deprecated Prefer getSwimmerTimeHistory */
-export async function getSwimmerMeetHistory(swimmerId: string) {
-  const rows = await getSwimmerTimeHistory(swimmerId);
+export async function getSwimmerMeetHistory(
+  swimmerId: string,
+  organizationId: string,
+) {
+  const rows = await getSwimmerTimeHistory(swimmerId, organizationId);
   return rows
     .filter((r) => r.source === "meet")
     .map((r) => ({
@@ -940,9 +1009,10 @@ export type SwimmerSeriesRow = {
 /** Time series for one swimmer: meet results ∪ manual entries. */
 export async function getSwimmerResultSeries(
   swimmerId: string,
+  organizationId: string,
   range?: ProgressionDateRange,
 ): Promise<SwimmerSeriesRow[]> {
-  const history = await getSwimmerTimeHistory(swimmerId, range);
+  const history = await getSwimmerTimeHistory(swimmerId, organizationId, range);
   return history
     .filter((r) => !r.isDq && r.timeMs > 0)
     .map((r) => ({

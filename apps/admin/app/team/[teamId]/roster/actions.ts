@@ -1,6 +1,7 @@
 "use server";
 
 import { getSession } from "@project-aqua/auth/session";
+import { canAddSwimmer } from "@project-aqua/billing/features";
 import {
   canExportRoster,
   requireCoachSafeSportCurrent,
@@ -9,6 +10,7 @@ import {
   requireTeamRole,
   writeAuditLog,
 } from "@project-aqua/db/authz";
+import { db } from "@project-aqua/db/client";
 import {
   createImportJob,
   updateImportJob,
@@ -21,6 +23,7 @@ import {
   getRosterForExport,
   getSwimmerContactsForMembership,
   getSwimmerMedicalForMembership,
+  importRosterSharePack,
   type RosterPageInput,
   removeSwimmerFromTeam,
   updateSwimmer,
@@ -29,6 +32,7 @@ import {
   createMaappAcknowledgment,
   logAuditEvent,
 } from "@project-aqua/db/queries/safesport";
+import { organization } from "@project-aqua/db/schema";
 import {
   sendRosterImportComplete,
   sendRosterImportFailed,
@@ -38,11 +42,17 @@ import { parseClassYear } from "@project-aqua/swim-core/team-types";
 import { rosterRowSchema } from "@project-aqua/swim-core/validators";
 import { parseRosterCsv } from "@project-aqua/swim-formats/csv";
 import {
+  buildRosterSharePack,
   detectRosterFileFormat,
+  isRosterSharePack,
   parseRosterFile,
   parseRosterFileFromBytes,
+  parseRosterSharePack,
   rosterImportErrorForFile,
+  rosterSharePackFilename,
+  serializeRosterSharePack,
 } from "@project-aqua/swim-formats/roster";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 
@@ -219,6 +229,7 @@ export async function fetchSwimmerQuickViewAction(
       course: t.course,
       timeMs: t.timeMs,
       achievedAt: t.achievedAt,
+      meetName: t.meetName,
     })),
   };
 }
@@ -287,6 +298,165 @@ export async function exportRosterCsvAction(
   return lines.join("\n");
 }
 
+export async function exportRosterSharePackAction(
+  teamId: string,
+  options: { swimmerIds: string[]; seasonId?: string },
+): Promise<{ content: string; filename: string }> {
+  const session = await getSession();
+  const headerStore = await headers();
+  const ip =
+    headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    headerStore.get("x-real-ip") ??
+    undefined;
+
+  await canExportRoster(session?.user?.id, teamId);
+
+  const swimmerIds = [...new Set(options.swimmerIds.filter(Boolean))];
+  if (swimmerIds.length === 0) {
+    throw new Error("Select at least one swimmer to share");
+  }
+
+  const [org, roster] = await Promise.all([
+    db
+      .select({ id: organization.id, name: organization.name })
+      .from(organization)
+      .where(eq(organization.id, teamId))
+      .limit(1)
+      .then((rows) => rows[0] ?? null),
+    getRosterForExport(teamId, {
+      swimmerIds,
+      seasonId: options.seasonId,
+      status: ["active", "inactive"],
+    }),
+  ]);
+
+  if (!org) {
+    throw new Error("Team not found");
+  }
+  if (roster.length === 0) {
+    throw new Error("No selected swimmers found on this roster");
+  }
+
+  const pack = buildRosterSharePack({
+    sourceOrganizationId: teamId,
+    sourceOrganizationName: org.name,
+    athletes: roster.flatMap((row) => {
+      if (!row.dateOfBirth) return [];
+      return [
+        {
+          aquaSwimmerId: row.swimmerId,
+          firstName: row.firstName,
+          lastName: row.lastName,
+          preferredName: row.preferredName,
+          dateOfBirth: row.dateOfBirth,
+          gender: row.gender,
+          governingBodyId: row.governingBodyId,
+        },
+      ];
+    }),
+  });
+
+  if (pack.athletes.length === 0) {
+    throw new Error("Selected swimmers are missing date of birth");
+  }
+
+  if (session?.user?.id) {
+    await writeAuditLog({
+      organizationId: teamId,
+      actorUserId: session.user.id,
+      action: "roster.share_pack.export",
+      resourceType: "organization",
+      resourceId: teamId,
+      ipAddress: ip,
+      metadata: {
+        format: "aqua-share-pack",
+        rowCount: pack.athletes.length,
+        swimmerIds: pack.athletes.map((a) => a.aquaSwimmerId),
+      },
+    });
+  }
+
+  return {
+    content: serializeRosterSharePack(pack),
+    filename: rosterSharePackFilename(org.name),
+  };
+}
+
+async function importRosterSharePackRows(teamId: string, content: string) {
+  const session = await getSession();
+  await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+
+  const pack = parseRosterSharePack(content);
+  if (pack.sourceOrganizationId === teamId) {
+    throw new Error("This share pack is from the same team");
+  }
+
+  if (pack.athletes.some((a) => isMinorSwimmer(a.dateOfBirth))) {
+    await requireCoachSafeSportCurrent(session?.user?.id, teamId);
+  }
+
+  const canAdd = await canAddSwimmer(teamId);
+  if (!canAdd) {
+    throw new Error(
+      "Swimmer limit reached for your plan. Upgrade to add more.",
+    );
+  }
+
+  const jobId = await createImportJob(teamId, "roster_share_pack");
+  await updateImportJob(jobId, { status: "processing" });
+
+  try {
+    const result = await importRosterSharePack(teamId, pack.athletes);
+    revalidatePath(`/team/${teamId}/roster`);
+
+    if (session?.user?.id) {
+      await writeAuditLog({
+        organizationId: teamId,
+        actorUserId: session.user.id,
+        action: "roster.share_pack.import",
+        resourceType: "organization",
+        resourceId: teamId,
+        metadata: {
+          sourceOrganizationId: pack.sourceOrganizationId,
+          sourceOrganizationName: pack.sourceOrganizationName,
+          linked: result.linked,
+          merged: result.merged,
+          alreadyOnTeam: result.alreadyOnTeam,
+          failed: result.failed.length,
+        },
+      });
+    }
+
+    await updateImportJob(jobId, {
+      status: "complete",
+      resultSummary: JSON.stringify(result),
+    });
+
+    if (session?.user?.email) {
+      await sendRosterImportComplete(session.user.email, {
+        teamName: "Your team",
+        added: result.linked + result.merged,
+        updated: result.alreadyOnTeam,
+      });
+    }
+
+    return {
+      added: result.linked + result.merged,
+      linked: result.linked,
+      merged: result.merged,
+      alreadyOnTeam: result.alreadyOnTeam,
+      failed: result.failed,
+      sourceTeamName: pack.sourceOrganizationName,
+    };
+  } catch (error) {
+    await updateImportJob(jobId, {
+      status: "failed",
+      errors: error instanceof Error ? error.message : "Import failed",
+    });
+    throw error;
+  }
+}
+
 export async function recordMaappAcknowledgmentAction(
   teamId: string,
   membershipId: string,
@@ -350,15 +520,19 @@ async function importRosterRows(
   try {
     let added = 0;
     for (const row of rows) {
-      await addSwimmer(teamId, {
-        firstName: row.firstName,
-        lastName: row.lastName,
-        dateOfBirth: row.dateOfBirth,
-        gender: row.gender,
-        practiceGroup: row.practiceGroup,
-        classYear: parseClassYear(row.classYear) ?? undefined,
-        usaMemberId: row.usaMemberId,
-      });
+      await addSwimmer(
+        teamId,
+        {
+          firstName: row.firstName,
+          lastName: row.lastName,
+          dateOfBirth: row.dateOfBirth,
+          gender: row.gender,
+          practiceGroup: row.practiceGroup,
+          classYear: parseClassYear(row.classYear) ?? undefined,
+          usaMemberId: row.usaMemberId,
+        },
+        { viewerUserId: session?.user?.id },
+      );
       added++;
     }
 
@@ -398,12 +572,23 @@ export async function importRosterCsvAction(teamId: string, content: string) {
   return importRosterRows(teamId, parseRosterCsv(content), "roster_csv");
 }
 
+export type ImportRosterFileResult =
+  | { added: number }
+  | {
+      added: number;
+      linked: number;
+      merged: number;
+      alreadyOnTeam: number;
+      failed: Array<{ aquaSwimmerId: string; name: string; reason: string }>;
+      sourceTeamName: string;
+    };
+
 export async function importRosterFileAction(
   teamId: string,
   filename: string,
   content: string,
   encoding: "utf8" | "base64" = "utf8",
-) {
+): Promise<ImportRosterFileResult> {
   if (filename.toLowerCase().endsWith(".zip")) {
     if (encoding !== "base64") {
       throw new Error("ZIP roster packs must be uploaded as binary files.");
@@ -418,6 +603,10 @@ export async function importRosterFileAction(
       ? Buffer.from(content, "base64").toString("utf8")
       : content;
 
+  if (isRosterSharePack(text)) {
+    return importRosterSharePackRows(teamId, text);
+  }
+
   const importError = rosterImportErrorForFile(filename, text);
   if (importError) {
     throw new Error(importError);
@@ -426,7 +615,7 @@ export async function importRosterFileAction(
   const format = detectRosterFileFormat(filename, text);
   if (!format) {
     throw new Error(
-      "Unsupported file type. Use CSV, SD3, CL2, HY3, or a roster ZIP.",
+      "Unsupported file type. Use a Project Aqua share pack (.aqua.json), CSV, SD3, CL2, HY3, or a roster ZIP.",
     );
   }
 

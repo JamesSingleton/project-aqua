@@ -34,25 +34,24 @@ describe("rosterRowSchema", () => {
     }
   });
 
-  it("rejects member id when linking existing swimmer", () => {
-    const result = rosterRowSchema.safeParse({
-      ...adultBase,
-      governingBodyId: "123",
-      linkExistingSwimmerId: "swimmer-1",
-    });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues[0]?.message).toContain("Cannot link");
-    }
+  it("allows USA ID when linking an existing swimmer", () => {
+    expect(
+      rosterRowSchema.safeParse({
+        ...adultBase,
+        usaMemberId: "123",
+        linkExistingSwimmerId: "swimmer-1",
+      }).success,
+    ).toBe(true);
   });
 
-  it("rejects usaMemberId when linking existing swimmer", () => {
-    const result = rosterRowSchema.safeParse({
-      ...adultBase,
-      usaMemberId: "123",
-      linkExistingSwimmerId: "swimmer-1",
-    });
-    expect(result.success).toBe(false);
+  it("allows governingBodyId when linking an existing swimmer", () => {
+    expect(
+      rosterRowSchema.safeParse({
+        ...adultBase,
+        governingBodyId: "123",
+        linkExistingSwimmerId: "swimmer-1",
+      }).success,
+    ).toBe(true);
   });
 
   it("allows minor with parent contact info", () => {

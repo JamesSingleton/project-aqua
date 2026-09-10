@@ -228,6 +228,8 @@ export const swimmerBestTimes = pgTable("swimmer_best_times", {
   timeMs: integer("time_ms").notNull(),
   achievedAt: timestamp("achieved_at").notNull(),
   meetId: text("meet_id").references(() => meets.id, { onDelete: "set null" }),
+  /** Snapshot so other teams can see PR venue without meet-row RLS. */
+  meetName: text("meet_name"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -240,21 +242,30 @@ export const swimmerTimeEntrySourceEnum = pgEnum("swimmer_time_entry_source", [
 export type SwimmerTimeEntrySource =
   (typeof swimmerTimeEntrySourceEnum.enumValues)[number];
 
-export const swimmerTimeEntries = pgTable("swimmer_time_entries", {
-  id: text("id").primaryKey(),
-  swimmerId: text("swimmer_id")
-    .notNull()
-    .references(() => swimmers.id, { onDelete: "cascade" }),
-  eventKey: text("event_key")
-    .notNull()
-    .references(() => swimEvents.eventKey),
-  course: courseEnum("course").notNull(),
-  timeMs: integer("time_ms").notNull(),
-  achievedAt: timestamp("achieved_at").notNull(),
-  source: swimmerTimeEntrySourceEnum("source").notNull().default("manual"),
-  label: text("label"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const swimmerTimeEntries = pgTable(
+  "swimmer_time_entries",
+  {
+    id: text("id").primaryKey(),
+    swimmerId: text("swimmer_id")
+      .notNull()
+      .references(() => swimmers.id, { onDelete: "cascade" }),
+    membershipId: text("membership_id")
+      .notNull()
+      .references(() => teamSwimmerMemberships.id, { onDelete: "cascade" }),
+    eventKey: text("event_key")
+      .notNull()
+      .references(() => swimEvents.eventKey),
+    course: courseEnum("course").notNull(),
+    timeMs: integer("time_ms").notNull(),
+    achievedAt: timestamp("achieved_at").notNull(),
+    source: swimmerTimeEntrySourceEnum("source").notNull().default("manual"),
+    label: text("label"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("swimmer_time_entries_membership_id_idx").on(table.membershipId),
+  ],
+);
 
 export const meetRelayLegs = pgTable(
   "meet_relay_legs",
@@ -520,6 +531,10 @@ export const swimmerTimeEntriesRelations = relations(
     swimmer: one(swimmers, {
       fields: [swimmerTimeEntries.swimmerId],
       references: [swimmers.id],
+    }),
+    membership: one(teamSwimmerMemberships, {
+      fields: [swimmerTimeEntries.membershipId],
+      references: [teamSwimmerMemberships.id],
     }),
     event: one(swimEvents, {
       fields: [swimmerTimeEntries.eventKey],

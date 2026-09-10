@@ -47,6 +47,35 @@ export function formatDateOnlyLabel(
   });
 }
 
+/** PR context: meet name plus date, or date only. */
+export function formatBestTimeAchievedLabel(
+  achievedAt: Date,
+  meetName: string | null | undefined,
+  formatDate: (date: Date) => string,
+): string {
+  const date = formatDate(achievedAt);
+  const name = meetName?.trim();
+  return name ? `${name} · ${date}` : date;
+}
+
+/** Keep a prior meet-name snapshot when live meet rows are not readable. */
+export function snapshotBestTimeMeetName(input: {
+  nextMeetId: string | null | undefined;
+  resolvedName: string | null | undefined;
+  existing?: {
+    meetId: string | null;
+    meetName: string | null;
+  } | null;
+}): string | null {
+  if (!input.nextMeetId) return null;
+  const resolved = input.resolvedName?.trim();
+  if (resolved) return resolved;
+  if (input.existing?.meetId === input.nextMeetId) {
+    return input.existing.meetName ?? null;
+  }
+  return null;
+}
+
 /** True when `date`'s UTC calendar day matches year/month/day (0-based month). */
 export function isUtcCalendarDay(
   date: Date,

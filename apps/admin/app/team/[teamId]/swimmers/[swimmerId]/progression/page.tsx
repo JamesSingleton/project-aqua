@@ -97,9 +97,9 @@ export default async function SwimmerProgressionPage({
   );
 
   const [series, bestTimes, timeHistory] = await Promise.all([
-    getSwimmerResultSeries(swimmerId, range),
+    getSwimmerResultSeries(swimmerId, teamId, range),
     getSwimmerBestTimes(swimmerId),
-    getSwimmerTimeHistory(swimmerId, range),
+    getSwimmerTimeHistory(swimmerId, teamId, range),
   ]);
 
   const chartSeries = series.map((row) => ({

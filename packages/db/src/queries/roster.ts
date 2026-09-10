@@ -1,5 +1,9 @@
 import { isMinorSwimmer } from "@project-aqua/swim-core/age";
 import {
+  normalizeDateOfBirth,
+  swimmerIdentitiesMatch,
+} from "@project-aqua/swim-core/people";
+import {
   parseClassYear,
   parseTeamType,
 } from "@project-aqua/swim-core/team-types";
@@ -37,6 +41,10 @@ import {
   getEnrollmentForMembershipInSeason,
   updateSeasonEnrollment,
 } from "./seasons";
+import {
+  findTeamSwimmersMatchingIdentity,
+  mergeSwimmerRecords,
+} from "./swimmer-merge";
 
 export type RosterSortId =
   | "firstName"
@@ -321,6 +329,116 @@ export async function findSwimmerByGoverningBodyId(governingBodyId: string) {
     .where(eq(swimmers.governingBodyId, governingBodyId))
     .limit(1);
   return row ?? null;
+}
+
+export type LinkableSwimmerMatch = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+  dateOfBirth: string;
+  governingBodyId: string | null;
+  /** Other teams (visible to this coach) where this person already has a membership. */
+  teamNames: string[];
+};
+
+/**
+ * Coach-scoped name+DOB matches for cross-team linking without USA Swimming ID.
+ * Only returns people already on teams the viewer belongs to, excluding anyone
+ * already on the target team.
+ */
+export async function findLinkableSwimmersForCoach(input: {
+  viewerUserId: string;
+  targetOrganizationId: string;
+  firstName: string;
+  lastName: string;
+  preferredName?: string | null;
+  dateOfBirth: string;
+}): Promise<LinkableSwimmerMatch[]> {
+  const dob = normalizeDateOfBirth(input.dateOfBirth);
+  if (!dob || !input.firstName.trim() || !input.lastName.trim()) {
+    return [];
+  }
+
+  const rows = await db
+    .select({
+      id: swimmers.id,
+      firstName: swimmers.firstName,
+      lastName: swimmers.lastName,
+      preferredName: swimmers.preferredName,
+      dateOfBirth: swimmers.dateOfBirth,
+      governingBodyId: swimmers.governingBodyId,
+      teamId: organization.id,
+      teamName: organization.name,
+    })
+    .from(swimmers)
+    .innerJoin(
+      teamSwimmerMemberships,
+      eq(teamSwimmerMemberships.swimmerId, swimmers.id),
+    )
+    .innerJoin(
+      organization,
+      eq(organization.id, teamSwimmerMemberships.organizationId),
+    )
+    .innerJoin(
+      member,
+      and(
+        eq(member.organizationId, teamSwimmerMemberships.organizationId),
+        eq(member.userId, input.viewerUserId),
+      ),
+    )
+    .where(eq(swimmers.dateOfBirth, dob));
+
+  const alreadyOnTarget = new Set(
+    rows
+      .filter((row) => row.teamId === input.targetOrganizationId)
+      .map((row) => row.id),
+  );
+
+  const byId = new Map<string, LinkableSwimmerMatch>();
+  for (const row of rows) {
+    if (alreadyOnTarget.has(row.id)) continue;
+    if (row.teamId === input.targetOrganizationId) continue;
+
+    if (
+      !swimmerIdentitiesMatch(
+        {
+          firstName: input.firstName,
+          lastName: input.lastName,
+          preferredName: input.preferredName,
+          dateOfBirth: dob,
+        },
+        {
+          firstName: row.firstName,
+          lastName: row.lastName,
+          preferredName: row.preferredName,
+          dateOfBirth: row.dateOfBirth,
+        },
+      )
+    ) {
+      continue;
+    }
+
+    const existing = byId.get(row.id);
+    if (existing) {
+      if (!existing.teamNames.includes(row.teamName)) {
+        existing.teamNames.push(row.teamName);
+      }
+      continue;
+    }
+
+    byId.set(row.id, {
+      id: row.id,
+      firstName: row.firstName,
+      lastName: row.lastName,
+      preferredName: row.preferredName,
+      dateOfBirth: row.dateOfBirth,
+      governingBodyId: row.governingBodyId,
+      teamNames: [row.teamName],
+    });
+  }
+
+  return [...byId.values()];
 }
 
 export async function getRoster(organizationId: string, seasonId?: string) {
@@ -907,7 +1025,11 @@ export async function addExistingSwimmerToTeam(
   return createMembershipForTeam(organizationId, swimmerId, data);
 }
 
-export async function addSwimmer(organizationId: string, data: RosterRow) {
+export async function addSwimmer(
+  organizationId: string,
+  data: RosterRow,
+  options?: { viewerUserId?: string },
+) {
   const governingBodyId = resolveGoverningBodyId(data);
 
   if (data.linkExistingSwimmerId) {
@@ -922,6 +1044,21 @@ export async function addSwimmer(organizationId: string, data: RosterRow) {
     const existing = await findSwimmerByGoverningBodyId(governingBodyId);
     if (existing) {
       return createMembershipForTeam(organizationId, existing.id, data);
+    }
+  }
+
+  // Unique name+DOB on another team this coach sees → link instead of duplicating.
+  if (options?.viewerUserId && !data.forceNewPerson) {
+    const matches = await findLinkableSwimmersForCoach({
+      viewerUserId: options.viewerUserId,
+      targetOrganizationId: organizationId,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      preferredName: data.preferredName,
+      dateOfBirth: data.dateOfBirth,
+    });
+    if (matches.length === 1) {
+      return createMembershipForTeam(organizationId, matches[0]!.id, data);
     }
   }
 
@@ -1150,4 +1287,160 @@ export async function searchSwimmerByUsaId(usaMemberId: string) {
     .limit(1);
 
   return row ?? null;
+}
+
+export async function getSwimmerIdentityById(swimmerId: string) {
+  const [row] = await db
+    .select({
+      id: swimmers.id,
+      firstName: swimmers.firstName,
+      lastName: swimmers.lastName,
+      preferredName: swimmers.preferredName,
+      dateOfBirth: swimmers.dateOfBirth,
+      gender: swimmers.gender,
+      governingBodyId: swimmers.governingBodyId,
+    })
+    .from(swimmers)
+    .where(eq(swimmers.id, swimmerId))
+    .limit(1);
+
+  return row ?? null;
+}
+
+export type ImportRosterSharePackResult = {
+  linked: number;
+  merged: number;
+  alreadyOnTeam: number;
+  failed: Array<{ aquaSwimmerId: string; name: string; reason: string }>;
+};
+
+/**
+ * Link athletes from a Project Aqua roster share pack onto a team.
+ * Confirms name+DOB against the stored person. When this team already has a
+ * different person row matching name+DOB, merges that duplicate into the
+ * pack's opaque id so we do not keep two people.
+ */
+export async function importRosterSharePack(
+  organizationId: string,
+  athletes: Array<{
+    aquaSwimmerId: string;
+    firstName: string;
+    lastName: string;
+    preferredName?: string | null;
+    dateOfBirth: string;
+    gender: "male" | "female";
+  }>,
+): Promise<ImportRosterSharePackResult> {
+  const result: ImportRosterSharePackResult = {
+    linked: 0,
+    merged: 0,
+    alreadyOnTeam: 0,
+    failed: [],
+  };
+
+  for (const athlete of athletes) {
+    const name = `${athlete.firstName} ${athlete.lastName}`.trim();
+    const packIdentity = {
+      firstName: athlete.firstName,
+      lastName: athlete.lastName,
+      preferredName: athlete.preferredName,
+      dateOfBirth: athlete.dateOfBirth,
+    };
+    const existing = await getSwimmerIdentityById(athlete.aquaSwimmerId);
+    if (!existing) {
+      result.failed.push({
+        aquaSwimmerId: athlete.aquaSwimmerId,
+        name,
+        reason: "Swimmer not found — pack may be from another environment",
+      });
+      continue;
+    }
+
+    if (
+      !swimmerIdentitiesMatch(packIdentity, {
+        firstName: existing.firstName,
+        lastName: existing.lastName,
+        preferredName: existing.preferredName,
+        dateOfBirth: existing.dateOfBirth,
+      })
+    ) {
+      result.failed.push({
+        aquaSwimmerId: athlete.aquaSwimmerId,
+        name,
+        reason: "Name/DOB does not match stored profile",
+      });
+      continue;
+    }
+
+    const localMatches = await findTeamSwimmersMatchingIdentity(
+      organizationId,
+      {
+        firstName: existing.firstName,
+        lastName: existing.lastName,
+        preferredName: existing.preferredName,
+        dateOfBirth: existing.dateOfBirth,
+      },
+      existing.id,
+    );
+
+    if (localMatches.length > 1) {
+      result.failed.push({
+        aquaSwimmerId: athlete.aquaSwimmerId,
+        name,
+        reason:
+          "Multiple local roster matches — resolve duplicates on this team first",
+      });
+      continue;
+    }
+
+    try {
+      if (localMatches.length === 1 && localMatches[0]) {
+        await mergeSwimmerRecords({
+          winnerSwimmerId: existing.id,
+          loserSwimmerId: localMatches[0].swimmerId,
+        });
+        result.merged += 1;
+        continue;
+      }
+
+      await addExistingSwimmerToTeam(existing.id, organizationId, {
+        firstName: existing.firstName,
+        lastName: existing.lastName,
+        preferredName: existing.preferredName ?? undefined,
+        dateOfBirth: existing.dateOfBirth,
+        gender: existing.gender,
+      });
+      result.linked += 1;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Link failed";
+      if (message.includes("already on this team")) {
+        result.alreadyOnTeam += 1;
+      } else {
+        result.failed.push({
+          aquaSwimmerId: athlete.aquaSwimmerId,
+          name,
+          reason: message,
+        });
+      }
+    }
+  }
+
+  return result;
+}
+
+export async function searchLinkableSwimmersByIdentity(
+  viewerUserId: string,
+  targetOrganizationId: string,
+  identity: {
+    firstName: string;
+    lastName: string;
+    preferredName?: string | null;
+    dateOfBirth: string;
+  },
+) {
+  return findLinkableSwimmersForCoach({
+    viewerUserId,
+    targetOrganizationId,
+    ...identity,
+  });
 }

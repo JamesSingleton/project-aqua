@@ -194,4 +194,58 @@ describe("calendar-date", () => {
       expect(calendarDate.deadlineUrgencyLevel(30, false)).toBe("ok");
     });
   });
+
+  it("formats best-time achieved labels with optional meet name", () => {
+    const date = new Date("2026-03-12T00:00:00.000Z");
+    const formatDate = () => "Mar 12, 2026";
+    expect(
+      calendarDate.formatBestTimeAchievedLabel(
+        date,
+        "State Championships",
+        formatDate,
+      ),
+    ).toBe("State Championships · Mar 12, 2026");
+    expect(
+      calendarDate.formatBestTimeAchievedLabel(date, "  ", formatDate),
+    ).toBe("Mar 12, 2026");
+    expect(
+      calendarDate.formatBestTimeAchievedLabel(date, null, formatDate),
+    ).toBe("Mar 12, 2026");
+  });
+
+  it("snapshots meet names without a live meet join", () => {
+    expect(
+      calendarDate.snapshotBestTimeMeetName({
+        nextMeetId: null,
+        resolvedName: "Invite",
+      }),
+    ).toBeNull();
+    expect(
+      calendarDate.snapshotBestTimeMeetName({
+        nextMeetId: "meet-1",
+        resolvedName: "  Dual  ",
+      }),
+    ).toBe("Dual");
+    expect(
+      calendarDate.snapshotBestTimeMeetName({
+        nextMeetId: "meet-1",
+        resolvedName: null,
+        existing: { meetId: "meet-1", meetName: "State Championships" },
+      }),
+    ).toBe("State Championships");
+    expect(
+      calendarDate.snapshotBestTimeMeetName({
+        nextMeetId: "meet-2",
+        resolvedName: null,
+        existing: { meetId: "meet-1", meetName: "State Championships" },
+      }),
+    ).toBeNull();
+    expect(
+      calendarDate.snapshotBestTimeMeetName({
+        nextMeetId: "meet-1",
+        resolvedName: "",
+        existing: { meetId: "meet-1", meetName: null },
+      }),
+    ).toBeNull();
+  });
 });

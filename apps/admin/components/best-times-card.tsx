@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  formatBestTimeAchievedLabel,
   formatDateOnly,
   formatDateOnlyLabel,
   formatLocalDateOnly,
@@ -61,6 +62,7 @@ export type BestTimeRow = {
   course: string;
   timeMs: number;
   achievedAt: Date;
+  meetName?: string | null;
 };
 
 type EditorMode =
@@ -260,7 +262,7 @@ export function BestTimesCard({
                 <TableHead>Event</TableHead>
                 <TableHead>Course</TableHead>
                 <TableHead>Time</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead>Achieved</TableHead>
                 {canEdit ? <TableHead className="w-24"> </TableHead> : null}
               </TableRow>
             </TableHeader>
@@ -280,7 +282,16 @@ export function BestTimesCard({
                     {formatTime(bt.timeMs)}
                   </TableCell>
                   <TableCell>
-                    {formatDateOnlyLabel(new Date(bt.achievedAt))}
+                    {formatBestTimeAchievedLabel(
+                      new Date(bt.achievedAt),
+                      bt.meetName,
+                      (date) =>
+                        formatDateOnlyLabel(date, undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        }),
+                    )}
                   </TableCell>
                   {canEdit ? (
                     <TableCell>
