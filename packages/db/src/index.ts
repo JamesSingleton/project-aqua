@@ -1,3 +1,11 @@
 export * from "./authz";
-export { type Database, db } from "./client";
+export {
+  bindRequestUser,
+  type Database,
+  db,
+  dbAdmin,
+  getRequestUserId,
+  runAsUser,
+  unbindRequestUser,
+} from "./client";
 export * from "./schema/index";

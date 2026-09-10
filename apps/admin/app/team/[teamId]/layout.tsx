@@ -24,6 +24,10 @@ export async function generateMetadata({
   params: Promise<{ teamId: string }>;
 }): Promise<Metadata> {
   const { teamId } = await params;
+  const session = await getSession();
+  if (!session?.user) {
+    return { title: "Team" };
+  }
   const name = (await getOrganizationName(teamId)) ?? "Team";
   return {
     title: {
