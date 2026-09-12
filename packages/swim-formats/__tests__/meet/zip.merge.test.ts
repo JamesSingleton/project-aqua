@@ -374,6 +374,13 @@ describe("mergeParsedMeets", () => {
               relayLetter: "A",
               swimmerNames: ["Orion MARIAChaturvedi"],
               seedTime: "1:40.00",
+              results: [
+                {
+                  time: "1:39.50",
+                  place: 1,
+                  resultType: "finals",
+                },
+              ],
             },
           ],
         },
@@ -383,6 +390,7 @@ describe("mergeParsedMeets", () => {
     expect(merged.relays?.[0]).toMatchObject({
       swimmerNames: ["Orion Chaturvedi"],
       seedTime: "1:40.00",
+      results: [{ time: "1:39.50", place: 1, resultType: "finals" }],
     });
   });
 

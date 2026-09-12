@@ -408,6 +408,18 @@ export function RegistrationBoard({
     return map;
   }, [entries]);
 
+  const bestTimeByMembershipAndEvent = useMemo(() => {
+    const byMembership = new Map<string, Map<string, number>>();
+    for (const bestTime of bestTimes) {
+      const byEvent = byMembership.get(bestTime.membershipId) ?? new Map();
+      if (!byEvent.has(bestTime.eventKey)) {
+        byEvent.set(bestTime.eventKey, bestTime.timeMs);
+      }
+      byMembership.set(bestTime.membershipId, byEvent);
+    }
+    return byMembership;
+  }, [bestTimes]);
+
   const groups = useMemo(() => {
     const map = new Map<string, string>();
     for (const row of roster) {
@@ -573,9 +585,7 @@ export function RegistrationBoard({
   function bestSeedFor(eventKey: string) {
     if (!membershipId) return null;
     return (
-      bestTimes.find(
-        (b) => b.membershipId === membershipId && b.eventKey === eventKey,
-      )?.timeMs ?? null
+      bestTimeByMembershipAndEvent.get(membershipId)?.get(eventKey) ?? null
     );
   }
 

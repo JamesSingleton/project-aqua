@@ -21,6 +21,7 @@ import {
   meetEntries,
   meetEvents,
   meetRelayLegs,
+  meetRelayResultMembers,
   meetRelayResultSplits,
   meetRelayResults,
   meetRelayTeams,
@@ -34,7 +35,11 @@ import {
   teamSeasons,
   teamSwimmerMemberships,
 } from "../schema/index";
-import { findSwimmerBestTime, upsertBestTime } from "./progression";
+import {
+  findSwimmerBestTime,
+  recomputeBestTimesForSwimmers,
+  upsertBestTime,
+} from "./progression";
 import { ensureCurrentSeason } from "./seasons";
 
 function generateId(): string {
@@ -329,30 +334,63 @@ export async function updateMeetRelayTeamSeed(
 export async function getMeetsWithResultStats(organizationId: string) {
   const meetList = await getMeets(organizationId);
   if (meetList.length === 0) return [];
+  const meetIds = meetList.map((meet) => meet.id);
 
-  const stats = await db
-    .select({
-      meetId: meetResults.meetId,
-      resultCount: sql<number>`count(*)::int`,
-      athleteCount: sql<number>`count(distinct ${meetResults.swimmerId})::int`,
-    })
-    .from(meetResults)
-    .where(
-      inArray(
-        meetResults.meetId,
-        meetList.map((m) => m.id),
-      ),
-    )
-    .groupBy(meetResults.meetId);
+  const [individualStats, relayStats] = await Promise.all([
+    db
+      .select({
+        meetId: meetResults.meetId,
+        resultCount: sql<number>`count(*)::int`,
+        swimmerIds: sql<string[]>`array_agg(distinct ${meetResults.swimmerId})`,
+      })
+      .from(meetResults)
+      .where(inArray(meetResults.meetId, meetIds))
+      .groupBy(meetResults.meetId),
+    db
+      .select({
+        meetId: meetRelayResults.meetId,
+        resultCount: sql<number>`count(distinct ${meetRelayResults.id})::int`,
+        swimmerIds: sql<
+          string[] | null
+        >`array_agg(distinct ${teamSwimmerMemberships.swimmerId}) filter (where ${teamSwimmerMemberships.swimmerId} is not null)`,
+      })
+      .from(meetRelayResults)
+      .leftJoin(
+        meetRelayResultMembers,
+        eq(meetRelayResultMembers.resultId, meetRelayResults.id),
+      )
+      .leftJoin(
+        teamSwimmerMemberships,
+        eq(teamSwimmerMemberships.id, meetRelayResultMembers.membershipId),
+      )
+      .where(inArray(meetRelayResults.meetId, meetIds))
+      .groupBy(meetRelayResults.meetId),
+  ]);
 
-  const byMeet = new Map(stats.map((s) => [s.meetId, s]));
+  const byMeet = new Map<
+    string,
+    { resultCount: number; swimmerIds: Set<string> }
+  >();
+  for (const stats of [individualStats, relayStats]) {
+    for (const stat of stats) {
+      const current = byMeet.get(stat.meetId) ?? {
+        resultCount: 0,
+        swimmerIds: new Set<string>(),
+      };
+      current.resultCount += stat.resultCount;
+      for (const swimmerId of stat.swimmerIds ?? []) {
+        current.swimmerIds.add(swimmerId);
+      }
+      byMeet.set(stat.meetId, current);
+    }
+  }
 
   return meetList.map((meet) => {
     const s = byMeet.get(meet.id);
     return {
       ...meet,
       resultCount: s?.resultCount ?? 0,
-      athleteCount: s?.athleteCount ?? 0,
+      athleteCount: s?.swimmerIds.size ?? 0,
     };
   });
 }
@@ -710,7 +748,7 @@ export async function addMeetResult(
     dqCode: options?.dqCode ?? null,
   });
 
-  if (event && !options?.isDq && !options?.exhibition) {
+  if (event && !options?.isDq) {
     await upsertBestTime({
       swimmerId,
       eventKey: event.eventKey,
@@ -722,6 +760,46 @@ export async function addMeetResult(
   }
 
   return id;
+}
+
+export type ResolvedMeetResultInput = {
+  meetEventId: string;
+  swimmerId: string;
+  timeMs: number;
+  place: number | null;
+  previousBestTimeMs: number | null;
+};
+
+export async function addResolvedMeetResults(
+  meetId: string,
+  rows: readonly ResolvedMeetResultInput[],
+  swimmerIds: readonly string[],
+) {
+  if (rows.length === 0) return [];
+
+  const results = rows.map((row) => ({
+    id: generateId(),
+    meetId,
+    meetEventId: row.meetEventId,
+    swimmerId: row.swimmerId,
+    timeMs: row.timeMs,
+    previousBestTimeMs: row.previousBestTimeMs,
+    place: row.place,
+    isDq: false,
+    splitTimes: null,
+    round: null,
+    heat: null,
+    lane: null,
+    exhibition: false,
+    dqCode: null,
+  }));
+
+  await db.transaction(async (tx) => {
+    await tx.insert(meetResults).values(results);
+    await recomputeBestTimesForSwimmers(swimmerIds, tx);
+  });
+
+  return results.map((result) => result.id);
 }
 
 export async function getBestTimeMs(
@@ -911,6 +989,16 @@ export type MeetRelayResultSplitRow = {
   timeMs: number;
 };
 
+export type MeetRelayResultMemberRow = {
+  id: string;
+  resultId: string;
+  membershipId: string;
+  swimmerId: string;
+  firstName: string;
+  lastName: string;
+  legOrder: number;
+};
+
 export type MeetRelayResultRow = {
   id: string;
   meetEventId: string;
@@ -928,6 +1016,7 @@ export type MeetRelayResultRow = {
   gender: string;
   ageGroup: string | null;
   eventKey: string;
+  members: MeetRelayResultMemberRow[];
   splits: MeetRelayResultSplitRow[];
 };
 
@@ -964,32 +1053,54 @@ export async function getMeetRelayResultsDetailed(
 
   if (resultRows.length === 0) return [];
 
-  const splitRows = await db
-    .select({
-      id: meetRelayResultSplits.id,
-      resultId: meetRelayResultSplits.resultId,
-      membershipId: meetRelayResultSplits.membershipId,
-      swimmerId: teamSwimmerMemberships.swimmerId,
-      firstName: swimmers.firstName,
-      lastName: swimmers.lastName,
-      gender: swimmers.gender,
-      legOrder: meetRelayResultSplits.legOrder,
-      timeMs: meetRelayResultSplits.timeMs,
-    })
-    .from(meetRelayResultSplits)
-    .innerJoin(
-      teamSwimmerMemberships,
-      eq(meetRelayResultSplits.membershipId, teamSwimmerMemberships.id),
-    )
-    .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
-    .where(
-      inArray(
-        meetRelayResultSplits.resultId,
-        resultRows.map((row) => row.id),
-      ),
-    )
-    .orderBy(asc(meetRelayResultSplits.legOrder));
+  const resultIds = resultRows.map((row) => row.id);
+  const [memberRows, splitRows] = await Promise.all([
+    db
+      .select({
+        id: meetRelayResultMembers.id,
+        resultId: meetRelayResultMembers.resultId,
+        membershipId: meetRelayResultMembers.membershipId,
+        swimmerId: teamSwimmerMemberships.swimmerId,
+        firstName: swimmers.firstName,
+        lastName: swimmers.lastName,
+        legOrder: meetRelayResultMembers.legOrder,
+      })
+      .from(meetRelayResultMembers)
+      .innerJoin(
+        teamSwimmerMemberships,
+        eq(meetRelayResultMembers.membershipId, teamSwimmerMemberships.id),
+      )
+      .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
+      .where(inArray(meetRelayResultMembers.resultId, resultIds))
+      .orderBy(asc(meetRelayResultMembers.legOrder)),
+    db
+      .select({
+        id: meetRelayResultSplits.id,
+        resultId: meetRelayResultSplits.resultId,
+        membershipId: meetRelayResultSplits.membershipId,
+        swimmerId: teamSwimmerMemberships.swimmerId,
+        firstName: swimmers.firstName,
+        lastName: swimmers.lastName,
+        gender: swimmers.gender,
+        legOrder: meetRelayResultSplits.legOrder,
+        timeMs: meetRelayResultSplits.timeMs,
+      })
+      .from(meetRelayResultSplits)
+      .innerJoin(
+        teamSwimmerMemberships,
+        eq(meetRelayResultSplits.membershipId, teamSwimmerMemberships.id),
+      )
+      .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
+      .where(inArray(meetRelayResultSplits.resultId, resultIds))
+      .orderBy(asc(meetRelayResultSplits.legOrder)),
+  ]);
 
+  const membersByResult = new Map<string, MeetRelayResultMemberRow[]>();
+  for (const member of memberRows) {
+    const list = membersByResult.get(member.resultId) ?? [];
+    list.push(member);
+    membersByResult.set(member.resultId, list);
+  }
   const splitsByResult = new Map<string, MeetRelayResultSplitRow[]>();
   for (const split of splitRows) {
     const list = splitsByResult.get(split.resultId) ?? [];
@@ -999,6 +1110,7 @@ export async function getMeetRelayResultsDetailed(
 
   return resultRows.map((row) => ({
     ...row,
+    members: membersByResult.get(row.id) ?? [],
     splits: splitsByResult.get(row.id) ?? [],
   }));
 }
@@ -1111,7 +1223,69 @@ export async function upsertMeetRelayResult(input: {
       });
     }
 
+    const existingMembers = await tx
+      .select({
+        membershipId: meetRelayResultMembers.membershipId,
+        legOrder: meetRelayResultMembers.legOrder,
+      })
+      .from(meetRelayResultMembers)
+      .where(eq(meetRelayResultMembers.resultId, id))
+      .orderBy(asc(meetRelayResultMembers.legOrder));
+
+    if (existingMembers.length === 0) {
+      const relayLegs = await tx
+        .select({
+          membershipId: meetRelayLegs.membershipId,
+          legOrder: meetRelayLegs.legOrder,
+        })
+        .from(meetRelayLegs)
+        .where(
+          and(
+            eq(meetRelayLegs.meetId, input.meetId),
+            eq(meetRelayLegs.meetEventId, input.meetEventId),
+            eq(meetRelayLegs.relayLetter, letter),
+          ),
+        )
+        .orderBy(asc(meetRelayLegs.legOrder));
+      const racingLegs = relayLegs.filter(
+        (leg) => leg.legOrder >= 1 && leg.legOrder <= RELAY_PRIMARY_LEG_COUNT,
+      );
+      if (racingLegs.length > 0) {
+        await tx.insert(meetRelayResultMembers).values(
+          racingLegs.map((leg) => ({
+            id: generateId(),
+            resultId: id,
+            membershipId: leg.membershipId,
+            legOrder: leg.legOrder,
+          })),
+        );
+        existingMembers.push(...racingLegs);
+      }
+    }
+
     if (input.split) {
+      const savedMember = existingMembers.find(
+        (member) => member.legOrder === input.split!.legOrder,
+      );
+      if (
+        savedMember &&
+        savedMember.membershipId !== input.split.membershipId
+      ) {
+        throw new Error("The split swimmer must match the saved relay lineup.");
+      }
+      if (!savedMember) {
+        await tx.insert(meetRelayResultMembers).values({
+          id: generateId(),
+          resultId: id,
+          membershipId: input.split.membershipId,
+          legOrder: input.split.legOrder,
+        });
+        existingMembers.push({
+          membershipId: input.split.membershipId,
+          legOrder: input.split.legOrder,
+        });
+      }
+
       const [existingSplit] = await tx
         .select()
         .from(meetRelayResultSplits)

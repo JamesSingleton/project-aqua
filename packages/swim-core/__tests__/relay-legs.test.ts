@@ -218,7 +218,7 @@ describe("individualEventKeyForRelayLeg", () => {
     ).toBeNull();
   });
 
-  it("only credits racing leg 1 when the relay is legal and scored", () => {
+  it("credits a valid racing lead-off regardless of exhibition status", () => {
     expect(
       shouldCreditRelayLeadOff({
         legOrder: 1,
@@ -246,6 +246,6 @@ describe("individualEventKeyForRelayLeg", () => {
         isDq: false,
         exhibition: true,
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 });

@@ -5,7 +5,7 @@ import {
   getUserTeams,
   requireTeamMember,
 } from "@project-aqua/db/authz";
-import { getTeamPlan } from "@project-aqua/db/queries/billing";
+import { getTeamPlans } from "@project-aqua/db/queries/billing";
 import { Separator } from "@project-aqua/ui/components/separator";
 import {
   SidebarInset,
@@ -62,15 +62,14 @@ export default async function TeamIdLayout({
     getUserTeams(session.user.id),
     getOrganizationTeamType(teamId),
   ]);
-  const teamsWithPlans = await Promise.all(
-    userTeams.map(async (team) => ({
-      id: team.id,
-      name: team.name,
-      plan: await getTeamPlan(team.id),
-      role: team.role,
-      logo: team.logo,
-    })),
-  );
+  const plans = await getTeamPlans(userTeams.map((team) => team.id));
+  const teamsWithPlans = userTeams.map((team) => ({
+    id: team.id,
+    name: team.name,
+    plan: plans.get(team.id) ?? "free",
+    role: team.role,
+    logo: team.logo,
+  }));
   const teamName =
     teamsWithPlans.find((team) => team.id === teamId)?.name ?? "Team";
 

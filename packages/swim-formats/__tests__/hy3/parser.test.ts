@@ -173,6 +173,16 @@ describe("parseHy3", () => {
     const content = readFileSync(join(fixturesDir, "azsi-results.hy3"), "utf8");
     const meet = parseHy3(content);
     expect(meet.relays?.length).toBeGreaterThan(0);
+    expect(meet.relays?.[0]?.results).toContainEqual({
+      time: "2:21.41",
+      place: 8,
+      isDq: false,
+      resultType: "finals",
+      heat: 1,
+      lane: 9,
+      dqCode: undefined,
+      exhibition: false,
+    });
     expect(
       meet.results.some(
         (r) => r.resultType === "swimoff" || r.resultType === "finals",

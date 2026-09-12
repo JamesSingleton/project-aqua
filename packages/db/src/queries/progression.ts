@@ -21,15 +21,18 @@ import {
 } from "../schema/meets";
 import { swimmers, teamSwimmerMemberships } from "../schema/swimmers";
 
+type DbExecutor = Pick<typeof db, "delete" | "insert" | "select" | "update">;
+
 function generateId(): string {
   return crypto.randomUUID();
 }
 
 async function resolveMeetName(
   meetId: string | null | undefined,
+  executor: DbExecutor = db,
 ): Promise<string | null> {
   if (!meetId) return null;
-  const [row] = await db
+  const [row] = await executor
     .select({ name: meets.name })
     .from(meets)
     .where(eq(meets.id, meetId))
@@ -50,8 +53,9 @@ export {
 export async function findSwimmerBestTime(
   swimmerId: string,
   eventKey: string,
+  executor: DbExecutor = db,
 ): Promise<typeof swimmerBestTimes.$inferSelect | null> {
-  const [exact] = await db
+  const [exact] = await executor
     .select()
     .from(swimmerBestTimes)
     .where(
@@ -65,7 +69,7 @@ export async function findSwimmerBestTime(
 
   if (exact) return exact;
 
-  const [catalog] = await db
+  const [catalog] = await executor
     .select({
       distance: swimEvents.distance,
       stroke: swimEvents.stroke,
@@ -84,7 +88,7 @@ export async function findSwimmerBestTime(
     return null;
   }
 
-  const [sibling] = await db
+  const [sibling] = await executor
     .select({
       id: swimmerBestTimes.id,
       swimmerId: swimmerBestTimes.swimmerId,
@@ -114,18 +118,21 @@ export async function findSwimmerBestTime(
   return sibling ?? null;
 }
 
-export async function upsertBestTime(data: {
-  swimmerId: string;
-  eventKey: string;
-  course: Course;
-  timeMs: number;
-  achievedAt: Date;
-  meetId?: string;
-  meetName?: string | null;
-}) {
+export async function upsertBestTime(
+  data: {
+    swimmerId: string;
+    eventKey: string;
+    course: Course;
+    timeMs: number;
+    achievedAt: Date;
+    meetId?: string;
+    meetName?: string | null;
+  },
+  executor: DbExecutor = db,
+) {
   if (data.timeMs <= 0) return null;
 
-  const [catalog] = await db
+  const [catalog] = await executor
     .select({
       distance: swimEvents.distance,
       stroke: swimEvents.stroke,
@@ -145,7 +152,11 @@ export async function upsertBestTime(data: {
   }
 
   const course = catalog?.course ?? data.course;
-  const existing = await findSwimmerBestTime(data.swimmerId, data.eventKey);
+  const existing = await findSwimmerBestTime(
+    data.swimmerId,
+    data.eventKey,
+    executor,
+  );
   const catalogIdentity = catalog
     ? {
         distance: catalog.distance,
@@ -155,7 +166,7 @@ export async function upsertBestTime(data: {
     : null;
   const resolvedName =
     data.meetName === undefined
-      ? await resolveMeetName(data.meetId)
+      ? await resolveMeetName(data.meetId, executor)
       : data.meetName;
   const meetName = snapshotBestTimeMeetName({
     nextMeetId: data.meetId ?? null,
@@ -167,14 +178,17 @@ export async function upsertBestTime(data: {
 
   if (existing) {
     if (!isFasterTime(data.timeMs, existing.timeMs)) {
-      await collapseSiblingBestTimes({
-        swimmerId: data.swimmerId,
-        keepId: existing.id,
-        catalog: catalogIdentity,
-      });
+      await collapseSiblingBestTimes(
+        {
+          swimmerId: data.swimmerId,
+          keepId: existing.id,
+          catalog: catalogIdentity,
+        },
+        executor,
+      );
       return existing.id;
     }
-    await db
+    await executor
       .update(swimmerBestTimes)
       .set({
         // Keep PR keyed to the event that produced the new best.
@@ -190,7 +204,7 @@ export async function upsertBestTime(data: {
     bestTimeId = existing.id;
   } else {
     bestTimeId = generateId();
-    await db.insert(swimmerBestTimes).values({
+    await executor.insert(swimmerBestTimes).values({
       id: bestTimeId,
       swimmerId: data.swimmerId,
       eventKey: data.eventKey,
@@ -202,27 +216,33 @@ export async function upsertBestTime(data: {
     });
   }
 
-  await collapseSiblingBestTimes({
-    swimmerId: data.swimmerId,
-    keepId: bestTimeId,
-    catalog: catalogIdentity,
-  });
+  await collapseSiblingBestTimes(
+    {
+      swimmerId: data.swimmerId,
+      keepId: bestTimeId,
+      catalog: catalogIdentity,
+    },
+    executor,
+  );
 
   return bestTimeId;
 }
 
-async function collapseSiblingBestTimes(input: {
-  swimmerId: string;
-  keepId: string;
-  catalog: {
-    distance: number;
-    stroke: string;
-    course: Course;
-  } | null;
-}) {
+async function collapseSiblingBestTimes(
+  input: {
+    swimmerId: string;
+    keepId: string;
+    catalog: {
+      distance: number;
+      stroke: string;
+      course: Course;
+    } | null;
+  },
+  executor: DbExecutor = db,
+) {
   if (!input.catalog) return;
 
-  const siblings = await db
+  const siblings = await executor
     .select({ id: swimmerBestTimes.id })
     .from(swimmerBestTimes)
     .innerJoin(swimEvents, eq(swimEvents.eventKey, swimmerBestTimes.eventKey))
@@ -241,7 +261,7 @@ async function collapseSiblingBestTimes(input: {
     .filter((id) => id !== input.keepId);
   if (orphanIds.length === 0) return;
 
-  await db
+  await executor
     .delete(swimmerBestTimes)
     .where(
       and(
@@ -431,15 +451,19 @@ export async function getSwimmerBestTimes(swimmerId: string) {
 
 /**
  * Recompute PRs from all non-DQ meet results for a swimmer.
+ * Exhibition affects scoring only; a valid exhibition performance can be a PR.
  * Fixes rows that missed upserts or used mismatched event keys.
  */
 /**
  * Recompute PRs from individual meet results and credited relay lead-offs.
  * Meet-sourced PRs can move slower when the source swim is corrected or DQ'd.
  */
-export async function recomputeBestTimesForSwimmer(swimmerId: string) {
+export async function recomputeBestTimesForSwimmer(
+  swimmerId: string,
+  executor: DbExecutor = db,
+) {
   const [resultRows, leadOffRows] = await Promise.all([
-    db
+    executor
       .select({
         eventKey: meetEvents.eventKey,
         course: swimEvents.course,
@@ -458,7 +482,7 @@ export async function recomputeBestTimesForSwimmer(swimmerId: string) {
       .innerJoin(meetEvents, eq(meetResults.meetEventId, meetEvents.id))
       .leftJoin(swimEvents, eq(swimEvents.eventKey, meetEvents.eventKey))
       .where(eq(meetResults.swimmerId, swimmerId)),
-    db
+    executor
       .select({
         timeMs: meetRelayResultSplits.timeMs,
         meetId: meets.id,
@@ -500,7 +524,7 @@ export async function recomputeBestTimesForSwimmer(swimmerId: string) {
   const performances: Perf[] = [];
 
   for (const row of resultRows) {
-    if (row.isDq || row.exhibition || row.timeMs <= 0) continue;
+    if (row.isDq || row.timeMs <= 0) continue;
     if (row.eventType === "relay" || isRelayStroke(row.stroke, row.eventKey)) {
       continue;
     }
@@ -556,19 +580,22 @@ export async function recomputeBestTimesForSwimmer(swimmerId: string) {
   const keptIds = new Set<string>();
 
   for (const [eventKey, fastest] of fastestByKey) {
-    const existing = await findSwimmerBestTime(swimmerId, eventKey);
+    const existing = await findSwimmerBestTime(swimmerId, eventKey, executor);
     const sourceMeetIds = meetIdsByKey.get(eventKey) ?? new Set();
     if (!existing) {
-      await upsertBestTime({
-        swimmerId,
-        eventKey,
-        course: fastest.course,
-        timeMs: fastest.timeMs,
-        achievedAt: fastest.achievedAt,
-        meetId: fastest.meetId,
-        meetName: fastest.meetName,
-      });
-      const created = await findSwimmerBestTime(swimmerId, eventKey);
+      await upsertBestTime(
+        {
+          swimmerId,
+          eventKey,
+          course: fastest.course,
+          timeMs: fastest.timeMs,
+          achievedAt: fastest.achievedAt,
+          meetId: fastest.meetId,
+          meetName: fastest.meetName,
+        },
+        executor,
+      );
+      const created = await findSwimmerBestTime(swimmerId, eventKey, executor);
       if (created) keptIds.add(created.id);
       continue;
     }
@@ -582,7 +609,7 @@ export async function recomputeBestTimesForSwimmer(swimmerId: string) {
       sourceMeetGone ||
       (fromSourceMeet && fastest.timeMs !== existing.timeMs)
     ) {
-      await db
+      await executor
         .update(swimmerBestTimes)
         .set({
           eventKey,
@@ -597,14 +624,25 @@ export async function recomputeBestTimesForSwimmer(swimmerId: string) {
     }
   }
 
-  const existingBests = await db
+  const existingBests = await executor
     .select()
     .from(swimmerBestTimes)
     .where(eq(swimmerBestTimes.swimmerId, swimmerId));
 
   for (const best of existingBests) {
     if (best.meetId == null || keptIds.has(best.id)) continue;
-    await db.delete(swimmerBestTimes).where(eq(swimmerBestTimes.id, best.id));
+    await executor
+      .delete(swimmerBestTimes)
+      .where(eq(swimmerBestTimes.id, best.id));
+  }
+}
+
+export async function recomputeBestTimesForSwimmers(
+  swimmerIds: readonly string[],
+  executor: DbExecutor = db,
+) {
+  for (const swimmerId of new Set(swimmerIds)) {
+    await recomputeBestTimesForSwimmer(swimmerId, executor);
   }
 }
 

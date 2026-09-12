@@ -65,7 +65,7 @@
       "source": "resend/resend-skills",
       "sourceType": "github",
       "skillPath": "skills/resend/SKILL.md",
-      "computedHash": "fb0fb1c7f666081e8ba654387d9cc86c86f8a72b152f82ce6e526ba48067ea38"
+      "computedHash": "49e48cc8d42af643ffcab6596085a70d0085117dfb1c09891188ddb02d8688a7"
     },
     "resend-design-skills": {
       "source": "resend/design-skills",
@@ -95,7 +95,7 @@
       "source": "vercel/turborepo",
       "sourceType": "github",
       "skillPath": "skills/turborepo/SKILL.md",
-      "computedHash": "3242b13be3801d1149d9de32cf99852d9673de5678a23acc89a3b6a6e444dda8"
+      "computedHash": "623867566bc273610247d779101c230decdfaa79599bbb75324fa85e8bfc76f8"
     },
     "two-factor-authentication-best-practices": {
       "source": "better-auth/skills",

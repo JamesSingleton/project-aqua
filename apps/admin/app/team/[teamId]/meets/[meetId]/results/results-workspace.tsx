@@ -9,6 +9,8 @@ import {
 } from "@project-aqua/swim-core/events";
 import { formatTime } from "@project-aqua/swim-core/times";
 import { Badge } from "@project-aqua/ui/components/badge";
+import { Button } from "@project-aqua/ui/components/button";
+import { Input } from "@project-aqua/ui/components/input";
 import { Label } from "@project-aqua/ui/components/label";
 import {
   Select,
@@ -27,9 +29,22 @@ import {
   TableHeader,
   TableRow,
 } from "@project-aqua/ui/components/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@project-aqua/ui/components/tooltip";
 import { cn } from "@project-aqua/ui/lib/utils";
-import { RabbitIcon, TargetIcon, TurtleIcon } from "lucide-react";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import {
+  BanIcon,
+  PlusIcon,
+  RabbitIcon,
+  TargetIcon,
+  TurtleIcon,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { addRelayResultSplitAction } from "../../actions";
 import { getTimeStandardCutsAction } from "../../time-standards-actions";
 import type {
   RelayLineupPrefill,
@@ -75,6 +90,16 @@ export type RelayAttemptSplit = {
   timeMs: number;
 };
 
+export type RelayAttemptMember = {
+  id: string;
+  resultId: string;
+  membershipId: string;
+  swimmerId: string;
+  firstName: string;
+  lastName: string;
+  legOrder: number;
+};
+
 export type RelayAttempt = {
   id: string;
   meetEventId: string;
@@ -92,6 +117,7 @@ export type RelayAttempt = {
   gender: string;
   ageGroup: string | null;
   eventKey: string;
+  members: RelayAttemptMember[];
   splits: RelayAttemptSplit[];
 };
 
@@ -121,14 +147,12 @@ function eventLabel(row: ResultRow) {
 }
 
 function isPersonalBest(row: ResultRow) {
-  if (
-    row.isDq ||
+  if (row.isDq || row.timeMs <= 0) return false;
+  return (
     row.previousBestTimeMs == null ||
-    row.previousBestTimeMs <= 0
-  ) {
-    return false;
-  }
-  return row.timeMs > 0 && row.timeMs < row.previousBestTimeMs;
+    row.previousBestTimeMs <= 0 ||
+    row.timeMs < row.previousBestTimeMs
+  );
 }
 
 /** Seconds delta: negative = faster (drop). */
@@ -253,6 +277,232 @@ function compareResultRows(a: ResultRow, b: ResultRow) {
   if (a.place != null) return -1;
   if (b.place != null) return 1;
   return a.timeMs - b.timeMs;
+}
+
+function relayEventLabel(attempt: RelayAttempt) {
+  const gender = formatGenderShort(attempt.gender);
+  return `#${attempt.eventNumber ?? "—"} ${gender} ${formatEventName(attempt.distance, attempt.stroke)}`.replace(
+    /\s+/g,
+    " ",
+  );
+}
+
+function relayAttemptLabel(attempt: RelayAttempt) {
+  return `${relayEventLabel(attempt)} ${attempt.relayLetter}`;
+}
+
+function RelaySplitCell({
+  attempt,
+  member,
+  split,
+  teamId,
+  meetId,
+}: {
+  attempt: RelayAttempt;
+  member: RelayAttemptMember;
+  split: RelayAttemptSplit | undefined;
+  teamId: string;
+  meetId: string;
+}) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const savingRef = useRef(false);
+  const [isPending, startTransition] = useTransition();
+
+  function save() {
+    const splitTime = value.trim();
+    if (!splitTime) {
+      setEditing(false);
+      return;
+    }
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setError(null);
+    startTransition(async () => {
+      try {
+        await addRelayResultSplitAction(teamId, meetId, {
+          resultId: attempt.id,
+          legOrder: member.legOrder,
+          splitTime,
+        });
+        setEditing(false);
+        router.refresh();
+      } catch (cause) {
+        setError(
+          cause instanceof Error ? cause.message : "Could not save the split.",
+        );
+      } finally {
+        savingRef.current = false;
+      }
+    });
+  }
+
+  if (split) {
+    return (
+      <span className="font-timing tabular-nums">
+        {formatTime(split.timeMs)}
+      </span>
+    );
+  }
+
+  if (!editing) {
+    return (
+      <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+        No split recorded
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={`Add hand-timed split for ${member.firstName} ${member.lastName}, leg ${member.legOrder}`}
+                onClick={() => setEditing(true)}
+              />
+            }
+          >
+            <PlusIcon aria-hidden />
+          </TooltipTrigger>
+          <TooltipContent>Add hand-timed split</TooltipContent>
+        </Tooltip>
+      </span>
+    );
+  }
+
+  return (
+    <div className="flex min-w-32 flex-col items-end gap-1">
+      <div className="flex items-center gap-1">
+        <Input
+          name={`relay-split-${member.id}`}
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          onBlur={save}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              event.currentTarget.blur();
+            }
+            if (event.key === "Escape") {
+              setValue("");
+              setError(null);
+              setEditing(false);
+            }
+          }}
+          aria-label={`Hand-timed split for ${member.firstName} ${member.lastName}, leg ${member.legOrder}`}
+          autoComplete="off"
+          inputMode="decimal"
+          placeholder="24.19…"
+          className="h-7 w-20 font-timing tabular-nums"
+          disabled={isPending}
+        />
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={`Cancel split for ${member.firstName} ${member.lastName}, leg ${member.legOrder}`}
+                disabled={isPending}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  setValue("");
+                  setError(null);
+                  setEditing(false);
+                }}
+              />
+            }
+          >
+            <BanIcon aria-hidden />
+          </TooltipTrigger>
+          <TooltipContent>Cancel split</TooltipContent>
+        </Tooltip>
+      </div>
+      {error ? (
+        <span
+          className="text-destructive max-w-44 text-right text-xs"
+          aria-live="polite"
+        >
+          {error}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function RelayResultCard({
+  attempt,
+  teamId,
+  meetId,
+}: {
+  attempt: RelayAttempt;
+  teamId: string;
+  meetId: string;
+}) {
+  return (
+    <div className="border-border overflow-hidden rounded-lg border">
+      <div className="border-border bg-muted/30 flex flex-wrap items-baseline justify-between gap-2 border-b px-4 py-3">
+        <div>
+          <h3 className="text-sm font-semibold">
+            {relayAttemptLabel(attempt)}
+          </h3>
+          <p className="text-muted-foreground text-xs">
+            {attempt.round
+              ? `${ROUND_LABEL[attempt.round] ?? attempt.round} · `
+              : null}
+            Team time
+          </p>
+        </div>
+        <p
+          className={cn(
+            "font-timing text-lg tabular-nums",
+            attempt.isDq && "text-destructive line-through",
+          )}
+        >
+          {attempt.isDq
+            ? `DQ ${formatTime(attempt.timeMs)}`
+            : formatTime(attempt.timeMs)}
+        </p>
+      </div>
+      {attempt.members.length > 0 ? (
+        <ul className="divide-border divide-y px-4 py-2 text-sm">
+          {attempt.members.map((member) => {
+            const split = attempt.splits.find(
+              (item) => item.legOrder === member.legOrder,
+            );
+            return (
+              <li
+                key={member.id}
+                className="flex flex-wrap items-baseline justify-between gap-2 py-1.5"
+              >
+                <span>
+                  {member.firstName} {member.lastName}
+                  <span className="text-muted-foreground ml-2 text-xs">
+                    Leg {member.legOrder}
+                    {member.legOrder === 1 ? " · lead-off" : ""}
+                  </span>
+                </span>
+                <RelaySplitCell
+                  attempt={attempt}
+                  member={member}
+                  split={split}
+                  teamId={teamId}
+                  meetId={meetId}
+                />
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="text-muted-foreground px-4 py-3 text-sm">
+          No saved lineup. This is a relay result recorded before lineup
+          snapshots were added.
+        </p>
+      )}
+    </div>
+  );
 }
 
 /** Compact heat/lane/round/exhibition/DQ-code badges shown under a result's time. */
@@ -461,7 +711,7 @@ export function ResultsWorkspace({
   const summary = useMemo(() => {
     const athleteIds = new Set(individualResults.map((r) => r.swimmerId));
     for (const attempt of relayAttempts) {
-      for (const split of attempt.splits) athleteIds.add(split.swimmerId);
+      for (const member of attempt.members) athleteIds.add(member.swimmerId);
     }
     return {
       individualCount: individualResults.length,
@@ -475,7 +725,12 @@ export function ResultsWorkspace({
     if (groupMode === "swimmer") {
       const bySwimmer = new Map<
         string,
-        { label: string; sortKey: string; rows: ResultRow[] }
+        {
+          label: string;
+          sortKey: string;
+          rows: ResultRow[];
+          relayAttempts: RelayAttempt[];
+        }
       >();
       for (const row of filtered) {
         const key = row.swimmerId;
@@ -488,6 +743,7 @@ export function ResultsWorkspace({
           label: `${row.firstName} ${row.lastName}`,
           sortKey: `${row.lastName} ${row.firstName}`.toLowerCase(),
           rows: [row],
+          relayAttempts: [],
         });
       }
       return [...bySwimmer.values()]
@@ -504,7 +760,12 @@ export function ResultsWorkspace({
 
     const byEvent = new Map<
       string,
-      { label: string; eventNumber: number | null; rows: ResultRow[] }
+      {
+        label: string;
+        eventNumber: number | null;
+        rows: ResultRow[];
+        relayAttempts: RelayAttempt[];
+      }
     >();
     for (const row of filtered) {
       const existing = byEvent.get(row.meetEventId);
@@ -516,6 +777,20 @@ export function ResultsWorkspace({
         eventNumber: row.eventNumber,
         label: eventLabel(row),
         rows: [row],
+        relayAttempts: [],
+      });
+    }
+    for (const attempt of filteredRelayAttempts) {
+      const existing = byEvent.get(attempt.meetEventId);
+      if (existing) {
+        existing.relayAttempts.push(attempt);
+        continue;
+      }
+      byEvent.set(attempt.meetEventId, {
+        eventNumber: attempt.eventNumber,
+        label: relayEventLabel(attempt),
+        rows: [],
+        relayAttempts: [attempt],
       });
     }
     return [...byEvent.values()]
@@ -527,8 +802,9 @@ export function ResultsWorkspace({
       .map((g) => ({
         label: g.label,
         rows: [...g.rows].sort(compareResultRows),
+        relayAttempts: g.relayAttempts,
       }));
-  }, [filtered, groupMode]);
+  }, [filtered, filteredRelayAttempts, groupMode]);
 
   const hasSets = standardSets.length > 0;
   const standardSetOptions = standardSets.map((set) => ({
@@ -712,73 +988,7 @@ export function ResultsWorkspace({
         relayLineup={relayLineup}
       />
 
-      {groupMode === "event" && filteredRelayAttempts.length > 0 ? (
-        <div className="flex flex-col gap-3">
-          {filteredRelayAttempts.map((attempt) => {
-            const gender = formatGenderShort(attempt.gender);
-            const heading =
-              `#${attempt.eventNumber ?? "—"} ${gender} ${formatEventName(attempt.distance, attempt.stroke)} ${attempt.relayLetter}`.replace(
-                /\s+/g,
-                " ",
-              );
-            return (
-              <div
-                key={attempt.id}
-                className="border-border overflow-hidden rounded-lg border"
-              >
-                <div className="border-border bg-muted/30 flex flex-wrap items-baseline justify-between gap-2 border-b px-4 py-3">
-                  <div>
-                    <h3 className="text-sm font-semibold">{heading}</h3>
-                    <p className="text-muted-foreground text-xs">
-                      {attempt.round
-                        ? `${ROUND_LABEL[attempt.round] ?? attempt.round} · `
-                        : null}
-                      Team time
-                    </p>
-                  </div>
-                  <p
-                    className={cn(
-                      "font-timing text-lg tabular-nums",
-                      attempt.isDq && "text-destructive line-through",
-                    )}
-                  >
-                    {attempt.isDq
-                      ? `DQ ${formatTime(attempt.timeMs)}`
-                      : formatTime(attempt.timeMs)}
-                  </p>
-                </div>
-                {attempt.splits.length > 0 ? (
-                  <ul className="divide-border divide-y px-4 py-2 text-sm">
-                    {attempt.splits.map((split) => (
-                      <li
-                        key={split.id}
-                        className="flex flex-wrap items-baseline justify-between gap-2 py-1.5"
-                      >
-                        <span>
-                          {split.firstName} {split.lastName}
-                          <span className="text-muted-foreground ml-2 text-xs">
-                            Leg {split.legOrder}
-                            {split.legOrder === 1 ? " · lead-off" : ""}
-                          </span>
-                        </span>
-                        <span className="font-timing tabular-nums">
-                          {formatTime(split.timeMs)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-muted-foreground px-4 py-3 text-sm">
-                    No named splits yet. Save again with a swimmer and split.
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      ) : null}
-
-      {groups.length === 0 && filteredRelayAttempts.length === 0 ? (
+      {groups.length === 0 ? (
         <div className="border-border rounded-lg border px-4 py-8 text-center">
           <p className="text-muted-foreground text-sm">
             {individualResults.length === 0 && relayAttempts.length === 0
@@ -787,170 +997,194 @@ export function ResultsWorkspace({
           </p>
         </div>
       ) : groups.length === 0 ? null : (
-        groups.map((group) => (
-          <div
-            key={group.label}
-            className="border-border overflow-hidden rounded-lg border"
-          >
-            <div className="border-border bg-muted/30 border-b px-4 py-3">
-              <h3 className="text-sm font-semibold">{group.label}</h3>
-              <p className="text-muted-foreground text-xs">
-                {group.rows.length}{" "}
-                {group.rows.length === 1 ? "result" : "results"}
-              </p>
-            </div>
-            <Table className="table-fixed [&_th]:px-4 [&_td]:px-4">
-              <colgroup>
-                {showStandards ? (
-                  <>
-                    <col style={{ width: "20%" }} />
-                    <col style={{ width: "7%" }} />
-                    <col style={{ width: "12%" }} />
-                    <col style={{ width: "14%" }} />
-                    <col style={{ width: "12%" }} />
-                    <col style={{ width: "8%" }} />
-                    <col style={{ width: "27%" }} />
-                  </>
-                ) : (
-                  <>
-                    <col style={{ width: "22%" }} />
-                    <col style={{ width: "8%" }} />
-                    <col style={{ width: "14%" }} />
-                    <col style={{ width: "16%" }} />
-                    <col style={{ width: "10%" }} />
-                    <col style={{ width: "30%" }} />
-                  </>
-                )}
-              </colgroup>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{nameColumnLabel}</TableHead>
-                  <TableHead>Age</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Previous Best</TableHead>
-                  {showStandards ? <TableHead>Standard</TableHead> : null}
-                  <TableHead>Place</TableHead>
-                  <TableHead>Improvement</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {group.rows.map((row) => {
-                  const age = swimmerAgeOnDate(row.dateOfBirth, meetStartDate);
-                  const delta = improvementSeconds(row);
-                  const faster = delta != null && delta < 0;
-                  const slower = delta != null && delta > 0;
-                  const cutMs = showStandards
-                    ? findCutTime(cuts, row, meetStartDate)
-                    : null;
-                  const standardCompare =
-                    cutMs != null
-                      ? compareToStandard(row.timeMs, cutMs, row.isDq)
-                      : null;
-                  const meetsCut =
-                    standardCompare === "faster" || standardCompare === "equal";
-                  const newlyQualifies =
-                    meetsCut &&
-                    row.previousBestTimeMs != null &&
-                    cutMs != null &&
-                    row.previousBestTimeMs > cutMs;
-                  const primaryLabel =
-                    groupMode === "event"
-                      ? `${row.firstName} ${row.lastName}`
-                      : eventLabel(row);
-                  return (
-                    <TableRow
-                      key={row.id}
-                      className={cn(
-                        newlyQualifies && "bg-emerald-500/5",
-                        meetsCut && !newlyQualifies && "bg-sky-500/5",
-                      )}
-                    >
-                      <TableCell className="max-w-0 font-medium">
-                        <span className="block truncate" title={primaryLabel}>
-                          {primaryLabel}
-                        </span>
-                      </TableCell>
-                      <TableCell className="tabular-nums">
-                        {age ?? "—"}
-                      </TableCell>
-                      <TableCell className="font-timing tabular-nums">
-                        <span className="flex flex-col">
-                          <span
+        groups.map((group) => {
+          const resultCount = group.rows.length + group.relayAttempts.length;
+          return (
+            <div
+              key={group.label}
+              className="border-border overflow-hidden rounded-lg border"
+            >
+              <div className="border-border bg-muted/30 border-b px-4 py-3">
+                <h3 className="text-sm font-semibold">{group.label}</h3>
+                <p className="text-muted-foreground text-xs">
+                  {resultCount} {resultCount === 1 ? "result" : "results"}
+                </p>
+              </div>
+              {group.relayAttempts.length > 0 ? (
+                <div className="flex flex-col gap-3 p-3">
+                  {group.relayAttempts.map((attempt) => (
+                    <RelayResultCard
+                      key={attempt.id}
+                      attempt={attempt}
+                      teamId={teamId}
+                      meetId={meetId}
+                    />
+                  ))}
+                </div>
+              ) : null}
+              {group.rows.length > 0 ? (
+                <Table className="table-fixed [&_th]:px-4 [&_td]:px-4">
+                  <colgroup>
+                    {showStandards ? (
+                      <>
+                        <col style={{ width: "20%" }} />
+                        <col style={{ width: "7%" }} />
+                        <col style={{ width: "12%" }} />
+                        <col style={{ width: "14%" }} />
+                        <col style={{ width: "12%" }} />
+                        <col style={{ width: "8%" }} />
+                        <col style={{ width: "27%" }} />
+                      </>
+                    ) : (
+                      <>
+                        <col style={{ width: "22%" }} />
+                        <col style={{ width: "8%" }} />
+                        <col style={{ width: "14%" }} />
+                        <col style={{ width: "16%" }} />
+                        <col style={{ width: "10%" }} />
+                        <col style={{ width: "30%" }} />
+                      </>
+                    )}
+                  </colgroup>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{nameColumnLabel}</TableHead>
+                      <TableHead>Age</TableHead>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Previous Best</TableHead>
+                      {showStandards ? <TableHead>Standard</TableHead> : null}
+                      <TableHead>Place</TableHead>
+                      <TableHead>Improvement</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {group.rows.map((row) => {
+                      const age = swimmerAgeOnDate(
+                        row.dateOfBirth,
+                        meetStartDate,
+                      );
+                      const delta = improvementSeconds(row);
+                      const faster = delta != null && delta < 0;
+                      const slower = delta != null && delta > 0;
+                      const cutMs = showStandards
+                        ? findCutTime(cuts, row, meetStartDate)
+                        : null;
+                      const standardCompare =
+                        cutMs != null
+                          ? compareToStandard(row.timeMs, cutMs, row.isDq)
+                          : null;
+                      const meetsCut =
+                        standardCompare === "faster" ||
+                        standardCompare === "equal";
+                      const newlyQualifies =
+                        meetsCut &&
+                        row.previousBestTimeMs != null &&
+                        cutMs != null &&
+                        row.previousBestTimeMs > cutMs;
+                      const primaryLabel =
+                        groupMode === "event"
+                          ? `${row.firstName} ${row.lastName}`
+                          : eventLabel(row);
+                      return (
+                        <TableRow
+                          key={row.id}
+                          className={cn(
+                            newlyQualifies && "bg-emerald-500/5",
+                            meetsCut && !newlyQualifies && "bg-sky-500/5",
+                          )}
+                        >
+                          <TableCell className="max-w-0 font-medium">
+                            <span
+                              className="block truncate"
+                              title={primaryLabel}
+                            >
+                              {primaryLabel}
+                            </span>
+                          </TableCell>
+                          <TableCell className="tabular-nums">
+                            {age ?? "—"}
+                          </TableCell>
+                          <TableCell className="font-timing tabular-nums">
+                            <span className="flex flex-col">
+                              <span
+                                className={cn(
+                                  row.isDq && "text-destructive line-through",
+                                )}
+                              >
+                                {row.isDq
+                                  ? `DQ ${formatTime(row.timeMs)}`
+                                  : formatTime(row.timeMs)}
+                              </span>
+                              <ResultMetaBadges row={row} />
+                            </span>
+                          </TableCell>
+                          <TableCell className="font-timing tabular-nums">
+                            {row.previousBestTimeMs != null &&
+                            row.previousBestTimeMs > 0
+                              ? formatTime(row.previousBestTimeMs)
+                              : "—"}
+                          </TableCell>
+                          {showStandards ? (
+                            <TableCell
+                              className={cn(
+                                "font-timing",
+                                standardCompare === "faster" &&
+                                  "text-emerald-700 dark:text-emerald-400",
+                                standardCompare === "slower" &&
+                                  "text-amber-800 dark:text-amber-400",
+                              )}
+                              title={
+                                newlyQualifies
+                                  ? "Newly qualifies vs previous best"
+                                  : standardCompare === "faster"
+                                    ? "Faster than standard"
+                                    : standardCompare === "equal"
+                                      ? "Exactly at standard"
+                                      : standardCompare === "slower"
+                                        ? "Slower than standard"
+                                        : undefined
+                              }
+                            >
+                              {cutMs != null ? (
+                                <span className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+                                  <span className="tabular-nums font-semibold">
+                                    {formatTime(cutMs)}
+                                  </span>
+                                  <StandardCompareIndicator
+                                    compare={standardCompare}
+                                  />
+                                </span>
+                              ) : (
+                                "—"
+                              )}
+                            </TableCell>
+                          ) : null}
+                          <TableCell className="tabular-nums">
+                            {row.place ?? "—"}
+                          </TableCell>
+                          <TableCell
                             className={cn(
-                              row.isDq && "text-destructive line-through",
+                              "font-timing tabular-nums",
+                              faster &&
+                                "text-emerald-600 dark:text-emerald-400",
+                              slower && "text-red-600 dark:text-red-400",
                             )}
                           >
-                            {row.isDq
-                              ? `DQ ${formatTime(row.timeMs)}`
-                              : formatTime(row.timeMs)}
-                          </span>
-                          <ResultMetaBadges row={row} />
-                        </span>
-                      </TableCell>
-                      <TableCell className="font-timing tabular-nums">
-                        {row.previousBestTimeMs != null &&
-                        row.previousBestTimeMs > 0
-                          ? formatTime(row.previousBestTimeMs)
-                          : "—"}
-                      </TableCell>
-                      {showStandards ? (
-                        <TableCell
-                          className={cn(
-                            "font-timing",
-                            standardCompare === "faster" &&
-                              "text-emerald-700 dark:text-emerald-400",
-                            standardCompare === "slower" &&
-                              "text-amber-800 dark:text-amber-400",
-                          )}
-                          title={
-                            newlyQualifies
-                              ? "Newly qualifies vs previous best"
-                              : standardCompare === "faster"
-                                ? "Faster than standard"
-                                : standardCompare === "equal"
-                                  ? "Exactly at standard"
-                                  : standardCompare === "slower"
-                                    ? "Slower than standard"
-                                    : undefined
-                          }
-                        >
-                          {cutMs != null ? (
-                            <span className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
-                              <span className="tabular-nums font-semibold">
-                                {formatTime(cutMs)}
-                              </span>
-                              <StandardCompareIndicator
-                                compare={standardCompare}
-                              />
-                            </span>
-                          ) : (
-                            "—"
-                          )}
-                        </TableCell>
-                      ) : null}
-                      <TableCell className="tabular-nums">
-                        {row.place ?? "—"}
-                      </TableCell>
-                      <TableCell
-                        className={cn(
-                          "font-timing tabular-nums",
-                          faster && "text-emerald-600 dark:text-emerald-400",
-                          slower && "text-red-600 dark:text-red-400",
-                        )}
-                      >
-                        {formatImprovement(
-                          delta,
-                          showPercent,
-                          row.previousBestTimeMs,
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        ))
+                            {formatImprovement(
+                              delta,
+                              showPercent,
+                              row.previousBestTimeMs,
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              ) : null}
+            </div>
+          );
+        })
       )}
 
       <p className="text-muted-foreground sr-only">

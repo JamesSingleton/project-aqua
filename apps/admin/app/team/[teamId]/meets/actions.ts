@@ -3,6 +3,7 @@
 import { getSession } from "@project-aqua/auth/session";
 import { assertFeature } from "@project-aqua/billing/features";
 import {
+  getOrganizationMeetImportIdentity,
   requireCoachSafeSportCurrent,
   requireTeamMember,
   requireTeamRole,
@@ -25,6 +26,7 @@ import {
   getMeetEntriesDetailed,
   getMeetEvents,
   getMeetRelayLegs,
+  getMeetRelayResultsDetailed,
   getMeetRelayTeams,
   getMeets,
   getRosterBestTimesForEvents,
@@ -74,6 +76,7 @@ import {
   deriveRelayLetter,
   racingRelayKeysByMember,
 } from "@project-aqua/swim-core/relay-legs";
+import { matchesTeamCode } from "@project-aqua/swim-core/team-codes";
 import { blocksMeetEntries } from "@project-aqua/swim-core/team-types";
 import { parseTime } from "@project-aqua/swim-core/times";
 import { createMeetSchema } from "@project-aqua/swim-core/validators";
@@ -82,6 +85,7 @@ import {
   exportMeetZip,
   meetZipDownloadFilename,
   type ParsedMeet,
+  type ParsedRelayEntry,
 } from "@project-aqua/swim-formats";
 import { exportHy3 } from "@project-aqua/swim-formats/hy3";
 import {
@@ -196,9 +200,23 @@ function collectFileAthletes(parsed: ParsedMeet): MatchFileAthlete[] {
     gender: e.gender,
   }));
   const fromRelays = (parsed.relays ?? []).flatMap((relay) =>
-    relay.swimmerNames.map((swimmerName) => ({ swimmerName })),
+    relay.swimmerNames.map((swimmerName) => ({
+      swimmerName,
+      teamCode: relay.teamCode,
+    })),
   );
   return [...fromResults, ...fromEntries, ...fromRelays];
+}
+
+function isTeamResultAthlete(
+  athlete: MatchFileAthlete,
+  identity: { teamCode: string | null; lscCode: string | null } | null,
+): boolean {
+  return matchesTeamCode(
+    athlete.teamCode,
+    identity?.teamCode,
+    identity?.lscCode,
+  );
 }
 
 export type AthleteMapAction = string | "skip" | "create";
@@ -640,8 +658,17 @@ export async function parseMeetFilePreviewAction(
   const { format, parsed, sourceFilename, sourceFiles } =
     decodeMeetFilesPayload(files);
 
-  const roster = await getRoster(teamId);
-  const fileAthletes = collectFileAthletes(parsed);
+  const [roster, importIdentity] = await Promise.all([
+    getRoster(teamId),
+    getOrganizationMeetImportIdentity(teamId),
+  ]);
+  const allFileAthletes = collectFileAthletes(parsed);
+  const fileAthletes =
+    parsed.results.length > 0
+      ? allFileAthletes.filter((athlete) =>
+          isTeamResultAthlete(athlete, importIdentity),
+        )
+      : allFileAthletes;
   const matchBundle =
     fileAthletes.length > 0
       ? matchResultAthletes(toMatchRoster(roster), fileAthletes)
@@ -928,8 +955,11 @@ export async function importMeetFileAction(
     }
 
     const entryLimitFields = resolveEntryLimitsForImport(parsed, review);
-    const roster = await getRoster(teamId);
-    const existingMeets = await getMeets(teamId);
+    const [roster, existingMeets, importIdentity] = await Promise.all([
+      getRoster(teamId),
+      getMeets(teamId),
+      getOrganizationMeetImportIdentity(teamId),
+    ]);
 
     let meetId = options?.meetId ?? null;
     let linkedExisting = false;
@@ -1107,7 +1137,12 @@ export async function importMeetFileAction(
     // yet on this team's roster (entries). Matching both up front means an
     // unmatched entry surfaces the same Map/Skip/Add-to-roster review as an
     // unmatched result, instead of being dropped silently.
-    const fileAthletes = collectFileAthletes(parsed);
+    const allFileAthletes = collectFileAthletes(parsed);
+    const fileAthletes = looksLikeResults
+      ? allFileAthletes.filter((athlete) =>
+          isTeamResultAthlete(athlete, importIdentity),
+        )
+      : allFileAthletes;
     const matchBundle =
       fileAthletes.length > 0
         ? matchResultAthletes(toMatchRoster(roster), fileAthletes)
@@ -1341,6 +1376,10 @@ export async function importMeetFileAction(
     }
 
     for (const result of parsed.results) {
+      if (!isTeamResultAthlete(result, importIdentity)) {
+        resultsSkipped++;
+        continue;
+      }
       const key = fileAthleteKey(result);
       let resolved = resolvedByKey.get(key) ?? null;
 
@@ -1434,41 +1473,69 @@ export async function importMeetFileAction(
         seedTimeSource: "manual";
       }>
     >();
+    const relayResultsToImport: Array<{
+      meetEventId: string;
+      relayLetter: string;
+      attempts: NonNullable<ParsedRelayEntry["results"]>;
+    }> = [];
     for (const relay of parsed.relays ?? []) {
       const meetEventId = await eventIdFor(relay.eventNumber, {
         allowFallback: false,
       });
       if (!meetEventId) continue;
       const letter = deriveRelayLetter(relay.relayLetter, 1);
-      const legs = relayLegsByEvent.get(meetEventId) ?? [];
-      let matched = 0;
-      for (let i = 0; i < relay.swimmerNames.length; i++) {
-        const name = relay.swimmerNames[i]!;
-        const key = fileAthleteKey({ swimmerName: name });
-        const resolved = resolvedByKey.get(key) ?? null;
-        if (!resolved) {
-          unmatched++;
-          continue;
-        }
-        legs.push({
-          membershipId: resolved.membershipId,
-          legOrder: i + 1,
-          relayLetter: letter,
-        });
-        matched += 1;
+      const resolvedLegs = relay.swimmerNames.map((name, index) => ({
+        resolved:
+          resolvedByKey.get(fileAthleteKey({ swimmerName: name })) ?? null,
+        legOrder: index + 1,
+      }));
+
+      // Results files include all teams' relays. A relay belongs to this
+      // visiting team only if its complete racing lineup maps to this roster.
+      // Do not create a partial lineup or save another school's seed time.
+      if (
+        resolvedLegs.length !== 4 ||
+        resolvedLegs.some((leg) => leg.resolved == null)
+      ) {
+        continue;
       }
+
+      const legs = relayLegsByEvent.get(meetEventId) ?? [];
+      legs.push(
+        ...resolvedLegs.map((leg) => ({
+          membershipId: leg.resolved!.membershipId,
+          legOrder: leg.legOrder,
+          relayLetter: letter,
+        })),
+      );
       relayLegsByEvent.set(meetEventId, legs);
-      if (matched > 0) relaysAdded += 1;
+
       const seedMs = relay.seedTime ? parseTime(relay.seedTime) : 0;
       if (seedMs > 0) {
         const teamSeeds = relayTeamSeedsByEvent.get(meetEventId) ?? [];
-        teamSeeds.push({
+        const existingSeedIndex = teamSeeds.findIndex(
+          (team) => team.relayLetter === letter,
+        );
+        const teamSeed = {
           relayLetter: letter,
           seedTimeMs: seedMs,
           seedTimeSource: "manual" as const,
-        });
+        };
+        if (existingSeedIndex >= 0) {
+          teamSeeds[existingSeedIndex] = teamSeed;
+        } else {
+          teamSeeds.push(teamSeed);
+        }
         relayTeamSeedsByEvent.set(meetEventId, teamSeeds);
       }
+      if (relay.results?.length) {
+        relayResultsToImport.push({
+          meetEventId,
+          relayLetter: letter,
+          attempts: relay.results,
+        });
+      }
+      relaysAdded++;
     }
     for (const [meetEventId, legs] of relayLegsByEvent) {
       if (legs.length === 0) continue;
@@ -1484,6 +1551,33 @@ export async function importMeetFileAction(
           meetEventId,
           teams,
         });
+      }
+    }
+
+    for (const relay of relayResultsToImport) {
+      for (const attempt of relay.attempts) {
+        const parsedMs = parseTime(attempt.time);
+        const timeMs =
+          Number.isFinite(parsedMs) && parsedMs > 0
+            ? parsedMs
+            : attempt.isDq
+              ? 0
+              : Number.NaN;
+        if (!Number.isFinite(timeMs)) continue;
+        if (timeMs <= 0 && !attempt.isDq) continue;
+        await upsertMeetRelayResult({
+          meetId,
+          meetEventId: relay.meetEventId,
+          relayLetter: relay.relayLetter,
+          round: attempt.resultType ?? null,
+          timeMs,
+          heat: attempt.heat ?? null,
+          lane: attempt.lane ?? null,
+          exhibition: attempt.exhibition ?? false,
+          isDq: attempt.isDq ?? false,
+          dqCode: attempt.dqCode ?? null,
+        });
+        resultsAdded++;
       }
     }
 
@@ -2311,6 +2405,74 @@ export async function addRelayResultAction(
     isDq,
     dqCode,
     split,
+  });
+
+  for (const id of creditedSwimmerIds) {
+    await recomputeBestTimesForSwimmer(id);
+    revalidatePath(`/team/${teamId}/progression/${id}`);
+    revalidatePath(`/team/${teamId}/swimmers/${id}/progression`);
+  }
+
+  revalidateMeetPaths(teamId, meetId);
+}
+
+export async function addRelayResultSplitAction(
+  teamId: string,
+  meetId: string,
+  input: {
+    resultId: string;
+    legOrder: number;
+    splitTime: string;
+  },
+) {
+  const session = await getSession();
+  await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+  await assertFeature(teamId, "progression");
+
+  const meet = await getMeetById(meetId, teamId);
+  if (!meet) throw new Error("Meet not found");
+
+  const [relayResults, roster] = await Promise.all([
+    getMeetRelayResultsDetailed(meetId),
+    getRoster(teamId),
+  ]);
+  const result = relayResults.find((item) => item.id === input.resultId);
+  if (!result) throw new Error("Relay result not found");
+
+  const member = result.members.find(
+    (item) => item.legOrder === input.legOrder,
+  );
+  if (!member) {
+    throw new Error("This relay result has no saved swimmer for that leg.");
+  }
+  const swimmer = roster.find(
+    (item) => item.membershipId === member.membershipId,
+  );
+  if (!swimmer) throw new Error("Swimmer not found on roster");
+
+  const timeMs = parseTime(input.splitTime);
+  if (!Number.isFinite(timeMs) || timeMs <= 0) {
+    throw new Error("Enter a valid split time.");
+  }
+
+  const { creditedSwimmerIds } = await upsertMeetRelayResult({
+    meetId,
+    meetEventId: result.meetEventId,
+    relayLetter: result.relayLetter,
+    round: result.round,
+    timeMs: result.timeMs,
+    heat: result.heat,
+    lane: result.lane,
+    exhibition: result.exhibition,
+    isDq: result.isDq,
+    dqCode: result.dqCode,
+    split: {
+      membershipId: member.membershipId,
+      swimmerId: swimmer.swimmerId,
+      swimmerGender: swimmer.gender,
+      legOrder: member.legOrder,
+      timeMs,
+    },
   });
 
   for (const id of creditedSwimmerIds) {

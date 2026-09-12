@@ -358,6 +358,29 @@ export const meetRelayResults = pgTable(
   ],
 );
 
+/** Immutable racing-lineup snapshot captured when a relay result is recorded. */
+export const meetRelayResultMembers = pgTable(
+  "meet_relay_result_members",
+  {
+    id: text("id").primaryKey(),
+    resultId: text("result_id")
+      .notNull()
+      .references(() => meetRelayResults.id, { onDelete: "cascade" }),
+    membershipId: text("membership_id")
+      .notNull()
+      .references(() => teamSwimmerMemberships.id, { onDelete: "cascade" }),
+    legOrder: integer("leg_order").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("meet_relay_result_members_leg_idx").on(
+      table.resultId,
+      table.legOrder,
+    ),
+    index("meet_relay_result_members_membership_id_idx").on(table.membershipId),
+  ],
+);
+
 export const meetRelayResultSplits = pgTable(
   "meet_relay_result_splits",
   {
@@ -580,7 +603,22 @@ export const meetRelayResultsRelations = relations(
       fields: [meetRelayResults.meetEventId],
       references: [meetEvents.id],
     }),
+    members: many(meetRelayResultMembers),
     splits: many(meetRelayResultSplits),
+  }),
+);
+
+export const meetRelayResultMembersRelations = relations(
+  meetRelayResultMembers,
+  ({ one }) => ({
+    result: one(meetRelayResults, {
+      fields: [meetRelayResultMembers.resultId],
+      references: [meetRelayResults.id],
+    }),
+    membership: one(teamSwimmerMemberships, {
+      fields: [meetRelayResultMembers.membershipId],
+      references: [teamSwimmerMemberships.id],
+    }),
   }),
 );
 

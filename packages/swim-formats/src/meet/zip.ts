@@ -266,6 +266,9 @@ function mergeRelayEntries(
     if (existing.swimmerNames.length === 0 && relay.swimmerNames.length > 0) {
       existing.swimmerNames = [...relay.swimmerNames];
     }
+    if (!existing.results?.length && relay.results?.length) {
+      existing.results = relay.results.map((result) => ({ ...result }));
+    }
   }
 
   return merged;

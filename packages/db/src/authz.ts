@@ -162,6 +162,26 @@ export async function getOrganizationName(
   return org?.name ?? null;
 }
 
+export async function getOrganizationMeetImportIdentity(
+  organizationId: string,
+): Promise<{
+  name: string;
+  teamCode: string | null;
+  lscCode: string | null;
+} | null> {
+  const [org] = await db
+    .select({
+      name: organization.name,
+      teamCode: organization.teamCode,
+      lscCode: organization.lscCode,
+    })
+    .from(organization)
+    .where(eq(organization.id, organizationId))
+    .limit(1);
+
+  return org ?? null;
+}
+
 export async function getOrganizationTeamType(
   organizationId: string,
 ): Promise<TeamType> {

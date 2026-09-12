@@ -11,11 +11,12 @@ import {
 } from "@project-aqua/db/queries/meet-event-templates";
 import {
   addMeetEvent,
-  addMeetResult,
+  addResolvedMeetResults,
   countMeetEntriesForEvent,
   deleteMeetEntriesForEvent,
   deleteMeetEvent,
   deleteMeetRelayLegsForEvent,
+  getBestTimeMs,
   getMeetById,
   getMeetEventById,
   getMeetEvents,
@@ -23,7 +24,6 @@ import {
   suggestMeetEventNumber,
   updateMeetEvent,
 } from "@project-aqua/db/queries/meets";
-import { recomputeBestTimesForSwimmer } from "@project-aqua/db/queries/progression";
 import { getRoster } from "@project-aqua/db/queries/roster";
 import { isRelayStroke } from "@project-aqua/swim-core/entry-limits";
 import type { RelayStroke, Stroke } from "@project-aqua/swim-core/events";
@@ -436,7 +436,13 @@ export async function importMeetResultsCsvAction(
     ]),
   );
 
-  let imported = 0;
+  const resolved: Array<{
+    eventKey: string;
+    meetEventId: string;
+    swimmerId: string;
+    timeMs: number;
+    place: number | null;
+  }> = [];
   const skipped: string[] = [];
 
   for (const row of rows) {
@@ -457,17 +463,58 @@ export async function importMeetResultsCsvAction(
       continue;
     }
 
-    await addMeetResult(meetId, event.id, swimmer.swimmerId, row.timeMs, {
-      place: row.place ?? undefined,
+    resolved.push({
+      eventKey: event.eventKey,
+      meetEventId: event.id,
+      swimmerId: swimmer.swimmerId,
+      timeMs: row.timeMs,
+      place: row.place,
     });
-    await recomputeBestTimesForSwimmer(swimmer.swimmerId);
-    imported += 1;
   }
 
+  if (resolved.length === 0) {
+    throw new Error("No valid result rows found in CSV.");
+  }
+
+  const bestTimeKeys = new Map<
+    string,
+    { swimmerId: string; eventKey: string }
+  >();
+  for (const row of resolved) {
+    bestTimeKeys.set(`${row.swimmerId}:${row.eventKey}`, row);
+  }
+  const currentBestTimes = new Map<string, number | null>(
+    await Promise.all(
+      [...bestTimeKeys].map(
+        async ([key, row]): Promise<[string, number | null]> => [
+          key,
+          await getBestTimeMs(row.swimmerId, row.eventKey),
+        ],
+      ),
+    ),
+  );
+  const rowsToInsert = resolved.map((row) => {
+    const key = `${row.swimmerId}:${row.eventKey}`;
+    const previousBestTimeMs = currentBestTimes.get(key) ?? null;
+    if (previousBestTimeMs == null || row.timeMs < previousBestTimeMs) {
+      currentBestTimes.set(key, row.timeMs);
+    }
+    return {
+      meetEventId: row.meetEventId,
+      swimmerId: row.swimmerId,
+      timeMs: row.timeMs,
+      place: row.place,
+      previousBestTimeMs,
+    };
+  });
+
+  await addResolvedMeetResults(meetId, rowsToInsert, [
+    ...new Set(resolved.map((row) => row.swimmerId)),
+  ]);
   revalidateMeetPaths(teamId, meetId);
 
   return {
-    imported,
+    imported: rowsToInsert.length,
     skipped,
   };
 }

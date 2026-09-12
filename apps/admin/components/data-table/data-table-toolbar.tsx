@@ -17,7 +17,6 @@ import type { Column, Table } from "@tanstack/react-table";
 import { CalendarIcon, XIcon } from "lucide-react";
 import * as React from "react";
 import { DataTableFacetedFilter } from "@/components/data-table/data-table-faceted-filter";
-import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
 
 export type DateRangeFilterValue = {
   from?: string;
@@ -26,15 +25,12 @@ export type DateRangeFilterValue = {
 
 interface DataTableToolbarProps<TData> extends React.ComponentProps<"div"> {
   table: Table<TData>;
-  /** When false, hides the Columns visibility menu. Defaults to true. */
-  showViewOptions?: boolean;
 }
 
 export function DataTableToolbar<TData>({
   table,
   children,
   className,
-  showViewOptions = true,
   ...props
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0;
@@ -78,7 +74,6 @@ export function DataTableToolbar<TData>({
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         {children}
-        {showViewOptions ? <DataTableViewOptions table={table} /> : null}
       </div>
     </div>
   );

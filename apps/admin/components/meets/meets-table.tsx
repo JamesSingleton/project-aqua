@@ -89,7 +89,7 @@ export function MeetsTable({
 
   return (
     <DataTable table={table}>
-      <DataTableToolbar table={table} showViewOptions={false} />
+      <DataTableToolbar table={table} />
     </DataTable>
   );
 }

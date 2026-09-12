@@ -122,6 +122,19 @@ export interface ParsedRelayEntry {
   seedTime?: string;
   teamCode?: string;
   relayLetter?: string;
+  /** Recorded team attempts from HY3 F2 relay-result records. */
+  results?: ParsedRelayResult[];
+}
+
+export interface ParsedRelayResult {
+  time: string;
+  place?: number;
+  isDq?: boolean;
+  resultType?: "prelim" | "swimoff" | "finals";
+  heat?: number;
+  lane?: number;
+  dqCode?: string;
+  exhibition?: boolean;
 }
 
 /** Team-roster identity row (Hy-Tek D1 / CL2 D0 without an event). */

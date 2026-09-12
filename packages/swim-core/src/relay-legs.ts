@@ -134,17 +134,14 @@ export function canAssignRacingRelayLeg(args: {
   );
 }
 
-/** Lead-off (racing leg 1) on a legal, scored relay may update an official individual best. */
+/** Lead-off (racing leg 1) on a legal, timed relay may update an individual best. */
 export function shouldCreditRelayLeadOff(input: {
   legOrder: number;
   isDq: boolean;
   exhibition: boolean;
 }): boolean {
   return (
-    input.legOrder === 1 &&
-    !isRelayAlternateSlot(input.legOrder) &&
-    !input.isDq &&
-    !input.exhibition
+    input.legOrder === 1 && !isRelayAlternateSlot(input.legOrder) && !input.isDq
   );
 }
 

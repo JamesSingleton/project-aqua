@@ -9,6 +9,7 @@ import {
 import { RosterImportButton } from "@/app/team/[teamId]/roster/roster-import-export";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
 import { useDataTable } from "@/hooks/use-data-table";
 import type { Athlete } from "@/types";
 import type { Option } from "@/types/data-table";
@@ -136,6 +137,7 @@ export function RosterTable({
         <DataTableToolbar table={table}>
           <RosterImportButton teamId={teamId} />
           <RosterExportButton onExport={handleExport} loading={exporting} />
+          <DataTableViewOptions table={table} />
         </DataTableToolbar>
       </DataTable>
       {exportMessage ? (

@@ -261,7 +261,7 @@ export function AddResultForm({
         <CardDescription>
           {isRelay
             ? "Team time is upserted for this letter and round. A named split is optional; only a lead-off (leg 1) counts as an official individual time."
-            : "Manual individual result when you do not have a meet file. Saving twice adds another row."}
+            : "Record a hand-timed individual result, including an exhibition swim that was not included in the meet file. Saving twice adds another row."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -505,7 +505,7 @@ export function AddResultForm({
                     htmlFor="result-exhibition"
                     className="font-normal"
                   >
-                    Exhibition
+                    Exhibition (excluded from scoring)
                   </FieldLabel>
                 </Field>
               )}

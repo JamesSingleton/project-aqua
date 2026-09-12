@@ -27,6 +27,26 @@ export function normalizeLscCode(
   return code;
 }
 
+/** Whether a result-file team code identifies this team, with an optional LSC suffix. */
+export function matchesTeamCode(
+  fileTeamCode: string | null | undefined,
+  teamCode: string | null | undefined,
+  lscCode: string | null | undefined,
+): boolean {
+  const expectedCode = normalizeTeamCode(teamCode);
+  if (!expectedCode) return true;
+
+  const actual = fileTeamCode
+    ?.trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+  if (!actual) return false;
+  if (actual === expectedCode) return true;
+
+  const lsc = normalizeLscCode(lscCode);
+  return lsc != null && actual === `${expectedCode}${lsc}`;
+}
+
 /** Folder/file stem like `MARI-AZ-Entries-…`. */
 export function teamFilePrefix(
   teamCode: string | null | undefined,

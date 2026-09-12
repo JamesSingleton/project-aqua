@@ -1,5 +1,5 @@
 import type { PlanTier } from "@project-aqua/swim-core/plans";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "../client";
 import { subscriptions } from "../schema/index";
 
@@ -16,9 +16,35 @@ export async function getTeamSubscription(organizationId: string) {
   return sub ?? null;
 }
 
+export async function getTeamPlans(
+  organizationIds: readonly string[],
+): Promise<ReadonlyMap<string, PlanTier>> {
+  const uniqueIds = [...new Set(organizationIds)];
+  const plans = new Map<string, PlanTier>(
+    uniqueIds.map((id) => [id, "free"] as const),
+  );
+  if (uniqueIds.length === 0) {
+    return plans;
+  }
+
+  const rows = await db
+    .select({
+      organizationId: subscriptions.organizationId,
+      plan: subscriptions.plan,
+    })
+    .from(subscriptions)
+    .where(inArray(subscriptions.organizationId, uniqueIds));
+
+  for (const row of rows) {
+    plans.set(row.organizationId, row.plan as PlanTier);
+  }
+
+  return plans;
+}
+
 export async function getTeamPlan(organizationId: string): Promise<PlanTier> {
-  const sub = await getTeamSubscription(organizationId);
-  return (sub?.plan as PlanTier) ?? "free";
+  const plans = await getTeamPlans([organizationId]);
+  return plans.get(organizationId) ?? "free";
 }
 
 export async function createDefaultSubscription(organizationId: string) {

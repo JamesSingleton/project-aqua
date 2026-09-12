@@ -15,6 +15,7 @@ import type {
   ParsedEvent,
   ParsedMeet,
   ParsedRelayEntry,
+  ParsedRelayResult,
   ParsedResult,
 } from "../types";
 
@@ -348,6 +349,29 @@ function parseD1(line: string, state: ParseState): void {
   });
 }
 
+function relayResultFromRound(
+  entry: Hy3Entry,
+  kind: ResultKind,
+  round: RoundResult,
+): ParsedRelayResult | null {
+  const time = secondsToTimeString(round.timeSeconds);
+  const isDq =
+    !!round.dqCode ||
+    DQ_TIME_CODES.has(round.timeCode ?? "") ||
+    round.timeCode === "Q";
+  if (!time && !isDq) return null;
+  return {
+    time: time ?? "DQ",
+    place: round.overallPlace,
+    isDq,
+    resultType: kind,
+    heat: round.heat,
+    lane: round.lane,
+    dqCode: round.dqCode,
+    exhibition: entry.exhibition,
+  };
+}
+
 function parseE1(line: string, state: ParseState): void {
   const meetId = safeInt(extract(line, 4, 5), -1);
   const eventGender = parseEventGender(extract(line, 14, 1));
@@ -557,12 +581,16 @@ function flatten(state: ParseState): ParsedMeet {
         .map(([, id]) => state.swimmers.get(id))
         .filter((s): s is Hy3Swimmer => !!s)
         .map(swimmerDisplayName);
+      const relayResults = allRoundResults(entry)
+        .map(({ kind, result }) => relayResultFromRound(entry, kind, result))
+        .filter((result): result is ParsedRelayResult => result != null);
       relays.push({
         eventNumber: entry.eventNumber,
         swimmerNames: names,
         seedTime: secondsToTimeString(entry.seedSeconds),
         teamCode: entry.teamCode,
         relayLetter: entry.relayLetter,
+        results: relayResults.length > 0 ? relayResults : undefined,
       });
       continue;
     }

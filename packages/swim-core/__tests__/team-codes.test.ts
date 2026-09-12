@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  matchesTeamCode,
   normalizeLscCode,
   normalizeTeamCode,
   teamFilePrefix,
@@ -19,5 +20,14 @@ describe("team codes", () => {
     expect(teamFilePrefix("MARI", "AZ")).toBe("MARI-AZ");
     expect(teamFilePrefix("MARI", null)).toBe("MARI");
     expect(teamFilePrefix(null, "AZ")).toBe("TEAM");
+  });
+
+  it("matches result-file codes with an optional LSC suffix", () => {
+    expect(matchesTeamCode("MARI", "MARI", "AZ")).toBe(true);
+    expect(matchesTeamCode("MARI-AZ", "MARI", "AZ")).toBe(true);
+    expect(matchesTeamCode("MARIAZ", "MARI", "AZ")).toBe(true);
+    expect(matchesTeamCode("WFHS", "MARI", "AZ")).toBe(false);
+    expect(matchesTeamCode(undefined, "MARI", "AZ")).toBe(false);
+    expect(matchesTeamCode("WFHS", null, "AZ")).toBe(true);
   });
 });

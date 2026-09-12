@@ -21,7 +21,7 @@
     "@project-aqua/emails": "workspace:*",
     "@project-aqua/swim-core": "workspace:*",
     "drizzle-orm": "catalog:",
-    "stripe": "^22.6.1"
+    "stripe": "^22.6.2"
   },
   "devDependencies": {
     "@project-aqua/typescript-config": "workspace:*",
