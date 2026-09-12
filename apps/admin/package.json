@@ -6,30 +6,53 @@
   "scripts": {
     "build": "NODE_ENV=production next build",
     "clean": "git clean -xdf .next .turbo node_modules",
+    "clean:next": "rm -rf .next",
     "dev": "next dev -p 3001",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "start": "next start",
-    "check:types": "tsc --noEmit"
+    "check:types": "tsc --noEmit",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^4.0.66",
+    "@hookform/resolvers": "^5.9.1",
+    "@project-aqua/auth": "workspace:*",
+    "@project-aqua/billing": "workspace:*",
+    "@project-aqua/calendar-sync": "workspace:*",
+    "@project-aqua/db": "workspace:*",
+    "@project-aqua/emails": "workspace:*",
+    "@project-aqua/reports": "workspace:*",
+    "@project-aqua/storage": "workspace:*",
+    "@project-aqua/swim-core": "workspace:*",
+    "@project-aqua/swim-formats": "workspace:*",
     "@project-aqua/ui": "workspace:*",
-    "@radix-ui/react-icons": "^1.3.2",
-    "@tanstack/react-query": "^5.101.0",
+    "@project-aqua/usa-swimming": "workspace:*",
+    "@tanstack/react-query": "^5.102.8",
     "@tanstack/react-table": "^8.21.3",
+    "ai": "^7.0.98",
+    "better-auth": "catalog:",
     "geist": "^1.7.2",
     "lucide-react": "catalog:",
     "next": "catalog:",
     "next-themes": "catalog:",
+    "nuqs": "^2.10.1",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "react-hook-form": "^7.87.0",
+    "react-qr-code": "^2.2.0",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@project-aqua/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "typescript": "catalog:"
+    "@vitest/coverage-v8": "catalog:",
+    "drizzle-orm": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

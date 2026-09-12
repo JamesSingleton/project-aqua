@@ -3,7 +3,14 @@ import type { Athlete } from "@/types";
 export const mockAthleteData: Athlete[] = [
   {
     id: "a1b2c3",
+    membershipId: "m-a1b2c3",
     name: "Emily Johnson",
+    firstName: "Emily",
+    lastName: "Johnson",
+    trainingGroup: "Group A",
+    usaId: null,
+    status: "active",
+    classYear: null,
     gender: "Female",
     age: 16,
     dateOfBirth: "2008-05-12",
@@ -43,7 +50,14 @@ export const mockAthleteData: Athlete[] = [
   },
   {
     id: "d4e5f6",
+    membershipId: "m-d4e5f6",
     name: "Michael Smith",
+    firstName: "Michael",
+    lastName: "Smith",
+    trainingGroup: "Group A",
+    usaId: null,
+    status: "active",
+    classYear: null,
     gender: "Male",
     age: 18,
     dateOfBirth: "2006-09-23",
@@ -83,7 +97,14 @@ export const mockAthleteData: Athlete[] = [
   },
   {
     id: "g7h8i9",
+    membershipId: "m-g7h8i9",
     name: "Sophia Nguyen",
+    firstName: "Sophia",
+    lastName: "Nguyen",
+    trainingGroup: "Group A",
+    usaId: null,
+    status: "active",
+    classYear: null,
     gender: "Female",
     age: 14,
     dateOfBirth: "2010-03-08",
@@ -123,7 +144,14 @@ export const mockAthleteData: Athlete[] = [
   },
   {
     id: "j0k1l2",
+    membershipId: "m-j0k1l2",
     name: "James Wilson",
+    firstName: "James",
+    lastName: "Wilson",
+    trainingGroup: "Group A",
+    usaId: null,
+    status: "active",
+    classYear: null,
     gender: "Male",
     age: 15,
     dateOfBirth: "2009-11-15",
@@ -163,7 +191,14 @@ export const mockAthleteData: Athlete[] = [
   },
   {
     id: "m3n4o5",
+    membershipId: "m-m3n4o5",
     name: "Emma Thompson",
+    firstName: "Emma",
+    lastName: "Thompson",
+    trainingGroup: "Group A",
+    usaId: null,
+    status: "active",
+    classYear: null,
     gender: "Female",
     age: 17,
     dateOfBirth: "2007-07-19",
@@ -203,7 +238,14 @@ export const mockAthleteData: Athlete[] = [
   },
   {
     id: "p6q7r8",
+    membershipId: "m-p6q7r8",
     name: "Daniel Brown",
+    firstName: "Daniel",
+    lastName: "Brown",
+    trainingGroup: "Group A",
+    usaId: null,
+    status: "active",
+    classYear: null,
     gender: "Male",
     age: 13,
     dateOfBirth: "2011-02-28",
@@ -243,7 +285,14 @@ export const mockAthleteData: Athlete[] = [
   },
   {
     id: "s9t0u1",
+    membershipId: "m-s9t0u1",
     name: "Olivia Davis",
+    firstName: "Olivia",
+    lastName: "Davis",
+    trainingGroup: "Group A",
+    usaId: null,
+    status: "active",
+    classYear: null,
     gender: "Female",
     age: 19,
     dateOfBirth: "2005-12-03",
@@ -283,7 +332,14 @@ export const mockAthleteData: Athlete[] = [
   },
   {
     id: "v2w3x4",
+    membershipId: "m-v2w3x4",
     name: "Ethan Miller",
+    firstName: "Ethan",
+    lastName: "Miller",
+    trainingGroup: "Group A",
+    usaId: null,
+    status: "active",
+    classYear: null,
     gender: "Male",
     age: 16,
     dateOfBirth: "2008-04-27",
@@ -323,7 +379,14 @@ export const mockAthleteData: Athlete[] = [
   },
   {
     id: "y5z6a7",
+    membershipId: "m-y5z6a7",
     name: "Lily Martinez",
+    firstName: "Lily",
+    lastName: "Martinez",
+    trainingGroup: "Group A",
+    usaId: null,
+    status: "active",
+    classYear: null,
     gender: "Female",
     age: 12,
     dateOfBirth: "2012-08-14",
@@ -363,7 +426,14 @@ export const mockAthleteData: Athlete[] = [
   },
   {
     id: "b8c9d0",
+    membershipId: "m-b8c9d0",
     name: "Noah White",
+    firstName: "Noah",
+    lastName: "White",
+    trainingGroup: "Group A",
+    usaId: null,
+    status: "active",
+    classYear: null,
     gender: "Male",
     age: 14,
     dateOfBirth: "2010-06-20",
@@ -406,6 +476,7 @@ export const mockAthleteData: Athlete[] = [
 export const mockTeams = [
   {
     id: "a55773d4-f2c0-4b17-b36a-1f69f4a361d1",
+    membershipId: "m-a55773d4-f2c0-4b17-b36a-1f69f4a361d1",
     name: "Team A",
     logo: (
       <svg
@@ -420,6 +491,7 @@ export const mockTeams = [
   },
   {
     id: "7d13f58d-8a1e-4e7d-89d6-bb8a16881e9b",
+    membershipId: "m-7d13f58d-8a1e-4e7d-89d6-bb8a16881e9b",
     name: "Team B",
     logo: (
       <svg
@@ -434,6 +506,7 @@ export const mockTeams = [
   },
   {
     id: "ef7d4b7c-08b9-4e13-9f9e-0450a19b6054",
+    membershipId: "m-ef7d4b7c-08b9-4e13-9f9e-0450a19b6054",
     name: "Team C",
     logo: (
       <svg

@@ -1,0 +1,66 @@
+A102Meet Entries             Hy-Tek, Ltd    Win-TM 2.1Ld  05082003  1:14 PMMarist School                                        61
+B1CTCCvPDC                                     Home Pool                                    060120020601200206012002            59
+B2                                                                                                Y       Y                     60
+C1CTCC Cherokee Town and Country Club                GAJohn Ague                     Katie Daly                         HS      83
+C2John Ague                     155 W. Paces Ferry Road       Atlanta                       GA30319-1940USA OTH                 78
+C3                                                                                          coach@example.com                   89
+C4Kristine Sadusky              Alexis Schluze                Jon Glass                                                         88
+D1F    1Aitkens             Liz                                                         04291996  6                             56
+D1M   24Chapman             Adam                                                                  6                             85
+D1F   25Collins             Anna                                                        02141996  6                             27
+D1F   31Dalton              Margarida                                                   05101996  6                             19
+D1M   32Davenport           Jack                                                                  6                             07
+D1F   35Easterlin           Clara                                                       09191995  6                             78
+D1F   39Eisner              Sarah                                                       03111996  6                             17
+D1M   42Ferrari             Nico                                                        07191996  5                             37
+D1M   45Gearon              Jack                                                        01111997  5                             76
+D1F   50Haidet              Kellian                                                     09231995  6                             08
+D1F   58Johnston            Nicole                                                      08251997  4                             39
+D1F   59Jones               Aubrey                                                      07141996  5                             57
+D1F   60Jones               Kennedy                                                     11211995  6                             57
+D1F   66Luther              Kennan                                                      12311995  6                             08
+D1M   68Major               MAC                                                         02251997  5                             94
+D1F   77Monardo             Frances                                                     02121996  6                             68
+D1F   91Reinfenberger       Emma                                                        11211995  6                             10
+D1M   92Richards            Ben                                                         01311997  5                             17
+D1M   97Sanders             Jack                                                        11121997  4                             17
+D1M  109Smith               Robert                                                      12121996  5                             67
+D1F   25Collins             Anna                                                        02141996  6                             27
+E1F   25ColliFF    25A  0 06      0.00 11        0Y   54.15Y                                                                    66
+E2P                   1  3                                                                                                      50
+D1F   35Easterlin           Clara                                                       09191995  6                             78
+E1F   35EasteFF    25A  0 06      0.00 11        0Y   26.29Y                                                                    66
+E2P                   1  1                                                                                                      50
+D1F   50Haidet              Kellian                                                     09231995  6                             08
+E1F   50HaideFF    25A  0 06      0.00 11        0Y    0.00Y                                                                    26
+E2P                   1  5                                                                                                      60
+D1F   66Luther              Kennan                                                      12311995  6                             08
+E1F   66LutheFF    25A  0 06      0.00 11        0Y   30.60Y                                                                    76
+E2P                   2  1                                                                                                      50
+D1F   77Monardo             Frances                                                     02121996  6                             68
+E1F   77MonarFF    25A  0 06      0.00 11        0Y   33.21Y                                                                    66
+E2P                   2  3                                                                                                      60
+D1F   93Richards            McKenzie                                                    01311997  5                             99
+E1F   93RichaFF    25A  0 06      0.00 11        0Y   43.82Y                                                                    66
+E2P                   2  5                                                                                                      60
+D1F  105Shuford             Anna                                                        02211996  6                             37
+E1F  105ShufoFF    25A  0 06      0.00 11        0Y   43.81Y                                                                    86
+E2P                   3  1                                                                                                      50
+D1F  110Stevenson           Grace                                                       10021995  6                             98
+E1F  110SteveFF    25A  0 06      0.00 11        0Y   36.66Y                       X                                            57
+E2P                   3  3                                                                                                      60
+F1CTCC A   0FFF   100A  0 06      0.00  1        0Y    0.00Y                                                                    35
+F2P                   1  3                                                                                                      60
+F3F    1AitkeF1F   25ColliF2F   31DaltoF3F   59JonesF4                                                                          53
+F1CTCC B   0FFF   100A  0 06      0.00  1        0Y    0.00Y                                                                    35
+F2P                   1  5                                                                                                      60
+F3F   60JonesF1F   66LutheF2F   77MonarF3F   91ReinfF4                                                                          93
+F1CTCC C   0FFF   100A  0 06      0.00  1        0Y    0.00Y                                                                    35
+F2P                   1  1                                                                                                      50
+F3F   35EasteF1F   39EisneF2F   50HaideF3F   58JohnsF4                                                                          53
+F1CTCC A   0MMM   100A  0 06      0.00  2        0Y    0.00Y                                                                    55
+F2P                   1  3                                                                                                      60
+F3M   24ChapmF1M   45GearoF2M   97SandeF3M  109SmithF4                                                                          83
+F1CTCC B   0MMM   100A  0 06      0.00  2        0Y    0.00Y                                                                    55
+F2P                   1  5                                                                                                      60
+F3M   32DavenF1M   42FerraF2M   68MajorF3M   92RichaF4                                                                          63

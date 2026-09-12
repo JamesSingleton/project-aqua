@@ -1,0 +1,31 @@
+{
+  "name": "@project-aqua/billing",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./stripe": "./src/stripe.ts",
+    "./polar": "./src/polar.ts",
+    "./features": "./src/features.ts",
+    "./webhooks": "./src/webhooks.ts"
+  },
+  "scripts": {
+    "check:types": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
+  },
+  "dependencies": {
+    "@polar-sh/sdk": "catalog:",
+    "@project-aqua/db": "workspace:*",
+    "@project-aqua/emails": "workspace:*",
+    "@project-aqua/swim-core": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "stripe": "^22.6.2"
+  },
+  "devDependencies": {
+    "@project-aqua/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

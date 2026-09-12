@@ -4,12 +4,7 @@
     "paths": {
       "@/*": ["./*"],
       "@project-aqua/ui/*": ["../../packages/ui/src/*"]
-    },
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
+    }
   },
   "include": [
     "next-env.d.ts",
@@ -18,5 +13,5 @@
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "e2e", "__tests__"]
 }

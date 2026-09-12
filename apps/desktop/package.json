@@ -4,11 +4,10 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "electron ."
   },
   "author": "",
   "devDependencies": {
-    "electron": "^42.4.1"
+    "electron": "^44.2.0"
   }
 }

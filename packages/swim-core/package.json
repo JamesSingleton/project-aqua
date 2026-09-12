@@ -1,0 +1,52 @@
+{
+  "name": "@project-aqua/swim-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./events": "./src/events.ts",
+    "./times": "./src/times.ts",
+    "./validators": "./src/validators.ts",
+    "./plans": "./src/plans.ts",
+    "./draft-quota": "./src/draft-quota.ts",
+    "./event-catalog": "./src/event-catalog.ts",
+    "./entry-limits": "./src/entry-limits.ts",
+    "./association-event-caps": "./src/association-event-caps.ts",
+    "./consecutive-events": "./src/consecutive-events.ts",
+    "./relay-legs": "./src/relay-legs.ts",
+    "./best-times": "./src/best-times.ts",
+    "./lineup-suggest": "./src/lineup-suggest.ts",
+    "./age": "./src/age.ts",
+    "./calendar-date": "./src/calendar-date.ts",
+    "./calendar-recurrence": "./src/calendar-recurrence.ts",
+    "./people": "./src/people.ts",
+    "./meet-athlete-match": "./src/meet-athlete-match.ts",
+    "./text": "./src/text.ts",
+    "./team-types": "./src/team-types.ts",
+    "./team-codes": "./src/team-codes.ts",
+    "./workout-parser": "./src/workout-parser.ts",
+    "./meet-event-presets": "./src/meet-event-presets.ts",
+    "./meet-lineup-snapshot": "./src/meet-lineup-snapshot.ts",
+    "./split-capture": "./src/split-capture.ts",
+    "./meet-results-csv": "./src/meet-results-csv.ts",
+    "./meet-import-merge": "./src/meet-import-merge.ts"
+  },
+  "scripts": {
+    "check:types": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@project-aqua/typescript-config": "workspace:*",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

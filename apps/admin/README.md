@@ -1,36 +1,80 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Project Aqua Admin — Setup
 
-## Getting Started
+Coach SaaS dashboard for competitive swim team management.
 
-First, run the development server:
+## Prerequisites
+
+- Node.js 24+
+- pnpm 10+
+- Supabase CLI (for local Postgres)
+
+## Quick start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# From repo root
+pnpm install
+
+# Start local Supabase
+supabase start
+
+# Apply migrations
+supabase db reset
+
+# Copy env and configure
+cp apps/admin/.env.example apps/admin/.env.local
+# Set BETTER_AUTH_SECRET: openssl rand -base64 32
+
+# Start admin app
+pnpm dev:admin
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3001
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Dev memory / Turbopack cache
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+Long `pnpm dev:admin` sessions with heavy HMR can grow `apps/admin/.next` (especially `.next/dev/cache/turbopack`) into multi‑GB on disk and push `next-server` RSS into the multi‑GB range. That is Turbopack cache retention, not an app-level leak.
 
-## Learn More
+When RSS feels painful:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# Stop the admin dev server, then from repo root:
+pnpm clean:admin
+pnpm dev:admin
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Or from `apps/admin`: `pnpm clean:next`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## Architecture
 
-## Deploy on Vercel
+- **Auth:** Better Auth with organization plugin (team = organization)
+- **Database:** Supabase Postgres + Drizzle ORM (`packages/db`)
+- **Email:** React Email + Resend (`packages/emails`)
+- **Billing:** Stripe per-team subscriptions (`packages/billing`)
+- **USA Swimming:** SWIMS vendor API (`packages/usa-swimming`)
+- **File formats:** Hy-Tek / SDIF meet & roster parsers (`packages/swim-formats`) — Meet Events (EV3/HYV), Results (CL2/HY3/SD3), Entries/Roster (CL2+HY3), ZIP packs
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Routes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+| Route | Description |
+|-------|-------------|
+| `/sign-in`, `/sign-up` | Coach authentication |
+| `/onboarding` | Create first team |
+| `/team/[teamId]` | Dashboard |
+| `/team/[teamId]/roster` | Swimmer roster |
+| `/team/[teamId]/meets` | Meet management |
+| `/team/[teamId]/attendance` | Practice attendance |
+| `/team/[teamId]/progression` | Per-swimmer time trends and meet history |
+| `/team/[teamId]/analytics` | Team volume, attendance, and top times |
+| `/team/[teamId]/settings` | Team settings |
+| `/team/[teamId]/settings/billing` | Subscription management |
+| `/team/[teamId]/settings/usa-swimming` | SWIMS integration |
+
+## Workspace packages
+
+- `@project-aqua/swim-core` — Domain types, validators, plan limits
+- `@project-aqua/db` — Drizzle schema, queries, authz
+- `@project-aqua/auth` — Better Auth server/client
+- `@project-aqua/emails` — Transactional email templates
+- `@project-aqua/billing` — Stripe integration
+- `@project-aqua/usa-swimming` — SWIMS API client
+- `@project-aqua/swim-formats` — Meet/roster file parsers
