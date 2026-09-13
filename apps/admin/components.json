@@ -1,6 +1,6 @@
 {
   "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "new-york",
+  "style": "base-nova",
   "rsc": true,
   "tsx": true,
   "tailwind": {
@@ -16,5 +16,8 @@
     "lib": "@/lib",
     "utils": "@project-aqua/ui/lib/utils",
     "ui": "@project-aqua/ui/components"
-  }
+  },
+  "rtl": false,
+  "menuColor": "default-translucent",
+  "menuAccent": "subtle"
 }

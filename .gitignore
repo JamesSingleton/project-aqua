@@ -15,6 +15,7 @@ node_modules
 
 # Testing
 coverage
+**/e2e/.auth/
 
 # Turbo
 .turbo
@@ -37,3 +38,5 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+supabase/.temp

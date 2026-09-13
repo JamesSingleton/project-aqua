@@ -15,14 +15,14 @@
   "dependencies": {
     "@project-aqua/ui": "workspace:*",
     "date-fns": "^4.4.0",
-    "framer-motion": "^12.40.0",
+    "framer-motion": "^13.2.0",
     "geist": "^1.7.2",
     "lucide-react": "catalog:",
     "next": "catalog:",
     "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "resend": "^6.14.0"
+    "resend": "^6.28.0"
   },
   "devDependencies": {
     "@project-aqua/typescript-config": "workspace:*",

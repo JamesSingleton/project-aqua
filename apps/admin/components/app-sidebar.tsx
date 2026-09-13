@@ -1,6 +1,11 @@
 "use client";
 
 import {
+  requiresSafeSportCompliance,
+  supportsUsaSwimmingIntegration,
+  type TeamType,
+} from "@project-aqua/swim-core/team-types";
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -8,165 +13,160 @@ import {
   SidebarRail,
 } from "@project-aqua/ui/components/sidebar";
 import {
-  AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  GalleryVerticalEnd,
-  MapIcon,
-  PieChart,
+  BarChart3,
+  Calendar,
+  CalendarPlus,
+  ClipboardCheck,
+  ClipboardList,
+  ClipboardPlus,
+  LayoutDashboard,
   Settings2,
-  SquareTerminal,
+  TrendingUp,
+  Trophy,
+  UserPlus,
+  Users,
 } from "lucide-react";
-import type * as React from "react";
+import { Suspense } from "react";
 import { NavMain } from "@/components/nav-main";
-import { NavProjects } from "@/components/nav-projects";
+import { NavQuickActions } from "@/components/nav-quick-actions";
 import { NavUser } from "@/components/nav-user";
-import { TeamSwitcher } from "@/components/team-switcher";
+import { type TeamItem, TeamSwitcher } from "@/components/team-switcher";
 
-// This is sample data.
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  teams: [
+export function AppSidebar({
+  teamId,
+  teamType,
+  teams,
+  user,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & {
+  teamId: string;
+  teamType: TeamType;
+  teams: TeamItem[];
+  user: { name: string; email: string; image?: string | null };
+}) {
+  const settingsItems = [
+    { title: "Team", url: `/team/${teamId}/settings` },
+    { title: "Members", url: `/team/${teamId}/settings/members` },
+    { title: "Billing", url: `/team/${teamId}/settings/billing` },
+    { title: "Account", url: `/team/${teamId}/settings/account` },
+    ...(requiresSafeSportCompliance(teamType)
+      ? [{ title: "SafeSport", url: `/team/${teamId}/settings/safesport` }]
+      : []),
+    ...(supportsUsaSwimmingIntegration(teamType)
+      ? [
+          {
+            title: "USA Swimming",
+            url: `/team/${teamId}/settings/usa-swimming`,
+          },
+        ]
+      : []),
+  ];
+
+  const navMain = [
     {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd as React.ElementType,
-      plan: "Enterprise",
+      title: "Dashboard",
+      url: `/team/${teamId}`,
+      icon: LayoutDashboard,
     },
     {
-      name: "Acme Corp.",
-      logo: AudioWaveform as React.ElementType,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command as React.ElementType,
-      plan: "Free",
-    },
-  ],
-  navMain: [
-    {
-      title: "Playground",
-      url: "#",
-      icon: SquareTerminal,
-      isActive: true,
+      title: "Roster",
+      url: `/team/${teamId}/roster`,
+      icon: Users,
       items: [
+        { title: "Swimmers", url: `/team/${teamId}/roster` },
+        { title: "Groups", url: `/team/${teamId}/roster?tab=groups` },
+        { title: "Coaches", url: `/team/${teamId}/roster?tab=coaches` },
+      ],
+    },
+    {
+      title: "Calendar",
+      url: `/team/${teamId}/calendar`,
+      icon: Calendar,
+      items: [
+        { title: "Team calendar", url: `/team/${teamId}/calendar` },
+        { title: "Attendance", url: `/team/${teamId}/attendance` },
+      ],
+    },
+    {
+      title: "Workouts",
+      url: `/team/${teamId}/workouts`,
+      icon: ClipboardList,
+    },
+    {
+      title: "Meets",
+      url: `/team/${teamId}/meets`,
+      icon: Trophy,
+      items: [
+        { title: "All meets", url: `/team/${teamId}/meets` },
+        { title: "Add meet", url: `/team/${teamId}/meets/create` },
+        { title: "Results", url: `/team/${teamId}/meets/results` },
         {
-          title: "History",
-          url: "#",
-        },
-        {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
-          url: "#",
+          title: "Time standards",
+          url: `/team/${teamId}/meets/time-standards`,
         },
       ],
     },
     {
-      title: "Models",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
+      title: "Progression",
+      url: `/team/${teamId}/progression`,
+      icon: TrendingUp,
     },
     {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
+      title: "Analytics",
+      url: `/team/${teamId}/analytics`,
+      icon: BarChart3,
     },
     {
       title: "Settings",
-      url: "#",
+      url: `/team/${teamId}/settings`,
       icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
+      items: settingsItems,
     },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: MapIcon,
-    },
-  ],
-};
+  ];
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const quickActions = [
+    {
+      name: "Add swimmer",
+      url: `/team/${teamId}/swimmers/create`,
+      icon: UserPlus,
+    },
+    {
+      name: "Add meet",
+      url: `/team/${teamId}/meets/create`,
+      icon: CalendarPlus,
+    },
+    {
+      name: "Create workout",
+      url: `/team/${teamId}/workouts/create`,
+      icon: ClipboardPlus,
+    },
+    {
+      name: "Take attendance",
+      url: `/team/${teamId}/attendance`,
+      icon: ClipboardCheck,
+    },
+  ];
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher teams={teams} activeTeamId={teamId} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        <Suspense fallback={null}>
+          <NavMain items={navMain} />
+        </Suspense>
+        <NavQuickActions actions={quickActions} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser
+          teamId={teamId}
+          user={{
+            name: user.name,
+            email: user.email,
+            avatar: user.image ?? undefined,
+          }}
+        />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
