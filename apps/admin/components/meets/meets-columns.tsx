@@ -5,6 +5,7 @@ import Link from "next/link";
 import { DeleteMeetButton } from "@/app/team/[teamId]/meets/delete-meet-button";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import type { DateRangeFilterValue } from "@/components/data-table/data-table-toolbar";
+import type { DataTableFeatures } from "@/lib/data-table-features";
 import type { Option } from "@/types/data-table";
 
 export type MeetTableRow = {
@@ -20,7 +21,7 @@ export type MeetTableRow = {
   seasonLabel: string | null;
 };
 
-const dateRangeFilterFn: FilterFn<MeetTableRow> = (
+const dateRangeFilterFn: FilterFn<DataTableFeatures, MeetTableRow> = (
   row,
   columnId,
   filterValue: DateRangeFilterValue | undefined,
@@ -37,7 +38,7 @@ export function createMeetsColumns(
   teamId: string,
   courseOptions: Option[],
   seasonOptions: Option[] = [],
-): ColumnDef<MeetTableRow>[] {
+): ColumnDef<DataTableFeatures, MeetTableRow>[] {
   return [
     {
       id: "name",
@@ -100,7 +101,7 @@ export function createMeetsColumns(
         label: "Entries due",
         variant: "dateRange",
       },
-      sortingFn: (rowA, rowB, columnId) => {
+      sortFn: (rowA, rowB, columnId) => {
         const a = rowA.getValue<string | null>(columnId) ?? "";
         const b = rowB.getValue<string | null>(columnId) ?? "";
         if (!a && !b) return 0;

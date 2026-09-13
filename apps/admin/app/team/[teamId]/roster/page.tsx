@@ -39,7 +39,10 @@ import {
   TabsList,
   TabsTrigger,
 } from "@project-aqua/ui/components/tabs";
-import type { SortingState, VisibilityState } from "@tanstack/react-table";
+import type {
+  ColumnVisibilityState,
+  SortingState,
+} from "@tanstack/react-table";
 import { eq } from "drizzle-orm";
 import { UserPlusIcon } from "lucide-react";
 import type { Metadata } from "next";
@@ -198,7 +201,7 @@ async function RosterSwimmersTable({
   showUsaSwimmingId: boolean;
   groups: { id: string; name: string }[];
   facetOptions: ReturnType<typeof buildFacetOptions>;
-  initialColumnVisibility: VisibilityState;
+  initialColumnVisibility: ColumnVisibilityState;
   prefsSorting: SortingState;
 }) {
   const raw = await searchParams;
@@ -317,7 +320,8 @@ export default async function RosterPage({
   const groupOptions = groups.map((g) => ({ id: g.id, name: g.name }));
   const facetOptions = buildFacetOptions(facets, groupOptions, showClassYear);
   const rosterColumnVisibility =
-    (teamUi.roster?.columnVisibility as VisibilityState | undefined) ?? {};
+    (teamUi.roster?.columnVisibility as ColumnVisibilityState | undefined) ??
+    {};
   const rosterSorting =
     (teamUi.roster?.sorting as SortingState | undefined) ?? [];
 

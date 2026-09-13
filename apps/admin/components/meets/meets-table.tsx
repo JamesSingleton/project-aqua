@@ -2,16 +2,13 @@
 
 import {
   type ColumnFiltersState,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
   type SortingState,
-  useReactTable,
+  useTable,
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
+import { dataTableFeatures } from "@/lib/data-table-features";
 import type { Option } from "@/types/data-table";
 import { createMeetsColumns, type MeetTableRow } from "./meets-columns";
 
@@ -53,14 +50,15 @@ export function MeetsTable({
     [teamId, seasonOptions],
   );
 
-  const table = useReactTable({
+  const table = useTable({
+    features: dataTableFeatures,
     data: meets,
     columns,
     state: {
       sorting,
       columnFilters,
       pagination,
-      columnPinning: { right: ["actions"] },
+      columnPinning: { start: [], end: ["actions"] },
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: (updater) => {
@@ -68,10 +66,6 @@ export function MeetsTable({
       setPagination((prev) => ({ ...prev, pageIndex: 0 }));
     },
     onPaginationChange: setPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getRowId: (row) => row.id,
     defaultColumn: {
       enableColumnFilter: false,

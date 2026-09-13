@@ -1,4 +1,10 @@
-import type { ColumnSort, Row, RowData } from "@tanstack/react-table";
+import type {
+  ColumnSort,
+  Row,
+  RowData,
+  TableFeatures,
+} from "@tanstack/react-table";
+import type { DataTableFeatures } from "@/lib/data-table-features";
 
 export type FilterVariant =
   | "text"
@@ -12,7 +18,11 @@ export type FilterVariant =
 
 declare module "@tanstack/react-table" {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  interface ColumnMeta<TData extends RowData, TValue> {
+  interface ColumnMeta<
+    TFeatures extends TableFeatures,
+    TData extends RowData,
+    TValue,
+  > {
     label?: string;
     placeholder?: string;
     variant?: FilterVariant;
@@ -42,7 +52,7 @@ export interface ExtendedColumnSort<TData> extends Omit<ColumnSort, "id"> {
   id: Extract<keyof TData, string> | string;
 }
 
-export interface DataTableRowAction<TData> {
-  row: Row<TData>;
+export interface DataTableRowAction<TData extends RowData> {
+  row: Row<DataTableFeatures, TData>;
   variant: "update" | "delete";
 }

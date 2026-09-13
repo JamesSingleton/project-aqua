@@ -1,6 +1,9 @@
 "use client";
 
-import type { SortingState, VisibilityState } from "@tanstack/react-table";
+import type {
+  ColumnVisibilityState,
+  SortingState,
+} from "@tanstack/react-table";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   exportRosterCsvAction,
@@ -46,7 +49,7 @@ export function RosterTable({
   showClassYear?: boolean;
   showCollegeEligibility?: boolean;
   showUsaSwimmingId?: boolean;
-  initialColumnVisibility?: VisibilityState;
+  initialColumnVisibility?: ColumnVisibilityState;
   initialSorting?: SortingState;
 }) {
   const [exporting, setExporting] = useState(false);
@@ -74,7 +77,7 @@ export function RosterTable({
     initialState: {
       sorting: initialSorting,
       columnVisibility: initialColumnVisibility,
-      columnPinning: { right: ["actions"] },
+      columnPinning: { start: [], end: ["actions"] },
       pagination: { pageIndex: 0, pageSize: 10 },
     },
     getRowId: (row) => row.id,
@@ -82,8 +85,8 @@ export function RosterTable({
     clearOnDefault: true,
   });
 
-  const columnVisibility = table.getState().columnVisibility;
-  const sorting = table.getState().sorting;
+  const columnVisibility = table.state.columnVisibility;
+  const sorting = table.state.sorting;
 
   useEffect(() => {
     if (skipPersist.current) {

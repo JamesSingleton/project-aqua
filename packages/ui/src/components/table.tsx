@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@project-aqua/ui/lib/utils";
+import { cn } from "cn";
 import type * as React from "react";
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {

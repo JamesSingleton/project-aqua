@@ -1,18 +1,26 @@
-import type { Column } from "@tanstack/react-table";
+import type { Column, RowData } from "@tanstack/react-table";
 import type * as React from "react";
+import type { DataTableFeatures } from "@/lib/data-table-features";
 
-export function getColumnPinningStyle<TData>({
+export function getColumnPinningStyle<TData extends RowData>({
   column,
   withBorder = false,
 }: {
-  column: Column<TData>;
+  column: Column<DataTableFeatures, TData>;
   withBorder?: boolean;
 }): React.CSSProperties {
   const isPinned = column.getIsPinned();
+  const pinnedColumnIds = withBorder
+    ? isPinned === "start"
+      ? column.table.store.state.columnPinning.start
+      : isPinned === "end"
+        ? column.table.store.state.columnPinning.end
+        : []
+    : [];
   const isLastLeftPinnedColumn =
-    isPinned === "left" && column.getIsLastColumn("left");
+    isPinned === "start" && pinnedColumnIds.at(-1) === column.id;
   const isFirstRightPinnedColumn =
-    isPinned === "right" && column.getIsFirstColumn("right");
+    isPinned === "end" && pinnedColumnIds[0] === column.id;
 
   return {
     boxShadow: withBorder
@@ -22,8 +30,10 @@ export function getColumnPinningStyle<TData>({
           ? "4px 0 4px -4px var(--border) inset"
           : undefined
       : undefined,
-    left: isPinned === "left" ? `${column.getStart("left")}px` : undefined,
-    right: isPinned === "right" ? `${column.getAfter("right")}px` : undefined,
+    insetInlineStart:
+      isPinned === "start" ? `${column.getStart("start")}px` : undefined,
+    insetInlineEnd:
+      isPinned === "end" ? `${column.getAfter("end")}px` : undefined,
     opacity: isPinned ? 0.97 : 1,
     position: isPinned ? "sticky" : "relative",
     background: isPinned ? "var(--background)" : undefined,

@@ -39,6 +39,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { removeSwimmerAction } from "@/app/team/[teamId]/roster/actions";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import type { DataTableFeatures } from "@/lib/data-table-features";
 import type { Athlete } from "@/types";
 import type { Option } from "@/types/data-table";
 import { ClassYearDisplay } from "./class-year-display";
@@ -231,7 +232,7 @@ export type RosterColumnOptions = {
 export function columns(
   teamId: string,
   options: RosterColumnOptions = {},
-): ColumnDef<Athlete>[] {
+): ColumnDef<DataTableFeatures, Athlete>[] {
   const {
     showClassYear = false,
     showUsaSwimmingId = true,
@@ -359,7 +360,7 @@ export function columns(
               return <ClassYearDisplay value={year} />;
             },
             enableColumnFilter: true,
-          } satisfies ColumnDef<Athlete>,
+          } satisfies ColumnDef<DataTableFeatures, Athlete>,
         ]
       : []),
     {
@@ -391,7 +392,7 @@ export function columns(
                 {row.original.usaId || "—"}
               </span>
             ),
-          } satisfies ColumnDef<Athlete>,
+          } satisfies ColumnDef<DataTableFeatures, Athlete>,
         ]
       : []),
     {

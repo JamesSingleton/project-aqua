@@ -9,17 +9,23 @@ import {
   TableRow,
 } from "@project-aqua/ui/components/table";
 import { cn } from "@project-aqua/ui/lib/utils";
-import { flexRender, type Table as TanstackTable } from "@tanstack/react-table";
+import {
+  flexRender,
+  type ReactTable,
+  type RowData,
+} from "@tanstack/react-table";
 import type * as React from "react";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { getColumnPinningStyle } from "@/lib/data-table";
+import type { DataTableFeatures } from "@/lib/data-table-features";
 
-interface DataTableProps<TData> extends React.ComponentProps<"div"> {
-  table: TanstackTable<TData>;
+interface DataTableProps<TData extends RowData>
+  extends React.ComponentProps<"div"> {
+  table: ReactTable<DataTableFeatures, TData>;
   actionBar?: React.ReactNode;
 }
 
-export function DataTable<TData>({
+export function DataTable<TData extends RowData>({
   table,
   actionBar,
   children,

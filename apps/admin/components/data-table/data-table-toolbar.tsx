@@ -13,27 +13,29 @@ import {
   PopoverTrigger,
 } from "@project-aqua/ui/components/popover";
 import { cn } from "@project-aqua/ui/lib/utils";
-import type { Column, Table } from "@tanstack/react-table";
+import type { Column, ReactTable, RowData } from "@tanstack/react-table";
 import { CalendarIcon, XIcon } from "lucide-react";
 import * as React from "react";
 import { DataTableFacetedFilter } from "@/components/data-table/data-table-faceted-filter";
+import type { DataTableFeatures } from "@/lib/data-table-features";
 
 export type DateRangeFilterValue = {
   from?: string;
   to?: string;
 };
 
-interface DataTableToolbarProps<TData> extends React.ComponentProps<"div"> {
-  table: Table<TData>;
+interface DataTableToolbarProps<TData extends RowData>
+  extends React.ComponentProps<"div"> {
+  table: ReactTable<DataTableFeatures, TData>;
 }
 
-export function DataTableToolbar<TData>({
+export function DataTableToolbar<TData extends RowData>({
   table,
   children,
   className,
   ...props
 }: DataTableToolbarProps<TData>) {
-  const isFiltered = table.getState().columnFilters.length > 0;
+  const isFiltered = table.state.columnFilters.length > 0;
 
   const columns = React.useMemo(
     () => table.getAllColumns().filter((column) => column.getCanFilter()),
@@ -90,10 +92,10 @@ function formatRangeLabel(value: DateRangeFilterValue | undefined) {
   return `${from} – ${to}`;
 }
 
-function DataTableDateRangeFilter<TData>({
+function DataTableDateRangeFilter<TData extends RowData>({
   column,
 }: {
-  column: Column<TData, unknown>;
+  column: Column<DataTableFeatures, TData, unknown>;
 }) {
   const columnMeta = column.columnDef.meta;
   const raw = column.getFilterValue() as DateRangeFilterValue | undefined;
@@ -160,10 +162,10 @@ function DataTableDateRangeFilter<TData>({
   );
 }
 
-function DataTableToolbarFilter<TData>({
+function DataTableToolbarFilter<TData extends RowData>({
   column,
 }: {
-  column: Column<TData, unknown>;
+  column: Column<DataTableFeatures, TData, unknown>;
 }) {
   const columnMeta = column.columnDef.meta;
 

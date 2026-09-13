@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@project-aqua/ui/components/select";
 import { Separator } from "@project-aqua/ui/components/separator";
-import type { Table } from "@tanstack/react-table";
+import type { ReactTable } from "@tanstack/react-table";
 import {
   DownloadIcon,
   Share2Icon,
@@ -35,6 +35,7 @@ import {
   removeSwimmersAction,
 } from "@/app/team/[teamId]/roster/actions";
 import { assignGroupsBulkAction } from "@/app/team/[teamId]/roster/groups-actions";
+import type { DataTableFeatures } from "@/lib/data-table-features";
 import type { Athlete } from "@/types";
 
 type GroupOption = { id: string; name: string };
@@ -47,7 +48,7 @@ export function RosterActionBar({
   seasonId,
   groups,
 }: {
-  table: Table<Athlete>;
+  table: ReactTable<DataTableFeatures, Athlete>;
   teamId: string;
   seasonId?: string;
   groups: GroupOption[];

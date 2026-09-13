@@ -1,9 +1,13 @@
-import type { RowData } from "@tanstack/react-table";
+import type { RowData, TableFeatures } from "@tanstack/react-table";
 import type { FilterVariant, Option } from "./data-table";
 
 declare module "@tanstack/react-table" {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  interface ColumnMeta<TData extends RowData, TValue> {
+  interface ColumnMeta<
+    TFeatures extends TableFeatures,
+    TData extends RowData,
+    TValue,
+  > {
     label?: string;
     placeholder?: string;
     variant?: FilterVariant;

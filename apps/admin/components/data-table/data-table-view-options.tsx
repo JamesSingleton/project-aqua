@@ -15,17 +15,18 @@ import {
   PopoverTrigger,
 } from "@project-aqua/ui/components/popover";
 import { cn } from "@project-aqua/ui/lib/utils";
-import type { Table } from "@tanstack/react-table";
+import type { ReactTable, RowData } from "@tanstack/react-table";
 import { Settings2Icon } from "lucide-react";
 import * as React from "react";
+import type { DataTableFeatures } from "@/lib/data-table-features";
 
-interface DataTableViewOptionsProps<TData>
+interface DataTableViewOptionsProps<TData extends RowData>
   extends React.ComponentProps<typeof PopoverContent> {
-  table: Table<TData>;
+  table: ReactTable<DataTableFeatures, TData>;
   disabled?: boolean;
 }
 
-export function DataTableViewOptions<TData>({
+export function DataTableViewOptions<TData extends RowData>({
   table,
   disabled,
   className,
