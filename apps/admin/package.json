@@ -43,6 +43,7 @@
     "react-dom": "catalog:",
     "react-hook-form": "^7.88.0",
     "react-qr-code": "^2.2.0",
+    "@t3-oss/env-nextjs": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

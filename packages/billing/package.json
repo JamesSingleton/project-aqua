@@ -8,7 +8,8 @@
     "./stripe": "./src/stripe.ts",
     "./polar": "./src/polar.ts",
     "./features": "./src/features.ts",
-    "./webhooks": "./src/webhooks.ts"
+    "./webhooks": "./src/webhooks.ts",
+    "./keys": "./src/keys.ts"
   },
   "scripts": {
     "check:types": "tsc --noEmit",
@@ -20,8 +21,10 @@
     "@project-aqua/db": "workspace:*",
     "@project-aqua/emails": "workspace:*",
     "@project-aqua/swim-core": "workspace:*",
+    "@t3-oss/env-nextjs": "catalog:",
     "drizzle-orm": "catalog:",
-    "stripe": "^22.6.2"
+    "stripe": "^22.6.2",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@project-aqua/typescript-config": "workspace:*",

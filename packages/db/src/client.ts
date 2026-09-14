@@ -1,11 +1,10 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgresClient from "postgres";
+import { getDatabaseUrl } from "./keys";
 import * as schema from "./schema/index";
 
-const connectionString =
-  process.env.DATABASE_URL ??
-  "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
+const connectionString = getDatabaseUrl();
 
 const globalForDb = globalThis as unknown as {
   client: ReturnType<typeof postgresClient> | undefined;

@@ -3,6 +3,7 @@ import { Polar } from "@polar-sh/sdk";
 let polarClient: Polar | null = null;
 
 export function getPolar(): Polar | null {
+  // Polar checkout is configured via `@project-aqua/auth/keys` (Better Auth plugin).
   const accessToken = process.env.POLAR_ACCESS_TOKEN;
   if (!accessToken) return null;
   if (!polarClient) {

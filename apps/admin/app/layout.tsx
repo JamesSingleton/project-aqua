@@ -9,6 +9,10 @@ import type { Metadata, Viewport } from "next";
 import "@project-aqua/ui/globals.css";
 import { cn } from "@project-aqua/ui/lib/utils";
 import Providers from "@/components/providers";
+import { env } from "@/env";
+
+// Keep a live reference so Turbopack/webpack include env validation in the graph.
+void env.BETTER_AUTH_URL;
 
 export const metadata: Metadata = {
   title: {

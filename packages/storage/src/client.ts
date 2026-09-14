@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { keys } from "./keys";
 
 let client: SupabaseClient | null = null;
 
@@ -9,8 +10,8 @@ let client: SupabaseClient | null = null;
 export function getStorageClient(): SupabaseClient {
   if (client) return client;
 
-  const url = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const { SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: serviceRoleKey } =
+    keys();
 
   if (!url || !serviceRoleKey) {
     throw new Error(

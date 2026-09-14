@@ -32,6 +32,7 @@ import { betterAuth } from "better-auth";
 import { organization } from "better-auth/plugins/organization";
 import { twoFactor } from "better-auth/plugins/two-factor";
 import { eq } from "drizzle-orm";
+import { keys } from "./keys";
 import { orgAc, orgRoles } from "./organization-ac";
 
 function asPlan(value: unknown): PlanTier | null {
@@ -41,16 +42,18 @@ function asPlan(value: unknown): PlanTier | null {
   return null;
 }
 
-const polarAccessToken = process.env.POLAR_ACCESS_TOKEN?.trim() ?? "";
+const env = keys();
+
+const polarAccessToken = env.POLAR_ACCESS_TOKEN?.trim() ?? "";
 const polarConfigured = polarAccessToken.length > 0;
 
 const polarProducts = [
-  process.env.POLAR_PRODUCT_PRO
-    ? { productId: process.env.POLAR_PRODUCT_PRO, slug: "pro" as const }
+  env.POLAR_PRODUCT_PRO
+    ? { productId: env.POLAR_PRODUCT_PRO, slug: "pro" as const }
     : null,
-  process.env.POLAR_PRODUCT_ENTERPRISE
+  env.POLAR_PRODUCT_ENTERPRISE
     ? {
-        productId: process.env.POLAR_PRODUCT_ENTERPRISE,
+        productId: env.POLAR_PRODUCT_ENTERPRISE,
         slug: "enterprise" as const,
       }
     : null,
@@ -88,8 +91,7 @@ const globalForAuth = globalThis as unknown as {
 function createPolarClient() {
   return new Polar({
     accessToken: polarAccessToken,
-    server:
-      process.env.POLAR_SERVER === "production" ? "production" : "sandbox",
+    server: env.POLAR_SERVER === "production" ? "production" : "sandbox",
   });
 }
 
@@ -121,9 +123,7 @@ const authSchema = {
 };
 
 function createAuth(polarClient: Polar) {
-  const trustedOriginsFromEnv = process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(
-    ",",
-  )
+  const trustedOriginsFromEnv = env.BETTER_AUTH_TRUSTED_ORIGINS?.split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
 
@@ -133,6 +133,8 @@ function createAuth(polarClient: Polar) {
       schema: authSchema,
     }),
     appName: "Project Aqua",
+    secret: env.BETTER_AUTH_SECRET,
+    baseURL: env.BETTER_AUTH_URL,
     ...(trustedOriginsFromEnv?.length
       ? { trustedOrigins: trustedOriginsFromEnv }
       : process.env.NODE_ENV === "development"
@@ -171,23 +173,23 @@ function createAuth(polarClient: Polar) {
       },
     },
     socialProviders: {
-      ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
         ? {
             google: {
-              clientId: process.env.GOOGLE_CLIENT_ID,
-              clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+              clientId: env.GOOGLE_CLIENT_ID,
+              clientSecret: env.GOOGLE_CLIENT_SECRET,
               accessType: "offline" as const,
               prompt: "select_account consent" as const,
               scope: ["openid", "email", "profile"],
             },
           }
         : {}),
-      ...(process.env.MICROSOFT_CLIENT_ID && process.env.MICROSOFT_CLIENT_SECRET
+      ...(env.MICROSOFT_CLIENT_ID && env.MICROSOFT_CLIENT_SECRET
         ? {
             microsoft: {
-              clientId: process.env.MICROSOFT_CLIENT_ID,
-              clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
-              tenantId: process.env.MICROSOFT_TENANT_ID ?? "common",
+              clientId: env.MICROSOFT_CLIENT_ID,
+              clientSecret: env.MICROSOFT_CLIENT_SECRET,
+              tenantId: env.MICROSOFT_TENANT_ID ?? "common",
               scope: ["openid", "email", "profile", "offline_access"],
             },
           }
@@ -320,7 +322,7 @@ function createAuth(polarClient: Polar) {
           portal(),
           usage(),
           webhooks({
-            secret: process.env.POLAR_WEBHOOK_SECRET ?? "",
+            secret: env.POLAR_WEBHOOK_SECRET ?? "",
             onOrderPaid: async (payload) => {
               const data = payload.data as Record<string, unknown>;
               const metadata = (data.metadata ?? {}) as Record<string, string>;

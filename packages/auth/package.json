@@ -8,7 +8,8 @@
     "./server": "./src/server.ts",
     "./client": "./src/client.ts",
     "./session": "./src/session.ts",
-    "./roles": "./src/roles.ts"
+    "./roles": "./src/roles.ts",
+    "./keys": "./src/keys.ts"
   },
   "scripts": {
     "check:types": "tsc --noEmit",
@@ -23,9 +24,11 @@
     "@project-aqua/db": "workspace:*",
     "@project-aqua/emails": "workspace:*",
     "@project-aqua/swim-core": "workspace:*",
+    "@t3-oss/env-nextjs": "catalog:",
     "better-auth": "catalog:",
     "@better-auth/drizzle-adapter": "catalog:",
-    "drizzle-orm": "catalog:"
+    "drizzle-orm": "catalog:",
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "next": "catalog:",

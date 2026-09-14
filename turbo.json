@@ -8,15 +8,47 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**"]
+      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**"],
+      "env": [
+        "BETTER_AUTH_*",
+        "NEXT_PUBLIC_*",
+        "DATABASE_URL",
+        "POSTGRES_URL",
+        "RESEND_*",
+        "EMAIL_FROM",
+        "POLAR_*",
+        "STRIPE_*",
+        "SUPABASE_*",
+        "GOOGLE_*",
+        "MICROSOFT_*",
+        "OPENAI_API_KEY",
+        "USA_SWIMMING_*",
+        "SKIP_ENV_VALIDATION"
+      ]
+    },
+    "dev": {
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "persistent": true,
+      "cache": false,
+      "env": [
+        "BETTER_AUTH_*",
+        "NEXT_PUBLIC_*",
+        "DATABASE_URL",
+        "POSTGRES_URL",
+        "RESEND_*",
+        "EMAIL_FROM",
+        "POLAR_*",
+        "STRIPE_*",
+        "SUPABASE_*",
+        "GOOGLE_*",
+        "MICROSOFT_*",
+        "OPENAI_API_KEY",
+        "USA_SWIMMING_*",
+        "SKIP_ENV_VALIDATION"
+      ]
     },
     "check:types": {
       "dependsOn": ["^check:types"]
-    },
-    "dev": {
-      "inputs": ["$TURBO_DEFAULT$", ".env"],
-      "persistent": true,
-      "cache": false
     },
     "format": {},
     "lint": {
@@ -28,7 +60,13 @@
     },
     "test": {
       "dependsOn": ["^topo"],
-      "inputs": ["$TURBO_DEFAULT$", "!**/*.md"]
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md"],
+      "env": [
+        "SKIP_ENV_VALIDATION",
+        "DATABASE_URL",
+        "POSTGRES_URL",
+        "BETTER_AUTH_*"
+      ]
     },
     "test:e2e": {
       "dependsOn": ["^topo"],

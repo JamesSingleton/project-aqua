@@ -15,6 +15,9 @@ catalogs:
     '@react-pdf/renderer':
       specifier: ^4.3.2
       version: 4.9.0
+    '@t3-oss/env-nextjs':
+      specifier: ^0.13.10
+      version: 0.13.11
     '@types/node':
       specifier: ^26.5.1
       version: 26.5.1
@@ -131,6 +134,9 @@ importers:
       '@project-aqua/usa-swimming':
         specifier: workspace:*
         version: link:../../packages/usa-swimming
+      '@t3-oss/env-nextjs':
+        specifier: 'catalog:'
+        version: 0.13.11(typescript@6.0.3)(zod@4.6.2)
       '@tanstack/react-query':
         specifier: ^5.102.8
         version: 5.102.8(react@19.3.0)
@@ -277,12 +283,18 @@ importers:
       '@project-aqua/swim-core':
         specifier: workspace:*
         version: link:../swim-core
+      '@t3-oss/env-nextjs':
+        specifier: 'catalog:'
+        version: 0.13.11(typescript@6.0.3)(zod@4.6.2)
       better-auth:
         specifier: 'catalog:'
         version: 1.7.4(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(kysely@0.29.5)(postgres@3.4.9))(next@16.3.5(@babel/core@7.29.7(supports-color@7.2.0))(@playwright/test@1.62.1)(@types/node@26.5.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@4.1.11)
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.2(kysely@0.29.5)(postgres@3.4.9)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.2
     devDependencies:
       '@project-aqua/typescript-config':
         specifier: workspace:*
@@ -323,12 +335,18 @@ importers:
       '@project-aqua/swim-core':
         specifier: workspace:*
         version: link:../swim-core
+      '@t3-oss/env-nextjs':
+        specifier: 'catalog:'
+        version: 0.13.11(typescript@6.0.3)(zod@4.6.2)
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.2(kysely@0.29.5)(postgres@3.4.9)
       stripe:
         specifier: ^22.6.2
         version: 22.6.2(@types/node@26.5.1)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.2
     devDependencies:
       '@project-aqua/typescript-config':
         specifier: workspace:*
@@ -364,12 +382,18 @@ importers:
       '@project-aqua/swim-core':
         specifier: workspace:*
         version: link:../swim-core
+      '@t3-oss/env-nextjs':
+        specifier: 'catalog:'
+        version: 0.13.11(typescript@6.0.3)(zod@4.6.2)
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.2(kysely@0.29.5)(postgres@3.4.9)
       postgres:
         specifier: 'catalog:'
         version: 3.4.9
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.2
     devDependencies:
       '@project-aqua/typescript-config':
         specifier: workspace:*
@@ -395,6 +419,9 @@ importers:
 
   packages/emails:
     dependencies:
+      '@t3-oss/env-nextjs':
+        specifier: 'catalog:'
+        version: 0.13.11(typescript@6.0.3)(zod@4.6.2)
       react:
         specifier: 'catalog:'
         version: 19.3.0
@@ -407,6 +434,9 @@ importers:
       resend:
         specifier: 'catalog:'
         version: 6.28.0(@react-email/render@2.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.2
     devDependencies:
       '@project-aqua/typescript-config':
         specifier: workspace:*
@@ -466,6 +496,12 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.116.0
         version: 2.116.0
+      '@t3-oss/env-nextjs':
+        specifier: 'catalog:'
+        version: 0.13.11(typescript@6.0.3)(zod@4.6.2)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.2
     devDependencies:
       '@project-aqua/typescript-config':
         specifier: workspace:*
@@ -2378,6 +2414,40 @@ packages:
 
   '@swc/helpers@0.5.23':
     resolution: {integrity: sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw==}
+
+  '@t3-oss/env-core@0.13.11':
+    resolution: {integrity: sha512-sM7GYY+KL7H/Hl0BE0inWfk3nRHZOLhmVn7sHGxaZt9FAR6KqREXAE+6TqKfiavfXmpRxO/OZ2QgKRd+oiBYRQ==}
+    peerDependencies:
+      arktype: ^2.1.0
+      typescript: '>=5.0.0'
+      valibot: ^1.0.0-beta.7 || ^1.0.0
+      zod: ^3.24.0 || ^4.0.0
+    peerDependenciesMeta:
+      arktype:
+        optional: true
+      typescript:
+        optional: true
+      valibot:
+        optional: true
+      zod:
+        optional: true
+
+  '@t3-oss/env-nextjs@0.13.11':
+    resolution: {integrity: sha512-NC+3j7YWgpzdFu1t5y/8wqibTK0lm5RS4bjXA1n8uwik3wIR4iZM4Fa+U2BaMa5k3Qk8RZiYhoAIX0WogmGkzg==}
+    peerDependencies:
+      arktype: ^2.1.0
+      typescript: '>=5.0.0'
+      valibot: ^1.0.0-beta.7 || ^1.0.0
+      zod: ^3.24.0 || ^4.0.0
+    peerDependenciesMeta:
+      arktype:
+        optional: true
+      typescript:
+        optional: true
+      valibot:
+        optional: true
+      zod:
+        optional: true
 
   '@tailwindcss/node@4.3.3':
     resolution: {integrity: sha512-/T8IKEsf9VTU6tLjgC7+sv2mOPtQxzE2jMw7u4Tt40Tx+QSZxpzh95/H6cMKoja9XuW7iMdLJYBB0o9G1CaAgg==}
@@ -6519,6 +6589,18 @@ snapshots:
   '@swc/helpers@0.5.23':
     dependencies:
       tslib: 2.8.1
+
+  '@t3-oss/env-core@0.13.11(typescript@6.0.3)(zod@4.6.2)':
+    optionalDependencies:
+      typescript: 6.0.3
+      zod: 4.6.2
+
+  '@t3-oss/env-nextjs@0.13.11(typescript@6.0.3)(zod@4.6.2)':
+    dependencies:
+      '@t3-oss/env-core': 0.13.11(typescript@6.0.3)(zod@4.6.2)
+    optionalDependencies:
+      typescript: 6.0.3
+      zod: 4.6.2
 
   '@tailwindcss/node@4.3.3':
     dependencies:

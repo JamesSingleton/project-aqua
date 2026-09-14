@@ -29,3 +29,4 @@ catalog:
   vitest: "^4.1.11"
   "@vitest/coverage-v8": "^4.1.11"
   zod: "^4.6.2"
+  "@t3-oss/env-nextjs": "^0.13.10"

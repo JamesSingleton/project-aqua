@@ -13,6 +13,7 @@ import {
 import type { PlanTier } from "@project-aqua/swim-core/plans";
 import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
+import { keys } from "./keys";
 import { getStripe } from "./stripe";
 
 export async function handleStripeWebhook(
@@ -20,7 +21,7 @@ export async function handleStripeWebhook(
   signature: string,
 ): Promise<void> {
   const stripe = getStripe();
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecret = keys().STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
     throw new Error("STRIPE_WEBHOOK_SECRET is not set");
   }

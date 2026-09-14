@@ -1,10 +1,11 @@
 import Stripe from "stripe";
+import { keys } from "./keys";
 
 let stripeClient: Stripe | null = null;
 
 export function getStripe(): Stripe {
   if (!stripeClient) {
-    const key = process.env.STRIPE_SECRET_KEY;
+    const key = keys().STRIPE_SECRET_KEY;
     if (!key) {
       throw new Error("STRIPE_SECRET_KEY is not set");
     }
@@ -14,8 +15,12 @@ export function getStripe(): Stripe {
 }
 
 export const STRIPE_PRICES = {
-  pro: process.env.STRIPE_PRICE_PRO ?? "",
-  enterprise: process.env.STRIPE_PRICE_ENTERPRISE ?? "",
+  get pro() {
+    return keys().STRIPE_PRICE_PRO ?? "";
+  },
+  get enterprise() {
+    return keys().STRIPE_PRICE_ENTERPRISE ?? "";
+  },
 } as const;
 
 export async function createCheckoutSession(

@@ -8,6 +8,7 @@
     "./client": "./src/client.ts",
     "./schema": "./src/schema/index.ts",
     "./authz": "./src/authz.ts",
+    "./keys": "./src/keys.ts",
     "./queries/roster": "./src/queries/roster.ts",
     "./queries/swimmer-merge": "./src/queries/swimmer-merge.ts",
     "./queries/seasons": "./src/queries/seasons.ts",
@@ -43,8 +44,10 @@
   },
   "dependencies": {
     "@project-aqua/swim-core": "workspace:*",
+    "@t3-oss/env-nextjs": "catalog:",
     "drizzle-orm": "catalog:",
-    "postgres": "catalog:"
+    "postgres": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@project-aqua/typescript-config": "workspace:*",

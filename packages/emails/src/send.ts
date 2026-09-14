@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import { render } from "react-email";
 import { getEmailFrom, getResendClient } from "./client";
+import { keys } from "./keys";
 
 export type EmailType =
   | "verify-email"
@@ -166,7 +167,7 @@ export type SendEmailOptions<T extends EmailType> = {
 export async function sendEmail<T extends EmailType>(
   opts: SendEmailOptions<T>,
 ): Promise<void> {
-  if (!process.env.RESEND_API_KEY) {
+  if (!keys().RESEND_API_KEY) {
     console.log(`[email skipped] ${opts.type} → ${opts.to}`);
     return;
   }

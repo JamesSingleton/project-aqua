@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./send": "./src/send.ts"
+    "./send": "./src/send.ts",
+    "./keys": "./src/keys.ts"
   },
   "scripts": {
     "check:types": "tsc --noEmit",
@@ -14,10 +15,12 @@
     "email:dev": "email dev --dir src/templates --port 3002"
   },
   "dependencies": {
+    "@t3-oss/env-nextjs": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-email": "catalog:",
-    "resend": "catalog:"
+    "resend": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@project-aqua/typescript-config": "workspace:*",
