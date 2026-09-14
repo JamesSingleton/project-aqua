@@ -68,36 +68,102 @@ export async function getCurrentSeason(
   return row ?? null;
 }
 
-/** Ensure the org has a current season; create one from the USA season calendar if missing. */
+export async function getSeasonByLabel(
+  organizationId: string,
+  label: string,
+): Promise<TeamSeason | null> {
+  const [row] = await db
+    .select()
+    .from(teamSeasons)
+    .where(
+      and(
+        eq(teamSeasons.organizationId, organizationId),
+        eq(teamSeasons.label, label),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
+}
+
+const ensureCurrentSeasonInflight = new Map<string, Promise<TeamSeason>>();
+
+function isUniqueViolation(error: unknown): boolean {
+  let current: unknown = error;
+  for (let i = 0; i < 5 && current && typeof current === "object"; i++) {
+    if ("code" in current && current.code === "23505") return true;
+    current = "cause" in current ? current.cause : undefined;
+  }
+  return false;
+}
+
+/**
+ * Ensure the org has a current season; create one from the USA season calendar
+ * if missing. Concurrent first loads (onboarding redirect + refresh) must not
+ * 500 on team_seasons_org_label_idx.
+ */
 export async function ensureCurrentSeason(
+  organizationId: string,
+): Promise<TeamSeason> {
+  const pending = ensureCurrentSeasonInflight.get(organizationId);
+  if (pending) return pending;
+
+  const promise = ensureCurrentSeasonOnce(organizationId).finally(() => {
+    if (ensureCurrentSeasonInflight.get(organizationId) === promise) {
+      ensureCurrentSeasonInflight.delete(organizationId);
+    }
+  });
+  ensureCurrentSeasonInflight.set(organizationId, promise);
+  return promise;
+}
+
+async function ensureCurrentSeasonOnce(
   organizationId: string,
 ): Promise<TeamSeason> {
   const existing = await getCurrentSeason(organizationId);
   if (existing) return existing;
 
   const range = currentSeasonRange();
-  const [byLabel] = await db
-    .select()
-    .from(teamSeasons)
-    .where(
-      and(
-        eq(teamSeasons.organizationId, organizationId),
-        eq(teamSeasons.label, range.label),
-      ),
-    )
-    .limit(1);
-
-  if (byLabel) {
-    await setCurrentSeason(organizationId, byLabel.id);
-    return { ...byLabel, isCurrent: true };
-  }
-
-  return createSeason(organizationId, {
+  const inserted = await insertSeasonIgnoringLabelConflict({
+    organizationId,
     label: range.label,
     startsOn: range.startsOn,
     endsOn: range.endsOn,
-    makeCurrent: true,
   });
+
+  const row = inserted ?? (await getSeasonByLabel(organizationId, range.label));
+  if (!row) throw new Error("Failed to ensure current season");
+  if (row.isCurrent) return row;
+
+  await setCurrentSeason(organizationId, row.id);
+  return { ...row, isCurrent: true };
+}
+
+async function insertSeasonIgnoringLabelConflict(input: {
+  organizationId: string;
+  label: string;
+  startsOn: string;
+  endsOn: string;
+}): Promise<TeamSeason | null> {
+  try {
+    const [row] = await db
+      .insert(teamSeasons)
+      .values({
+        id: generateId(),
+        organizationId: input.organizationId,
+        label: input.label,
+        startsOn: input.startsOn,
+        endsOn: input.endsOn,
+        isCurrent: false,
+      })
+      .onConflictDoNothing({
+        target: [teamSeasons.organizationId, teamSeasons.label],
+      })
+      .returning();
+    return row ?? null;
+  } catch (error) {
+    if (isUniqueViolation(error)) return null;
+    throw error;
+  }
 }
 
 export async function createSeason(

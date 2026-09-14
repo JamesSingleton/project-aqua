@@ -13,6 +13,7 @@ import {
   getTeamPlan,
   updateSubscription,
 } from "@project-aqua/db/queries/billing";
+import { ensureCurrentSeason } from "@project-aqua/db/queries/seasons";
 import * as schema from "@project-aqua/db/schema";
 import {
   sendCoachInvitation,
@@ -272,6 +273,7 @@ function createAuth(polarClient: Polar) {
         organizationHooks: {
           afterCreateOrganization: async ({ organization, user }) => {
             await createDefaultSubscription(organization.id);
+            await ensureCurrentSeason(organization.id);
             await sendTeamWelcome({
               to: user.email,
               props: {

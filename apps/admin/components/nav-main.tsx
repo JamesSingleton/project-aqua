@@ -16,9 +16,9 @@ import {
   SidebarMenuSubItem,
 } from "@project-aqua/ui/components/sidebar";
 import { ChevronRight, type LucideIcon } from "lucide-react";
-import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { SidebarLink } from "@/components/sidebar-link";
 
 function urlsMatch(
   currentPath: string,
@@ -94,7 +94,7 @@ function NavCollapsibleItem({
           {item.items.map((subItem) => (
             <SidebarMenuSubItem key={subItem.title}>
               <SidebarMenuSubButton
-                render={<Link href={subItem.url} />}
+                render={<SidebarLink href={subItem.url} />}
                 isActive={urlsMatch(pathname, search, subItem.url)}
               >
                 <span>{subItem.title}</span>
@@ -124,7 +124,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
-                  render={<Link href={item.url} />}
+                  render={<SidebarLink href={item.url} />}
                   tooltip={item.title}
                   isActive={isActive}
                 >

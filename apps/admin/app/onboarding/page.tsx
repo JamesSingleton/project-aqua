@@ -370,7 +370,6 @@ export default function OnboardingPage() {
       ? `/team/${teamId}/settings?logoError=1`
       : `/team/${teamId}`;
     router.push(dest);
-    router.refresh();
   }
 
   return (

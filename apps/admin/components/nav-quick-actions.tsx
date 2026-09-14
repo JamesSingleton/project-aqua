@@ -8,8 +8,8 @@ import {
   SidebarMenuItem,
 } from "@project-aqua/ui/components/sidebar";
 import type { LucideIcon } from "lucide-react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SidebarLink } from "@/components/sidebar-link";
 
 export function NavQuickActions({
   actions,
@@ -29,7 +29,7 @@ export function NavQuickActions({
         {actions.map((item) => (
           <SidebarMenuItem key={item.name}>
             <SidebarMenuButton
-              render={<Link href={item.url} />}
+              render={<SidebarLink href={item.url} />}
               tooltip={item.name}
               isActive={
                 pathname === item.url || pathname.startsWith(`${item.url}/`)
