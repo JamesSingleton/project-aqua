@@ -112,7 +112,11 @@ export function ResetPasswordForm({
           </Button>
         </Field>
         <p className="text-muted-foreground text-center text-sm">
-          <Link href="/sign-in" className="underline underline-offset-4">
+          <Link
+            href="/sign-in"
+            className="underline underline-offset-4"
+            prefetch={false}
+          >
             Back to sign in
           </Link>
         </p>

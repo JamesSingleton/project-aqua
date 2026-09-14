@@ -28,7 +28,7 @@ export function MeetTopNav({ teamId }: { teamId: string }) {
         <TabsTrigger
           value="entries"
           nativeButton={false}
-          render={<Link href={base} />}
+          render={<Link href={base} prefetch={false} />}
           className="flex-none px-1 pb-3 text-base data-active:bg-transparent"
         >
           Entries
@@ -36,7 +36,7 @@ export function MeetTopNav({ teamId }: { teamId: string }) {
         <TabsTrigger
           value="results"
           nativeButton={false}
-          render={<Link href={resultsHref} />}
+          render={<Link href={resultsHref} prefetch={false} />}
           className="flex-none px-1 pb-3 text-base data-active:bg-transparent"
         >
           Results
@@ -44,7 +44,7 @@ export function MeetTopNav({ teamId }: { teamId: string }) {
         <TabsTrigger
           value="standards"
           nativeButton={false}
-          render={<Link href={standardsHref} />}
+          render={<Link href={standardsHref} prefetch={false} />}
           className="flex-none px-1 pb-3 text-base data-active:bg-transparent"
         >
           Time Standards
@@ -52,7 +52,7 @@ export function MeetTopNav({ teamId }: { teamId: string }) {
         <TabsTrigger
           value="history"
           nativeButton={false}
-          render={<Link href={historyHref} />}
+          render={<Link href={historyHref} prefetch={false} />}
           className="flex-none px-1 pb-3 text-base data-active:bg-transparent"
         >
           Import History

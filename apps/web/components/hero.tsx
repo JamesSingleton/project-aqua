@@ -4,7 +4,7 @@ import Link from "next/link";
 export function Hero() {
   return (
     <section className="text-center mt-16 md:mt-18 items-center flex flex-col">
-      <Link href="/updates/early-adopter">
+      <Link href="/updates/early-adopter" prefetch={false}>
         <Button
           variant="outline"
           className="rounded-full border-border flex space-x-2 items-center"
@@ -38,6 +38,7 @@ export function Hero() {
         <div className="flex items-center space-x-4">
           <Link
             href="/talk-to-us"
+            prefetch={false}
             className={buttonVariants({ variant: "outline" })}
           >
             Talk to us

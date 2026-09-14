@@ -18,6 +18,7 @@ export function CTA() {
           <Link
             href="/talk-to-us"
             className={buttonVariants({ variant: "outline" })}
+            prefetch={false}
           >
             Talk to us
           </Link>
@@ -27,6 +28,7 @@ export function CTA() {
             className={buttonVariants()}
             target="_blank"
             rel="noreferrer noopener"
+            prefetch={false}
           >
             Get Early Access
           </Link>

@@ -45,7 +45,9 @@ export function NextCompetitionCard({
           variant="secondary"
           className="mt-3 w-fit"
           nativeButton={false}
-          render={<Link href={`/team/${teamId}/meets/import`} />}
+          render={
+            <Link href={`/team/${teamId}/meets/import`} prefetch={false} />
+          }
         >
           Import meet
           <ArrowRightIcon className="size-3.5" />
@@ -73,6 +75,7 @@ export function NextCompetitionCard({
     <div className={shellClassName} style={shellStyle}>
       <Link
         href={`/team/${teamId}/meets/${meet.id}/entries`}
+        prefetch={false}
         className="relative flex items-center justify-between gap-4 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground/40"
       >
         <div className="flex min-w-0 flex-col gap-0.5">

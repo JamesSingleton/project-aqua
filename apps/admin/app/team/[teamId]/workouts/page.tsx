@@ -48,7 +48,9 @@ export default async function WorkoutsPage({
         actions={
           <Button
             nativeButton={false}
-            render={<Link href={`/team/${teamId}/workouts/create`} />}
+            render={
+              <Link href={`/team/${teamId}/workouts/create`} prefetch={false} />
+            }
           >
             New workout
           </Button>

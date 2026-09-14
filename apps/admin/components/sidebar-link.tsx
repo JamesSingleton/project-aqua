@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 
 /**
  * Persistent sidebar chrome has many in-viewport links. Skip prefetching every
@@ -12,18 +11,14 @@ export function SidebarLink({
   onMouseEnter,
   ...props
 }: React.ComponentProps<typeof Link>) {
-  const [active, setActive] = useState(false);
-
   return (
     <Link
       {...props}
-      prefetch={active}
+      prefetch={false}
       onFocus={(event) => {
-        setActive(true);
         onFocus?.(event);
       }}
       onMouseEnter={(event) => {
-        setActive(true);
         onMouseEnter?.(event);
       }}
     />

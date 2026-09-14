@@ -350,6 +350,7 @@ export default async function RosterPage({
               <Link
                 href={`/team/${teamId}/swimmers/create`}
                 className={buttonVariants()}
+                prefetch={false}
               >
                 <UserPlusIcon data-icon="inline-start" />
                 Add swimmer
@@ -364,21 +365,31 @@ export default async function RosterPage({
           <TabsTrigger
             value="swimmers"
             nativeButton={false}
-            render={<Link href={`/team/${teamId}/roster`} />}
+            render={<Link href={`/team/${teamId}/roster`} prefetch={false} />}
           >
             Swimmers ({facets.totalActive})
           </TabsTrigger>
           <TabsTrigger
             value="groups"
             nativeButton={false}
-            render={<Link href={`/team/${teamId}/roster?tab=groups`} />}
+            render={
+              <Link
+                href={`/team/${teamId}/roster?tab=groups`}
+                prefetch={false}
+              />
+            }
           >
             Groups
           </TabsTrigger>
           <TabsTrigger
             value="coaches"
             nativeButton={false}
-            render={<Link href={`/team/${teamId}/roster?tab=coaches`} />}
+            render={
+              <Link
+                href={`/team/${teamId}/roster?tab=coaches`}
+                prefetch={false}
+              />
+            }
           >
             Coaches ({coaches.length})
           </TabsTrigger>

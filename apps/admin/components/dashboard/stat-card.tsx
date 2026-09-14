@@ -76,7 +76,7 @@ export function StatCard({
           size="xs"
           variant="ghost"
           nativeButton={false}
-          render={<Link href={href} />}
+          render={<Link href={href} prefetch={false} />}
         >
           {linkLabel}
         </Button>

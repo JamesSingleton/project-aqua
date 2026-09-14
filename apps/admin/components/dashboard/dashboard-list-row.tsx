@@ -16,6 +16,7 @@ export function DashboardListRow({
     <Link
       href={href}
       className="grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2 py-2 hover:bg-muted/60"
+      prefetch={false}
     >
       <div className="flex min-w-0 flex-col gap-0.5">
         <span className="truncate font-medium leading-tight">{title}</span>

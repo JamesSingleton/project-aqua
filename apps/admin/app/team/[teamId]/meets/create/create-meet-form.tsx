@@ -269,7 +269,9 @@ export function CreateMeetForm({ teamId }: { teamId: string }) {
                 type="button"
                 variant="outline"
                 nativeButton={false}
-                render={<Link href={`/team/${teamId}/meets`} />}
+                render={
+                  <Link href={`/team/${teamId}/meets`} prefetch={false} />
+                }
               >
                 Cancel
               </Button>

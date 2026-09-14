@@ -301,6 +301,7 @@ export function TeamTopTimes({
                         <Link
                           href={`/team/${teamId}/swimmers/${row.swimmerId}/progression`}
                           className="text-primary underline-offset-4 hover:underline"
+                          prefetch={false}
                         >
                           {row.swimmerName}
                         </Link>

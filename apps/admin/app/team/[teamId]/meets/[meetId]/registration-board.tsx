@@ -977,6 +977,7 @@ export function RegistrationBoard({
                             render={
                               <Link
                                 href={`/team/${teamId}/swimmers/${row.swimmerId}`}
+                                prefetch={false}
                               />
                             }
                           >
@@ -1082,6 +1083,7 @@ export function RegistrationBoard({
                     <Link
                       href={`/team/${teamId}/swimmers/${selectedSwimmer.swimmerId}`}
                       className="underline"
+                      prefetch={false}
                     >
                       swimmer profile
                     </Link>

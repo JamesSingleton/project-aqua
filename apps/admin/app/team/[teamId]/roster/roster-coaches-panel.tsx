@@ -53,6 +53,7 @@ export function RosterCoachesPanel({
           <Link
             href={`/team/${teamId}/settings/members`}
             className={buttonVariants({ variant: "outline", size: "sm" })}
+            prefetch={false}
           >
             Manage members
           </Link>
@@ -68,6 +69,7 @@ export function RosterCoachesPanel({
                 <Link
                   href={`/team/${teamId}/settings/members`}
                   className="underline underline-offset-4"
+                  prefetch={false}
                 >
                   Invite someone
                 </Link>{" "}

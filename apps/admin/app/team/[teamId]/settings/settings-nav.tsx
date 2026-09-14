@@ -59,7 +59,7 @@ export function SettingsNav({
             key={tab.value}
             value={tab.value}
             nativeButton={false}
-            render={<Link href={tab.href} />}
+            render={<Link href={tab.href} prefetch={false} />}
             className="flex-none px-1 pb-3 text-base data-active:bg-transparent"
           >
             {tab.label}

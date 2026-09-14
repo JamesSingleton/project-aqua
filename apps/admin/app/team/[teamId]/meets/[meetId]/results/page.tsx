@@ -46,6 +46,7 @@ export default async function MeetResultsPage({
         <Link
           href={`/team/${teamId}/meets/results`}
           className="hover:text-foreground underline-offset-4 hover:underline"
+          prefetch={false}
         >
           All results
         </Link>
@@ -53,6 +54,7 @@ export default async function MeetResultsPage({
         <Link
           href={`/team/${teamId}/meets/${meetId}/entries`}
           className="hover:text-foreground underline-offset-4 hover:underline"
+          prefetch={false}
         >
           Entries
         </Link>

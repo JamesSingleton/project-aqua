@@ -123,7 +123,9 @@ export function TeamBreadcrumb({
                 {isLast ? (
                   <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
                 ) : (
-                  <BreadcrumbLink render={<Link href={crumb.href} />}>
+                  <BreadcrumbLink
+                    render={<Link href={crumb.href} prefetch={false} />}
+                  >
                     {crumb.label}
                   </BreadcrumbLink>
                 )}

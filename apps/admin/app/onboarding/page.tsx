@@ -119,7 +119,7 @@ function slugify(name: string) {
 
 function BrandMark() {
   return (
-    <Link href="/sign-in" className="flex items-center gap-3">
+    <Link href="/sign-in" className="flex items-center gap-3" prefetch={false}>
       <div className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-full">
         <Waves className="size-4" />
       </div>

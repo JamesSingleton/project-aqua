@@ -47,7 +47,12 @@ export default async function WorkoutDetailPage({
         <Button
           variant="outline"
           nativeButton={false}
-          render={<Link href={`/team/${teamId}/workouts/${workoutId}/edit`} />}
+          render={
+            <Link
+              href={`/team/${teamId}/workouts/${workoutId}/edit`}
+              prefetch={false}
+            />
+          }
         >
           Edit
         </Button>

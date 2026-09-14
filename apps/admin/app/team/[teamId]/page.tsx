@@ -380,13 +380,20 @@ export default async function TeamDashboardPage({
             <Button
               variant="outline"
               nativeButton={false}
-              render={<Link href={`/team/${teamId}/attendance`} />}
+              render={
+                <Link href={`/team/${teamId}/attendance`} prefetch={false} />
+              }
             >
               Attendance
             </Button>
             <Button
               nativeButton={false}
-              render={<Link href={`/team/${teamId}/swimmers/create`} />}
+              render={
+                <Link
+                  href={`/team/${teamId}/swimmers/create`}
+                  prefetch={false}
+                />
+              }
             >
               Add swimmer
             </Button>
@@ -404,7 +411,12 @@ export default async function TeamDashboardPage({
                 size="sm"
                 variant="outline"
                 nativeButton={false}
-                render={<Link href={`/team/${teamId}/settings/safesport`} />}
+                render={
+                  <Link
+                    href={`/team/${teamId}/settings/safesport`}
+                    prefetch={false}
+                  />
+                }
               >
                 Open
               </Button>
@@ -585,7 +597,9 @@ export default async function TeamDashboardPage({
                 size="sm"
                 variant="ghost"
                 nativeButton={false}
-                render={<Link href={`/team/${teamId}/attendance`} />}
+                render={
+                  <Link href={`/team/${teamId}/attendance`} prefetch={false} />
+                }
               >
                 Track
               </Button>
@@ -610,7 +624,9 @@ export default async function TeamDashboardPage({
                 size="sm"
                 variant="ghost"
                 nativeButton={false}
-                render={<Link href={`/team/${teamId}/analytics`} />}
+                render={
+                  <Link href={`/team/${teamId}/analytics`} prefetch={false} />
+                }
               >
                 Analytics
               </Button>
@@ -653,7 +669,9 @@ export default async function TeamDashboardPage({
                 size="sm"
                 variant="ghost"
                 nativeButton={false}
-                render={<Link href={`/team/${teamId}/calendar`} />}
+                render={
+                  <Link href={`/team/${teamId}/calendar`} prefetch={false} />
+                }
               >
                 Calendar
               </Button>
@@ -733,7 +751,12 @@ export default async function TeamDashboardPage({
                 size="sm"
                 variant="outline"
                 nativeButton={false}
-                render={<Link href={`/team/${teamId}/workouts/create`} />}
+                render={
+                  <Link
+                    href={`/team/${teamId}/workouts/create`}
+                    prefetch={false}
+                  />
+                }
               >
                 Create workout
               </Button>

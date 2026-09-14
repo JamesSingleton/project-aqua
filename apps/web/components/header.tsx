@@ -64,7 +64,7 @@ const Header = () => {
     <header className="h-12 sticky mt-4 top-4 z-50 px-2 md:px-4 md:flex justify-center">
       <nav className="border border-border p-3 rounded-2xl flex items-center backdrop-filter backdrop-blur-xl bg-[#FDFDFC] dark:bg-[#121212] bg-opacity-70">
         <NavigationMenu>
-          <Link href="/">
+          <Link href="/" prefetch={false}>
             <span className="sr-only">Project Aqua Logo</span>
             <Icons.logo className="h-8 w-8" />
           </Link>
@@ -83,6 +83,7 @@ const Header = () => {
                       "h-8 items-center justify-center rounded-md text-sm font-medium transition-colors px-3 py-2 inline-flex text-secondary-foreground hover:bg-secondary",
                       isActive && "bg-secondary hover:bg-secondary",
                     )}
+                    prefetch={false}
                   >
                     {title}
                   </Link>
@@ -172,7 +173,10 @@ const Header = () => {
               })}
 
               <motion.li variants={itemVariant}>
-                <Link href="https://project-aqua-admin.vercel.app">
+                <Link
+                  href="https://project-aqua-admin.vercel.app"
+                  prefetch={false}
+                >
                   Get started
                 </Link>
               </motion.li>
@@ -181,7 +185,10 @@ const Header = () => {
                 variants={itemVariant}
                 className="flex items-center space-x-2"
               >
-                <Link href="https://github.com/JamesSingleton/project-aqua">
+                <Link
+                  href="https://github.com/JamesSingleton/project-aqua"
+                  prefetch={false}
+                >
                   Open Source
                 </Link>
               </motion.li>
@@ -193,6 +200,7 @@ const Header = () => {
                 <Link
                   className="text-xl text-primary"
                   href="https://project-aqua-admin.vercel.app"
+                  prefetch={false}
                 >
                   Sign in
                 </Link>

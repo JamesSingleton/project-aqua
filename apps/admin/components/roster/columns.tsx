@@ -140,14 +140,14 @@ function RowActions({
             <DropdownMenuGroup>
               <DropdownMenuItem
                 nativeButton={false}
-                render={<Link href={editHref} />}
+                render={<Link href={editHref} prefetch={false} />}
               >
                 <PencilIcon />
                 Edit
               </DropdownMenuItem>
               <DropdownMenuItem
                 nativeButton={false}
-                render={<Link href={profileHref} />}
+                render={<Link href={profileHref} prefetch={false} />}
               >
                 <UserRoundIcon />
                 View profile

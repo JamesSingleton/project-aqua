@@ -104,6 +104,7 @@ export default async function MeetsImportHistoryPage({
                   <Link
                     href={`/team/${teamId}/meets/${meetId}`}
                     className="hover:bg-muted/40 block transition-colors"
+                    prefetch={false}
                   >
                     {content}
                   </Link>

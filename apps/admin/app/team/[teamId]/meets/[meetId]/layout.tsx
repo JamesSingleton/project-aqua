@@ -39,6 +39,7 @@ export default async function MeetDetailLayout({
         <Link
           href={`/team/${teamId}/meets`}
           className="hover:text-foreground underline-offset-4 hover:underline"
+          prefetch={false}
         >
           Meets
         </Link>

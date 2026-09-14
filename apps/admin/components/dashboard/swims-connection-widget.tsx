@@ -245,7 +245,7 @@ export function SwimsConnectionWidget({
             className="flex-1 gap-1.5 text-sm"
             size="sm"
             nativeButton={false}
-            render={<Link href={`/team/${teamId}/roster`} />}
+            render={<Link href={`/team/${teamId}/roster`} prefetch={false} />}
           >
             <UsersIcon className="size-3.5" />
             Manage roster
@@ -255,7 +255,12 @@ export function SwimsConnectionWidget({
             className="flex-1 gap-1.5 text-sm"
             size="sm"
             nativeButton={false}
-            render={<Link href={`/team/${teamId}/settings/usa-swimming`} />}
+            render={
+              <Link
+                href={`/team/${teamId}/settings/usa-swimming`}
+                prefetch={false}
+              />
+            }
           >
             <ExternalLinkIcon className="size-3.5" />
             {connected ? "Manage registrations" : "Connect SWIMS"}

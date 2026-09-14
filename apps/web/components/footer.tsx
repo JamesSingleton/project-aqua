@@ -9,7 +9,11 @@ export function Footer() {
     <footer className="border-t-[1px] border-border px-4 md:px-6 pt-10 md:pt-16 bg-background">
       <div className="container">
         <div className="flex justify-between items-center border-border border-b-[1px] pb-10 md:pb-16 mb-12">
-          <Link href="/" className="scale-50 -ml-[52px] md:ml-0 md:scale-100">
+          <Link
+            href="/"
+            className="scale-50 -ml-[52px] md:ml-0 md:scale-100"
+            prefetch={false}
+          >
             <Icons.logo className="h-8 w-8" />
             <span className="sr-only">Project Aqua</span>
           </Link>
@@ -25,22 +29,34 @@ export function Footer() {
               <span className="font-medium">Product</span>
               <ul>
                 <li className="transition-colors hover:text-primary text-muted-foreground">
-                  <Link href="/">Features</Link>
+                  <Link href="/" prefetch={false}>
+                    Features
+                  </Link>
                 </li>
                 <li className="transition-colors hover:text-primary text-muted-foreground">
-                  <Link href="/pricing">Pricing</Link>
+                  <Link href="/pricing" prefetch={false}>
+                    Pricing
+                  </Link>
                 </li>
                 <li className="transition-colors hover:text-primary text-muted-foreground">
-                  <Link href="/story">Story</Link>
+                  <Link href="/story" prefetch={false}>
+                    Story
+                  </Link>
                 </li>
                 <li className="transition-colors hover:text-primary text-muted-foreground">
-                  <Link href="/updates">Updates</Link>
+                  <Link href="/updates" prefetch={false}>
+                    Updates
+                  </Link>
                 </li>
                 <li className="transition-colors hover:text-primary text-muted-foreground">
-                  <Link href="/download">Download</Link>
+                  <Link href="/download" prefetch={false}>
+                    Download
+                  </Link>
                 </li>
                 <li className="transition-colors hover:text-primary text-muted-foreground">
-                  <Link href="/feature-request">Feature Request</Link>
+                  <Link href="/feature-request" prefetch={false}>
+                    Feature Request
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -58,19 +74,29 @@ export function Footer() {
                   </Link>
                 </li>
                 <li className="transition-colors hover:text-primary text-muted-foreground">
-                  <Link href="/support">Support</Link>
+                  <Link href="/support" prefetch={false}>
+                    Support
+                  </Link>
                 </li>
                 <li className="transition-colors hover:text-primary text-muted-foreground">
-                  <Link href="/policy">Privacy policy</Link>
+                  <Link href="/policy" prefetch={false}>
+                    Privacy policy
+                  </Link>
                 </li>
                 <li className="transition-colors hover:text-primary text-muted-foreground">
-                  <Link href="/terms">Terms and Conditions</Link>
+                  <Link href="/terms" prefetch={false}>
+                    Terms and Conditions
+                  </Link>
                 </li>
                 <li className="transition-colors hover:text-primary text-muted-foreground">
-                  <Link href="/open-startup">Open Startup</Link>
+                  <Link href="/open-startup" prefetch={false}>
+                    Open Startup
+                  </Link>
                 </li>
                 <li className="transition-colors hover:text-primary text-muted-foreground">
-                  <Link href="/pitch">Investors</Link>
+                  <Link href="/pitch" prefetch={false}>
+                    Investors
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -79,10 +105,14 @@ export function Footer() {
               <span>Solutions</span>
               <ul>
                 <li className="transition-colors hover:text-primary text-muted-foreground">
-                  <Link href="/coaches">For Coaches</Link>
+                  <Link href="/coaches" prefetch={false}>
+                    For Coaches
+                  </Link>
                 </li>
                 <li className="transition-colors hover:text-primary text-muted-foreground">
-                  <Link href="/clubs">For Clubs</Link>
+                  <Link href="/clubs" prefetch={false}>
+                    For Clubs
+                  </Link>
                 </li>
               </ul>
             </div>

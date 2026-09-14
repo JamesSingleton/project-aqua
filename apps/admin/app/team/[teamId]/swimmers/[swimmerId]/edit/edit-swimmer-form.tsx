@@ -202,6 +202,7 @@ export function EditSwimmerForm({
                     <Link
                       href={groupsHref}
                       className="text-foreground underline underline-offset-4"
+                      prefetch={false}
                     >
                       Create one on the roster
                     </Link>{" "}
@@ -243,6 +244,7 @@ export function EditSwimmerForm({
                       <Link
                         href={groupsHref}
                         className="text-foreground underline underline-offset-4"
+                        prefetch={false}
                       >
                         roster Groups tab
                       </Link>

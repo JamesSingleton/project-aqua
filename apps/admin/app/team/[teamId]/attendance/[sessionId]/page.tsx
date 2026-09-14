@@ -84,6 +84,7 @@ export default async function AttendanceSessionPage({
         <Link
           href={`/team/${teamId}/attendance`}
           className="text-muted-foreground text-sm underline"
+          prefetch={false}
         >
           ← All practices
         </Link>
@@ -106,6 +107,7 @@ export default async function AttendanceSessionPage({
           <Link
             href={`/team/${teamId}/workouts/create?practiceSessionId=${sessionId}`}
             className="text-sm underline"
+            prefetch={false}
           >
             Attach a workout
           </Link>

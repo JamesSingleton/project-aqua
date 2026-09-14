@@ -423,6 +423,7 @@ export function SwimmerQuickView({
                   href={`${profileHref}/progression`}
                   className="text-muted-foreground text-xs hover:underline"
                   onClick={() => onOpenChange(false)}
+                  prefetch={false}
                 >
                   View all
                 </Link>
@@ -475,6 +476,7 @@ export function SwimmerQuickView({
         <SheetFooter className="border-t sm:flex-row">
           <Link
             href={editHref}
+            prefetch={false}
             className={cn(
               buttonVariants({ variant: "outline" }),
               "w-full sm:w-auto",
@@ -487,6 +489,7 @@ export function SwimmerQuickView({
             href={profileHref}
             className={cn(buttonVariants(), "w-full sm:flex-1")}
             onClick={() => onOpenChange(false)}
+            prefetch={false}
           >
             View full profile
           </Link>

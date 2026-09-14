@@ -57,7 +57,9 @@ export default async function MeetsEntriesPage({
         <Button
           variant="outline"
           nativeButton={false}
-          render={<Link href={`/team/${teamId}/meets/create`} />}
+          render={
+            <Link href={`/team/${teamId}/meets/create`} prefetch={false} />
+          }
         >
           Add meet
         </Button>

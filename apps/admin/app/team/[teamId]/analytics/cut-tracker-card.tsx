@@ -36,6 +36,7 @@ export function CutTrackerCard({
           <Link
             href={`/team/${teamId}/meets/time-standards`}
             className="underline underline-offset-4"
+            prefetch={false}
           >
             Manage standards
           </Link>

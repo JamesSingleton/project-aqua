@@ -511,7 +511,11 @@ function EventChip({ teamId, event }: { teamId: string; event: CalEvent }) {
     <>
       <div className="flex items-start gap-1 rounded bg-primary/10 px-1.5 py-1 text-left">
         {href ? (
-          <Link href={href} className="min-w-0 flex-1 hover:underline">
+          <Link
+            href={href}
+            className="min-w-0 flex-1 hover:underline"
+            prefetch={false}
+          >
             {details}
           </Link>
         ) : isCustom ? (

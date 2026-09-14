@@ -104,6 +104,7 @@ export function SwimmerProfileTabs({
                     <Link
                       href={`/team/${a.organizationId}/swimmers/${swimmerId}`}
                       className="text-primary font-medium underline"
+                      prefetch={false}
                     >
                       {a.name}
                     </Link>

@@ -103,7 +103,9 @@ export function TeamSwitcher({
     return (
       <SidebarMenu>
         <SidebarMenuItem>
-          <SidebarMenuButton render={<Link href="/onboarding" />}>
+          <SidebarMenuButton
+            render={<Link href="/onboarding" prefetch={false} />}
+          >
             <Plus className="size-4" />
             <span>Create team</span>
           </SidebarMenuButton>
@@ -178,7 +180,7 @@ export function TeamSwitcher({
               <DropdownMenuItem
                 className="gap-2 p-2"
                 nativeButton={false}
-                render={<Link href="/onboarding" />}
+                render={<Link href="/onboarding" prefetch={false} />}
               >
                 <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
                   <Plus className="size-4" />

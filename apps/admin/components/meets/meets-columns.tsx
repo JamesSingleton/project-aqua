@@ -50,6 +50,7 @@ export function createMeetsColumns(
         <Link
           href={`/team/${teamId}/meets/${row.original.id}`}
           className="text-primary font-medium underline-offset-4 hover:underline"
+          prefetch={false}
         >
           {row.original.name}
         </Link>

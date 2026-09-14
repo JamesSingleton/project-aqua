@@ -103,6 +103,7 @@ export default async function AttendancePage({
                         <Link
                           href={`/team/${teamId}/attendance/${session.id}`}
                           className="text-primary underline"
+                          prefetch={false}
                         >
                           {session.date.toLocaleDateString()}{" "}
                           {session.date.toLocaleTimeString([], {

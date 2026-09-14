@@ -243,7 +243,11 @@ export default function TwoFactorPage() {
               </>
             ) : null}
             {" · "}
-            <Link href="/sign-in" className="underline underline-offset-4">
+            <Link
+              href="/sign-in"
+              className="underline underline-offset-4"
+              prefetch={false}
+            >
               Back to sign in
             </Link>
           </FieldDescription>

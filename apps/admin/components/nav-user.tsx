@@ -103,14 +103,14 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuItem
                 nativeButton={false}
-                render={<Link href={accountHref} />}
+                render={<Link href={accountHref} prefetch={false} />}
               >
                 <BadgeCheck />
                 Account
               </DropdownMenuItem>
               <DropdownMenuItem
                 nativeButton={false}
-                render={<Link href={billingHref} />}
+                render={<Link href={billingHref} prefetch={false} />}
               >
                 <CreditCard />
                 Billing

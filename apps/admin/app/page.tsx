@@ -61,7 +61,7 @@ export default async function HomePage() {
           <Button
             variant="outline"
             nativeButton={false}
-            render={<Link href="/onboarding" />}
+            render={<Link href="/onboarding" prefetch={false} />}
           >
             Add team
           </Button>

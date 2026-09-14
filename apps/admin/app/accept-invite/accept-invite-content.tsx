@@ -120,7 +120,7 @@ export function AcceptInviteContent() {
           <Button
             variant="outline"
             nativeButton={false}
-            render={<Link href="/sign-in" />}
+            render={<Link href="/sign-in" prefetch={false} />}
           >
             Sign in
           </Button>
@@ -149,6 +149,7 @@ export function AcceptInviteContent() {
             render={
               <Link
                 href={`/sign-in?callbackUrl=${encodeURIComponent(callback)}`}
+                prefetch={false}
               />
             }
           >
@@ -160,6 +161,7 @@ export function AcceptInviteContent() {
             render={
               <Link
                 href={`/sign-up?callbackUrl=${encodeURIComponent(callback)}`}
+                prefetch={false}
               />
             }
           >
@@ -195,7 +197,7 @@ export function AcceptInviteContent() {
         <Button
           variant="outline"
           nativeButton={false}
-          render={<Link href="/onboarding" />}
+          render={<Link href="/onboarding" prefetch={false} />}
         >
           Cancel
         </Button>

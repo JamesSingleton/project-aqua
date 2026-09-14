@@ -26,7 +26,7 @@ export function AttendanceRosterEmpty({ teamId }: { teamId: string }) {
       <EmptyContent>
         <Button
           nativeButton={false}
-          render={<Link href={`/team/${teamId}/roster`} />}
+          render={<Link href={`/team/${teamId}/roster`} prefetch={false} />}
         >
           Go to roster
         </Button>

@@ -94,7 +94,11 @@ export default function ForgotPasswordPage() {
             </>
           )}
           <FieldDescription className="text-center">
-            <Link href="/sign-in" className="underline underline-offset-4">
+            <Link
+              href="/sign-in"
+              className="underline underline-offset-4"
+              prefetch={false}
+            >
               Back to sign in
             </Link>
           </FieldDescription>

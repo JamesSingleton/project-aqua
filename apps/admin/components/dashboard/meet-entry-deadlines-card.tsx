@@ -46,7 +46,7 @@ export function MeetEntryDeadlinesCard({
             size="sm"
             variant="ghost"
             nativeButton={false}
-            render={<Link href={`/team/${teamId}/meets`} />}
+            render={<Link href={`/team/${teamId}/meets`} prefetch={false} />}
           >
             All meets
           </Button>
@@ -98,6 +98,7 @@ export function MeetEntryDeadlinesCard({
                   urgency === "soon" && "border-amber-500/30 bg-amber-500/5",
                   urgency === "ok" && "border-border",
                 )}
+                prefetch={false}
               >
                 <div className="mb-2 flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -162,7 +163,7 @@ export function MeetEntryDeadlinesCard({
           variant="outline"
           className="w-full"
           nativeButton={false}
-          render={<Link href={`/team/${teamId}/meets`} />}
+          render={<Link href={`/team/${teamId}/meets`} prefetch={false} />}
         >
           <ClipboardListIcon className="size-3.5" />
           Manage entries

@@ -384,7 +384,7 @@ export default function CreateSwimmerForm({
             type="button"
             variant="ghost"
             nativeButton={false}
-            render={<Link href={`/team/${teamId}/roster`} />}
+            render={<Link href={`/team/${teamId}/roster`} prefetch={false} />}
           >
             Cancel
           </Button>
@@ -826,6 +826,7 @@ export default function CreateSwimmerForm({
         <Link
           href={`/team/${teamId}/roster`}
           className="text-muted-foreground hover:text-foreground w-fit text-sm"
+          prefetch={false}
         >
           ← Back to roster
         </Link>

@@ -58,7 +58,9 @@ export function RecentBestTimesCard({
             size="sm"
             variant="ghost"
             nativeButton={false}
-            render={<Link href={`/team/${teamId}/progression`} />}
+            render={
+              <Link href={`/team/${teamId}/progression`} prefetch={false} />
+            }
           >
             Progression
           </Button>
@@ -73,6 +75,7 @@ export function RecentBestTimesCard({
               key={`${time.swimmerId}-${time.eventLabel}-${time.timeMs}-${index}`}
               href={`/team/${teamId}/swimmers/${time.swimmerId}/progression`}
               className="flex items-center gap-3 rounded-lg bg-muted/50 px-3 py-2.5 transition-colors hover:bg-muted"
+              prefetch={false}
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold">
@@ -109,7 +112,7 @@ export function RecentBestTimesCard({
           size="sm"
           variant="outline"
           nativeButton={false}
-          render={<Link href={`/team/${teamId}/analytics`} />}
+          render={<Link href={`/team/${teamId}/analytics`} prefetch={false} />}
         >
           Analytics
         </Button>

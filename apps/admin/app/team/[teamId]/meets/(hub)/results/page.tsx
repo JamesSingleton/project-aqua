@@ -66,6 +66,7 @@ export default async function MeetsResultsHubPage({
                 <Link
                   href={`/team/${teamId}/meets/${meet.id}/results`}
                   className="hover:bg-muted/40 flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4 transition-colors"
+                  prefetch={false}
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{meet.name}</p>
