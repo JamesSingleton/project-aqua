@@ -11,6 +11,7 @@ import {
 import { Input } from "@project-aqua/ui/components/input";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
+import { accountProfileFormSchema } from "@/schemas/account-profile";
 import {
   removeAvatarAction,
   updateAccountProfileAction,
@@ -22,20 +23,23 @@ const AVATAR_ACCEPT =
 
 export function AccountProfileForm({
   teamId,
-  name,
+  firstName,
+  lastName,
   email,
   title,
   image,
 }: {
   teamId: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   title: string;
   image: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [fullName, setFullName] = useState(name);
+  const [givenName, setGivenName] = useState(firstName);
+  const [familyName, setFamilyName] = useState(lastName);
   const [coachTitle, setCoachTitle] = useState(title);
   const [preview, setPreview] = useState<string | null>(image);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -53,15 +57,26 @@ export function AccountProfileForm({
     return () => URL.revokeObjectURL(url);
   }, [selectedFile]);
 
-  const dirty = fullName.trim() !== name || coachTitle.trim() !== title;
+  const dirty =
+    givenName.trim() !== firstName ||
+    familyName.trim() !== lastName ||
+    coachTitle.trim() !== title;
 
   function saveProfile() {
     setError("");
     setMessage("");
+    const parsed = accountProfileFormSchema.safeParse({
+      firstName: givenName,
+      lastName: familyName,
+      title: coachTitle,
+    });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Check your profile details");
+      return;
+    }
     startTransition(async () => {
       const result = await updateAccountProfileAction(teamId, {
-        name: fullName,
-        title: coachTitle,
+        ...parsed.data,
       });
       if (!result.ok) {
         setError(result.error);
@@ -121,12 +136,8 @@ export function AccountProfileForm({
             />
           ) : (
             <span className="text-muted-foreground text-lg font-medium">
-              {fullName
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-                .slice(0, 2)
-                .toUpperCase() || "?"}
+              {`${givenName[0] ?? ""}${familyName[0] ?? ""}`.toUpperCase() ||
+                "?"}
             </span>
           )}
         </div>
@@ -171,19 +182,36 @@ export function AccountProfileForm({
       </div>
 
       <FieldGroup className="max-w-md gap-4">
-        <Field>
-          <FieldLabel htmlFor="account-name">Name</FieldLabel>
-          <Input
-            id="account-name"
-            value={fullName}
-            onChange={(e) => {
-              setFullName(e.target.value);
-              setMessage("");
-              setError("");
-            }}
-            disabled={pending}
-          />
-        </Field>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field>
+            <FieldLabel htmlFor="account-first-name">First name</FieldLabel>
+            <Input
+              id="account-first-name"
+              autoComplete="given-name"
+              value={givenName}
+              onChange={(e) => {
+                setGivenName(e.target.value);
+                setMessage("");
+                setError("");
+              }}
+              disabled={pending}
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="account-last-name">Last name</FieldLabel>
+            <Input
+              id="account-last-name"
+              autoComplete="family-name"
+              value={familyName}
+              onChange={(e) => {
+                setFamilyName(e.target.value);
+                setMessage("");
+                setError("");
+              }}
+              disabled={pending}
+            />
+          </Field>
+        </div>
         <Field>
           <FieldLabel htmlFor="account-email">Email</FieldLabel>
           <Input id="account-email" value={email} disabled />

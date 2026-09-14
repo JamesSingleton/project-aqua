@@ -150,6 +150,12 @@ function createAuth(polarClient: Polar) {
         joins: true,
       },
     },
+    user: {
+      additionalFields: {
+        firstName: { type: "string", required: false, input: true },
+        lastName: { type: "string", required: false, input: true },
+      },
+    },
     session: {
       cookieCache: {
         enabled: true,
@@ -201,7 +207,12 @@ function createAuth(polarClient: Polar) {
           after: async (user) => {
             await sendCoachWelcome({
               to: user.email,
-              props: { name: user.name },
+              props: {
+                name:
+                  typeof user.firstName === "string"
+                    ? user.firstName
+                    : user.name,
+              },
             });
           },
         },

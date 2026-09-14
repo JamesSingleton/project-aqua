@@ -19,33 +19,39 @@ import {
 } from "@project-aqua/storage";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { accountProfileFormSchema } from "@/schemas/account-profile";
 
 export async function updateAccountProfileAction(
   teamId: string,
-  input: { name: string; title: string },
+  input: unknown,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
+    const parsed = accountProfileFormSchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        ok: false,
+        error: parsed.error.issues[0]?.message ?? "Invalid profile details",
+      };
+    }
     const session = await getSession();
     if (!session?.user?.id) {
       return { ok: false, error: "Unauthorized" };
     }
     await requireTeamMember(session.user.id, teamId);
 
-    const name = input.name.trim();
-    if (name.length < 1) {
-      return { ok: false, error: "Name is required" };
-    }
+    const { firstName, lastName, title } = parsed.data;
+    const name = `${firstName} ${lastName}`;
 
     await db
       .update(user)
-      .set({ name, updatedAt: new Date() })
+      .set({ name, firstName, lastName, updatedAt: new Date() })
       .where(eq(user.id, session.user.id));
 
     const membership = await getMember(session.user.id, teamId);
     if (membership) {
       await db
         .update(member)
-        .set({ title: input.title.trim().slice(0, 80) || null })
+        .set({ title: title || null })
         .where(
           and(eq(member.id, membership.id), eq(member.organizationId, teamId)),
         );

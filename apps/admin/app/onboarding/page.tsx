@@ -209,7 +209,8 @@ export default function OnboardingPage() {
       teamType: "club",
       maxScoringEntriesPerIndividualEvent: "",
       maxRelayTeamsPerEvent: "",
-      coachName: "",
+      coachFirstName: "",
+      coachLastName: "",
       coachTitle: "",
       plan: "free",
     },
@@ -232,11 +233,15 @@ export default function OnboardingPage() {
   const selectedType = TEAM_TYPES.find((t) => t.value === teamType);
 
   useEffect(() => {
-    const sessionName = session?.user?.name?.trim();
-    if (sessionName && !getValues("coachName")) {
-      setValue("coachName", sessionName);
+    const firstName = session?.user?.firstName?.trim();
+    const lastName = session?.user?.lastName?.trim();
+    if (firstName && !getValues("coachFirstName")) {
+      setValue("coachFirstName", firstName);
     }
-  }, [session?.user?.name, setValue, getValues]);
+    if (lastName && !getValues("coachLastName")) {
+      setValue("coachLastName", lastName);
+    }
+  }, [session?.user?.firstName, session?.user?.lastName, setValue, getValues]);
 
   useEffect(() => {
     if (!logoFile) {
@@ -330,8 +335,9 @@ export default function OnboardingPage() {
 
     const coachResult = await updateOnboardingCoachAction({
       teamId,
-      coachName: values.coachName,
-      coachTitle: values.coachTitle || undefined,
+      firstName: values.coachFirstName,
+      lastName: values.coachLastName,
+      title: values.coachTitle,
     });
     if (!coachResult.ok) {
       setSubmitError(coachResult.error);
@@ -555,16 +561,28 @@ export default function OnboardingPage() {
                   the roster and team invites.
                 </FieldDescription>
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                  <Field data-invalid={!!errors.coachName}>
-                    <FieldLabel htmlFor="coachName">Your name</FieldLabel>
+                  <Field data-invalid={!!errors.coachFirstName}>
+                    <FieldLabel htmlFor="coachFirstName">First name</FieldLabel>
                     <Input
-                      id="coachName"
-                      placeholder="Alex Rivera"
-                      autoComplete="name"
-                      aria-invalid={!!errors.coachName}
-                      {...register("coachName")}
+                      id="coachFirstName"
+                      placeholder="Alex"
+                      autoComplete="given-name"
+                      aria-invalid={!!errors.coachFirstName}
+                      {...register("coachFirstName")}
                     />
-                    <FieldError>{errors.coachName?.message}</FieldError>
+                    <FieldError>{errors.coachFirstName?.message}</FieldError>
+                  </Field>
+
+                  <Field data-invalid={!!errors.coachLastName}>
+                    <FieldLabel htmlFor="coachLastName">Last name</FieldLabel>
+                    <Input
+                      id="coachLastName"
+                      placeholder="Rivera"
+                      autoComplete="family-name"
+                      aria-invalid={!!errors.coachLastName}
+                      {...register("coachLastName")}
+                    />
+                    <FieldError>{errors.coachLastName?.message}</FieldError>
                   </Field>
 
                   <Field data-invalid={!!errors.coachTitle}>

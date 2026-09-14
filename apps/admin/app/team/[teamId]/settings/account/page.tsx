@@ -47,7 +47,8 @@ export default async function AccountSettingsPage({
     await Promise.all([
       db
         .select({
-          name: user.name,
+          firstName: user.firstName,
+          lastName: user.lastName,
           email: user.email,
           image: user.image,
           emailVerified: user.emailVerified,
@@ -89,7 +90,8 @@ export default async function AccountSettingsPage({
       >
         <AccountProfileForm
           teamId={teamId}
-          name={profile?.name ?? session.user.name}
+          firstName={profile?.firstName ?? ""}
+          lastName={profile?.lastName ?? ""}
           email={profile?.email ?? session.user.email}
           title={membership?.title ?? ""}
           image={profile?.image ?? null}

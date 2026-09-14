@@ -20,10 +20,12 @@ import { z } from "zod";
 import { SocialAuthButtons } from "@/components/auth/social-auth-buttons";
 import { getCallbackURL } from "@/lib/auth-callback";
 import type { SocialProvider } from "@/lib/auth-providers";
+import { firstNameSchema, lastNameSchema } from "@/schemas/account-profile";
 
 const signupSchema = z
   .object({
-    name: z.string().trim().min(1, "Enter your full name."),
+    firstName: firstNameSchema,
+    lastName: lastNameSchema,
     email: z.string().trim().email("Enter a valid email address."),
     password: z.string().min(8, "Password must be at least 8 characters."),
     confirmPassword: z
@@ -55,7 +57,8 @@ export function SignupForm({
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      name: "",
+      firstName: "",
+      lastName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -70,7 +73,9 @@ export function SignupForm({
     setError("");
 
     const result = await signUp.email({
-      name: values.name,
+      name: `${values.firstName.trim()} ${values.lastName.trim()}`,
+      firstName: values.firstName.trim(),
+      lastName: values.lastName.trim(),
       email: values.email,
       password: values.password,
       callbackURL: callbackUrl,
@@ -107,18 +112,32 @@ export function SignupForm({
             </p>
           </div>
           {error ? <FieldError>{error}</FieldError> : null}
-          <Field data-invalid={!!errors.name}>
-            <FieldLabel htmlFor="name">Full name</FieldLabel>
-            <Input
-              id="name"
-              type="text"
-              placeholder="Alex Rivera"
-              autoComplete="name"
-              aria-invalid={!!errors.name}
-              {...register("name")}
-            />
-            <FieldError errors={[errors.name]} />
-          </Field>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field data-invalid={!!errors.firstName}>
+              <FieldLabel htmlFor="first-name">First name</FieldLabel>
+              <Input
+                id="first-name"
+                type="text"
+                placeholder="Alex"
+                autoComplete="given-name"
+                aria-invalid={!!errors.firstName}
+                {...register("firstName")}
+              />
+              <FieldError errors={[errors.firstName]} />
+            </Field>
+            <Field data-invalid={!!errors.lastName}>
+              <FieldLabel htmlFor="last-name">Last name</FieldLabel>
+              <Input
+                id="last-name"
+                type="text"
+                placeholder="Rivera"
+                autoComplete="family-name"
+                aria-invalid={!!errors.lastName}
+                {...register("lastName")}
+              />
+              <FieldError errors={[errors.lastName]} />
+            </Field>
+          </div>
           <Field data-invalid={!!errors.email}>
             <FieldLabel htmlFor="email">Email</FieldLabel>
             <Input

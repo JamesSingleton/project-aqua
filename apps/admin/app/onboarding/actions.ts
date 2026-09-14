@@ -6,45 +6,46 @@ import { db } from "@project-aqua/db/client";
 import { member, user } from "@project-aqua/db/schema";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { accountProfileFormSchema } from "@/schemas/account-profile";
 
-export async function updateOnboardingCoachAction(input: {
-  teamId: string;
-  coachName: string;
-  coachTitle?: string;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function updateOnboardingCoachAction(
+  input: unknown,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
+    const parsed = accountProfileFormSchema
+      .extend({ teamId: z.string().min(1) })
+      .safeParse(input);
+    if (!parsed.success) {
+      return {
+        ok: false,
+        error: parsed.error.issues[0]?.message ?? "Invalid coach profile",
+      };
+    }
+    const { teamId, firstName, lastName, title } = parsed.data;
     const session = await getSession();
     const userId = session?.user?.id;
     if (!userId) {
       return { ok: false, error: "You must be signed in" };
     }
 
-    await requireTeamRole(userId, input.teamId, ["owner", "admin"]);
-
-    const name = input.coachName.trim();
-    if (name.length < 2) {
-      return { ok: false, error: "Enter your name" };
-    }
-
-    const title = input.coachTitle?.trim() || null;
+    await requireTeamRole(userId, teamId, ["owner", "admin"]);
+    const name = `${firstName} ${lastName}`;
 
     await Promise.all([
       db
         .update(user)
-        .set({ name, updatedAt: new Date() })
+        .set({ name, firstName, lastName, updatedAt: new Date() })
         .where(eq(user.id, userId)),
       db
         .update(member)
         .set({ title })
         .where(
-          and(
-            eq(member.organizationId, input.teamId),
-            eq(member.userId, userId),
-          ),
+          and(eq(member.organizationId, teamId), eq(member.userId, userId)),
         ),
     ]);
 
-    revalidatePath(`/team/${input.teamId}`);
+    revalidatePath(`/team/${teamId}`);
     return { ok: true };
   } catch (err) {
     return {

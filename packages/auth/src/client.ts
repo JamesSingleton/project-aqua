@@ -1,10 +1,12 @@
 import { polarClient } from "@polar-sh/better-auth/client";
 import {
+  inferAdditionalFields,
   organizationClient,
   twoFactorClient,
 } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { orgAc, orgRoles } from "./organization-ac";
+import type { auth } from "./server";
 
 function resolveAuthBaseURL() {
   // Same-origin in the browser so sign-in works on LAN IPs, not only localhost.
@@ -19,6 +21,7 @@ const authBaseURL = resolveAuthBaseURL();
 export const authClient = createAuthClient({
   ...(authBaseURL ? { baseURL: authBaseURL } : {}),
   plugins: [
+    inferAdditionalFields<typeof auth>(),
     organizationClient({
       ac: orgAc,
       roles: orgRoles,

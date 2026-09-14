@@ -9,7 +9,8 @@ import { createSwimmerFormSchema } from "../../schemas/swimmer-create";
 describe("schemas barrel / swimmer-create re-exports", () => {
   it("re-exports step field constants", () => {
     expect(TEAM_STEP_FIELDS).toContain("teamName");
-    expect(COACH_STEP_FIELDS).toContain("coachName");
+    expect(COACH_STEP_FIELDS).toContain("coachFirstName");
+    expect(COACH_STEP_FIELDS).toContain("coachLastName");
     expect(BILLING_STEP_FIELDS).toContain("plan");
   });
 

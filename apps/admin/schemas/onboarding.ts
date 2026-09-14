@@ -1,5 +1,6 @@
 import { TEAM_TYPES, type TeamType } from "@project-aqua/swim-core/team-types";
 import { z } from "zod";
+import { firstNameSchema, lastNameSchema } from "./account-profile";
 
 const teamTypeValues = TEAM_TYPES.map((t) => t.value) as [
   TeamType,
@@ -27,11 +28,8 @@ export const onboardingFormSchema = z.object({
   }),
   maxScoringEntriesPerIndividualEvent: optionalCapSchema,
   maxRelayTeamsPerEvent: optionalCapSchema,
-  coachName: z
-    .string()
-    .trim()
-    .min(2, "Enter your name")
-    .max(100, "Name is too long"),
+  coachFirstName: firstNameSchema,
+  coachLastName: lastNameSchema,
   coachTitle: z.string().trim().max(80, "Title is too long"),
   plan: z.enum(["free", "pro", "enterprise"]),
 });
@@ -44,5 +42,9 @@ export const TEAM_STEP_FIELDS = [
   "maxScoringEntriesPerIndividualEvent",
   "maxRelayTeamsPerEvent",
 ] as const;
-export const COACH_STEP_FIELDS = ["coachName", "coachTitle"] as const;
+export const COACH_STEP_FIELDS = [
+  "coachFirstName",
+  "coachLastName",
+  "coachTitle",
+] as const;
 export const BILLING_STEP_FIELDS = ["plan"] as const;
