@@ -6,6 +6,19 @@ void env;
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1", "localhost", "192.168.1.166"],
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value: "noindex, nofollow",
+          },
+        ],
+      },
+    ];
+  },
   transpilePackages: [
     "@project-aqua/ui",
     "@project-aqua/auth",

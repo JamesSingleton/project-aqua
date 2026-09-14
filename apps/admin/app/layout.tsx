@@ -21,6 +21,16 @@ export const metadata: Metadata = {
   },
   description:
     "Project Aqua is the all-in-one solution for managing swim teams, tracking stats, registering for events, and setting up meets.",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
+  },
 };
 
 export const viewport: Viewport = {
