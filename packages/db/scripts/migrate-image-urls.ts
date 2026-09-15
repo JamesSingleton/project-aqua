@@ -13,7 +13,34 @@ function requiredEnv(name: string): string {
   return value;
 }
 
+function allowedPrivateImageOrigins(): ReadonlySet<string> {
+  const origins = new Set<string>();
+  for (const value of (process.env.IMAGE_IMPORT_ALLOWED_ORIGINS ?? "").split(
+    ",",
+  )) {
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+
+    const url = new URL(trimmed);
+    if (
+      (url.protocol !== "http:" && url.protocol !== "https:") ||
+      url.username ||
+      url.password ||
+      url.pathname !== "/" ||
+      url.search ||
+      url.hash
+    ) {
+      throw new Error(
+        `IMAGE_IMPORT_ALLOWED_ORIGINS must contain HTTP(S) origins: ${trimmed}`,
+      );
+    }
+    origins.add(url.origin);
+  }
+  return origins;
+}
+
 async function main() {
+  const allowedOrigins = allowedPrivateImageOrigins();
   const sql = postgres(requiredEnv("DATABASE_URL_UNPOOLED"), {
     prepare: false,
     max: 1,
@@ -29,7 +56,7 @@ async function main() {
     for (const team of teams) {
       const uploaded = await uploadTeamLogo({
         teamId: team.id,
-        file: await downloadPublicImage(team.logo),
+        file: await downloadPublicImage(team.logo, allowedOrigins),
       });
       try {
         await sql`
@@ -52,7 +79,7 @@ async function main() {
     for (const user of users) {
       const uploaded = await uploadUserAvatar({
         userId: user.id,
-        file: await downloadPublicImage(user.image),
+        file: await downloadPublicImage(user.image, allowedOrigins),
       });
       try {
         await sql`

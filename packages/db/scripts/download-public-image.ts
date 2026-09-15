@@ -48,44 +48,49 @@ export function isPublicNetworkAddress(address: string): boolean {
   return false;
 }
 
-const lookupPublicAddress: LookupFunction = (hostname, options, callback) => {
-  dnsLookup(
-    hostname,
-    { ...options, all: true, verbatim: true },
-    (error, addresses) => {
-      if (error) {
-        callback(error, "", 4);
-        return;
-      }
+function imageLookup(allowPrivateAddress: boolean): LookupFunction {
+  return (hostname, options, callback) => {
+    dnsLookup(
+      hostname,
+      { ...options, all: true, verbatim: true },
+      (error, addresses) => {
+        if (error) {
+          callback(error, "", 4);
+          return;
+        }
 
-      const blocked = addresses.find(
-        ({ address }) => !isPublicNetworkAddress(address),
-      );
-      if (blocked) {
-        callback(
-          new Error(`Refusing private image address for ${hostname}`),
-          "",
-          blocked.family,
+        const blocked = addresses.find(
+          ({ address }) => !isPublicNetworkAddress(address),
         );
-        return;
-      }
+        if (blocked && !allowPrivateAddress) {
+          callback(
+            new Error(`Refusing private image address for ${hostname}`),
+            "",
+            blocked.family,
+          );
+          return;
+        }
 
-      const selected = addresses[0];
-      if (!selected) {
-        callback(new Error(`No image address found for ${hostname}`), "", 4);
-        return;
-      }
+        const selected = addresses[0];
+        if (!selected) {
+          callback(new Error(`No image address found for ${hostname}`), "", 4);
+          return;
+        }
 
-      if (options.all) {
-        callback(null, addresses);
-        return;
-      }
-      callback(null, selected.address, selected.family);
-    },
-  );
-};
+        if (options.all) {
+          callback(null, addresses);
+          return;
+        }
+        callback(null, selected.address, selected.family);
+      },
+    );
+  };
+}
 
-function parsePublicImageUrl(value: string): URL {
+function parseImageUrl(
+  value: string,
+  allowedPrivateOrigins: ReadonlySet<string>,
+): { url: URL; allowPrivateAddress: boolean } {
   const url = new URL(value);
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new Error(`Image URL must use HTTP or HTTPS: ${value}`);
@@ -95,22 +100,31 @@ function parsePublicImageUrl(value: string): URL {
   }
 
   const hostname = url.hostname.replace(/^\[|\]$/g, "");
-  if (isIP(hostname) && !isPublicNetworkAddress(hostname)) {
+  const allowPrivateAddress = allowedPrivateOrigins.has(url.origin);
+  if (
+    isIP(hostname) &&
+    !isPublicNetworkAddress(hostname) &&
+    !allowPrivateAddress
+  ) {
     throw new Error(`Refusing private image address for ${hostname}`);
   }
 
-  return url;
+  return { url, allowPrivateAddress };
 }
 
 export async function downloadPublicImage(
   value: string,
+  allowedPrivateOrigins: ReadonlySet<string> = new Set(),
   redirects = 0,
 ): Promise<ImageInput> {
   if (redirects > MAX_REDIRECTS) {
     throw new Error(`Too many redirects while downloading ${value}`);
   }
 
-  const url = parsePublicImageUrl(value);
+  const { url, allowPrivateAddress } = parseImageUrl(
+    value,
+    allowedPrivateOrigins,
+  );
   const get = url.protocol === "https:" ? httpsGet : httpGet;
 
   return new Promise((resolve, reject) => {
@@ -118,14 +132,18 @@ export async function downloadPublicImage(
       url,
       {
         headers: { "user-agent": "Project-Aqua-Neon-Migration/1.0" },
-        lookup: lookupPublicAddress,
+        lookup: imageLookup(allowPrivateAddress),
       },
       (response) => {
         const status = response.statusCode ?? 0;
         const location = response.headers.location;
         if (status >= 300 && status < 400 && location) {
           response.resume();
-          downloadPublicImage(new URL(location, url).toString(), redirects + 1)
+          downloadPublicImage(
+            new URL(location, url).toString(),
+            allowedPrivateOrigins,
+            redirects + 1,
+          )
             .then(resolve)
             .catch(reject);
           return;

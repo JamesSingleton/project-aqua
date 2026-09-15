@@ -1,3 +1,4 @@
+import { createServer } from "node:http";
 import { describe, expect, it } from "vitest";
 import {
   downloadPublicImage,
@@ -40,6 +41,36 @@ describe("public image downloads", () => {
     await expect(
       downloadPublicImage("http://localhost/image.png"),
     ).rejects.toThrow("Refusing private image address");
+  });
+
+  it("downloads from an explicitly allowed private origin", async () => {
+    const server = createServer((_request, response) => {
+      response.setHeader("content-type", "image/png");
+      response.end(Buffer.from([1, 2, 3]));
+    });
+    await new Promise<void>((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(0, "127.0.0.1", resolve);
+    });
+
+    try {
+      const address = server.address();
+      if (!address || typeof address === "string") {
+        throw new Error("Test server did not bind to a TCP port");
+      }
+      const origin = `http://127.0.0.1:${address.port}`;
+      const image = await downloadPublicImage(
+        `${origin}/image.png`,
+        new Set([origin]),
+      );
+
+      expect(image.mimeType).toBe("image/png");
+      expect(image.data.byteLength).toBe(3);
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      });
+    }
   });
 
   it("rejects non-HTTP URLs and embedded credentials", async () => {
