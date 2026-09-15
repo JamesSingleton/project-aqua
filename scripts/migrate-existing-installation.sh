@@ -22,23 +22,29 @@ run_pg() {
     "$@"
 }
 
-count_query='
-select concat_ws(
-  '"'"'|'"'"',
-  (select count(*) from "user"),
-  (select count(*) from organization),
-  (select count(*) from member),
-  (select count(*) from swimmers),
-  (select count(*) from meets),
-  (select count(*) from swim_events)
-)'
-
-data_counts() {
-  run_pg psql --dbname="$1" -XAt -v ON_ERROR_STOP=1 -c "$count_query"
+data_fingerprint() {
+  run_pg psql --dbname="$1" -XAt -F '|' -v ON_ERROR_STOP=1 <<'SQL'
+select format(
+  'select %L, count(*), md5(coalesce(string_agg(row_digest, '''' order by row_digest), '''')) from (select md5((%s)::text) as row_digest from %I.%I as row_data) as hashed_rows;',
+  table_name,
+  case table_name
+    when 'organization' then 'to_jsonb(row_data) - ''logo'''
+    when 'user' then 'to_jsonb(row_data) - ''image'''
+    else 'to_jsonb(row_data)'
+  end,
+  table_schema,
+  table_name
+)
+from information_schema.tables
+where table_schema = 'public'
+  and table_type = 'BASE TABLE'
+order by table_name
+\gexec
+SQL
 }
 
-source_counts=$(data_counts "$SOURCE_DATABASE_URL")
-target_counts=$(data_counts "$DATABASE_URL_UNPOOLED")
+source_fingerprint=$(data_fingerprint "$SOURCE_DATABASE_URL")
+target_fingerprint=$(data_fingerprint "$DATABASE_URL_UNPOOLED")
 target_rows=$(
   run_pg psql --dbname="$DATABASE_URL_UNPOOLED" -XAt -v ON_ERROR_STOP=1 \
     -c 'select (select count(*) from "user") + (select count(*) from organization)'
@@ -68,13 +74,13 @@ if [[ "$target_rows" == "0" ]]; then
     --dbname="$DATABASE_URL_UNPOOLED" \
     "$dump_file"
 
-  target_counts=$(data_counts "$DATABASE_URL_UNPOOLED")
-  if [[ "$source_counts" != "$target_counts" ]]; then
-    echo "Imported row counts do not match the source." >&2
+  target_fingerprint=$(data_fingerprint "$DATABASE_URL_UNPOOLED")
+  if [[ "$source_fingerprint" != "$target_fingerprint" ]]; then
+    echo "Imported data does not match the source." >&2
     exit 1
   fi
-elif [[ "$source_counts" == "$target_counts" ]]; then
-  echo "Target row counts match the source; resuming image migration."
+elif [[ "$source_fingerprint" == "$target_fingerprint" ]]; then
+  echo "Target data matches the source; resuming image migration."
 else
   echo "Target contains data that does not match the source; refusing to import." >&2
   exit 1

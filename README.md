@@ -83,7 +83,7 @@ The importer:
 
 - Refuses a target that already contains users or teams.
 - Copies all `public` schema rows with `pg_dump` and `pg_restore`.
-- Verifies user, team, membership, swimmer, meet, and swim-event counts.
+- Verifies every public table's row content, excluding the logo and avatar fields rewritten during image migration.
 - Downloads existing public team logos and avatars, uploads them into the target branch, and rewrites their database values to branch-aware `/api/storage/` paths.
 - Leaves the source database and objects unchanged.
 
