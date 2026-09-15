@@ -8,6 +8,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { organization } from "./auth";
@@ -93,7 +94,10 @@ export const meets = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (table) => [
-    index("meets_org_start_date_idx").on(table.organizationId, table.startDate),
+    index("meets_org_start_date_idx").on(
+      table.organizationId,
+      table.startDate.desc().nullsFirst(),
+    ),
     index("meets_season_id_idx").on(table.seasonId),
   ],
 );
@@ -136,7 +140,7 @@ export const meetCommitments = pgTable(
     membershipId: text("membership_id")
       .notNull()
       .references(() => teamSwimmerMemberships.id, { onDelete: "cascade" }),
-    status: meetCommitmentStatusEnum("status").notNull(),
+    status: meetCommitmentStatusEnum("status").notNull().default("pending"),
     notes: text("notes"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -216,23 +220,35 @@ export const meetResults = pgTable(
   ],
 );
 
-export const swimmerBestTimes = pgTable("swimmer_best_times", {
-  id: text("id").primaryKey(),
-  swimmerId: text("swimmer_id")
-    .notNull()
-    .references(() => swimmers.id, { onDelete: "cascade" }),
-  eventKey: text("event_key")
-    .notNull()
-    .references(() => swimEvents.eventKey),
-  course: courseEnum("course").notNull(),
-  timeMs: integer("time_ms").notNull(),
-  achievedAt: timestamp("achieved_at").notNull(),
-  meetId: text("meet_id").references(() => meets.id, { onDelete: "set null" }),
-  /** Snapshot so other teams can see PR venue without meet-row RLS. */
-  meetName: text("meet_name"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+export const swimmerBestTimes = pgTable(
+  "swimmer_best_times",
+  {
+    id: text("id").primaryKey(),
+    swimmerId: text("swimmer_id")
+      .notNull()
+      .references(() => swimmers.id, { onDelete: "cascade" }),
+    eventKey: text("event_key")
+      .notNull()
+      .references(() => swimEvents.eventKey),
+    course: courseEnum("course").notNull(),
+    timeMs: integer("time_ms").notNull(),
+    achievedAt: timestamp("achieved_at").notNull(),
+    meetId: text("meet_id").references(() => meets.id, {
+      onDelete: "set null",
+    }),
+    /** Snapshot keeps the recorded venue stable when the source meet changes. */
+    meetName: text("meet_name"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_swimmer_best_times_swimmer").on(
+      table.swimmerId,
+      table.eventKey,
+      table.course,
+    ),
+  ],
+);
 
 /** Coach-entered dated swims (club / mock / practice) for progression charts. */
 export const swimmerTimeEntrySourceEnum = pgEnum("swimmer_time_entry_source", [
@@ -264,6 +280,15 @@ export const swimmerTimeEntries = pgTable(
   },
   (table) => [
     index("swimmer_time_entries_membership_id_idx").on(table.membershipId),
+    index("idx_swimmer_time_entries_swimmer_achieved").on(
+      table.swimmerId,
+      table.achievedAt,
+    ),
+    index("idx_swimmer_time_entries_swimmer_event").on(
+      table.swimmerId,
+      table.eventKey,
+      table.course,
+    ),
   ],
 );
 
@@ -347,12 +372,9 @@ export const meetRelayResults = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex("meet_relay_results_attempt_idx").on(
-      table.meetId,
-      table.meetEventId,
-      table.relayLetter,
-      table.round,
-    ),
+    unique("meet_relay_results_attempt_idx")
+      .on(table.meetId, table.meetEventId, table.relayLetter, table.round)
+      .nullsNotDistinct(),
     index("meet_relay_results_meet_idx").on(table.meetId),
     index("meet_relay_results_meet_event_id_idx").on(table.meetEventId),
   ],
@@ -424,8 +446,12 @@ export const meetEventTemplates = pgTable(
     name: text("name").notNull(),
     course: courseEnum("course").notNull().default("SCY"),
     events: jsonb("events").$type<MeetEventTemplateRow[]>().notNull(),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [index("meet_event_templates_org_idx").on(table.organizationId)],
 );

@@ -13,12 +13,16 @@
         "BETTER_AUTH_*",
         "NEXT_PUBLIC_*",
         "DATABASE_URL",
+        "DATABASE_URL_UNPOOLED",
         "POSTGRES_URL",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+        "AWS_ENDPOINT_URL_S3",
+        "AWS_REGION",
         "RESEND_*",
         "EMAIL_FROM",
         "POLAR_*",
         "STRIPE_*",
-        "SUPABASE_*",
         "GOOGLE_*",
         "MICROSOFT_*",
         "OPENAI_API_KEY",
@@ -34,12 +38,16 @@
         "BETTER_AUTH_*",
         "NEXT_PUBLIC_*",
         "DATABASE_URL",
+        "DATABASE_URL_UNPOOLED",
         "POSTGRES_URL",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+        "AWS_ENDPOINT_URL_S3",
+        "AWS_REGION",
         "RESEND_*",
         "EMAIL_FROM",
         "POLAR_*",
         "STRIPE_*",
-        "SUPABASE_*",
         "GOOGLE_*",
         "MICROSOFT_*",
         "OPENAI_API_KEY",
@@ -64,7 +72,12 @@
       "env": [
         "SKIP_ENV_VALIDATION",
         "DATABASE_URL",
+        "DATABASE_URL_UNPOOLED",
         "POSTGRES_URL",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+        "AWS_ENDPOINT_URL_S3",
+        "AWS_REGION",
         "BETTER_AUTH_*"
       ]
     },
@@ -73,14 +86,17 @@
       "cache": false
     },
     "db:generate": {
-      "cache": false
+      "cache": false,
+      "env": ["DATABASE_URL", "DATABASE_URL_UNPOOLED", "POSTGRES_URL"]
     },
     "db:migrate": {
-      "cache": false
+      "cache": false,
+      "env": ["DATABASE_URL", "DATABASE_URL_UNPOOLED", "POSTGRES_URL"]
     },
     "db:studio": {
       "persistent": true,
-      "cache": false
+      "cache": false,
+      "env": ["DATABASE_URL", "DATABASE_URL_UNPOOLED", "POSTGRES_URL"]
     },
     "email:dev": {
       "persistent": true,

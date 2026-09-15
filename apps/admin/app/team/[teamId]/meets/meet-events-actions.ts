@@ -353,7 +353,7 @@ export async function saveMeetAsEventTemplateAction(
   } catch (error) {
     if (isMeetEventTemplatesTableMissing(error)) {
       throw new Error(
-        "Team templates require a database migration. Run: supabase migration up --local",
+        "Team templates require a database migration. Run: pnpm db:migrate",
       );
     }
     throw error;
