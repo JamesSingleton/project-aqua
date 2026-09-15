@@ -7,6 +7,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { organization } from "./auth";
@@ -37,7 +38,9 @@ export const swimmers = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex("swimmers_governing_body_id_idx").on(table.governingBodyId),
+    uniqueIndex("swimmers_governing_body_id_idx")
+      .on(table.governingBodyId)
+      .where(sql`${table.governingBodyId} is not null`),
   ],
 );
 
@@ -95,7 +98,7 @@ export const swimmerClubRegistrations = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex("swimmer_club_registrations_membership_idx").on(
+    unique("swimmer_club_registrations_membership_id_key").on(
       table.membershipId,
     ),
   ],

@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import { index, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { organization } from "./auth";
 import { teamSwimmerMemberships } from "./swimmers";
+import { workouts } from "./workouts";
 
 export const attendanceStatusEnum = pgEnum("attendance_status", [
   "present",
@@ -27,7 +28,9 @@ export const practiceSessions = pgTable(
     date: timestamp("date").notNull(),
     location: text("location"),
     notes: text("notes"),
-    workoutId: text("workout_id"),
+    workoutId: text("workout_id").references(() => workouts.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -64,6 +67,10 @@ export const practiceSessionsRelations = relations(
     organization: one(organization, {
       fields: [practiceSessions.organizationId],
       references: [organization.id],
+    }),
+    workout: one(workouts, {
+      fields: [practiceSessions.workoutId],
+      references: [workouts.id],
     }),
     records: many(attendanceRecords),
   }),
