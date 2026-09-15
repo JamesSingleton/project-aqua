@@ -65,6 +65,32 @@ Open [localhost:3001](http://localhost:3001), sign up, and create a team.
 
 The repository ignores `.env.local`, `.neon`, and generated MCP configuration. Keep credentials and linked project identifiers in those local files.
 
+## Migrate an existing installation
+
+Create database and object-storage backups before cutover. Keep the existing `BETTER_AUTH_SECRET` and application URLs so imported sessions and authentication flows remain valid.
+
+1. Stop application writes.
+2. Complete the Neon setup above against a fresh target project.
+3. Add `SOURCE_DATABASE_URL` with the existing direct Postgres connection to `.env.local`.
+4. Apply the target schema, then import:
+
+```bash
+pnpm db:migrate
+pnpm migrate:existing
+```
+
+The importer:
+
+- Refuses a target that already contains users or teams.
+- Copies all `public` schema rows with `pg_dump` and `pg_restore`.
+- Verifies user, team, membership, swimmer, meet, and swim-event counts.
+- Downloads existing public team logos and avatars, uploads them into the target branch, and rewrites their database values to branch-aware `/api/storage/` paths.
+- Leaves the source database and objects unchanged.
+
+The PostgreSQL client tools must be installed locally. Existing image URLs must remain anonymously readable during the import; a failed download stops the migration.
+
+After the command succeeds, run the local user journeys against Neon before updating the application host. Keep the source read-only until the production smoke test passes, then remove `SOURCE_DATABASE_URL` from `.env.local`.
+
 ## Agent setup
 
 The repository checks in the Neon skills installed by:

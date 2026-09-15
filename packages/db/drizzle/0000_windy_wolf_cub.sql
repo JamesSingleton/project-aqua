@@ -378,7 +378,8 @@ CREATE TABLE "meet_relay_results" (
 	"is_dq" boolean DEFAULT false NOT NULL,
 	"dq_code" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "meet_relay_results_attempt_idx" UNIQUE NULLS NOT DISTINCT("meet_id","meet_event_id","relay_letter","round")
 );
 --> statement-breakpoint
 CREATE TABLE "meet_relay_teams" (
@@ -818,7 +819,6 @@ CREATE UNIQUE INDEX "meet_relay_result_members_leg_idx" ON "meet_relay_result_me
 CREATE INDEX "meet_relay_result_members_membership_id_idx" ON "meet_relay_result_members" USING btree ("membership_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "meet_relay_result_splits_leg_idx" ON "meet_relay_result_splits" USING btree ("result_id","leg_order");--> statement-breakpoint
 CREATE INDEX "meet_relay_result_splits_membership_id_idx" ON "meet_relay_result_splits" USING btree ("membership_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "meet_relay_results_attempt_idx" ON "meet_relay_results" USING btree ("meet_id","meet_event_id","relay_letter","round");--> statement-breakpoint
 CREATE INDEX "meet_relay_results_meet_idx" ON "meet_relay_results" USING btree ("meet_id");--> statement-breakpoint
 CREATE INDEX "meet_relay_results_meet_event_id_idx" ON "meet_relay_results" USING btree ("meet_event_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "meet_relay_teams_event_letter_idx" ON "meet_relay_teams" USING btree ("meet_id","meet_event_id","relay_letter");--> statement-breakpoint
@@ -843,6 +843,7 @@ CREATE UNIQUE INDEX "season_enrollments_season_membership_idx" ON "season_enroll
 CREATE INDEX "season_enrollments_season_status_idx" ON "season_enrollments" USING btree ("season_id","status");--> statement-breakpoint
 CREATE INDEX "season_enrollments_membership_idx" ON "season_enrollments" USING btree ("membership_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "team_seasons_org_label_idx" ON "team_seasons" USING btree ("organization_id","label");--> statement-breakpoint
+CREATE UNIQUE INDEX "team_seasons_one_current_per_org_idx" ON "team_seasons" USING btree ("organization_id") WHERE "team_seasons"."is_current" = true;--> statement-breakpoint
 CREATE UNIQUE INDEX "swimmer_club_registrations_membership_idx" ON "swimmer_club_registrations" USING btree ("membership_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "swimmers_governing_body_id_idx" ON "swimmers" USING btree ("governing_body_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "team_swimmer_memberships_org_swimmer_idx" ON "team_swimmer_memberships" USING btree ("organization_id","swimmer_id");--> statement-breakpoint

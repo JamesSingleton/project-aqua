@@ -23,6 +23,7 @@
     "format": "biome format --write .",
     "lint": "turbo lint",
     "lint:fix": "turbo lint:fix",
+    "migrate:existing": "dotenv -e .env.local -- bash scripts/migrate-existing-installation.sh",
     "neon:mcp": "node scripts/setup-neon-mcp.mjs",
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e --filter=@project-aqua/admin",

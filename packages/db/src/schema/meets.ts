@@ -8,6 +8,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { organization } from "./auth";
@@ -347,12 +348,9 @@ export const meetRelayResults = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex("meet_relay_results_attempt_idx").on(
-      table.meetId,
-      table.meetEventId,
-      table.relayLetter,
-      table.round,
-    ),
+    unique("meet_relay_results_attempt_idx")
+      .on(table.meetId, table.meetEventId, table.relayLetter, table.round)
+      .nullsNotDistinct(),
     index("meet_relay_results_meet_idx").on(table.meetId),
     index("meet_relay_results_meet_event_id_idx").on(table.meetEventId),
   ],

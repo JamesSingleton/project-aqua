@@ -1,5 +1,5 @@
 {
-  "id": "8c697e63-28df-4170-b818-afd1fc622e95",
+  "id": "bc590fc3-3c07-4667-b974-53c20d0924f8",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -3064,39 +3064,6 @@
         }
       },
       "indexes": {
-        "meet_relay_results_attempt_idx": {
-          "name": "meet_relay_results_attempt_idx",
-          "columns": [
-            {
-              "expression": "meet_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "meet_event_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "relay_letter",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "round",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "meet_relay_results_meet_idx": {
           "name": "meet_relay_results_meet_idx",
           "columns": [
@@ -3149,7 +3116,13 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "meet_relay_results_attempt_idx": {
+          "name": "meet_relay_results_attempt_idx",
+          "nullsNotDistinct": true,
+          "columns": ["meet_id", "meet_event_id", "relay_letter", "round"]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -5038,6 +5011,22 @@
             }
           ],
           "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "team_seasons_one_current_per_org_idx": {
+          "name": "team_seasons_one_current_per_org_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"team_seasons\".\"is_current\" = true",
           "concurrently": false,
           "method": "btree",
           "with": {}

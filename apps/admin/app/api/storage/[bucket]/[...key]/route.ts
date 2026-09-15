@@ -27,6 +27,8 @@ async function serveObject(
   }
 
   const headers = new Headers();
+  headers.set("content-security-policy", "default-src 'none'; sandbox");
+  headers.set("x-content-type-options", "nosniff");
   for (const name of [
     "cache-control",
     "content-length",

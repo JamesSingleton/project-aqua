@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   date,
@@ -42,6 +42,9 @@ export const teamSeasons = pgTable(
       table.organizationId,
       table.label,
     ),
+    uniqueIndex("team_seasons_one_current_per_org_idx")
+      .on(table.organizationId)
+      .where(sql`${table.isCurrent} = true`),
   ],
 );
 
