@@ -5,24 +5,12 @@ import {
   uploadUserAvatar,
 } from "@project-aqua/storage";
 import postgres from "postgres";
+import { downloadPublicImage } from "./download-public-image";
 
 function requiredEnv(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing ${name}`);
   return value;
-}
-
-async function downloadImage(url: string) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to download ${url}: HTTP ${response.status}`);
-  }
-
-  return {
-    data: await response.arrayBuffer(),
-    mimeType: response.headers.get("content-type")?.split(";")[0] ?? "",
-    fileName: new URL(url).pathname.split("/").pop(),
-  };
 }
 
 async function main() {
@@ -41,7 +29,7 @@ async function main() {
     for (const team of teams) {
       const uploaded = await uploadTeamLogo({
         teamId: team.id,
-        file: await downloadImage(team.logo),
+        file: await downloadPublicImage(team.logo),
       });
       try {
         await sql`
@@ -64,7 +52,7 @@ async function main() {
     for (const user of users) {
       const uploaded = await uploadUserAvatar({
         userId: user.id,
-        file: await downloadImage(user.image),
+        file: await downloadPublicImage(user.image),
       });
       try {
         await sql`

@@ -87,7 +87,7 @@ The importer:
 - Downloads existing public team logos and avatars, uploads them into the target branch, and rewrites their database values to branch-aware `/api/storage/` paths.
 - Leaves the source database and objects unchanged.
 
-The PostgreSQL client tools must be installed locally. Existing image URLs must remain anonymously readable during the import; a failed download stops the migration.
+The PostgreSQL client tools must be installed locally. Existing image URLs must use HTTP or HTTPS, resolve only to public network addresses, and remain anonymously readable during the import; a failed download stops the migration.
 
 After the command succeeds, run the local user journeys against Neon before updating the application host. Keep the source read-only until the production smoke test passes, then remove `SOURCE_DATABASE_URL` from `.env.local`.
 
