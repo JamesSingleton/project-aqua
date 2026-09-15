@@ -8,11 +8,15 @@ export const keys = () =>
       process.env.VITEST === "true",
     emptyStringAsUndefined: true,
     server: {
-      SUPABASE_URL: z.url().optional(),
-      SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+      AWS_ACCESS_KEY_ID: z.string().min(1),
+      AWS_SECRET_ACCESS_KEY: z.string().min(1),
+      AWS_ENDPOINT_URL_S3: z.url(),
+      AWS_REGION: z.string().min(1),
     },
     runtimeEnv: {
-      SUPABASE_URL: process.env.SUPABASE_URL,
-      SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
+      AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
+      AWS_ENDPOINT_URL_S3: process.env.AWS_ENDPOINT_URL_S3,
+      AWS_REGION: process.env.AWS_REGION,
     },
   });

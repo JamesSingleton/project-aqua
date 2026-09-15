@@ -1,4 +1,5 @@
 export { getStorageClient } from "./client";
+export { publicObjectPath, storageObjectUrl } from "./object";
 export {
   removeTeamLogo,
   teamLogoPathFromUrl,

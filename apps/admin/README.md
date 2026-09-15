@@ -1,80 +1,110 @@
-# Project Aqua Admin — Setup
+# Project Aqua Admin
 
-Coach SaaS dashboard for competitive swim team management.
+The visiting-team coach app for rosters, meet entries, results, workouts, attendance, and calendars. It uses Next.js, Better Auth, Drizzle, Neon Postgres, and Neon Object Storage.
 
-## Prerequisites
+## Run locally
 
-- Node.js 24+
-- pnpm 10+
-- Supabase CLI (for local Postgres)
+Follow the [root setup guide](../../README.md#local-setup) to install the toolchain, link a Neon project, provision storage, and configure `.env.local`.
 
-## Quick start
+Then run from the repository root:
 
 ```bash
-# From repo root
-pnpm install
-
-# Start local Supabase
-supabase start
-
-# Apply migrations
-supabase db reset
-
-# Copy env and configure
-cp apps/admin/.env.example apps/admin/.env.local
-# Set BETTER_AUTH_SECRET: openssl rand -base64 32
-
-# Start admin app
+pnpm db:migrate
 pnpm dev:admin
 ```
 
-Open http://localhost:3001
+Open [localhost:3001](http://localhost:3001), sign up, and create a team at `/onboarding`.
 
-### Dev memory / Turbopack cache
+## Request flow
 
-Long `pnpm dev:admin` sessions with heavy HMR can grow `apps/admin/.next` (especially `.next/dev/cache/turbopack`) into multi‑GB on disk and push `next-server` RSS into the multi‑GB range. That is Turbopack cache retention, not an app-level leak.
+```text
+Browser
+  -> Next.js server action or route
+     -> Better Auth session
+     -> Team membership, role, and feature checks
+        -> Drizzle + postgres.js -> database
+        -> AWS S3 SDK -> object storage
+```
 
-When RSS feels painful:
+Database queries and authenticated storage operations run in the existing Next.js backend. Every server action authenticates and authorizes its caller with helpers such as `requireTeamRole`, `requireTeamMember`, and the applicable plan checks.
+
+## Database and migrations
+
+`@project-aqua/db` owns the schema and queries:
+
+- Schema: `packages/db/src/schema/`
+- Migrations: `packages/db/drizzle/`
+- Runtime connection: `DATABASE_URL`
+- Migration connection: `DATABASE_URL_UNPOOLED`
+
+After changing the schema, run from the repository root against a development branch:
 
 ```bash
-# Stop the admin dev server, then from repo root:
-pnpm clean:admin
+pnpm db:generate
+pnpm db:migrate
+```
+
+Review and commit the generated SQL and Drizzle metadata.
+
+## Logos and avatars
+
+[`neon.ts`](../../neon.ts) declares two `public_read` buckets:
+
+| Bucket | Contents |
+| --- | --- |
+| `team-logos` | Team logos |
+| `user-avatars` | Coach avatars |
+
+`@project-aqua/storage` uses the AWS S3 SDK from server actions. Uploads accept JPEG, PNG, WebP, AVIF, and SVG files up to 2 MiB. Each upload receives a UUID-based object key.
+
+The database stores stable same-origin paths under `/api/storage/`. That public route resolves each object against the active branch's `AWS_ENDPOINT_URL_S3`, so inherited rows and objects stay together when a contributor checks out a Neon branch.
+
+## Branch workflow
+
+Stop the app, create or select a branch, apply migrations, then restart:
+
+```bash
+neon checkout main
+neon checkout dev-feature --create
+pnpm db:migrate
 pnpm dev:admin
 ```
 
-Or from `apps/admin`: `pnpm clean:next`.
+Inspect schema changes with `neon diff`. Stop the app before `neon checkout main`, then restart it to load the parent branch credentials.
 
-## Architecture
-
-- **Auth:** Better Auth with organization plugin (team = organization)
-- **Database:** Supabase Postgres + Drizzle ORM (`packages/db`)
-- **Email:** React Email + Resend (`packages/emails`)
-- **Billing:** Stripe per-team subscriptions (`packages/billing`)
-- **USA Swimming:** SWIMS vendor API (`packages/usa-swimming`)
-- **File formats:** Hy-Tek / SDIF meet & roster parsers (`packages/swim-formats`) — Meet Events (EV3/HYV), Results (CL2/HY3/SD3), Entries/Roster (CL2+HY3), ZIP packs
+Neon isolates database and object-storage writes. External email, calendar, and billing systems remain shared. Leave those credentials empty for development unless you are testing with approved sandbox accounts.
 
 ## Routes
 
-| Route | Description |
-|-------|-------------|
+| Route | Purpose |
+| --- | --- |
 | `/sign-in`, `/sign-up` | Coach authentication |
-| `/onboarding` | Create first team |
-| `/team/[teamId]` | Dashboard |
+| `/forgot-password`, `/reset-password`, `/2fa` | Account recovery and two-factor authentication |
+| `/onboarding` | Create the first team |
+| `/team/[teamId]` | Team dashboard |
 | `/team/[teamId]/roster` | Swimmer roster |
-| `/team/[teamId]/meets` | Meet management |
+| `/team/[teamId]/meets` | Meets, entries, and results |
+| `/team/[teamId]/workouts` | Workouts |
 | `/team/[teamId]/attendance` | Practice attendance |
-| `/team/[teamId]/progression` | Per-swimmer time trends and meet history |
+| `/team/[teamId]/calendar` | Team calendar |
+| `/team/[teamId]/progression` | Time trends and meet history |
 | `/team/[teamId]/analytics` | Team volume, attendance, and top times |
-| `/team/[teamId]/settings` | Team settings |
+| `/team/[teamId]/settings` | Team settings and logo |
+| `/team/[teamId]/settings/account` | Account settings and avatar |
 | `/team/[teamId]/settings/billing` | Subscription management |
 | `/team/[teamId]/settings/usa-swimming` | SWIMS integration |
 
-## Workspace packages
+## Verify
 
-- `@project-aqua/swim-core` — Domain types, validators, plan limits
-- `@project-aqua/db` — Drizzle schema, queries, authz
-- `@project-aqua/auth` — Better Auth server/client
-- `@project-aqua/emails` — Transactional email templates
-- `@project-aqua/billing` — Stripe integration
-- `@project-aqua/usa-swimming` — SWIMS API client
-- `@project-aqua/swim-formats` — Meet/roster file parsers
+Run from the repository root:
+
+```bash
+pnpm check:types
+pnpm lint
+pnpm test
+pnpm build
+```
+
+If the development cache grows too large, stop the app before running `pnpm clean:admin`.
+
+See the [root deployment guide](../../README.md#deployment) for infrastructure, migration, and application deployment.

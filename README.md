@@ -1,55 +1,171 @@
-# Project Aqua (Placeholder)
+# Project Aqua
 
-Streamline team management and meet coordination effortlessly with our comprehensive software, providing intuitive tools for scheduling, communication, & results tracking in one unified platform.
+Project Aqua is a visiting-team swim coach SaaS for rosters, meet entries, results, workouts, attendance, and calendars.
 
-## What's inside?
+The coach app covers meets your team attends. Host-team entry merging, a family portal, and a timing console are outside the current scope.
 
-This Turborepo includes the following packages/apps:
+## Architecture
 
-### Apps and Packages
-
-- `web`: a [Next.js](https://nextjs.org/) app, take a look at it's [README](apps/web/README.md)
-- `admin`: a Next.js app for the admin dashboard
-- `desktop`: an [Electron](https://www.electronjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `admin` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd project-aqua
-npm run build
+```text
+Next.js client
+  -> Next.js server actions and route handlers
+     -> Better Auth session and team authorization
+        -> Drizzle + postgres.js -> Neon Postgres
+        -> AWS S3 SDK -> Neon Object Storage
 ```
 
-### Develop
+The Next.js backend owns database queries, authorization, uploads, and deletes. Browser components call that backend. Public logos and avatars are served through a same-origin route that resolves the current Neon branch's storage endpoint.
 
-To develop all apps and packages, run the following command:
+| Path | Purpose |
+| --- | --- |
+| `apps/admin` | Coach app |
+| `apps/web` | Marketing site |
+| `apps/desktop` | Electron app |
+| `packages/db` | Drizzle schema, migrations, and queries |
+| `packages/auth` | Better Auth configuration and authorization |
+| `packages/storage` | Server-side logo and avatar storage |
+| `packages/swim-core` | Swim domain logic |
+| `packages/swim-formats` | Meet and roster parsers and exporters |
+| `packages/reports` | PDF and print reports |
+| `packages/ui` | Shared UI components |
 
+## Local setup
+
+Install Node.js 24+ and pnpm 11.22.0. [Create a Neon account](https://console.neon.tech), then choose or create a project in AWS Ohio (`aws-us-east-2`) or Frankfurt (`aws-eu-central-1`). Neon Object Storage is currently available in those regions.
+
+Run from the repository root:
+
+```bash
+pnpm install
+cp .env.example .env.local
+npm i -g neon
+
+neon auth
+neon link --no-env-pull
+neon deploy
+neon env pull --file .env.local
 ```
-cd project-aqua
-npm run dev
+
+`neon.ts` declares the `team-logos` and `user-avatars` buckets. Linking first and deploying next provisions those buckets before their branch credentials are pulled.
+
+Generate a Better Auth secret:
+
+```bash
+openssl rand -base64 32
 ```
 
-## Useful Links
+Set `BETTER_AUTH_SECRET` in `.env.local`, then apply the schema and start the coach app:
 
-Learn more about the power of Turborepo:
+```bash
+pnpm db:migrate
+pnpm dev:admin
+```
 
-- [Tasks](https://turbo.build/repo/docs/core-concepts/monorepos/running-tasks)
-- [Caching](https://turbo.build/repo/docs/core-concepts/caching)
-- [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching)
-- [Filtering](https://turbo.build/repo/docs/core-concepts/monorepos/filtering)
-- [Configuration Options](https://turbo.build/repo/docs/reference/configuration)
-- [CLI Usage](https://turbo.build/repo/docs/reference/command-line-reference)
+Open [localhost:3001](http://localhost:3001), sign up, and create a team.
+
+The repository ignores `.env.local`, `.neon`, and generated MCP configuration. Keep credentials and linked project identifiers in those local files.
+
+## Agent setup
+
+The repository checks in the Neon skills installed by:
+
+```bash
+neon skills -y \
+  --agent cursor \
+  --agent claude-code \
+  --skill neon \
+  --skill neon-postgres \
+  --skill neon-postgres-branches
+```
+
+After `neon link`, configure project-local OAuth MCP:
+
+```bash
+pnpm neon:mcp
+```
+
+The script reads the project ID from `.neon`, writes local Cursor and Claude Code configuration, and pins MCP tools to that project. Each agent requests Neon authorization on first use.
+
+For a global Cursor installation with API-key authentication:
+
+```bash
+neon mcp -y --agent cursor --project-id <project-id>
+```
+
+This pins the tools to the selected project and reuses an existing compatible MCP key or mints a project-scoped key.
+
+## Develop with branches
+
+Neon branches copy the database and object storage together. Each feature can start with production-like rows and files, then change both in isolation.
+
+Stop the app before switching branches:
+
+```bash
+neon checkout main
+neon checkout dev-meet-import --create
+pnpm db:migrate
+pnpm dev:admin
+```
+
+`neon checkout` updates `.neon` and `.env.local`. Restarting the app loads the selected branch's database and storage credentials.
+
+Inspect schema changes against the parent:
+
+```bash
+neon diff
+```
+
+Stop the app before returning:
+
+```bash
+neon checkout main
+pnpm dev:admin
+```
+
+Git and Neon branches are separate. Commit Drizzle schema changes and generated migrations through Git; child-branch data is not merged into the parent.
+
+Database and object-storage writes are isolated by Neon. Email, calendar, billing, and other third-party side effects are not. Leave those integration credentials empty on development branches unless you are using approved sandbox accounts. Production-derived branches can also contain sensitive data.
+
+## Environment variables
+
+Use [`.env.example`](.env.example) as the template.
+
+| Variables | Purpose |
+| --- | --- |
+| `DATABASE_URL` | Pooled application connection |
+| `DATABASE_URL_UNPOOLED` | Direct connection for Drizzle migrations |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Server-side storage credentials |
+| `AWS_ENDPOINT_URL_S3`, `AWS_REGION` | Branch storage endpoint and region |
+| `BETTER_AUTH_*`, `NEXT_PUBLIC_*` | Authentication and application origins |
+| `RESEND_*`, `EMAIL_FROM` | Email delivery |
+| `POLAR_*`, `STRIPE_*` | Billing integrations |
+| `GOOGLE_*`, `MICROSOFT_*` | Social login and calendar integrations |
+| `OPENAI_API_KEY` | Optional AI features |
+| `USA_SWIMMING_*` | Optional SWIMS integration |
+
+Neon fills the database and `AWS_*` values. Configure application and integration values separately.
+
+## Database changes
+
+The Drizzle schema lives in `packages/db/src/schema/`. Committed migrations and metadata live in `packages/db/drizzle/`.
+
+```bash
+pnpm db:generate
+pnpm db:migrate
+```
+
+Runtime traffic uses the pooled `DATABASE_URL`. Drizzle migrations prefer the direct `DATABASE_URL_UNPOOLED`.
+
+## Deployment
+
+Three commands cover separate parts of a release:
+
+```bash
+neon deploy       # apply neon.ts infrastructure to the selected branch
+pnpm db:migrate   # apply the Drizzle schema
+pnpm build        # build the Next.js applications
+```
+
+`neon deploy` provisions backend services. Deploy the Next.js apps through the application host with the selected branch's database and storage variables plus the application secrets from `.env.example`.
+
+See [the admin guide](apps/admin/README.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [AGENTS.md](AGENTS.md).

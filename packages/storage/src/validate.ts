@@ -23,7 +23,6 @@ const MIME_TO_EXT: Record<AllowedImageMimeType, string> = {
 export type ImageInput = {
   data: ArrayBuffer | Uint8Array | Buffer;
   mimeType: string;
-  /** Optional original filename for extension fallback */
   fileName?: string;
   size?: number;
 };
@@ -50,11 +49,7 @@ export function validateImageFile(input: ImageInput): {
   size: number;
   ext: string;
 } {
-  const size =
-    input.size ??
-    (input.data instanceof ArrayBuffer
-      ? input.data.byteLength
-      : input.data.byteLength);
+  const size = input.data.byteLength;
 
   if (size <= 0) {
     throw new ImageValidationError("Image file is empty");

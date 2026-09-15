@@ -228,7 +228,7 @@ export const swimmerBestTimes = pgTable("swimmer_best_times", {
   timeMs: integer("time_ms").notNull(),
   achievedAt: timestamp("achieved_at").notNull(),
   meetId: text("meet_id").references(() => meets.id, { onDelete: "set null" }),
-  /** Snapshot so other teams can see PR venue without meet-row RLS. */
+  /** Snapshot keeps the recorded venue stable when the source meet changes. */
   meetName: text("meet_name"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

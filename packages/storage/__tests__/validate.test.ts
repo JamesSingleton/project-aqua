@@ -25,9 +25,8 @@ describe("validateImageFile", () => {
 
     expect(() =>
       validateImageFile({
-        data: new Uint8Array([1]),
+        data: new Uint8Array(MAX_IMAGE_BYTES + 1),
         mimeType: "image/png",
-        size: MAX_IMAGE_BYTES + 1,
       }),
     ).toThrow(/MB or smaller/);
 
