@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789449161826,
+      "tag": "0000_windy_wolf_cub",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789449162382,
+      "tag": "0001_seed-swim-events",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789450437418,
+      "tag": "0002_parched_old_lace",
+      "breakpoints": true
+    }
+  ]
+}

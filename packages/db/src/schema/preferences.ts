@@ -1,4 +1,6 @@
+import { sql } from "drizzle-orm";
 import {
+  check,
   index,
   jsonb,
   pgTable,
@@ -22,13 +24,22 @@ export type TeamUiState = {
   meetEntriesView?: MeetEntriesView;
 };
 
-export const userPreferences = pgTable("user_preferences", {
-  userId: text("user_id")
-    .primaryKey()
-    .references(() => user.id, { onDelete: "cascade" }),
-  theme: text("theme").$type<ThemePreference>().notNull().default("system"),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+export const userPreferences = pgTable(
+  "user_preferences",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => user.id, { onDelete: "cascade" }),
+    theme: text("theme").$type<ThemePreference>().notNull().default("system"),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    check(
+      "user_preferences_theme_check",
+      sql`${table.theme} in ('light', 'dark', 'system')`,
+    ),
+  ],
+);
 
 export const userTeamPreferences = pgTable(
   "user_team_preferences",

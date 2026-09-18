@@ -150,7 +150,7 @@ export const auditLog = pgTable(
   (table) => [
     index("idx_audit_log_org_created").on(
       table.organizationId,
-      table.createdAt,
+      table.createdAt.desc().nullsFirst(),
     ),
   ],
 );

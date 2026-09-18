@@ -7,7 +7,6 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "lcov"],
-      // Pure validation only — Supabase client/upload modules need network mocks.
       include: ["src/validate.ts"],
       exclude: [
         "src/client.ts",

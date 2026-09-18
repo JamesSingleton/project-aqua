@@ -7,7 +7,7 @@ import {
   webhooks,
 } from "@polar-sh/better-auth";
 import { Polar } from "@polar-sh/sdk";
-import { dbAdmin } from "@project-aqua/db/client";
+import { db } from "@project-aqua/db/client";
 import {
   createDefaultSubscription,
   getTeamPlan,
@@ -129,7 +129,7 @@ function createAuth(polarClient: Polar) {
     .filter(Boolean);
 
   return betterAuth({
-    database: drizzleAdapter(dbAdmin, {
+    database: drizzleAdapter(db, {
       provider: "pg",
       schema: authSchema,
     }),
@@ -285,7 +285,7 @@ function createAuth(polarClient: Polar) {
           },
           afterAcceptInvitation: async ({ invitation, user, organization }) => {
             if (!invitation.inviterId) return;
-            const [inviter] = await dbAdmin
+            const [inviter] = await db
               .select({ email: schema.user.email })
               .from(schema.user)
               .where(eq(schema.user.id, invitation.inviterId))
@@ -300,7 +300,7 @@ function createAuth(polarClient: Polar) {
           },
           afterAddMember: async ({ member, user, organization }) => {
             if (member.role === "owner") return;
-            const owners = await dbAdmin
+            const owners = await db
               .select({ email: schema.user.email })
               .from(schema.member)
               .innerJoin(schema.user, eq(schema.member.userId, schema.user.id))
