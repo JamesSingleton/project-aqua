@@ -14,7 +14,6 @@
         "NEXT_PUBLIC_*",
         "DATABASE_URL",
         "DATABASE_URL_UNPOOLED",
-        "POSTGRES_URL",
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
         "AWS_ENDPOINT_URL_S3",
@@ -39,7 +38,6 @@
         "NEXT_PUBLIC_*",
         "DATABASE_URL",
         "DATABASE_URL_UNPOOLED",
-        "POSTGRES_URL",
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
         "AWS_ENDPOINT_URL_S3",
@@ -73,7 +71,6 @@
         "SKIP_ENV_VALIDATION",
         "DATABASE_URL",
         "DATABASE_URL_UNPOOLED",
-        "POSTGRES_URL",
         "AWS_ACCESS_KEY_ID",
         "AWS_SECRET_ACCESS_KEY",
         "AWS_ENDPOINT_URL_S3",
@@ -87,16 +84,16 @@
     },
     "db:generate": {
       "cache": false,
-      "env": ["DATABASE_URL", "DATABASE_URL_UNPOOLED", "POSTGRES_URL"]
+      "env": ["DATABASE_URL", "DATABASE_URL_UNPOOLED"]
     },
     "db:migrate": {
       "cache": false,
-      "env": ["DATABASE_URL", "DATABASE_URL_UNPOOLED", "POSTGRES_URL"]
+      "env": ["DATABASE_URL", "DATABASE_URL_UNPOOLED"]
     },
     "db:studio": {
       "persistent": true,
       "cache": false,
-      "env": ["DATABASE_URL", "DATABASE_URL_UNPOOLED", "POSTGRES_URL"]
+      "env": ["DATABASE_URL", "DATABASE_URL_UNPOOLED"]
     },
     "email:dev": {
       "persistent": true,

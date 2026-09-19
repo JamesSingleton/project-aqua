@@ -10,21 +10,18 @@ export const keys = () =>
     server: {
       DATABASE_URL: z.url().optional(),
       DATABASE_URL_UNPOOLED: z.url().optional(),
-      POSTGRES_URL: z.url().optional(),
     },
     runtimeEnv: {
       DATABASE_URL: process.env.DATABASE_URL,
       DATABASE_URL_UNPOOLED: process.env.DATABASE_URL_UNPOOLED,
-      POSTGRES_URL: process.env.POSTGRES_URL,
     },
   });
 
 export function getDatabaseUrl(): string {
-  const env = keys();
-  const url = env.DATABASE_URL ?? env.POSTGRES_URL;
+  const url = keys().DATABASE_URL;
   if (!url) {
     throw new Error(
-      "Missing DATABASE_URL or POSTGRES_URL. Set one in the environment.",
+      "Missing DATABASE_URL. Set it with `neon env pull` or the Vercel Neon integration.",
     );
   }
   return url;
@@ -32,10 +29,10 @@ export function getDatabaseUrl(): string {
 
 export function getMigrationDatabaseUrl(): string {
   const env = keys();
-  const url = env.DATABASE_URL_UNPOOLED ?? env.DATABASE_URL ?? env.POSTGRES_URL;
+  const url = env.DATABASE_URL_UNPOOLED ?? env.DATABASE_URL;
   if (!url) {
     throw new Error(
-      "Missing DATABASE_URL_UNPOOLED, DATABASE_URL, or POSTGRES_URL. Run `neon env pull`.",
+      "Missing DATABASE_URL_UNPOOLED or DATABASE_URL. Run `neon env pull`.",
     );
   }
   return url;
