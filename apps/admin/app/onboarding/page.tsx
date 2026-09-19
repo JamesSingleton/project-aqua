@@ -682,6 +682,7 @@ export default function OnboardingPage() {
               </Button>
               {stepIndex < STEPS.length - 1 ? (
                 <Button
+                  key="next"
                   type="button"
                   size="lg"
                   disabled={isSubmitting}
@@ -691,7 +692,12 @@ export default function OnboardingPage() {
                   <ArrowRight data-icon="inline-end" />
                 </Button>
               ) : (
-                <Button type="submit" size="lg" disabled={isSubmitting}>
+                <Button
+                  key="submit"
+                  type="submit"
+                  size="lg"
+                  disabled={isSubmitting}
+                >
                   {isSubmitting ? "Creating…" : "Create team"}
                   {!isSubmitting ? <ArrowRight data-icon="inline-end" /> : null}
                 </Button>
