@@ -23,7 +23,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
-    "cn": "^0.2.6",
+    "cn": "^0.3.0",
     "date-fns": "^4.4.0",
     "lucide-react": "catalog:",
     "react": "catalog:",
@@ -40,7 +40,7 @@
   "devDependencies": {
     "@project-aqua/typescript-config": "workspace:*",
     "@tailwindcss/postcss": "^4.3.3",
-    "@turbo/gen": "^2.10.13",
+    "@turbo/gen": "^2.11.0",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

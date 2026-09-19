@@ -17,7 +17,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^4.0.69",
+    "@ai-sdk/openai": "^4.0.70",
     "@hookform/resolvers": "^5.9.1",
     "@project-aqua/auth": "workspace:*",
     "@project-aqua/billing": "workspace:*",
@@ -33,7 +33,7 @@
     "@t3-oss/env-nextjs": "catalog:",
     "@tanstack/react-query": "^5.103.1",
     "@tanstack/react-table": "^9.2.4",
-    "ai": "^7.0.105",
+    "ai": "^7.0.106",
     "better-auth": "catalog:",
     "geist": "^1.7.2",
     "lucide-react": "catalog:",
