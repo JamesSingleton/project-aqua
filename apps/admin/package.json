@@ -17,7 +17,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^4.0.66",
+    "@ai-sdk/openai": "^4.0.69",
     "@hookform/resolvers": "^5.9.1",
     "@project-aqua/auth": "workspace:*",
     "@project-aqua/billing": "workspace:*",
@@ -30,9 +30,10 @@
     "@project-aqua/swim-formats": "workspace:*",
     "@project-aqua/ui": "workspace:*",
     "@project-aqua/usa-swimming": "workspace:*",
-    "@tanstack/react-query": "^5.102.8",
+    "@t3-oss/env-nextjs": "catalog:",
+    "@tanstack/react-query": "^5.103.1",
     "@tanstack/react-table": "^9.2.4",
-    "ai": "^7.0.99",
+    "ai": "^7.0.105",
     "better-auth": "catalog:",
     "geist": "^1.7.2",
     "lucide-react": "catalog:",
@@ -43,7 +44,6 @@
     "react-dom": "catalog:",
     "react-hook-form": "^7.88.0",
     "react-qr-code": "^2.2.0",
-    "@t3-oss/env-nextjs": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
