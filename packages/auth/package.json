@@ -42,6 +42,7 @@
     "next": "catalog:",
     "react": "catalog:",
     "typescript": "catalog:",
+    "vite": "catalog:",
     "vitest": "catalog:"
   }
 }

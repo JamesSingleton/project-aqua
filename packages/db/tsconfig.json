@@ -3,6 +3,7 @@
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "rootDir": ".",
     "outDir": "dist"
   },
   "include": ["src", "drizzle.config.ts"],
