@@ -1,14 +1,32 @@
 import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
 
+const paths = [
+  "/",
+  "/product",
+  "/product/roster",
+  "/product/meets",
+  "/product/workouts",
+  "/product/calendar",
+  "/product/progression",
+  "/product/analytics",
+  "/formats",
+  "/pricing",
+  "/story",
+  "/support",
+  "/privacy",
+  "/terms",
+  "/for/club",
+  "/for/high-school",
+];
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const headersList = await headers();
-  const domain = headersList.get("host") as string;
+  const host = headersList.get("host") ?? "projectaqua.com";
+  const protocol = host.includes("localhost") ? "http" : "https";
 
-  return [
-    {
-      url: `https://${domain}`,
-      lastModified: new Date(),
-    },
-  ];
+  return paths.map((path) => ({
+    url: `${protocol}://${host}${path}`,
+    lastModified: new Date(),
+  }));
 }

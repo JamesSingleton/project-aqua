@@ -26,6 +26,7 @@ coverage
 
 # Build Outputs
 .next/
+.next-screenshots/
 out/
 build
 dist

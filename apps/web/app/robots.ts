@@ -3,14 +3,14 @@ import { headers } from "next/headers";
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const headersList = await headers();
-  const domain = headersList.get("host") as string;
+  const host = headersList.get("host") ?? "projectaqua.com";
+  const protocol = host.includes("localhost") ? "http" : "https";
 
   return {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/team/", "/api/"],
     },
-    sitemap: `https://${domain}/sitemap.xml`,
+    sitemap: `${protocol}://${host}/sitemap.xml`,
   };
 }

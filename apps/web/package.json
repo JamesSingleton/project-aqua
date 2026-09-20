@@ -14,8 +14,6 @@
   },
   "dependencies": {
     "@project-aqua/ui": "workspace:*",
-    "date-fns": "^4.4.0",
-    "framer-motion": "^13.4.0",
     "geist": "^1.7.2",
     "lucide-react": "catalog:",
     "next": "catalog:",

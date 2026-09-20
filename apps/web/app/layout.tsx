@@ -1,26 +1,45 @@
 import "@project-aqua/ui/globals.css";
+import "./marketing.css";
 import { cn } from "@project-aqua/ui/lib/utils";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
-import type { Metadata } from "next";
-import { CTA } from "@/components/cta";
-import { Footer } from "@/components/footer";
-import Header from "@/components/header";
+import type { Metadata, Viewport } from "next";
+import { Syne } from "next/font/google";
 import { ThemeProvider } from "@/components/providers";
+import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE } from "@/lib/site";
+
+const syne = Syne({
+  subsets: ["latin"],
+  variable: "--font-syne",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://projectaqua.com"),
   title: {
-    template: "%s | Project Aqua",
-    default: "Project Aqua",
+    template: `%s | ${SITE_NAME}`,
+    default: SITE_TITLE,
   },
-  description:
-    "Project Aqua is the all-in-one solution for managing swim teams, tracking stats, registering for events, and setting up meets.",
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    type: "website",
+    siteName: SITE_NAME,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)" },
-    { media: "(prefers-color-scheme: dark)" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#171717" },
   ],
 };
 
@@ -30,25 +49,31 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={cn(
-          `${GeistSans.variable} ${GeistMono.variable}`,
-          "bg-background overflow-x-hidden",
-        )}
-      >
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={cn(GeistSans.variable, GeistMono.variable, syne.variable)}
+    >
+      <body className="bg-background text-foreground antialiased">
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <Header />
-          <main className="container mx-auto px-4 overflow-hidden md:overflow-visible">
-            {children}
-            <CTA />
-          </main>
-          <Footer />
+          <a
+            href="#content"
+            className="bg-primary text-primary-foreground sr-only z-50 focus-visible:not-sr-only focus-visible:absolute focus-visible:top-3 focus-visible:left-3 focus-visible:rounded-lg focus-visible:px-3 focus-visible:py-2"
+          >
+            Skip to content
+          </a>
+          <div
+            aria-hidden="true"
+            className="lane-grid pointer-events-none fixed inset-0 -z-10"
+          />
+          <SiteHeader />
+          <main id="content">{children}</main>
+          <SiteFooter />
         </ThemeProvider>
       </body>
     </html>

@@ -5,7 +5,11 @@ import { env } from "./env";
 void env;
 
 const nextConfig: NextConfig = {
+  devIndicators: false,
   allowedDevOrigins: ["127.0.0.1", "localhost", "192.168.1.166"],
+  ...(process.env.SCREENSHOT_DIST === "1"
+    ? { distDir: ".next-screenshots" }
+    : {}),
   async headers() {
     return [
       {
