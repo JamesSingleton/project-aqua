@@ -21,12 +21,14 @@ export const env = createEnv({
     USA_SWIMMING_API_URL: z.url().optional(),
   },
   client: {
+    NEXT_PUBLIC_DOCS_URL: z.url().optional(),
     NEXT_PUBLIC_MARKETING_URL: z.url().optional(),
   },
   runtimeEnv: {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     USA_SWIMMING_VENDOR_THUMBPRINT: process.env.USA_SWIMMING_VENDOR_THUMBPRINT,
     USA_SWIMMING_API_URL: process.env.USA_SWIMMING_API_URL,
+    NEXT_PUBLIC_DOCS_URL: process.env.NEXT_PUBLIC_DOCS_URL,
     NEXT_PUBLIC_MARKETING_URL: process.env.NEXT_PUBLIC_MARKETING_URL,
   },
 });

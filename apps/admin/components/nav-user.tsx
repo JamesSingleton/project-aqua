@@ -20,8 +20,15 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@project-aqua/ui/components/sidebar";
-import { BadgeCheck, ChevronsUpDown, CreditCard, LogOut } from "lucide-react";
+import {
+  BadgeCheck,
+  BookOpen,
+  ChevronsUpDown,
+  CreditCard,
+  LogOut,
+} from "lucide-react";
 import Link from "next/link";
+import { getDocsUrl } from "@/lib/docs-url";
 import { signOutToMarketing } from "@/lib/sign-out";
 
 export function NavUser({
@@ -54,6 +61,7 @@ export function NavUser({
 
   const accountHref = `/team/${teamId}/settings/account`;
   const billingHref = `/team/${teamId}/settings/billing`;
+  const docsHref = getDocsUrl();
 
   return (
     <SidebarMenu>
@@ -114,6 +122,13 @@ export function NavUser({
               >
                 <CreditCard />
                 Billing
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                nativeButton={false}
+                render={<a href={docsHref} target="_blank" rel="noreferrer" />}
+              >
+                <BookOpen />
+                Help & docs
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

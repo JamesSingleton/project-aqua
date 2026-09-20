@@ -4,6 +4,9 @@ export const APP_URL =
     ? "http://localhost:3001"
     : "https://project-aqua-admin.vercel.app");
 
+export const DOCS_URL =
+  process.env.NEXT_PUBLIC_DOCS_URL ?? "http://localhost:3004";
+
 export const SIGN_IN_URL = `${APP_URL}/sign-in`;
 export const SIGN_UP_URL = `${APP_URL}/sign-up`;
 export const GITHUB_URL = "https://github.com/JamesSingleton/project-aqua";

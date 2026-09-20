@@ -28,6 +28,7 @@ import { CtaLink } from "@/components/cta-link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
   audienceLinks,
+  DOCS_URL,
   PRIMARY_CTA,
   productLinks,
   SIGN_IN_URL,
@@ -82,6 +83,15 @@ export function SiteHeader() {
                   ))}
                 </ul>
               </NavigationMenuContent>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <NavigationMenuLink
+                render={<a href={DOCS_URL} target="_blank" rel="noreferrer" />}
+                className={navigationMenuTriggerStyle()}
+              >
+                Docs
+                <span className="sr-only"> (opens in a new tab)</span>
+              </NavigationMenuLink>
             </NavigationMenuItem>
             {topLinks.map((link) => (
               <NavigationMenuItem key={link.href}>
@@ -176,6 +186,20 @@ export function SiteHeader() {
                   ))}
                 </div>
                 <div className="flex flex-col gap-1">
+                  <SheetClose
+                    render={
+                      <a
+                        href={DOCS_URL}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-lg px-2 py-1.5 text-sm hover:bg-muted"
+                      />
+                    }
+                    nativeButton={false}
+                  >
+                    Docs
+                    <span className="sr-only"> (opens in a new tab)</span>
+                  </SheetClose>
                   {topLinks.map((link) => (
                     <SheetClose
                       key={link.href}

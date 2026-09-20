@@ -1,0 +1,12 @@
+{
+  "name": "@project-aqua/docs",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "mint dev --port 3004 --no-open",
+    "lint": "mint validate"
+  },
+  "devDependencies": {
+    "mint": "^4.2.909"
+  }
+}

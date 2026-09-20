@@ -16,6 +16,7 @@
     "clean:workspaces": "turbo clean",
     "dev": "dotenv -e .env.local -- turbo dev --parallel",
     "dev:admin": "dotenv -e .env.local -- turbo dev --filter=@project-aqua/admin",
+    "dev:docs": "turbo run dev --filter=@project-aqua/docs",
     "dev:web": "dotenv -e .env.local -- turbo dev --filter=@project-aqua/web",
     "start:admin": "dotenv -e .env.local -- turbo start --filter=@project-aqua/admin",
     "start:web": "dotenv -e .env.local -- turbo start --filter=@project-aqua/web",

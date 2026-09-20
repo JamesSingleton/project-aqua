@@ -5,6 +5,7 @@ import { CtaLink } from "@/components/cta-link";
 import { GithubStars } from "@/components/github-stars";
 import {
   audienceLinks,
+  DOCS_URL,
   GITHUB_URL,
   PRIMARY_CTA,
   productLinks,
@@ -16,6 +17,7 @@ const companyLinks = [
   { href: "/story", title: "Story" },
   { href: "/pricing", title: "Pricing" },
   { href: "/support", title: "Support" },
+  { href: DOCS_URL, title: "Docs", external: true },
   { href: GITHUB_URL, title: "GitHub", external: true },
 ] as const;
 

@@ -3,7 +3,10 @@ packages:
   - "packages/*"
 
 allowBuilds:
+  "@scarf/scarf": false
   esbuild: true
+  keytar: false
+  puppeteer: false
   sharp: true
 
 catalog:

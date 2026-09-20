@@ -1,0 +1,40 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Project Aqua Docs",
+  "description": "Guides for coaches using Project Aqua.",
+  "colors": {
+    "primary": "#0f766e",
+    "light": "#14b8a6",
+    "dark": "#0f766e"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Get started",
+        "pages": ["index", "getting-started", "team-setup"]
+      },
+      {
+        "group": "Run your team",
+        "pages": [
+          "roster",
+          "calendar-and-attendance",
+          "workouts",
+          "progression-and-analytics"
+        ]
+      },
+      {
+        "group": "Meets",
+        "pages": ["meets", "meet-files", "entries-and-results"]
+      },
+      {
+        "group": "Manage your account",
+        "pages": ["settings-and-billing", "support"]
+      }
+    ]
+  },
+  "footerSocials": {
+    "github": "https://github.com/JamesSingleton/project-aqua"
+  }
+}
