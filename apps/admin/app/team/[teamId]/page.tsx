@@ -121,47 +121,6 @@ function daysUntilDate(dateOnly: string, todayKey: string): number | null {
   return Math.ceil((start.getTime() - today.getTime()) / 86_400_000);
 }
 
-function dashboardDescription(
-  weekLabel: string,
-  season: {
-    label: string;
-    startsOn: string;
-    endsOn: string;
-  } | null,
-  todayKey: string,
-): string {
-  if (!season) return weekLabel;
-
-  const phase = seasonTrainingPhase(todayKey, season.startsOn, season.endsOn);
-  if (!phase) return weekLabel;
-
-  if (phase.status === "before") {
-    const start = parseDateOnly(season.startsOn);
-    const startsLabel = start
-      ? formatDateOnlyLabel(start, undefined, {
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        })
-      : season.startsOn;
-    return `${weekLabel} — Season starts ${startsLabel}`;
-  }
-
-  if (phase.status === "after") {
-    const end = parseDateOnly(season.endsOn);
-    const endsLabel = end
-      ? formatDateOnlyLabel(end, undefined, {
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        })
-      : season.endsOn;
-    return `${weekLabel} — ${season.label} ended ${endsLabel}`;
-  }
-
-  return `${weekLabel} — Week ${phase.week} of ${season.label}`;
-}
-
 export default async function TeamDashboardPage({
   params,
 }: {
@@ -374,7 +333,7 @@ export default async function TeamDashboardPage({
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Dashboard"
-        description={dashboardDescription(weekLabel, season, todayKey)}
+        description={weekLabel}
         actions={
           <>
             <Button

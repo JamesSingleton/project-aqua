@@ -172,3 +172,79 @@ export type SplitSheetReport = ReportChrome & {
   events: SplitSheetEvent[];
   swimmers: SplitSheetSwimmer[];
 };
+
+/** Input rows for the Analytics team best-times clipboard report (SCY v1). */
+export type TeamBestTimesReportInputRow = {
+  swimmerId: string;
+  swimmerName: string;
+  gender: "male" | "female";
+  eventKey: string;
+  course: ReportCourse;
+  timeMs: number;
+};
+
+export type TeamBestTimesReportInput = {
+  teamName: string;
+  teamCode?: string | null;
+  coachName?: string | null;
+  coachEmail?: string | null;
+  generatedAt?: Date;
+  times: TeamBestTimesReportInputRow[];
+};
+
+export type TeamBestTimesTimeRow = {
+  swimmerId: string;
+  swimmerName: string;
+  gender: "male" | "female";
+  eventKey: string;
+  distance: number;
+  stroke: string;
+  course: ReportCourse;
+  timeMs: number;
+};
+
+export type TeamBestTimesMatrixColumn = {
+  eventKey: string;
+  label: string;
+  distance: number;
+  stroke: string;
+};
+
+export type TeamBestTimesMatrixRow = {
+  swimmerId: string;
+  swimmerName: string;
+  timesByEventKey: Record<string, number | null>;
+};
+
+export type TeamBestTimesGenderSection = {
+  gender: "female" | "male";
+  genderLabel: string;
+  columns: TeamBestTimesMatrixColumn[];
+  rows: TeamBestTimesMatrixRow[];
+};
+
+export type TeamBestTimesRelayLeg = {
+  legOrder: number;
+  roleLabel: string;
+  swimmerId: string;
+  swimmerName: string;
+  splitTimeMs: number;
+  splitLabel: string;
+};
+
+export type TeamBestTimesRelaySuggestion = {
+  eventKey: string;
+  title: string;
+  gender: "female" | "male";
+  genderLabel: string;
+  letter: string;
+  seedTimeMs: number;
+  seedLabel: string;
+  legs: TeamBestTimesRelayLeg[];
+};
+
+export type TeamBestTimesReport = ReportChrome & {
+  course: "SCY";
+  sections: TeamBestTimesGenderSection[];
+  relaySuggestions: TeamBestTimesRelaySuggestion[];
+};

@@ -72,6 +72,28 @@ const GENDER_OPTIONS = [
   { value: "mixed", label: "Mixed" },
 ] as const;
 
+/** Entries/results packs omit empty events; EV3/HYV/XLS carry the full schedule. */
+function isEntriesOnlyIncompleteSchedule(
+  format: ReturnType<typeof detectMeetFileFormat> | string,
+  sourceFiles?: string[],
+): boolean {
+  const fromSources = (sourceFiles ?? [])
+    .map((name) => detectMeetFileFormat(name))
+    .filter((f): f is NonNullable<typeof f> => f != null);
+  const formats =
+    fromSources.length > 0
+      ? fromSources
+      : format
+        ? [format as NonNullable<ReturnType<typeof detectMeetFileFormat>>]
+        : [];
+  if (formats.length === 0) return false;
+  const hasEventTemplate = formats.some(
+    (f) => f === "ev3" || f === "hyv" || f === "xls",
+  );
+  if (hasEventTemplate) return false;
+  return formats.some((f) => f === "hy3" || f === "cl2" || f === "sdif");
+}
+
 export type MeetImportOption = {
   id: string;
   name: string;
@@ -585,6 +607,23 @@ export function MeetImportButton({
                 </Alert>
               ) : null}
 
+              {isEntriesOnlyIncompleteSchedule(
+                preview.format,
+                preview.sourceFiles,
+              ) ? (
+                <Alert>
+                  <AlertTriangleIcon />
+                  <AlertTitle>Event list may be incomplete</AlertTitle>
+                  <AlertDescription>
+                    Entries files (CL2/HY3/SD3) only include events that have at
+                    least one swimmer or relay team. Empty events and relays
+                    with no teams will not appear. If you have the host EV3 or
+                    HYV event file, upload it with this pack (or as a ZIP) for
+                    the full schedule.
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+
               {preview.eventConflicts && preview.eventConflicts.length > 0 ? (
                 <div className="space-y-3 rounded-lg border p-3">
                   <div className="space-y-1">
@@ -837,11 +876,10 @@ export function MeetImportButton({
                         prev ? { ...prev, entryDeadline } : prev,
                       )
                     }
-                    placeholder="Optional"
-                    allowClear
+                    placeholder="Required"
                   />
                   <FieldDescription>
-                    When entries are due to the meet host.
+                    Required: when entries are due to the meet host.
                   </FieldDescription>
                 </Field>
                 <Field>
@@ -1060,7 +1098,9 @@ export function MeetImportButton({
                 </Button>
                 <Button
                   type="button"
-                  disabled={busy || !review.name.trim()}
+                  disabled={
+                    busy || !review.name.trim() || !review.entryDeadline.trim()
+                  }
                   onClick={() => void commitImport()}
                 >
                   {busy ? "Importing…" : "Confirm import"}

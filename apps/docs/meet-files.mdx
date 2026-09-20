@@ -25,6 +25,36 @@ Project Aqua uses the files meet software already exchanges. Choose the file tha
 2. Keep the original download until the import is reviewed.
 3. Select the file from the meet import flow and address any reported unmatched records.
 
+## Verify course and deadline
+
+The import review shows the host’s meet course and entry deadline. Confirm both before completing the import.
+
+Hy-Tek course codes can describe an **entry-time policy**, rather than the
+physical pool. For example, `Y`, `YO`, `YSL`, and `YLS` tell Team Manager how
+to choose or convert a swimmer’s entry time. They do not, by themselves,
+identify whether the meet is swum in SCY, SCM, or LCM. Set the course to the
+actual competition pool in the review when needed.
+
+<Note>
+  Multi-course policies such as `YLS` and `YSL` prioritize qualifying times
+  across multiple courses. Project Aqua currently supports a single
+  competition course for meet events; verify the host’s entry rules and
+  qualifying standards before submitting entries for a multi-course-cut meet.
+</Note>
+
+The host entry deadline must be a real deadline supplied by the host. Do not
+assume that a same-day date is correct—confirm it with the meet announcement
+or host before importing.
+
+## Entries packs vs event files
+
+CL2, HY3, and SD3 **entries** files only list events that already have at least
+one swimmer or relay team. Empty events and relays with no teams will not
+appear. Prefer uploading the host **EV3** or **HYV** event file together with
+the entries pack (or inside the same ZIP) when you need the full schedule.
+Project Aqua prefers EV3/HYV when both are present and does not invent missing
+events from an entries-only file.
+
 ## Exporting entries
 
 Export HY3 or CL2 when the host uses Meet Manager, or SDIF when that is the requested interchange. Review your entries and relays before sending the export to the host.

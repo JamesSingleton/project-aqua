@@ -7,16 +7,6 @@ const teamTypeValues = TEAM_TYPES.map((t) => t.value) as [
   ...TeamType[],
 ];
 
-const optionalCapSchema = z.string().refine(
-  (value) => {
-    const raw = value.trim();
-    if (raw === "") return true;
-    const n = Number.parseInt(raw, 10);
-    return Number.isInteger(n) && n >= 1;
-  },
-  { message: "Enter 1 or more, or leave blank for unlimited" },
-);
-
 export const onboardingFormSchema = z.object({
   teamName: z
     .string()
@@ -26,8 +16,6 @@ export const onboardingFormSchema = z.object({
   teamType: z.enum(teamTypeValues, {
     message: "Select a team type",
   }),
-  maxScoringEntriesPerIndividualEvent: optionalCapSchema,
-  maxRelayTeamsPerEvent: optionalCapSchema,
   coachFirstName: firstNameSchema,
   coachLastName: lastNameSchema,
   coachTitle: z.string().trim().max(80, "Title is too long"),
@@ -36,12 +24,7 @@ export const onboardingFormSchema = z.object({
 
 export type OnboardingFormValues = z.infer<typeof onboardingFormSchema>;
 
-export const TEAM_STEP_FIELDS = [
-  "teamName",
-  "teamType",
-  "maxScoringEntriesPerIndividualEvent",
-  "maxRelayTeamsPerEvent",
-] as const;
+export const TEAM_STEP_FIELDS = ["teamName", "teamType"] as const;
 export const COACH_STEP_FIELDS = [
   "coachFirstName",
   "coachLastName",

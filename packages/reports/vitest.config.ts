@@ -10,6 +10,7 @@ export default defineConfig({
       include: [
         "src/meet-entries/**/*.ts",
         "src/split-sheet/**/*.ts",
+        "src/team-best-times/**/*.ts",
         "src/types.ts",
       ],
       exclude: ["src/templates/**"],

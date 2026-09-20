@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  buildTeamBestTimesReport,
+  formatTeamBestTimesCsv,
+} from "@project-aqua/reports/team-best-times";
 import { formatTime } from "@project-aqua/swim-core/times";
 import { Button } from "@project-aqua/ui/components/button";
 import { Input } from "@project-aqua/ui/components/input";
@@ -20,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@project-aqua/ui/components/table";
-import { XIcon } from "lucide-react";
+import { DownloadIcon, FileTextIcon, XIcon } from "lucide-react";
 import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
 import { LabeledCombobox } from "@/components/labeled-combobox";
@@ -28,6 +32,7 @@ import { LabeledCombobox } from "@/components/labeled-combobox";
 export type TopTimeRow = {
   swimmerName: string;
   swimmerId: string;
+  gender: "male" | "female";
   eventKey: string;
   eventLabel: string;
   course: "SCY" | "SCM" | "LCM";
@@ -38,7 +43,7 @@ export type TopTimeRow = {
 type GroupBy = "none" | "event" | "swimmer" | "course";
 type CourseFilter = "all" | "SCY" | "SCM" | "LCM";
 
-const DEFAULT_GROUP_BY: GroupBy = "event";
+const DEFAULT_GROUP_BY: GroupBy = "swimmer";
 const DEFAULT_COURSE_FILTER: CourseFilter = "all";
 const DEFAULT_EVENT_FILTER = "all";
 
@@ -85,12 +90,24 @@ function groupLabelFor(row: TopTimeRow, groupBy: GroupBy): string {
   return "";
 }
 
+function downloadCsv(filename: string, contents: string) {
+  const blob = new Blob([contents], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 export function TeamTopTimes({
   times,
   teamId,
+  teamName = "Team",
 }: {
   times: TopTimeRow[];
   teamId: string;
+  teamName?: string;
 }) {
   const [groupBy, setGroupBy] = useState<GroupBy>(DEFAULT_GROUP_BY);
   const [courseFilter, setCourseFilter] = useState<CourseFilter>(
@@ -156,6 +173,25 @@ export function TeamTopTimes({
   const showSwimmer = groupBy !== "swimmer";
   const showEvent = groupBy !== "event";
   const showCourse = groupBy !== "course";
+
+  function exportScyCsv() {
+    const report = buildTeamBestTimesReport({
+      teamName,
+      times: times.map((row) => ({
+        swimmerId: row.swimmerId,
+        swimmerName: row.swimmerName,
+        gender: row.gender,
+        eventKey: row.eventKey,
+        course: row.course,
+        timeMs: row.timeMs,
+      })),
+    });
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(
+      `${teamName.replace(/[^\w.-]+/g, "_") || "team"}_best_times_scy_${stamp}.csv`,
+      formatTeamBestTimesCsv(report),
+    );
+  }
 
   if (times.length === 0) {
     return (
@@ -254,6 +290,30 @@ export function TeamTopTimes({
             Clear filters
           </Button>
         ) : null}
+
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={exportScyCsv}
+          >
+            <DownloadIcon data-icon="inline-start" />
+            CSV (SCY)
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={
+              <a href={`/api/teams/${teamId}/reports/best-times`} download />
+            }
+          >
+            <FileTextIcon data-icon="inline-start" />
+            PDF (SCY)
+          </Button>
+        </div>
       </div>
 
       {filtered.length === 0 ? (

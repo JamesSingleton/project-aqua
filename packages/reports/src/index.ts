@@ -13,12 +13,17 @@ export {
   buildSplitSheetReport,
   SPLIT_SHEET_LANDSCAPE_BOX_THRESHOLD,
 } from "./split-sheet/build";
+export {
+  buildTeamBestTimesReport,
+  formatTeamBestTimesCsv,
+} from "./team-best-times/build";
 export { MeetEntriesHtmlReport } from "./templates/html/meet-entries";
 export { SplitSheetHtmlReport } from "./templates/html/split-sheet";
 export {
   ensureReportFonts,
   MeetEntriesPdfDocument,
   SplitSheetPdfDocument,
+  TeamBestTimesPdfDocument,
 } from "./templates/pdf";
 export type {
   MeetEntriesReport,
@@ -36,4 +41,12 @@ export type {
   SplitSheetMark,
   SplitSheetReport,
   SplitSheetSwimmer,
+  TeamBestTimesGenderSection,
+  TeamBestTimesMatrixColumn,
+  TeamBestTimesMatrixRow,
+  TeamBestTimesRelayLeg,
+  TeamBestTimesRelaySuggestion,
+  TeamBestTimesReport,
+  TeamBestTimesReportInput,
+  TeamBestTimesReportInputRow,
 } from "./types";

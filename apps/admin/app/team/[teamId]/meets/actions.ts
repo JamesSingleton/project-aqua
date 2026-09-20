@@ -56,7 +56,13 @@ import {
   checkQualifyingTime,
   isRelayStroke,
 } from "@project-aqua/swim-core/entry-limits";
-import { isSwimmerEligibleForEvent } from "@project-aqua/swim-core/events";
+import {
+  buildEventKey,
+  type EventGender,
+  isSwimmerEligibleForEvent,
+  type RelayStroke,
+  type Stroke,
+} from "@project-aqua/swim-core/events";
 import { suggestIndividualLineup } from "@project-aqua/swim-core/lineup-suggest";
 import {
   type FileAthleteMatch,
@@ -940,6 +946,11 @@ export async function importMeetFileAction(
     if (review?.course) parsed.course = review.course;
     if (review?.location !== undefined) parsed.location = review.location;
     if (review?.address !== undefined) parsed.address = review.address;
+    if (!parsed.entryDeadline?.trim()) {
+      throw new Error(
+        "Enter the host entry deadline before importing this meet file.",
+      );
+    }
     if (review?.events?.length) {
       parsed.events = review.events.map((e) => ({
         eventNumber: e.eventNumber,
@@ -1751,16 +1762,44 @@ export const getMeetDetailAction = cache(async function getMeetDetailAction(
       getMeetRelayTeams(meetId),
     ]);
 
-  const eventKeys = events.map((e) => e.eventKey);
-  const splitKeys = events.flatMap((e) => {
-    if (!isRelayStroke(e.stroke, e.eventKey)) return [];
-    return ["free", "back", "breast", "fly"].map((stroke) =>
-      e.eventKey.replace(/_(free_relay|medley_relay)_/, `_${stroke}_`),
-    );
+  const eventKeyForMeetCourse = (event: (typeof events)[number]) =>
+    event.eventKind === "dive"
+      ? event.eventKey
+      : buildEventKey(
+          event.distance,
+          event.stroke as Stroke | RelayStroke,
+          meet.course,
+          event.gender as EventGender,
+        );
+  const eventKeyForBestTime = new Map<string, string>();
+  const eventKeys = events.map((event) => {
+    const key = eventKeyForMeetCourse(event);
+    eventKeyForBestTime.set(key, event.eventKey);
+    return key;
   });
-  const bestTimes = await getRosterBestTimesForEvents(teamId, [
-    ...new Set([...eventKeys, ...splitKeys]),
-  ]);
+  const splitKeys = events.flatMap((event) => {
+    const eventKey = eventKeyForMeetCourse(event);
+    if (!isRelayStroke(event.stroke, eventKey)) return [];
+    return ["free", "back", "breast", "fly"].map((stroke) => {
+      const key = eventKey.replace(
+        /_(free_relay|medley_relay)_/,
+        `_${stroke}_`,
+      );
+      eventKeyForBestTime.set(
+        key,
+        event.eventKey.replace(/_(free_relay|medley_relay)_/, `_${stroke}_`),
+      );
+      return key;
+    });
+  });
+  const bestTimes = (
+    await getRosterBestTimesForEvents(teamId, [
+      ...new Set([...eventKeys, ...splitKeys]),
+    ])
+  ).map((bestTime) => ({
+    ...bestTime,
+    eventKey: eventKeyForBestTime.get(bestTime.eventKey) ?? bestTime.eventKey,
+  }));
 
   return {
     meet,

@@ -692,6 +692,7 @@ export async function getTeamBestTimes(organizationId: string) {
       swimmerId: swimmerBestTimes.swimmerId,
       firstName: swimmers.firstName,
       lastName: swimmers.lastName,
+      gender: swimmers.gender,
       eventKey: swimmerBestTimes.eventKey,
       eventLabel: swimEvents.label,
       eventGender: swimEvents.gender,

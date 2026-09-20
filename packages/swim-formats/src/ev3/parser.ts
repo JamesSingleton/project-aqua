@@ -178,9 +178,13 @@ export function parseEv3(
     };
   }
 
-  const courseHint = (header[5] || "").toUpperCase();
-  if (courseHint.includes("L") || courseHint === "LCM") meet.course = "LCM";
-  else if (courseHint.includes("M") && !courseHint.includes("Y"))
+  const courseHint = (header[5] || "").trim().toUpperCase();
+  // Meet Manager writes extended yard codes such as `YLS`; checking whether
+  // the field merely contains "L" incorrectly turns those into long course
+  // meters. The leading course code is authoritative.
+  if (courseHint.startsWith("Y")) meet.course = "SCY";
+  else if (courseHint.startsWith("L")) meet.course = "LCM";
+  else if (courseHint.startsWith("S") || courseHint === "M")
     meet.course = "SCM";
   else meet.course = "SCY";
 

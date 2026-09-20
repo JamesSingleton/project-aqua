@@ -15,6 +15,19 @@ function byEventNumber(events: ParsedEvent[], n: number) {
 }
 
 describe("parseEv3", () => {
+  it("treats the Hy-Tek YLS course code as SCY", () => {
+    const meet = parseEv3(
+      [
+        "2024 Charger Swim Dive Invitational;McClintock High School Pool;10/20/2026;10/20/2026;10/20/2026;YLS;0;0;0;Created by Hy-Tek's MEET MANAGER;Rio Salado Swim Club;8.0Gh;08/24/2026;3;;0;01/01/1970;0;4;2;3;6;H;10/20/2026",
+        "9;9;F;1;I;B;0;109;100;D;0",
+      ].join("\n"),
+    );
+
+    expect(meet.course).toBe("SCY");
+    expect(meet.entryDeadline).toBe("2026-10-20");
+    expect(byEventNumber(meet.events, 9)?.eventKey).toBe("100_fly_scy_m");
+  });
+
   it("parses Sonoran gender, strokes, and relays correctly", () => {
     const content = readFileSync(
       join(fixturesDir, "sonoran-events.ev3"),

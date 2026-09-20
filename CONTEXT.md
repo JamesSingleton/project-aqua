@@ -23,3 +23,9 @@ _Avoid_: matrix, by-name board
 **Association event cap**:
 Max scoring (non-exhibition) names per individual event, and max relay teams (A/B/C) per relay event, from the team’s high-school association. Not the per-athlete EV3 entry limits, and not a governing-body lookup table.
 _Avoid_: AIA table, CIF table, max entries per athlete
+
+**Competition course**:
+The physical pool course for a meet: SCY, SCM, or LCM. It identifies event keys, results, and personal bests.
+
+**Entry-time policy**:
+The host software’s rule for selecting a swimmer’s seed time. A Hy-Tek code such as `Y`, `YO`, or `YLS` may require conversion, an exact-course time, or course-priority qualifying checks. It is distinct from the competition course.

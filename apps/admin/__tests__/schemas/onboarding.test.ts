@@ -5,8 +5,6 @@ describe("onboardingFormSchema", () => {
   const valid = {
     teamName: "Aqua Club",
     teamType: "club" as const,
-    maxScoringEntriesPerIndividualEvent: "",
-    maxRelayTeamsPerEvent: "",
     coachFirstName: "Jamie",
     coachLastName: "Coach",
     coachTitle: "Head Coach",
@@ -40,20 +38,11 @@ describe("onboardingFormSchema", () => {
         coachTitle: "",
       }),
     ).toMatchObject({ teamName: "Aqua", coachFirstName: "Jamie" });
-    expect(() =>
-      onboardingFormSchema.parse({
-        ...valid,
-        teamType: "high_school",
-        maxScoringEntriesPerIndividualEvent: "0",
-      }),
-    ).toThrow();
     expect(
       onboardingFormSchema.parse({
         ...valid,
         teamType: "high_school",
-        maxScoringEntriesPerIndividualEvent: "4",
-        maxRelayTeamsPerEvent: "1",
-      }).maxScoringEntriesPerIndividualEvent,
-    ).toBe("4");
+      }).teamType,
+    ).toBe("high_school");
   });
 });

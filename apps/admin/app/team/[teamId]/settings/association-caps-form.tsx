@@ -55,9 +55,7 @@ export function AssociationCapsForm({
     <div className="flex max-w-lg flex-col gap-4">
       <FieldGroup className="grid gap-4 sm:grid-cols-2">
         <Field>
-          <FieldLabel htmlFor="assoc-scoring">
-            Scoring swimmers per individual event
-          </FieldLabel>
+          <FieldLabel htmlFor="assoc-scoring">Max scoring / event</FieldLabel>
           <Input
             id="assoc-scoring"
             type="number"
@@ -67,9 +65,15 @@ export function AssociationCapsForm({
             value={individual}
             onChange={(e) => setIndividual(e.target.value)}
           />
+          <FieldDescription>
+            Max scoring (non-exhibition) names from this school in one
+            individual event. Leave blank for unlimited.
+          </FieldDescription>
         </Field>
         <Field>
-          <FieldLabel htmlFor="assoc-relays">Teams per relay event</FieldLabel>
+          <FieldLabel htmlFor="assoc-relays">
+            Max relay teams / event
+          </FieldLabel>
           <Input
             id="assoc-relays"
             type="number"
@@ -79,13 +83,12 @@ export function AssociationCapsForm({
             value={relays}
             onChange={(e) => setRelays(e.target.value)}
           />
+          <FieldDescription>
+            Max relay teams (A/B/C) this school may enter in one relay. Leave
+            blank for unlimited. You can override these on a meet.
+          </FieldDescription>
         </Field>
       </FieldGroup>
-      <FieldDescription>
-        High-school association limit for scoring (non-exhibition) names from
-        this school. Leave blank for unlimited. Exhibition entries are not
-        counted. You can override these on a meet.
-      </FieldDescription>
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" disabled={pending} onClick={save}>
           {pending ? "Saving…" : "Save caps"}

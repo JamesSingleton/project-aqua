@@ -1,5 +1,6 @@
 import { getSession } from "@project-aqua/auth/session";
 import {
+  getOrganizationName,
   getOrganizationTeamType,
   requireTeamMember,
 } from "@project-aqua/db/authz";
@@ -59,6 +60,7 @@ export default async function AnalyticsPage({
     teamType,
     plan,
     sets,
+    teamName,
   ] = await Promise.all([
     getAnalyticsSummary(teamId),
     getVolumeSeries(teamId, 30),
@@ -67,6 +69,7 @@ export default async function AnalyticsPage({
     getOrganizationTeamType(teamId),
     getTeamPlan(teamId),
     listTimeStandardSets(teamId),
+    getOrganizationName(teamId),
   ]);
   const advancedAnalytics = planHasFeature(plan, "advanced_analytics");
   const cuts = advancedAnalytics
@@ -89,6 +92,7 @@ export default async function AnalyticsPage({
   const allTimes = bestTimes.map((bt) => ({
     swimmerName: `${bt.firstName} ${bt.lastName}`,
     swimmerId: bt.swimmerId,
+    gender: bt.gender,
     eventKey: bt.eventKey,
     eventLabel: formatBestTimeEventLabel(
       bt.eventLabel,
@@ -194,11 +198,15 @@ export default async function AnalyticsPage({
         <CardHeader>
           <CardTitle>Team Top Times</CardTitle>
           <CardDescription>
-            Fastest best times — group and filter to explore the roster
+            Fastest best times — export SCY clipboard CSV/PDF for meets
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <TeamTopTimes times={allTimes} teamId={teamId} />
+          <TeamTopTimes
+            times={allTimes}
+            teamId={teamId}
+            teamName={teamName ?? "Team"}
+          />
         </CardContent>
       </Card>
 
