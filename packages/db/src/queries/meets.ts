@@ -1385,11 +1385,33 @@ export async function updateMeetEvent(
     ageGroup?: string | null;
     eventKey?: string;
     qualifyingTimeMs?: number | null;
+    course?: "SCY" | "SCM" | "LCM";
   },
 ) {
   const patch: Record<string, unknown> = { ...data };
+  delete patch.course;
   if (data.gender) {
     patch.gender = parseEventGender(data.gender);
+  }
+  if (data.eventKey) {
+    const [current] = await db
+      .select({
+        distance: meetEvents.distance,
+        stroke: meetEvents.stroke,
+        gender: meetEvents.gender,
+      })
+      .from(meetEvents)
+      .where(and(eq(meetEvents.id, eventId), eq(meetEvents.meetId, meetId)))
+      .limit(1);
+    if (current) {
+      await ensureSwimEvent({
+        eventKey: data.eventKey,
+        distance: data.distance ?? current.distance,
+        stroke: data.stroke ?? current.stroke,
+        gender: data.gender ? parseEventGender(data.gender) : current.gender,
+        course: data.course ?? "SCY",
+      });
+    }
   }
   await db
     .update(meetEvents)

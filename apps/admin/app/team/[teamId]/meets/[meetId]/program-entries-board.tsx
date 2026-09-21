@@ -105,6 +105,12 @@ type RelayTeamRow = {
   seedTimeMs: number | null;
 };
 
+type BestTimeRow = {
+  membershipId: string;
+  eventKey: string;
+  timeMs: number;
+};
+
 function eventTitle(event: EventRow) {
   const num = event.eventNumber != null ? `#${event.eventNumber}` : "#—";
   return `${num} ${formatGenderLabel(event.gender)} ${formatEventName(event.distance, event.stroke)}`;
@@ -168,6 +174,7 @@ export function ProgramEntriesBoard({
   relayLegs,
   relayTeams,
   notGoingMembershipIds,
+  bestTimes = [],
 }: {
   teamId: string;
   meetId: string;
@@ -178,11 +185,29 @@ export function ProgramEntriesBoard({
   relayLegs: RelayLegRow[];
   relayTeams: RelayTeamRow[];
   notGoingMembershipIds: string[];
+  bestTimes?: BestTimeRow[];
 }) {
   const notGoing = useMemo(
     () => new Set(notGoingMembershipIds),
     [notGoingMembershipIds],
   );
+  const bestTimeByMembershipAndEvent = useMemo(() => {
+    const byMembership = new Map<string, Map<string, number>>();
+    for (const bestTime of bestTimes) {
+      const byEvent = byMembership.get(bestTime.membershipId) ?? new Map();
+      if (!byEvent.has(bestTime.eventKey)) {
+        byEvent.set(bestTime.eventKey, bestTime.timeMs);
+      }
+      byMembership.set(bestTime.membershipId, byEvent);
+    }
+    return byMembership;
+  }, [bestTimes]);
+
+  function bestSeedFor(membershipId: string, eventKey: string) {
+    return (
+      bestTimeByMembershipAndEvent.get(membershipId)?.get(eventKey) ?? null
+    );
+  }
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [selectedEventId, setSelectedEventId] = useState("");
@@ -530,6 +555,9 @@ export function ProgramEntriesBoard({
                   currentScoringCount: scoringCount,
                   candidateIsExhibition: false,
                 }).ok === false;
+              const bestSeed = bestSeedFor(membershipId, selected.eventKey);
+              const seedTimeMs =
+                bestSeed != null && bestSeed > 0 ? bestSeed : null;
               const tempId = `optimistic:${membershipId}:${crypto.randomUUID()}`;
               cancelledAddsRef.current.delete(tempId);
               setError(null);
@@ -543,7 +571,7 @@ export function ProgramEntriesBoard({
                   lastName: row.lastName,
                   status: "approved",
                   exhibition: asExhibition,
-                  seedTimeMs: null,
+                  seedTimeMs,
                 },
               ]);
               markBusy(membershipId, true);
@@ -554,6 +582,9 @@ export function ProgramEntriesBoard({
                     membershipId,
                     status: "approved",
                     exhibition: asExhibition,
+                    ...(seedTimeMs != null
+                      ? { seedTimeMs, seedTimeSource: "personal_best" as const }
+                      : {}),
                   });
                   if (cancelledAddsRef.current.has(tempId)) {
                     cancelledAddsRef.current.delete(tempId);

@@ -33,6 +33,16 @@ function eventsMatch(a: MeetEventSnapshot, b: MeetEventSnapshot): boolean {
   return a.eventKey === b.eventKey;
 }
 
+/** Same program slot (stroke/distance/gender); course in the key may differ. */
+export function sameProgramEventSlot(
+  a: MeetEventSnapshot,
+  b: MeetEventSnapshot,
+): boolean {
+  return (
+    a.stroke === b.stroke && a.distance === b.distance && a.gender === b.gender
+  );
+}
+
 /** Same event # but different stroke/distance/gender/key → coach must decide. */
 export function detectMeetEventImportConflicts(
   existing: MeetEventSnapshot[],
@@ -53,6 +63,8 @@ export function detectMeetEventImportConflicts(
     const manual = byNumber.get(importedSnap.eventNumber);
     if (!manual) continue;
     if (eventsMatch(manual, importedSnap)) continue;
+    // Course-only key drift (e.g. YLS→LCM then corrected to SCY) is auto-fixed.
+    if (sameProgramEventSlot(manual, importedSnap)) continue;
     conflicts.push({
       eventNumber: importedSnap.eventNumber,
       manual,
@@ -71,6 +83,13 @@ export function resolveImportedEventForMerge(
   if (!existing) return "add";
   if (eventsMatch(existing, imported)) {
     return existing.importedFromFile ? "refresh" : "skip";
+  }
+  if (
+    existing.importedFromFile &&
+    sameProgramEventSlot(existing, imported) &&
+    existing.eventKey !== imported.eventKey
+  ) {
+    return "replace";
   }
   if (!existing.importedFromFile) return "skip";
   if (resolution === "use_import") return "replace";

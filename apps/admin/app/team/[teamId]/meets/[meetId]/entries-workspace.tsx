@@ -201,6 +201,7 @@ function programPropsFromShared(
     ),
     relayTeams: shared.relayTeams,
     notGoingMembershipIds: shared.notGoingMembershipIds,
+    bestTimes: shared.bestTimes,
   };
 }
 

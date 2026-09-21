@@ -21,6 +21,7 @@ import {
   deleteMeet,
   deleteMeetCommitment,
   deleteMeetEntry,
+  getBestTimeMs,
   getMeetById,
   getMeetCommitments,
   getMeetEntriesDetailed,
@@ -1093,6 +1094,7 @@ export async function importMeetFileAction(
             eventKey: event.eventKey,
             ageGroup: event.ageGroup ?? null,
             qualifyingTimeMs: event.qualifyingTimeMs ?? null,
+            course: parsed.course,
           });
           eventIdByKey.set(event.eventKey, existingByNumber.id);
         } else if (decision === "refresh") {
@@ -2008,9 +2010,29 @@ export async function addMeetEntryAction(
   });
   if (!capCheck.ok) throw new Error(capCheck.reason);
 
+  let seedTimeMs = data.seedTimeMs;
   let seedTimeSource = data.seedTimeSource;
-  if (!seedTimeSource) {
-    if (data.seedTimeMs != null && data.seedTimeMs > 0) {
+  if (seedTimeMs === undefined) {
+    const lookupKey = buildEventKey(
+      event.distance,
+      event.stroke as Stroke | RelayStroke,
+      meet.course,
+      event.gender as EventGender,
+    );
+    const bestMs = await getBestTimeMs(
+      swimmer.swimmerId,
+      lookupKey,
+      meet.course,
+    );
+    if (bestMs != null && bestMs > 0) {
+      seedTimeMs = bestMs;
+      seedTimeSource = seedTimeSource ?? "personal_best";
+    } else {
+      seedTimeMs = null;
+      seedTimeSource = seedTimeSource ?? "no_time";
+    }
+  } else if (!seedTimeSource) {
+    if (seedTimeMs != null && seedTimeMs > 0) {
       seedTimeSource = "personal_best";
     } else {
       seedTimeSource = "no_time";
@@ -2021,7 +2043,7 @@ export async function addMeetEntryAction(
     meetId,
     data.meetEventId,
     data.membershipId,
-    data.seedTimeMs ?? null,
+    seedTimeMs,
     data.entryNotes,
     data.status ?? "draft",
     seedTimeSource,

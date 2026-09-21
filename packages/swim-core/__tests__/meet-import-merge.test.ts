@@ -118,4 +118,52 @@ describe("resolveImportedEventForMerge", () => {
       ),
     ).toBe("skip");
   });
+
+  it("auto-replaces course-only key drift on file-backed events", () => {
+    expect(
+      resolveImportedEventForMerge(
+        {
+          eventNumber: 9,
+          eventKey: "100_fly_lcm_m",
+          stroke: "fly",
+          distance: 100,
+          gender: "male",
+          importedFromFile: true,
+        },
+        {
+          eventNumber: 9,
+          eventKey: "100_fly_scy_m",
+          stroke: "fly",
+          distance: 100,
+          gender: "male",
+        },
+        undefined,
+      ),
+    ).toBe("replace");
+  });
+
+  it("does not treat course-only drift as a coach conflict", () => {
+    expect(
+      detectMeetEventImportConflicts(
+        [
+          {
+            eventNumber: 9,
+            eventKey: "100_fly_lcm_m",
+            stroke: "fly",
+            distance: 100,
+            gender: "male",
+          },
+        ],
+        [
+          {
+            eventNumber: 9,
+            eventKey: "100_fly_scy_m",
+            stroke: "fly",
+            distance: 100,
+            gender: "male",
+          },
+        ],
+      ),
+    ).toHaveLength(0);
+  });
 });
