@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 const publicRoutes = [
   "/sign-in",
   "/sign-up",
+  "/check-email",
   "/accept-invite",
   "/2fa",
   "/forgot-password",
