@@ -100,12 +100,8 @@
           "name": "attendance_records_practice_session_id_practice_sessions_id_fk",
           "tableFrom": "attendance_records",
           "tableTo": "practice_sessions",
-          "columnsFrom": [
-            "practice_session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["practice_session_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -113,12 +109,8 @@
           "name": "attendance_records_membership_id_team_swimmer_memberships_id_fk",
           "tableFrom": "attendance_records",
           "tableTo": "team_swimmer_memberships",
-          "columnsFrom": [
-            "membership_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["membership_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -206,12 +198,8 @@
           "name": "practice_sessions_organization_id_organization_id_fk",
           "tableFrom": "practice_sessions",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -219,12 +207,8 @@
           "name": "practice_sessions_workout_id_workouts_id_fk",
           "tableFrom": "practice_sessions",
           "tableTo": "workouts",
-          "columnsFrom": [
-            "workout_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workout_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -348,12 +332,8 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -462,12 +442,8 @@
           "name": "invitation_organization_id_organization_id_fk",
           "tableFrom": "invitation",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -475,12 +451,8 @@
           "name": "invitation_inviter_id_user_id_fk",
           "tableFrom": "invitation",
           "tableTo": "user",
-          "columnsFrom": [
-            "inviter_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["inviter_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -577,12 +549,8 @@
           "name": "member_organization_id_organization_id_fk",
           "tableFrom": "member",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -590,12 +558,8 @@
           "name": "member_user_id_user_id_fk",
           "tableFrom": "member",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -735,9 +699,7 @@
         "organization_slug_unique": {
           "name": "organization_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -796,9 +758,7 @@
         "rate_limit_key_unique": {
           "name": "rate_limit_key_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "key"
-          ]
+          "columns": ["key"]
         }
       },
       "policies": {},
@@ -888,12 +848,8 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -903,9 +859,7 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -998,12 +952,8 @@
           "name": "two_factor_user_id_user_id_fk",
           "tableFrom": "two_factor",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1090,9 +1040,7 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -1251,12 +1199,8 @@
           "name": "import_jobs_organization_id_organization_id_fk",
           "tableFrom": "import_jobs",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1350,12 +1294,8 @@
           "name": "subscriptions_organization_id_organization_id_fk",
           "tableFrom": "subscriptions",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1365,9 +1305,7 @@
         "subscriptions_organization_id_unique": {
           "name": "subscriptions_organization_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "organization_id"
-          ]
+          "columns": ["organization_id"]
         }
       },
       "policies": {},
@@ -1508,12 +1446,8 @@
           "name": "calendar_connections_organization_id_organization_id_fk",
           "tableFrom": "calendar_connections",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1521,12 +1455,8 @@
           "name": "calendar_connections_user_id_user_id_fk",
           "tableFrom": "calendar_connections",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1661,12 +1591,8 @@
           "name": "calendar_event_links_aqua_event_id_team_calendar_events_id_fk",
           "tableFrom": "calendar_event_links",
           "tableTo": "team_calendar_events",
-          "columnsFrom": [
-            "aqua_event_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["aqua_event_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1674,12 +1600,8 @@
           "name": "calendar_event_links_connection_id_calendar_connections_id_fk",
           "tableFrom": "calendar_event_links",
           "tableTo": "calendar_connections",
-          "columnsFrom": [
-            "connection_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["connection_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1775,12 +1697,8 @@
           "name": "calendar_feed_tokens_organization_id_organization_id_fk",
           "tableFrom": "calendar_feed_tokens",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1788,12 +1706,8 @@
           "name": "calendar_feed_tokens_created_by_user_id_user_id_fk",
           "tableFrom": "calendar_feed_tokens",
           "tableTo": "user",
-          "columnsFrom": [
-            "created_by_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1888,12 +1802,8 @@
           "name": "calendar_sync_conflicts_organization_id_organization_id_fk",
           "tableFrom": "calendar_sync_conflicts",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1901,12 +1811,8 @@
           "name": "calendar_sync_conflicts_aqua_event_id_team_calendar_events_id_fk",
           "tableFrom": "calendar_sync_conflicts",
           "tableTo": "team_calendar_events",
-          "columnsFrom": [
-            "aqua_event_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["aqua_event_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1914,12 +1820,8 @@
           "name": "calendar_sync_conflicts_connection_id_calendar_connections_id_fk",
           "tableFrom": "calendar_sync_conflicts",
           "tableTo": "calendar_connections",
-          "columnsFrom": [
-            "connection_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["connection_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2052,12 +1954,8 @@
           "name": "team_calendar_events_organization_id_organization_id_fk",
           "tableFrom": "team_calendar_events",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2065,12 +1963,8 @@
           "name": "team_calendar_events_practice_session_id_practice_sessions_id_fk",
           "tableFrom": "team_calendar_events",
           "tableTo": "practice_sessions",
-          "columnsFrom": [
-            "practice_session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["practice_session_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -2078,12 +1972,8 @@
           "name": "team_calendar_events_meet_id_meets_id_fk",
           "tableFrom": "team_calendar_events",
           "tableTo": "meets",
-          "columnsFrom": [
-            "meet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meet_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -2091,12 +1981,8 @@
           "name": "team_calendar_events_created_by_user_id_user_id_fk",
           "tableFrom": "team_calendar_events",
           "tableTo": "user",
-          "columnsFrom": [
-            "created_by_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2249,12 +2135,8 @@
           "name": "ai_generations_organization_id_organization_id_fk",
           "tableFrom": "ai_generations",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2262,12 +2144,8 @@
           "name": "ai_generations_user_id_user_id_fk",
           "tableFrom": "ai_generations",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2337,12 +2215,8 @@
           "name": "training_groups_organization_id_organization_id_fk",
           "tableFrom": "training_groups",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2447,12 +2321,8 @@
           "name": "meet_commitments_meet_id_meets_id_fk",
           "tableFrom": "meet_commitments",
           "tableTo": "meets",
-          "columnsFrom": [
-            "meet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meet_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2460,12 +2330,8 @@
           "name": "meet_commitments_membership_id_team_swimmer_memberships_id_fk",
           "tableFrom": "meet_commitments",
           "tableTo": "team_swimmer_memberships",
-          "columnsFrom": [
-            "membership_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["membership_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2606,12 +2472,8 @@
           "name": "meet_entries_meet_id_meets_id_fk",
           "tableFrom": "meet_entries",
           "tableTo": "meets",
-          "columnsFrom": [
-            "meet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meet_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2619,12 +2481,8 @@
           "name": "meet_entries_meet_event_id_meet_events_id_fk",
           "tableFrom": "meet_entries",
           "tableTo": "meet_events",
-          "columnsFrom": [
-            "meet_event_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meet_event_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2632,12 +2490,8 @@
           "name": "meet_entries_membership_id_team_swimmer_memberships_id_fk",
           "tableFrom": "meet_entries",
           "tableTo": "team_swimmer_memberships",
-          "columnsFrom": [
-            "membership_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["membership_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2721,12 +2575,8 @@
           "name": "meet_event_templates_organization_id_organization_id_fk",
           "tableFrom": "meet_event_templates",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2847,12 +2697,8 @@
           "name": "meet_events_meet_id_meets_id_fk",
           "tableFrom": "meet_events",
           "tableTo": "meets",
-          "columnsFrom": [
-            "meet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meet_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2860,12 +2706,8 @@
           "name": "meet_events_event_key_swim_events_event_key_fk",
           "tableFrom": "meet_events",
           "tableTo": "swim_events",
-          "columnsFrom": [
-            "event_key"
-          ],
-          "columnsTo": [
-            "event_key"
-          ],
+          "columnsFrom": ["event_key"],
+          "columnsTo": ["event_key"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2989,12 +2831,8 @@
           "name": "meet_relay_legs_meet_id_meets_id_fk",
           "tableFrom": "meet_relay_legs",
           "tableTo": "meets",
-          "columnsFrom": [
-            "meet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meet_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3002,12 +2840,8 @@
           "name": "meet_relay_legs_meet_event_id_meet_events_id_fk",
           "tableFrom": "meet_relay_legs",
           "tableTo": "meet_events",
-          "columnsFrom": [
-            "meet_event_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meet_event_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3015,12 +2849,8 @@
           "name": "meet_relay_legs_membership_id_team_swimmer_memberships_id_fk",
           "tableFrom": "meet_relay_legs",
           "tableTo": "team_swimmer_memberships",
-          "columnsFrom": [
-            "membership_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["membership_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3110,12 +2940,8 @@
           "name": "meet_relay_result_members_result_id_meet_relay_results_id_fk",
           "tableFrom": "meet_relay_result_members",
           "tableTo": "meet_relay_results",
-          "columnsFrom": [
-            "result_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["result_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3123,12 +2949,8 @@
           "name": "meet_relay_result_members_membership_id_team_swimmer_memberships_id_fk",
           "tableFrom": "meet_relay_result_members",
           "tableTo": "team_swimmer_memberships",
-          "columnsFrom": [
-            "membership_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["membership_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3231,12 +3053,8 @@
           "name": "meet_relay_result_splits_result_id_meet_relay_results_id_fk",
           "tableFrom": "meet_relay_result_splits",
           "tableTo": "meet_relay_results",
-          "columnsFrom": [
-            "result_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["result_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3244,12 +3062,8 @@
           "name": "meet_relay_result_splits_membership_id_team_swimmer_memberships_id_fk",
           "tableFrom": "meet_relay_result_splits",
           "tableTo": "team_swimmer_memberships",
-          "columnsFrom": [
-            "membership_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["membership_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3386,12 +3200,8 @@
           "name": "meet_relay_results_meet_id_meets_id_fk",
           "tableFrom": "meet_relay_results",
           "tableTo": "meets",
-          "columnsFrom": [
-            "meet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meet_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3399,12 +3209,8 @@
           "name": "meet_relay_results_meet_event_id_meet_events_id_fk",
           "tableFrom": "meet_relay_results",
           "tableTo": "meet_events",
-          "columnsFrom": [
-            "meet_event_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meet_event_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3414,12 +3220,7 @@
         "meet_relay_results_attempt_idx": {
           "name": "meet_relay_results_attempt_idx",
           "nullsNotDistinct": true,
-          "columns": [
-            "meet_id",
-            "meet_event_id",
-            "relay_letter",
-            "round"
-          ]
+          "columns": ["meet_id", "meet_event_id", "relay_letter", "round"]
         }
       },
       "policies": {},
@@ -3548,12 +3349,8 @@
           "name": "meet_relay_teams_meet_id_meets_id_fk",
           "tableFrom": "meet_relay_teams",
           "tableTo": "meets",
-          "columnsFrom": [
-            "meet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meet_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3561,12 +3358,8 @@
           "name": "meet_relay_teams_meet_event_id_meet_events_id_fk",
           "tableFrom": "meet_relay_teams",
           "tableTo": "meet_events",
-          "columnsFrom": [
-            "meet_event_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meet_event_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3728,12 +3521,8 @@
           "name": "meet_results_meet_id_meets_id_fk",
           "tableFrom": "meet_results",
           "tableTo": "meets",
-          "columnsFrom": [
-            "meet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meet_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3741,12 +3530,8 @@
           "name": "meet_results_meet_event_id_meet_events_id_fk",
           "tableFrom": "meet_results",
           "tableTo": "meet_events",
-          "columnsFrom": [
-            "meet_event_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meet_event_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3754,12 +3539,8 @@
           "name": "meet_results_swimmer_id_swimmers_id_fk",
           "tableFrom": "meet_results",
           "tableTo": "swimmers",
-          "columnsFrom": [
-            "swimmer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["swimmer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3954,12 +3735,8 @@
           "name": "meets_organization_id_organization_id_fk",
           "tableFrom": "meets",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -3967,12 +3744,8 @@
           "name": "meets_season_id_team_seasons_id_fk",
           "tableFrom": "meets",
           "tableTo": "team_seasons",
-          "columnsFrom": [
-            "season_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["season_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -4085,12 +3858,8 @@
           "name": "swimmer_best_times_swimmer_id_swimmers_id_fk",
           "tableFrom": "swimmer_best_times",
           "tableTo": "swimmers",
-          "columnsFrom": [
-            "swimmer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["swimmer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -4098,12 +3867,8 @@
           "name": "swimmer_best_times_event_key_swim_events_event_key_fk",
           "tableFrom": "swimmer_best_times",
           "tableTo": "swim_events",
-          "columnsFrom": [
-            "event_key"
-          ],
-          "columnsTo": [
-            "event_key"
-          ],
+          "columnsFrom": ["event_key"],
+          "columnsTo": ["event_key"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -4111,12 +3876,8 @@
           "name": "swimmer_best_times_meet_id_meets_id_fk",
           "tableFrom": "swimmer_best_times",
           "tableTo": "meets",
-          "columnsFrom": [
-            "meet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["meet_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -4266,12 +4027,8 @@
           "name": "swimmer_time_entries_swimmer_id_swimmers_id_fk",
           "tableFrom": "swimmer_time_entries",
           "tableTo": "swimmers",
-          "columnsFrom": [
-            "swimmer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["swimmer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -4279,12 +4036,8 @@
           "name": "swimmer_time_entries_membership_id_team_swimmer_memberships_id_fk",
           "tableFrom": "swimmer_time_entries",
           "tableTo": "team_swimmer_memberships",
-          "columnsFrom": [
-            "membership_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["membership_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -4292,12 +4045,8 @@
           "name": "swimmer_time_entries_event_key_swim_events_event_key_fk",
           "tableFrom": "swimmer_time_entries",
           "tableTo": "swim_events",
-          "columnsFrom": [
-            "event_key"
-          ],
-          "columnsTo": [
-            "event_key"
-          ],
+          "columnsFrom": ["event_key"],
+          "columnsTo": ["event_key"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4405,12 +4154,8 @@
           "name": "time_standard_cuts_set_id_time_standard_sets_id_fk",
           "tableFrom": "time_standard_cuts",
           "tableTo": "time_standard_sets",
-          "columnsFrom": [
-            "set_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["set_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -4418,12 +4163,8 @@
           "name": "time_standard_cuts_event_key_swim_events_event_key_fk",
           "tableFrom": "time_standard_cuts",
           "tableTo": "swim_events",
-          "columnsFrom": [
-            "event_key"
-          ],
-          "columnsTo": [
-            "event_key"
-          ],
+          "columnsFrom": ["event_key"],
+          "columnsTo": ["event_key"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -4513,12 +4254,8 @@
           "name": "time_standard_sets_organization_id_organization_id_fk",
           "tableFrom": "time_standard_sets",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4588,12 +4325,8 @@
           "name": "notification_preferences_user_id_user_id_fk",
           "tableFrom": "notification_preferences",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4635,12 +4368,8 @@
           "name": "user_preferences_user_id_user_id_fk",
           "tableFrom": "user_preferences",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4709,12 +4438,8 @@
           "name": "user_team_preferences_user_id_user_id_fk",
           "tableFrom": "user_team_preferences",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -4722,12 +4447,8 @@
           "name": "user_team_preferences_organization_id_organization_id_fk",
           "tableFrom": "user_team_preferences",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4735,10 +4456,7 @@
       "compositePrimaryKeys": {
         "user_team_preferences_user_id_organization_id_pk": {
           "name": "user_team_preferences_user_id_organization_id_pk",
-          "columns": [
-            "user_id",
-            "organization_id"
-          ]
+          "columns": ["user_id", "organization_id"]
         }
       },
       "uniqueConstraints": {},
@@ -4834,12 +4552,8 @@
           "name": "audit_log_organization_id_organization_id_fk",
           "tableFrom": "audit_log",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -4968,12 +4682,8 @@
           "name": "maapp_acknowledgments_membership_id_team_swimmer_memberships_id_fk",
           "tableFrom": "maapp_acknowledgments",
           "tableTo": "team_swimmer_memberships",
-          "columnsFrom": [
-            "membership_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["membership_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -4981,12 +4691,8 @@
           "name": "maapp_acknowledgments_season_id_team_seasons_id_fk",
           "tableFrom": "maapp_acknowledgments",
           "tableTo": "team_seasons",
-          "columnsFrom": [
-            "season_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["season_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -5088,12 +4794,8 @@
           "name": "safesport_reports_organization_id_organization_id_fk",
           "tableFrom": "safesport_reports",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -5210,12 +4912,8 @@
           "name": "staff_credentials_member_id_member_id_fk",
           "tableFrom": "staff_credentials",
           "tableTo": "member",
-          "columnsFrom": [
-            "member_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["member_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -5385,12 +5083,8 @@
           "name": "season_enrollments_season_id_team_seasons_id_fk",
           "tableFrom": "season_enrollments",
           "tableTo": "team_seasons",
-          "columnsFrom": [
-            "season_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["season_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -5398,12 +5092,8 @@
           "name": "season_enrollments_membership_id_team_swimmer_memberships_id_fk",
           "tableFrom": "season_enrollments",
           "tableTo": "team_swimmer_memberships",
-          "columnsFrom": [
-            "membership_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["membership_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -5411,12 +5101,8 @@
           "name": "season_enrollments_group_id_training_groups_id_fk",
           "tableFrom": "season_enrollments",
           "tableTo": "training_groups",
-          "columnsFrom": [
-            "group_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["group_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -5527,12 +5213,8 @@
           "name": "team_seasons_organization_id_organization_id_fk",
           "tableFrom": "team_seasons",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -5593,9 +5275,7 @@
         "staff_profiles_user_id_unique": {
           "name": "staff_profiles_user_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "user_id"
-          ]
+          "columns": ["user_id"]
         }
       },
       "policies": {},
@@ -5669,12 +5349,8 @@
           "name": "swimmer_club_registrations_membership_id_team_swimmer_memberships_id_fk",
           "tableFrom": "swimmer_club_registrations",
           "tableTo": "team_swimmer_memberships",
-          "columnsFrom": [
-            "membership_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["membership_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -5684,9 +5360,7 @@
         "swimmer_club_registrations_membership_id_key": {
           "name": "swimmer_club_registrations_membership_id_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "membership_id"
-          ]
+          "columns": ["membership_id"]
         }
       },
       "policies": {},
@@ -5809,12 +5483,8 @@
           "name": "swimmer_contacts_membership_id_team_swimmer_memberships_id_fk",
           "tableFrom": "swimmer_contacts",
           "tableTo": "team_swimmer_memberships",
-          "columnsFrom": [
-            "membership_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["membership_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -5880,12 +5550,8 @@
           "name": "swimmer_medical_membership_id_team_swimmer_memberships_id_fk",
           "tableFrom": "swimmer_medical",
           "tableTo": "team_swimmer_memberships",
-          "columnsFrom": [
-            "membership_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["membership_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -6164,12 +5830,8 @@
           "name": "team_swimmer_memberships_organization_id_organization_id_fk",
           "tableFrom": "team_swimmer_memberships",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -6177,12 +5839,8 @@
           "name": "team_swimmer_memberships_swimmer_id_swimmers_id_fk",
           "tableFrom": "team_swimmer_memberships",
           "tableTo": "swimmers",
-          "columnsFrom": [
-            "swimmer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["swimmer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -6190,12 +5848,8 @@
           "name": "team_swimmer_memberships_group_id_training_groups_id_fk",
           "tableFrom": "team_swimmer_memberships",
           "tableTo": "training_groups",
-          "columnsFrom": [
-            "group_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["group_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -6311,12 +5965,8 @@
           "name": "workout_sets_workout_id_workouts_id_fk",
           "tableFrom": "workout_sets",
           "tableTo": "workouts",
-          "columnsFrom": [
-            "workout_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workout_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -6442,12 +6092,8 @@
           "name": "workouts_organization_id_organization_id_fk",
           "tableFrom": "workouts",
           "tableTo": "organization",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -6463,122 +6109,67 @@
     "public.attendance_status": {
       "name": "attendance_status",
       "schema": "public",
-      "values": [
-        "present",
-        "absent",
-        "excused",
-        "late"
-      ]
+      "values": ["present", "absent", "excused", "late"]
     },
     "public.rsvp_status": {
       "name": "rsvp_status",
       "schema": "public",
-      "values": [
-        "unknown",
-        "attending",
-        "absent",
-        "maybe"
-      ]
+      "values": ["unknown", "attending", "absent", "maybe"]
     },
     "public.team_type": {
       "name": "team_type",
       "schema": "public",
-      "values": [
-        "club",
-        "high_school",
-        "college",
-        "national",
-        "summer"
-      ]
+      "values": ["club", "high_school", "college", "national", "summer"]
     },
     "public.import_job_status": {
       "name": "import_job_status",
       "schema": "public",
-      "values": [
-        "pending",
-        "processing",
-        "complete",
-        "failed"
-      ]
+      "values": ["pending", "processing", "complete", "failed"]
     },
     "public.plan_tier": {
       "name": "plan_tier",
       "schema": "public",
-      "values": [
-        "free",
-        "pro",
-        "enterprise"
-      ]
+      "values": ["free", "pro", "enterprise"]
     },
     "public.subscription_status": {
       "name": "subscription_status",
       "schema": "public",
-      "values": [
-        "active",
-        "canceled",
-        "past_due",
-        "trialing"
-      ]
+      "values": ["active", "canceled", "past_due", "trialing"]
     },
     "public.calendar_connection_status": {
       "name": "calendar_connection_status",
       "schema": "public",
-      "values": [
-        "active",
-        "error",
-        "disconnected"
-      ]
+      "values": ["active", "error", "disconnected"]
     },
     "public.calendar_event_type": {
       "name": "calendar_event_type",
       "schema": "public",
-      "values": [
-        "practice",
-        "meet",
-        "other"
-      ]
+      "values": ["practice", "meet", "other"]
     },
     "public.calendar_provider": {
       "name": "calendar_provider",
       "schema": "public",
-      "values": [
-        "google",
-        "microsoft"
-      ]
+      "values": ["google", "microsoft"]
     },
     "public.course": {
       "name": "course",
       "schema": "public",
-      "values": [
-        "SCY",
-        "SCM",
-        "LCM"
-      ]
+      "values": ["SCY", "SCM", "LCM"]
     },
     "public.event_gender": {
       "name": "event_gender",
       "schema": "public",
-      "values": [
-        "male",
-        "female",
-        "mixed"
-      ]
+      "values": ["male", "female", "mixed"]
     },
     "public.event_type": {
       "name": "event_type",
       "schema": "public",
-      "values": [
-        "individual",
-        "relay"
-      ]
+      "values": ["individual", "relay"]
     },
     "public.ai_generation_kind": {
       "name": "ai_generation_kind",
       "schema": "public",
-      "values": [
-        "workout",
-        "relay"
-      ]
+      "values": ["workout", "relay"]
     },
     "public.meet_commitment_status": {
       "name": "meet_commitment_status",
@@ -6594,63 +6185,37 @@
     "public.meet_entry_status": {
       "name": "meet_entry_status",
       "schema": "public",
-      "values": [
-        "draft",
-        "approved",
-        "scratched"
-      ]
+      "values": ["draft", "approved", "scratched"]
     },
     "public.meet_event_kind": {
       "name": "meet_event_kind",
       "schema": "public",
-      "values": [
-        "swim",
-        "dive"
-      ]
+      "values": ["swim", "dive"]
     },
     "public.meet_result_round": {
       "name": "meet_result_round",
       "schema": "public",
-      "values": [
-        "prelim",
-        "swimoff",
-        "finals"
-      ]
+      "values": ["prelim", "swimoff", "finals"]
     },
     "public.seed_time_source": {
       "name": "seed_time_source",
       "schema": "public",
-      "values": [
-        "personal_best",
-        "manual",
-        "no_time"
-      ]
+      "values": ["personal_best", "manual", "no_time"]
     },
     "public.swimmer_time_entry_source": {
       "name": "swimmer_time_entry_source",
       "schema": "public",
-      "values": [
-        "manual"
-      ]
+      "values": ["manual"]
     },
     "public.acknowledgment_by": {
       "name": "acknowledgment_by",
       "schema": "public",
-      "values": [
-        "parent_guardian",
-        "athlete",
-        "adult_athlete"
-      ]
+      "values": ["parent_guardian", "athlete", "adult_athlete"]
     },
     "public.credential_status": {
       "name": "credential_status",
       "schema": "public",
-      "values": [
-        "current",
-        "expired",
-        "pending",
-        "not_started"
-      ]
+      "values": ["current", "expired", "pending", "not_started"]
     },
     "public.credential_type": {
       "name": "credential_type",
@@ -6668,11 +6233,7 @@
     "public.credential_verified_by": {
       "name": "credential_verified_by",
       "schema": "public",
-      "values": [
-        "manual_upload",
-        "usa_swimming_sync",
-        "safesport_lms_webhook"
-      ]
+      "values": ["manual_upload", "usa_swimming_sync", "safesport_lms_webhook"]
     },
     "public.report_category": {
       "name": "report_category",
@@ -6688,12 +6249,7 @@
     "public.report_status": {
       "name": "report_status",
       "schema": "public",
-      "values": [
-        "submitted",
-        "under_review",
-        "resolved",
-        "referred_to_center"
-      ]
+      "values": ["submitted", "under_review", "resolved", "referred_to_center"]
     },
     "public.eligibility_status": {
       "name": "eligibility_status",
@@ -6710,33 +6266,22 @@
     "public.gender": {
       "name": "gender",
       "schema": "public",
-      "values": [
-        "male",
-        "female"
-      ]
+      "values": ["male", "female"]
     },
     "public.governing_body": {
       "name": "governing_body",
       "schema": "public",
-      "values": [
-        "usa_swimming"
-      ]
+      "values": ["usa_swimming"]
     },
     "public.membership_status": {
       "name": "membership_status",
       "schema": "public",
-      "values": [
-        "active",
-        "inactive"
-      ]
+      "values": ["active", "inactive"]
     },
     "public.workout_distance_unit": {
       "name": "workout_distance_unit",
       "schema": "public",
-      "values": [
-        "yards",
-        "meters"
-      ]
+      "values": ["yards", "meters"]
     },
     "public.workout_intensity": {
       "name": "workout_intensity",
