@@ -22,6 +22,13 @@
       "when": 1789450437418,
       "tag": "0002_parched_old_lace",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790023437289,
+      "tag": "0003_living_romulus",
+      "breakpoints": true
     }
   ]
 }

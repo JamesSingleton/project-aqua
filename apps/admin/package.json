@@ -35,6 +35,7 @@
     "@tanstack/react-table": "^9.2.4",
     "ai": "^7.0.106",
     "better-auth": "catalog:",
+    "botid": "^1.5.11",
     "geist": "^1.7.2",
     "lucide-react": "catalog:",
     "next": "catalog:",
