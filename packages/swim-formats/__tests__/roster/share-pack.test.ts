@@ -196,7 +196,7 @@ describe("roster share pack", () => {
     expect(isRosterSharePackFilename("club-roster-share.lane4hq.json")).toBe(
       true,
     );
-    expect(isRosterSharePackFilename("pack.aqua-roster.json")).toBe(false);
+    expect(isRosterSharePackFilename("CLUB-ROSTER.LANE4HQ.JSON")).toBe(true);
     expect(isRosterSharePackFilename("team-share.json")).toBe(true);
     expect(isRosterSharePackFilename("roster.csv")).toBe(false);
   });
