@@ -12,7 +12,7 @@ const baseEvent = {
   eventType: "practice" as const,
   meetId: null as string | null,
   practiceSessionId: null as string | null,
-  aquaVersion: 1,
+  version: 1,
 };
 
 describe("buildIcsCalendar", () => {

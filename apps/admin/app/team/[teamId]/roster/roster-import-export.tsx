@@ -29,7 +29,7 @@ import { useId, useRef, useState } from "react";
 import { importRosterFileAction } from "./actions";
 
 const ROSTER_ACCEPT =
-  ".csv,.sd3,.sdif,.cl2,.hy3,.zip,.json,.aqua.json,application/json,application/vnd.ms-excel,text/csv,text/plain";
+  ".csv,.sd3,.sdif,.cl2,.hy3,.zip,.json,.lane4hq.json,application/json,application/vnd.ms-excel,text/csv,text/plain";
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 type ImportEntry = {
@@ -126,7 +126,7 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
                       status: "failed",
                       progress: 100,
                       message:
-                        "Not a roster file. Use a Lane4 HQ share pack (.aqua.json), Team Manager Swimmers Only (CL2/HY3), CSV, or a roster ZIP.",
+                        "Not a roster file. Use a Lane4 HQ share pack (.lane4hq.json), Team Manager Swimmers Only (CL2/HY3), CSV, or a roster ZIP.",
                     }
                   : entry,
               ),
@@ -220,10 +220,10 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
         <DialogHeader>
           <DialogTitle>Import roster</DialogTitle>
           <DialogDescription>
-            Import a Lane4 HQ share pack (.aqua.json) to link athletes by opaque
-            ID. If this team already has the same person (name + DOB), we merge
-            into the shared profile instead of creating a duplicate. CSV / SD3 /
-            CL2 / HY3 from Team Manager are also supported.
+            Import a Lane4 HQ share pack (.lane4hq.json) to link athletes by
+            opaque ID. If this team already has the same person (name + DOB), we
+            merge into the shared profile instead of creating a duplicate. CSV /
+            SD3 / CL2 / HY3 from Team Manager are also supported.
           </DialogDescription>
         </DialogHeader>
 

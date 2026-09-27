@@ -32,7 +32,7 @@ type Connection = {
 type Conflict = {
   id: string;
   createdAt: Date | string;
-  aquaEventId: string | null;
+  eventId: string | null;
   provider: string;
   resolution: string;
 };
@@ -261,11 +261,11 @@ export function CalendarSyncPanel({
                 <li key={c.id} className="rounded border p-2">
                   <span className="capitalize">{c.provider}</span> ·{" "}
                   {new Date(c.createdAt).toLocaleString()}
-                  {c.aquaEventId ? (
+                  {c.eventId ? (
                     <>
                       {" "}
                       · Event{" "}
-                      <span className="font-mono text-xs">{c.aquaEventId}</span>
+                      <span className="font-mono text-xs">{c.eventId}</span>
                     </>
                   ) : null}
                 </li>

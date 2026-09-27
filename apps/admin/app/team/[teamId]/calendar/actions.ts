@@ -10,10 +10,10 @@ import {
   subscribeMicrosoftCalendar,
 } from "@lane4hq/calendar-sync/microsoft";
 import {
-  deleteAquaEventFromConnection,
+  deleteEventFromConnection,
   pullConnectionChanges,
   pushAllEventsToConnection,
-  pushAquaEventToConnection,
+  pushEventToConnection,
 } from "@lane4hq/calendar-sync/sync";
 import { requireTeamRole } from "@lane4hq/db/authz";
 import { db } from "@lane4hq/db/client";
@@ -119,7 +119,7 @@ export async function createCalendarEventAction(
     const connections = await getCalendarConnections(teamId);
     for (const connection of connections.filter((c) => c.status === "active")) {
       try {
-        await pushAquaEventToConnection(connection.id, id);
+        await pushEventToConnection(connection.id, id);
       } catch {
         // best-effort outbound sync
       }
@@ -179,7 +179,7 @@ export async function createRecurringCalendarEventsAction(
     for (const id of ids) {
       for (const connection of active) {
         try {
-          await pushAquaEventToConnection(connection.id, id);
+          await pushEventToConnection(connection.id, id);
         } catch {
           // best-effort outbound sync
         }
@@ -235,7 +235,7 @@ export async function updateCalendarEventAction(
     const connections = await getCalendarConnections(teamId);
     for (const connection of connections.filter((c) => c.status === "active")) {
       try {
-        await pushAquaEventToConnection(connection.id, eventId);
+        await pushEventToConnection(connection.id, eventId);
       } catch {
         // ignore
       }
@@ -256,7 +256,7 @@ export async function deleteCalendarEventAction(
     const connections = await getCalendarConnections(teamId);
     for (const connection of connections.filter((c) => c.status === "active")) {
       try {
-        await deleteAquaEventFromConnection(connection.id, eventId);
+        await deleteEventFromConnection(connection.id, eventId);
       } catch {
         // ignore
       }

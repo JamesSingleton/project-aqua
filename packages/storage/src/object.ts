@@ -33,14 +33,14 @@ export function objectKeyFromPublicUrl(
 ): string | null {
   let parsed: URL;
   try {
-    parsed = new URL(value, "https://aqua.invalid");
+    parsed = new URL(value, "https://lane4hq.invalid");
   } catch {
     return null;
   }
 
   const publicPathPrefix = `/api/storage/${encodeURIComponent(bucket)}/`;
   if (
-    parsed.origin === "https://aqua.invalid" &&
+    parsed.origin === "https://lane4hq.invalid" &&
     parsed.pathname.startsWith(publicPathPrefix)
   ) {
     const encodedKey = parsed.pathname.slice(publicPathPrefix.length);

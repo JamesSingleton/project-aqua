@@ -3,7 +3,7 @@ import {
   getCalendarConnectionById,
   getCalendarEvent,
   getEventLinkByExternal,
-  getEventLinksForAquaEvent,
+  getEventLinksForEvent,
   listCalendarEvents,
   recordSyncConflict,
   updateCalendarConnection,
@@ -22,17 +22,17 @@ import {
 } from "./microsoft";
 
 /** Push a single Lane4 HQ event to all active connections for the org (caller filters). */
-export async function pushAquaEventToConnection(
+export async function pushEventToConnection(
   connectionId: string,
-  aquaEventId: string,
+  eventId: string,
 ) {
   const connection = await getCalendarConnectionById(connectionId);
   if (!connection || connection.status !== "active") return;
 
-  const event = await getCalendarEvent(aquaEventId, connection.organizationId);
+  const event = await getCalendarEvent(eventId, connection.organizationId);
   if (!event) return;
 
-  const links = await getEventLinksForAquaEvent(aquaEventId);
+  const links = await getEventLinksForEvent(eventId);
   const existing = links.find((l) => l.connectionId === connectionId);
 
   if (connection.provider === "google") {
@@ -49,13 +49,13 @@ export async function pushAquaEventToConnection(
       },
     );
     await upsertEventLink({
-      aquaEventId,
+      eventId,
       connectionId,
       provider: "google",
       externalCalendarId: connection.externalCalendarId,
       externalEventId: external.id,
       externalEtag: external.etag,
-      aquaVersionAtSync: event.aquaVersion,
+      eventVersionAtSync: event.version,
       direction: "push",
     });
     return;
@@ -74,24 +74,24 @@ export async function pushAquaEventToConnection(
     },
   );
   await upsertEventLink({
-    aquaEventId,
+    eventId,
     connectionId,
     provider: "microsoft",
     externalCalendarId: connection.externalCalendarId,
     externalEventId: external.id,
     externalEtag: external.etag,
-    aquaVersionAtSync: event.aquaVersion,
+    eventVersionAtSync: event.version,
     direction: "push",
   });
 }
 
-export async function deleteAquaEventFromConnection(
+export async function deleteEventFromConnection(
   connectionId: string,
-  aquaEventId: string,
+  eventId: string,
 ) {
   const connection = await getCalendarConnectionById(connectionId);
   if (!connection) return;
-  const links = await getEventLinksForAquaEvent(aquaEventId);
+  const links = await getEventLinksForEvent(eventId);
   const existing = links.find((l) => l.connectionId === connectionId);
   if (!existing) return;
 
@@ -140,36 +140,36 @@ export async function pullConnectionChanges(connectionId: string) {
 
       const link = await getEventLinkByExternal(connectionId, remote.id);
       if (link) {
-        const aqua = await getCalendarEvent(
-          link.aquaEventId,
+        const local = await getCalendarEvent(
+          link.eventId,
           connection.organizationId,
         );
-        if (!aqua) continue;
+        if (!local) continue;
 
-        const aquaChanged = aqua.aquaVersion > link.aquaVersionAtSync;
+        const localChanged = local.version > link.eventVersionAtSync;
         const remoteChanged =
           remote.etag && link.externalEtag && remote.etag !== link.externalEtag;
 
-        if (aquaChanged && remoteChanged) {
+        if (localChanged && remoteChanged) {
           await recordSyncConflict({
             organizationId: connection.organizationId,
-            aquaEventId: aqua.id,
+            eventId: local.id,
             connectionId,
             provider: connection.provider,
             externalEventId: remote.id,
             details: {
               message: "Both sides changed; Lane4 HQ version kept",
-              aquaVersion: aqua.aquaVersion,
+              localVersion: local.version,
               remoteEtag: remote.etag,
             },
           });
           // Re-push Lane4 HQ version
-          await pushAquaEventToConnection(connectionId, aqua.id);
+          await pushEventToConnection(connectionId, local.id);
           continue;
         }
 
-        if (remoteChanged && !aquaChanged) {
-          await updateCalendarEvent(aqua.id, connection.organizationId, {
+        if (remoteChanged && !localChanged) {
+          await updateCalendarEvent(local.id, connection.organizationId, {
             title: remote.title,
             description: remote.description,
             location: remote.location,
@@ -177,17 +177,17 @@ export async function pullConnectionChanges(connectionId: string) {
             endsAt: remote.endsAt ? new Date(remote.endsAt) : undefined,
           });
           const updated = await getCalendarEvent(
-            aqua.id,
+            local.id,
             connection.organizationId,
           );
           await upsertEventLink({
-            aquaEventId: aqua.id,
+            eventId: local.id,
             connectionId,
             provider: connection.provider,
             externalCalendarId: connection.externalCalendarId,
             externalEventId: remote.id,
             externalEtag: remote.etag,
-            aquaVersionAtSync: updated?.aquaVersion ?? aqua.aquaVersion,
+            eventVersionAtSync: updated?.version ?? local.version,
             direction: "pull",
           });
         }
@@ -195,7 +195,7 @@ export async function pullConnectionChanges(connectionId: string) {
       }
 
       // Unmapped remote event on dedicated calendar → create in Lane4 HQ
-      const aquaEventId = await createCalendarEvent(connection.organizationId, {
+      const eventId = await createCalendarEvent(connection.organizationId, {
         title: remote.title,
         description: remote.description,
         location: remote.location,
@@ -205,13 +205,13 @@ export async function pullConnectionChanges(connectionId: string) {
         createdByUserId: connection.userId,
       });
       await upsertEventLink({
-        aquaEventId,
+        eventId,
         connectionId,
         provider: connection.provider,
         externalCalendarId: connection.externalCalendarId,
         externalEventId: remote.id,
         externalEtag: remote.etag,
-        aquaVersionAtSync: 1,
+        eventVersionAtSync: 1,
         direction: "pull",
       });
     }
@@ -243,6 +243,6 @@ export async function pushAllEventsToConnection(connectionId: string) {
     to,
   });
   for (const event of events) {
-    await pushAquaEventToConnection(connectionId, event.id);
+    await pushEventToConnection(connectionId, event.id);
   }
 }

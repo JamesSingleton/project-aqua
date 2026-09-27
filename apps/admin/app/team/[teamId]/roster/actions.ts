@@ -341,7 +341,7 @@ export async function exportRosterSharePackAction(
       if (!row.dateOfBirth) return [];
       return [
         {
-          aquaSwimmerId: row.swimmerId,
+          swimmerId: row.swimmerId,
           firstName: row.firstName,
           lastName: row.lastName,
           preferredName: row.preferredName,
@@ -366,9 +366,9 @@ export async function exportRosterSharePackAction(
       resourceId: teamId,
       ipAddress: ip,
       metadata: {
-        format: "aqua-share-pack",
+        format: "lane4hq-share-pack",
         rowCount: pack.athletes.length,
-        swimmerIds: pack.athletes.map((a) => a.aquaSwimmerId),
+        swimmerIds: pack.athletes.map((a) => a.swimmerId),
       },
     });
   }
@@ -576,7 +576,7 @@ export type ImportRosterFileResult =
       linked: number;
       merged: number;
       alreadyOnTeam: number;
-      failed: Array<{ aquaSwimmerId: string; name: string; reason: string }>;
+      failed: Array<{ swimmerId: string; name: string; reason: string }>;
       sourceTeamName: string;
     };
 
@@ -612,7 +612,7 @@ export async function importRosterFileAction(
   const format = detectRosterFileFormat(filename, text);
   if (!format) {
     throw new Error(
-      "Unsupported file type. Use a Lane4 HQ share pack (.aqua.json), CSV, SD3, CL2, HY3, or a roster ZIP.",
+      "Unsupported file type. Use a Lane4 HQ share pack (.lane4hq.json), CSV, SD3, CL2, HY3, or a roster ZIP.",
     );
   }
 

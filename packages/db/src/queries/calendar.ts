@@ -122,7 +122,7 @@ export async function updateCalendarEvent(
       ...(data.startsAt !== undefined && { startsAt: data.startsAt }),
       ...(data.endsAt !== undefined && { endsAt: data.endsAt ?? null }),
       ...(data.eventType !== undefined && { eventType: data.eventType }),
-      aquaVersion: existing.aquaVersion + 1,
+      version: existing.version + 1,
       updatedAt: new Date(),
     })
     .where(eq(teamCalendarEvents.id, eventId));
@@ -200,7 +200,7 @@ export async function getTeamCalendarProjection(
       eventType: e.eventType,
       meetId: e.meetId,
       practiceSessionId: e.practiceSessionId,
-      aquaVersion: e.aquaVersion,
+      version: e.version,
     })),
     ...practices
       .filter((p) => p.date >= range.from && p.date <= range.to)
@@ -216,7 +216,7 @@ export async function getTeamCalendarProjection(
         eventType: "practice" as const,
         meetId: null as string | null,
         practiceSessionId: p.id,
-        aquaVersion: 1,
+        version: 1,
       })),
     ...meets
       .filter((m) => {
@@ -237,7 +237,7 @@ export async function getTeamCalendarProjection(
         eventType: "meet" as const,
         meetId: m.id,
         practiceSessionId: null as string | null,
-        aquaVersion: 1,
+        version: 1,
       })),
   ];
 
@@ -406,13 +406,13 @@ export async function disconnectCalendarConnection(connectionId: string) {
 }
 
 export async function upsertEventLink(data: {
-  aquaEventId: string;
+  eventId: string;
   connectionId: string;
   provider: "google" | "microsoft";
   externalCalendarId: string;
   externalEventId: string;
   externalEtag?: string;
-  aquaVersionAtSync: number;
+  eventVersionAtSync: number;
   direction: "push" | "pull";
 }) {
   const existing = await db
@@ -435,9 +435,9 @@ export async function upsertEventLink(data: {
     await db
       .update(calendarEventLinks)
       .set({
-        aquaEventId: data.aquaEventId,
+        eventId: data.eventId,
         externalEtag: data.externalEtag ?? null,
-        aquaVersionAtSync: data.aquaVersionAtSync,
+        eventVersionAtSync: data.eventVersionAtSync,
         updatedAt: new Date(),
         ...stamp,
       })
@@ -448,23 +448,23 @@ export async function upsertEventLink(data: {
   const id = generateId();
   await db.insert(calendarEventLinks).values({
     id,
-    aquaEventId: data.aquaEventId,
+    eventId: data.eventId,
     connectionId: data.connectionId,
     provider: data.provider,
     externalCalendarId: data.externalCalendarId,
     externalEventId: data.externalEventId,
     externalEtag: data.externalEtag ?? null,
-    aquaVersionAtSync: data.aquaVersionAtSync,
+    eventVersionAtSync: data.eventVersionAtSync,
     ...stamp,
   });
   return id;
 }
 
-export async function getEventLinksForAquaEvent(aquaEventId: string) {
+export async function getEventLinksForEvent(eventId: string) {
   return db
     .select()
     .from(calendarEventLinks)
-    .where(eq(calendarEventLinks.aquaEventId, aquaEventId));
+    .where(eq(calendarEventLinks.eventId, eventId));
 }
 
 export async function getEventLinkByExternal(
@@ -486,7 +486,7 @@ export async function getEventLinkByExternal(
 
 export async function recordSyncConflict(data: {
   organizationId: string;
-  aquaEventId?: string;
+  eventId?: string;
   connectionId?: string;
   provider: "google" | "microsoft";
   externalEventId?: string;
@@ -496,11 +496,11 @@ export async function recordSyncConflict(data: {
   await db.insert(calendarSyncConflicts).values({
     id,
     organizationId: data.organizationId,
-    aquaEventId: data.aquaEventId ?? null,
+    eventId: data.eventId ?? null,
     connectionId: data.connectionId ?? null,
     provider: data.provider,
     externalEventId: data.externalEventId ?? null,
-    resolution: "aqua_wins",
+    resolution: "local_wins",
     details: data.details ?? null,
   });
   return id;

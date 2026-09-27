@@ -29,6 +29,13 @@
       "when": 1790023437289,
       "tag": "0003_living_romulus",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790545842842,
+      "tag": "0004_rename_aqua_columns",
+      "breakpoints": true
     }
   ]
 }

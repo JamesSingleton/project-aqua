@@ -1308,7 +1308,7 @@ export type ImportRosterSharePackResult = {
   linked: number;
   merged: number;
   alreadyOnTeam: number;
-  failed: Array<{ aquaSwimmerId: string; name: string; reason: string }>;
+  failed: Array<{ swimmerId: string; name: string; reason: string }>;
 };
 
 /**
@@ -1320,7 +1320,7 @@ export type ImportRosterSharePackResult = {
 export async function importRosterSharePack(
   organizationId: string,
   athletes: Array<{
-    aquaSwimmerId: string;
+    swimmerId: string;
     firstName: string;
     lastName: string;
     preferredName?: string | null;
@@ -1343,10 +1343,10 @@ export async function importRosterSharePack(
       preferredName: athlete.preferredName,
       dateOfBirth: athlete.dateOfBirth,
     };
-    const existing = await getSwimmerIdentityById(athlete.aquaSwimmerId);
+    const existing = await getSwimmerIdentityById(athlete.swimmerId);
     if (!existing) {
       result.failed.push({
-        aquaSwimmerId: athlete.aquaSwimmerId,
+        swimmerId: athlete.swimmerId,
         name,
         reason: "Swimmer not found — pack may be from another environment",
       });
@@ -1362,7 +1362,7 @@ export async function importRosterSharePack(
       })
     ) {
       result.failed.push({
-        aquaSwimmerId: athlete.aquaSwimmerId,
+        swimmerId: athlete.swimmerId,
         name,
         reason: "Name/DOB does not match stored profile",
       });
@@ -1382,7 +1382,7 @@ export async function importRosterSharePack(
 
     if (localMatches.length > 1) {
       result.failed.push({
-        aquaSwimmerId: athlete.aquaSwimmerId,
+        swimmerId: athlete.swimmerId,
         name,
         reason:
           "Multiple local roster matches — resolve duplicates on this team first",
@@ -1414,7 +1414,7 @@ export async function importRosterSharePack(
         result.alreadyOnTeam += 1;
       } else {
         result.failed.push({
-          aquaSwimmerId: athlete.aquaSwimmerId,
+          swimmerId: athlete.swimmerId,
           name,
           reason: message,
         });

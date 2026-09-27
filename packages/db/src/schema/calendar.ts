@@ -52,7 +52,7 @@ export const teamCalendarEvents = pgTable(
     createdByUserId: text("created_by_user_id").references(() => user.id, {
       onDelete: "set null",
     }),
-    aquaVersion: integer("aqua_version").notNull().default(1),
+    version: integer("version").notNull().default(1),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -121,7 +121,7 @@ export const calendarEventLinks = pgTable(
   "calendar_event_links",
   {
     id: text("id").primaryKey(),
-    aquaEventId: text("aqua_event_id")
+    eventId: text("event_id")
       .notNull()
       .references(() => teamCalendarEvents.id, { onDelete: "cascade" }),
     connectionId: text("connection_id")
@@ -133,7 +133,7 @@ export const calendarEventLinks = pgTable(
     externalEtag: text("external_etag"),
     lastPushedAt: timestamp("last_pushed_at"),
     lastPulledAt: timestamp("last_pulled_at"),
-    aquaVersionAtSync: integer("aqua_version_at_sync").notNull().default(1),
+    eventVersionAtSync: integer("event_version_at_sync").notNull().default(1),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -142,7 +142,7 @@ export const calendarEventLinks = pgTable(
       table.connectionId,
       table.externalEventId,
     ),
-    index("calendar_event_links_aqua_event_id_idx").on(table.aquaEventId),
+    index("calendar_event_links_event_id_idx").on(table.eventId),
   ],
 );
 
@@ -153,7 +153,7 @@ export const calendarSyncConflicts = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
-    aquaEventId: text("aqua_event_id").references(() => teamCalendarEvents.id, {
+    eventId: text("event_id").references(() => teamCalendarEvents.id, {
       onDelete: "set null",
     }),
     connectionId: text("connection_id").references(
@@ -164,7 +164,7 @@ export const calendarSyncConflicts = pgTable(
     ),
     provider: calendarProviderEnum("provider").notNull(),
     externalEventId: text("external_event_id"),
-    resolution: text("resolution").notNull().default("aqua_wins"),
+    resolution: text("resolution").notNull().default("local_wins"),
     details: jsonb("details"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
@@ -204,8 +204,8 @@ export const calendarConnectionsRelations = relations(
 export const calendarEventLinksRelations = relations(
   calendarEventLinks,
   ({ one }) => ({
-    aquaEvent: one(teamCalendarEvents, {
-      fields: [calendarEventLinks.aquaEventId],
+    event: one(teamCalendarEvents, {
+      fields: [calendarEventLinks.eventId],
       references: [teamCalendarEvents.id],
     }),
     connection: one(calendarConnections, {
