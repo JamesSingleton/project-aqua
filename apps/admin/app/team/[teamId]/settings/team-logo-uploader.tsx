@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@project-aqua/ui/components/button";
-import { Input } from "@project-aqua/ui/components/input";
-import { Label } from "@project-aqua/ui/components/label";
+import { Button } from "@lane4hq/ui/components/button";
+import { Input } from "@lane4hq/ui/components/input";
+import { Label } from "@lane4hq/ui/components/label";
 import { Waves } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";

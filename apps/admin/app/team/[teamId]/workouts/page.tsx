@@ -1,11 +1,11 @@
-import { Button } from "@project-aqua/ui/components/button";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import {
   Table,
   TableBody,
@@ -13,7 +13,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@project-aqua/ui/components/table";
+} from "@lane4hq/ui/components/table";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";

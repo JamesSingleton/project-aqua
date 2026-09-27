@@ -1,4 +1,4 @@
-import { getRoster } from "@project-aqua/db/queries/roster";
+import { getRoster } from "@lane4hq/db/queries/roster";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/page-header";

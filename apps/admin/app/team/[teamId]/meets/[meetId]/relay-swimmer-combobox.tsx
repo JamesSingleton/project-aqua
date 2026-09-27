@@ -7,7 +7,7 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
-} from "@project-aqua/ui/components/combobox";
+} from "@lane4hq/ui/components/combobox";
 import { useMemo } from "react";
 
 export type RelaySwimmerOption = {

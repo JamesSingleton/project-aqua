@@ -1,7 +1,7 @@
 import {
   CLASS_YEAR_LABELS,
   type ClassYear,
-} from "@project-aqua/swim-core/team-types";
+} from "@lane4hq/swim-core/team-types";
 
 /** Abbreviation on mobile; full label from tablet up. */
 export function ClassYearDisplay({

@@ -1,4 +1,4 @@
-# Project Aqua Admin
+# Lane4 HQ Admin
 
 The visiting-team coach app for rosters, meet entries, results, workouts, attendance, and calendars. It uses Next.js, Better Auth, Drizzle, Neon Postgres, and Neon Object Storage.
 
@@ -30,7 +30,7 @@ Database queries and authenticated storage operations run in the existing Next.j
 
 ## Database and migrations
 
-`@project-aqua/db` owns the schema and queries:
+`@lane4hq/db` owns the schema and queries:
 
 - Schema: `packages/db/src/schema/`
 - Migrations: `packages/db/drizzle/`
@@ -55,7 +55,7 @@ Review and commit the generated SQL and Drizzle metadata.
 | `team-logos` | Team logos |
 | `user-avatars` | Coach avatars |
 
-`@project-aqua/storage` uses the AWS S3 SDK from server actions. Uploads accept JPEG, PNG, WebP, AVIF, and SVG files up to 2 MiB. Each upload receives a UUID-based object key.
+`@lane4hq/storage` uses the AWS S3 SDK from server actions. Uploads accept JPEG, PNG, WebP, AVIF, and SVG files up to 2 MiB. Each upload receives a UUID-based object key.
 
 The database stores stable same-origin paths under `/api/storage/`. That public route resolves each object against the active branch's `AWS_ENDPOINT_URL_S3`, so inherited rows and objects stay together when a contributor checks out a Neon branch.
 

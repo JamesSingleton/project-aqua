@@ -1,25 +1,19 @@
 "use server";
 
-import { getSession } from "@project-aqua/auth/session";
-import {
-  requireSwimmerTeamAccess,
-  requireTeamRole,
-} from "@project-aqua/db/authz";
-import { ensureSwimEvent } from "@project-aqua/db/queries/meets";
-import {
-  deleteBestTime,
-  setBestTime,
-} from "@project-aqua/db/queries/progression";
-import { getRoster } from "@project-aqua/db/queries/roster";
+import { getSession } from "@lane4hq/auth/session";
+import { requireSwimmerTeamAccess, requireTeamRole } from "@lane4hq/db/authz";
+import { ensureSwimEvent } from "@lane4hq/db/queries/meets";
+import { deleteBestTime, setBestTime } from "@lane4hq/db/queries/progression";
+import { getRoster } from "@lane4hq/db/queries/roster";
 import {
   formatLocalDateOnly,
   parseDateOnly,
-} from "@project-aqua/swim-core/calendar-date";
-import { getCatalogEvent } from "@project-aqua/swim-core/event-catalog";
-import type { Course } from "@project-aqua/swim-core/events";
-import { normalizePersonName } from "@project-aqua/swim-core/people";
-import { parseTime } from "@project-aqua/swim-core/times";
-import { parseTimesCsv } from "@project-aqua/swim-formats/csv";
+} from "@lane4hq/swim-core/calendar-date";
+import { getCatalogEvent } from "@lane4hq/swim-core/event-catalog";
+import type { Course } from "@lane4hq/swim-core/events";
+import { normalizePersonName } from "@lane4hq/swim-core/people";
+import { parseTime } from "@lane4hq/swim-core/times";
+import { parseTimesCsv } from "@lane4hq/swim-formats/csv";
 import { revalidatePath } from "next/cache";
 
 const MUTATE_ROLES = [

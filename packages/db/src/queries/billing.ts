@@ -1,4 +1,4 @@
-import type { PlanTier } from "@project-aqua/swim-core/plans";
+import type { PlanTier } from "@lane4hq/swim-core/plans";
 import { eq, inArray } from "drizzle-orm";
 import { db } from "../client";
 import { subscriptions } from "../schema/index";

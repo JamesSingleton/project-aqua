@@ -1,19 +1,19 @@
-import { getDefaultPracticeLocation } from "@project-aqua/db/authz";
-import { getPracticeSessions } from "@project-aqua/db/queries/attendance";
-import { getRoster } from "@project-aqua/db/queries/roster";
+import { getDefaultPracticeLocation } from "@lane4hq/db/authz";
+import { getPracticeSessions } from "@lane4hq/db/queries/attendance";
+import { getRoster } from "@lane4hq/db/queries/roster";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
-} from "@project-aqua/ui/components/empty";
+} from "@lane4hq/ui/components/empty";
 import {
   Table,
   TableBody,
@@ -21,7 +21,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@project-aqua/ui/components/table";
+} from "@lane4hq/ui/components/table";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";

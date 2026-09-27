@@ -1,4 +1,4 @@
-import { db } from "@project-aqua/db/client";
+import { db } from "@lane4hq/db/client";
 import {
   getMeetById,
   getMeetCommitments,
@@ -7,19 +7,19 @@ import {
   getMeetRelayLegs,
   getMeetRelayTeams,
   getMeetResults,
-} from "@project-aqua/db/queries/meets";
-import { getTeamExportContact } from "@project-aqua/db/queries/members";
-import { getRoster } from "@project-aqua/db/queries/roster";
-import { organization } from "@project-aqua/db/schema";
-import { parseEventGender } from "@project-aqua/swim-core/events";
+} from "@lane4hq/db/queries/meets";
+import { getTeamExportContact } from "@lane4hq/db/queries/members";
+import { getRoster } from "@lane4hq/db/queries/roster";
+import { organization } from "@lane4hq/db/schema";
+import { parseEventGender } from "@lane4hq/swim-core/events";
 import {
   buildMeetLineupSnapshot,
   type MeetLineupMember,
   type MeetLineupSnapshot,
-} from "@project-aqua/swim-core/meet-lineup-snapshot";
-import { parseClassYear } from "@project-aqua/swim-core/team-types";
-import { formatTime } from "@project-aqua/swim-core/times";
-import type { ParsedMeet } from "@project-aqua/swim-formats";
+} from "@lane4hq/swim-core/meet-lineup-snapshot";
+import { parseClassYear } from "@lane4hq/swim-core/team-types";
+import { formatTime } from "@lane4hq/swim-core/times";
+import type { ParsedMeet } from "@lane4hq/swim-formats";
 import { eq } from "drizzle-orm";
 
 export type LoadedMeetLineup = {

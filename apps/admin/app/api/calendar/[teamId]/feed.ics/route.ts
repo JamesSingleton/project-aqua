@@ -1,10 +1,10 @@
-import { buildIcsCalendar } from "@project-aqua/db/calendar-ics";
-import { db } from "@project-aqua/db/client";
+import { buildIcsCalendar } from "@lane4hq/db/calendar-ics";
+import { db } from "@lane4hq/db/client";
 import {
   getFeedTokenByValue,
   getTeamCalendarProjection,
-} from "@project-aqua/db/queries/calendar";
-import { organization } from "@project-aqua/db/schema";
+} from "@lane4hq/db/queries/calendar";
+import { organization } from "@lane4hq/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function GET(
@@ -40,7 +40,7 @@ export async function GET(
   return new Response(ics, {
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": `attachment; filename="project-aqua-${teamId}.ics"`,
+      "Content-Disposition": `attachment; filename="lane4hq-${teamId}.ics"`,
       "Cache-Control": "no-cache",
     },
   });

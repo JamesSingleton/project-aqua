@@ -22,7 +22,7 @@ const paths = [
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const headersList = await headers();
-  const host = headersList.get("host") ?? "projectaqua.com";
+  const host = headersList.get("host") ?? "www.lane4hq.com";
   const protocol = host.includes("localhost") ? "http" : "https";
 
   return paths.map((path) => ({

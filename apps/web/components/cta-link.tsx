@@ -1,5 +1,5 @@
-import { buttonVariants } from "@project-aqua/ui/components/button";
-import { cn } from "@project-aqua/ui/lib/utils";
+import { buttonVariants } from "@lane4hq/ui/components/button";
+import { cn } from "@lane4hq/ui/lib/utils";
 
 type ButtonVariants = NonNullable<Parameters<typeof buttonVariants>[0]>;
 type ButtonVariant = NonNullable<ButtonVariants["variant"]>;

@@ -1,22 +1,22 @@
 "use server";
 
-import { getSession } from "@project-aqua/auth/session";
+import { getSession } from "@lane4hq/auth/session";
 import {
   ensureGoogleTeamCalendar,
   watchGoogleCalendar,
-} from "@project-aqua/calendar-sync/google";
+} from "@lane4hq/calendar-sync/google";
 import {
   ensureMicrosoftTeamCalendar,
   subscribeMicrosoftCalendar,
-} from "@project-aqua/calendar-sync/microsoft";
+} from "@lane4hq/calendar-sync/microsoft";
 import {
-  deleteAquaEventFromConnection,
+  deleteEventFromConnection,
   pullConnectionChanges,
   pushAllEventsToConnection,
-  pushAquaEventToConnection,
-} from "@project-aqua/calendar-sync/sync";
-import { requireTeamRole } from "@project-aqua/db/authz";
-import { db } from "@project-aqua/db/client";
+  pushEventToConnection,
+} from "@lane4hq/calendar-sync/sync";
+import { requireTeamRole } from "@lane4hq/db/authz";
+import { db } from "@lane4hq/db/client";
 import {
   createCalendarEvent,
   createCalendarEventsBulk,
@@ -30,13 +30,13 @@ import {
   revokeFeedTokens,
   updateCalendarEvent,
   upsertCalendarConnection,
-} from "@project-aqua/db/queries/calendar";
-import { organization } from "@project-aqua/db/schema";
+} from "@lane4hq/db/queries/calendar";
+import { organization } from "@lane4hq/db/schema";
 import {
   expandWeeklyCalendarSlots,
   type RecurringCalendarScheduleInput,
-} from "@project-aqua/swim-core/calendar-recurrence";
-import { normalizeOptionalText } from "@project-aqua/swim-core/text";
+} from "@lane4hq/swim-core/calendar-recurrence";
+import { normalizeOptionalText } from "@lane4hq/swim-core/text";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
@@ -119,7 +119,7 @@ export async function createCalendarEventAction(
     const connections = await getCalendarConnections(teamId);
     for (const connection of connections.filter((c) => c.status === "active")) {
       try {
-        await pushAquaEventToConnection(connection.id, id);
+        await pushEventToConnection(connection.id, id);
       } catch {
         // best-effort outbound sync
       }
@@ -179,7 +179,7 @@ export async function createRecurringCalendarEventsAction(
     for (const id of ids) {
       for (const connection of active) {
         try {
-          await pushAquaEventToConnection(connection.id, id);
+          await pushEventToConnection(connection.id, id);
         } catch {
           // best-effort outbound sync
         }
@@ -235,7 +235,7 @@ export async function updateCalendarEventAction(
     const connections = await getCalendarConnections(teamId);
     for (const connection of connections.filter((c) => c.status === "active")) {
       try {
-        await pushAquaEventToConnection(connection.id, eventId);
+        await pushEventToConnection(connection.id, eventId);
       } catch {
         // ignore
       }
@@ -256,7 +256,7 @@ export async function deleteCalendarEventAction(
     const connections = await getCalendarConnections(teamId);
     for (const connection of connections.filter((c) => c.status === "active")) {
       try {
-        await deleteAquaEventFromConnection(connection.id, eventId);
+        await deleteEventFromConnection(connection.id, eventId);
       } catch {
         // ignore
       }
@@ -357,7 +357,7 @@ export async function completeCalendarConnectAction(
         `${baseUrl}/api/webhooks/google-calendar`,
       );
       const { updateCalendarConnection } = await import(
-        "@project-aqua/db/queries/calendar"
+        "@lane4hq/db/queries/calendar"
       );
       await updateCalendarConnection(connectionId, {
         channelId,
@@ -372,7 +372,7 @@ export async function completeCalendarConnectAction(
         connectionId,
       );
       const { updateCalendarConnection } = await import(
-        "@project-aqua/db/queries/calendar"
+        "@lane4hq/db/queries/calendar"
       );
       await updateCalendarConnection(connectionId, {
         channelId: sub.subscriptionId,

@@ -11,11 +11,11 @@
   },
   "iconLibrary": "lucide",
   "aliases": {
-    "components": "@project-aqua/ui/components",
-    "utils": "@project-aqua/ui/lib/utils",
-    "hooks": "@project-aqua/ui/hooks",
-    "lib": "@project-aqua/ui/lib",
-    "ui": "@project-aqua/ui/components"
+    "components": "@lane4hq/ui/components",
+    "utils": "@lane4hq/ui/lib/utils",
+    "hooks": "@lane4hq/ui/hooks",
+    "lib": "@lane4hq/ui/lib",
+    "ui": "@lane4hq/ui/components"
   },
   "rtl": false,
   "menuColor": "default-translucent",

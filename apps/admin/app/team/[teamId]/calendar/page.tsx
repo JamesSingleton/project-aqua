@@ -1,14 +1,14 @@
-import { getSession } from "@project-aqua/auth/session";
+import { getSession } from "@lane4hq/auth/session";
 import {
   getDefaultPracticeLocation,
   requireTeamMember,
-} from "@project-aqua/db/authz";
+} from "@lane4hq/db/authz";
 import {
   getActiveFeedToken,
   getCalendarConnections,
   getRecentSyncConflicts,
   getTeamCalendarProjection,
-} from "@project-aqua/db/queries/calendar";
+} from "@lane4hq/db/queries/calendar";
 import type { Metadata } from "next";
 import { completeCalendarConnectAction } from "./actions";
 import { CalendarBoard } from "./calendar-board";

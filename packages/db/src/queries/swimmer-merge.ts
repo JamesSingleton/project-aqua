@@ -1,4 +1,4 @@
-import { swimmerIdentitiesMatch } from "@project-aqua/swim-core/people";
+import { swimmerIdentitiesMatch } from "@lane4hq/swim-core/people";
 import { and, eq, ne } from "drizzle-orm";
 import { db } from "../client";
 import { attendanceRecords } from "../schema/attendance";

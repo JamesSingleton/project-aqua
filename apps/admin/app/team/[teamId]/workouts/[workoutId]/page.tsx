@@ -1,12 +1,12 @@
-import { getWorkoutById } from "@project-aqua/db/queries/workouts";
-import { Button } from "@project-aqua/ui/components/button";
+import { getWorkoutById } from "@lane4hq/db/queries/workouts";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";

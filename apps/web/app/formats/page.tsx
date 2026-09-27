@@ -2,9 +2,9 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@project-aqua/ui/components/alert";
-import { Badge } from "@project-aqua/ui/components/badge";
-import { Separator } from "@project-aqua/ui/components/separator";
+} from "@lane4hq/ui/components/alert";
+import { Badge } from "@lane4hq/ui/components/badge";
+import { Separator } from "@lane4hq/ui/components/separator";
 import type { Metadata } from "next";
 import { MarketingCta } from "@/components/marketing-cta";
 import { PageIntro } from "@/components/section";
@@ -13,7 +13,7 @@ import { formats } from "@/lib/site";
 export const metadata: Metadata = {
   title: "File formats",
   description:
-    "HY3, CL2, EV3, HYV, SDIF/SD3, XLS event reports, and ZIP packs. The interchange Project Aqua reads and writes.",
+    "HY3, CL2, EV3, HYV, SDIF/SD3, XLS event reports, and ZIP packs. The interchange Lane4 HQ reads and writes.",
 };
 
 export default function FormatsPage() {
@@ -29,7 +29,7 @@ export default function FormatsPage() {
           <AlertDescription>
             If you are putting the invitational on, you still use Meet Manager,
             SwimTopia, SwimCloud, or TeamUnify to receive files and run the
-            pool. Project Aqua does not merge other clubs’ entries or replace a
+            pool. Lane4 HQ does not merge other clubs’ entries or replace a
             timing console.
           </AlertDescription>
         </Alert>

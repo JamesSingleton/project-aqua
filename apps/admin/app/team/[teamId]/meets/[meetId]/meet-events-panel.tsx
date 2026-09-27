@@ -6,11 +6,11 @@ import {
   formatMeetEventDeletePhrase,
   formatProgramEventLabel,
   formatStrokeLabel,
-} from "@project-aqua/swim-core/events";
-import { BUILT_IN_MEET_EVENT_PRESETS } from "@project-aqua/swim-core/meet-event-presets";
-import { formatTime } from "@project-aqua/swim-core/times";
-import { MANUAL_EVENT_STROKES } from "@project-aqua/swim-core/validators";
-import { Button } from "@project-aqua/ui/components/button";
+} from "@lane4hq/swim-core/events";
+import { BUILT_IN_MEET_EVENT_PRESETS } from "@lane4hq/swim-core/meet-event-presets";
+import { formatTime } from "@lane4hq/swim-core/times";
+import { MANUAL_EVENT_STROKES } from "@lane4hq/swim-core/validators";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@project-aqua/ui/components/dialog";
+} from "@lane4hq/ui/components/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,9 +28,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@project-aqua/ui/components/dropdown-menu";
-import { Input } from "@project-aqua/ui/components/input";
-import { Label } from "@project-aqua/ui/components/label";
+} from "@lane4hq/ui/components/dropdown-menu";
+import { Input } from "@lane4hq/ui/components/input";
+import { Label } from "@lane4hq/ui/components/label";
 import {
   Select,
   SelectContent,
@@ -38,7 +38,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
+} from "@lane4hq/ui/components/select";
 import {
   Table,
   TableBody,
@@ -46,7 +46,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@project-aqua/ui/components/table";
+} from "@lane4hq/ui/components/table";
 import { ChevronDown, Pencil, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";

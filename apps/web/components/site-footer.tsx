@@ -1,4 +1,4 @@
-import { Separator } from "@project-aqua/ui/components/separator";
+import { Separator } from "@lane4hq/ui/components/separator";
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
 import { CtaLink } from "@/components/cta-link";
@@ -33,11 +33,11 @@ export async function SiteFooter() {
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <Link
             href="/"
-            aria-label="Project Aqua home"
+            aria-label="Lane4 HQ home"
             className="flex items-center gap-2"
           >
             <BrandLogo />
-            <span className="text-sm font-medium">Project Aqua</span>
+            <span className="text-sm font-medium">Lane4 HQ</span>
           </Link>
           <p className="max-w-sm text-right text-muted-foreground text-sm md:text-base">
             {SITE_TAGLINE}

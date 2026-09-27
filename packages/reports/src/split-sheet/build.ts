@@ -1,20 +1,20 @@
-import { formatGenderLabel } from "@project-aqua/swim-core/events";
-import type { MeetLineupSnapshot } from "@project-aqua/swim-core/meet-lineup-snapshot";
+import { formatGenderLabel } from "@lane4hq/swim-core/events";
+import type { MeetLineupSnapshot } from "@lane4hq/swim-core/meet-lineup-snapshot";
 import {
   isRelayAlternateSlot,
   RELAY_PRIMARY_LEG_COUNT,
   relaySlotLabel,
-} from "@project-aqua/swim-core/relay-legs";
+} from "@lane4hq/swim-core/relay-legs";
 import {
   formatSplitCaptureLabel,
   type SplitCaptureInterval,
   splitCapturePlan,
   splitCaptureStrokeHint,
-} from "@project-aqua/swim-core/split-capture";
+} from "@lane4hq/swim-core/split-capture";
 import {
   normalizeLscCode,
   normalizeTeamCode,
-} from "@project-aqua/swim-core/team-codes";
+} from "@lane4hq/swim-core/team-codes";
 import {
   formatAthleteDisplayName,
   formatCourseLabel,

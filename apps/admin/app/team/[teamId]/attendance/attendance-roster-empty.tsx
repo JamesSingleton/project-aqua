@@ -1,4 +1,4 @@
-import { Button } from "@project-aqua/ui/components/button";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Empty,
   EmptyContent,
@@ -6,7 +6,7 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@project-aqua/ui/components/empty";
+} from "@lane4hq/ui/components/empty";
 import { UsersRound } from "lucide-react";
 import Link from "next/link";
 

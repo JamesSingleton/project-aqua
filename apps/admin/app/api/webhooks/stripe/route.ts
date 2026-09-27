@@ -1,4 +1,4 @@
-import { handleStripeWebhook } from "@project-aqua/billing/webhooks";
+import { handleStripeWebhook } from "@lane4hq/billing/webhooks";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 

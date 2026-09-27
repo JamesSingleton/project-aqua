@@ -1,4 +1,4 @@
-import { isRelayStroke } from "@project-aqua/swim-core/entry-limits";
+import { isRelayStroke } from "@lane4hq/swim-core/entry-limits";
 import {
   buildEventKey,
   type Course,
@@ -8,14 +8,14 @@ import {
   parseEventKey,
   type RelayStroke,
   type Stroke,
-} from "@project-aqua/swim-core/events";
+} from "@lane4hq/swim-core/events";
 import {
   individualEventKeyForRelayLeg,
   RELAY_PRIMARY_LEG_COUNT,
   RELAY_TEAM_LETTERS,
   relayLegRoleLabel,
-} from "@project-aqua/swim-core/relay-legs";
-import { formatTime } from "@project-aqua/swim-core/times";
+} from "@lane4hq/swim-core/relay-legs";
+import { formatTime } from "@lane4hq/swim-core/times";
 import {
   formatCourseLabel,
   formatMeetDateCompact,

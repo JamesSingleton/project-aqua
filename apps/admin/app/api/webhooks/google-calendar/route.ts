@@ -1,5 +1,5 @@
-import { pullConnectionChanges } from "@project-aqua/calendar-sync/sync";
-import { updateCalendarConnection } from "@project-aqua/db/queries/calendar";
+import { pullConnectionChanges } from "@lane4hq/calendar-sync/sync";
+import { updateCalendarConnection } from "@lane4hq/db/queries/calendar";
 import { after } from "next/server";
 
 export async function POST(request: Request) {
@@ -16,8 +16,8 @@ export async function POST(request: Request) {
 
   after(async () => {
     // Find connection by channel id across orgs (channel ids are unique)
-    const { db } = await import("@project-aqua/db/client");
-    const { calendarConnections } = await import("@project-aqua/db/schema");
+    const { db } = await import("@lane4hq/db/client");
+    const { calendarConnections } = await import("@lane4hq/db/schema");
     const { eq } = await import("drizzle-orm");
     const [connection] = await db
       .select()

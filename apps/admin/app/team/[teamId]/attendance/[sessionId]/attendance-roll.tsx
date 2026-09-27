@@ -3,8 +3,8 @@
 import type {
   AttendanceStatus,
   RsvpStatus,
-} from "@project-aqua/swim-core/validators";
-import { Input } from "@project-aqua/ui/components/input";
+} from "@lane4hq/swim-core/validators";
+import { Input } from "@lane4hq/ui/components/input";
 import {
   Select,
   SelectContent,
@@ -12,7 +12,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
+} from "@lane4hq/ui/components/select";
 import {
   Table,
   TableBody,
@@ -20,7 +20,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@project-aqua/ui/components/table";
+} from "@lane4hq/ui/components/table";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { setAttendanceAction, setRsvpAction } from "../actions";

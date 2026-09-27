@@ -4,7 +4,7 @@ import { AcceptInviteContent } from "./accept-invite-content";
 
 export const metadata: Metadata = {
   title: "Accept invitation",
-  description: "Join a swim team on Project Aqua.",
+  description: "Join a swim team on Lane4 HQ.",
 };
 
 export default function AcceptInvitePage() {

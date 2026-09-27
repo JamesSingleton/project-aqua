@@ -1,5 +1,5 @@
 {
-  "name": "@project-aqua/db",
+  "name": "@lane4hq/db",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -43,15 +43,15 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
-    "@project-aqua/swim-core": "workspace:*",
+    "@lane4hq/swim-core": "workspace:*",
     "@t3-oss/env-nextjs": "catalog:",
     "drizzle-orm": "catalog:",
     "postgres": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@project-aqua/storage": "workspace:*",
-    "@project-aqua/typescript-config": "workspace:*",
+    "@lane4hq/storage": "workspace:*",
+    "@lane4hq/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "drizzle-kit": "catalog:",

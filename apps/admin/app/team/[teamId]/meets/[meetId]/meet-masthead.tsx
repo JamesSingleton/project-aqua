@@ -1,8 +1,8 @@
 import {
   formatDateOnly,
   formatDateOnlyLabel,
-} from "@project-aqua/swim-core/calendar-date";
-import { Badge } from "@project-aqua/ui/components/badge";
+} from "@lane4hq/swim-core/calendar-date";
+import { Badge } from "@lane4hq/ui/components/badge";
 
 const DATE_LABEL = {
   month: "short",

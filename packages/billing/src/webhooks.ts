@@ -1,16 +1,13 @@
-import { db } from "@project-aqua/db/client";
-import {
-  getOwnerEmail,
-  updateSubscription,
-} from "@project-aqua/db/queries/billing";
-import { organization } from "@project-aqua/db/schema";
+import { db } from "@lane4hq/db/client";
+import { getOwnerEmail, updateSubscription } from "@lane4hq/db/queries/billing";
+import { organization } from "@lane4hq/db/schema";
 import {
   sendPaymentFailed,
   sendPlanDowngraded,
   sendSubscriptionConfirmed,
   sendSubscriptionRenewed,
-} from "@project-aqua/emails";
-import type { PlanTier } from "@project-aqua/swim-core/plans";
+} from "@lane4hq/emails";
+import type { PlanTier } from "@lane4hq/swim-core/plans";
 import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 import { keys } from "./keys";
@@ -130,7 +127,7 @@ export async function handleStripeWebhook(
 }
 
 async function findSubscriptionByCustomer(customerId: string) {
-  const { subscriptions } = await import("@project-aqua/db/schema");
+  const { subscriptions } = await import("@lane4hq/db/schema");
   const [sub] = await db
     .select()
     .from(subscriptions)
@@ -140,7 +137,7 @@ async function findSubscriptionByCustomer(customerId: string) {
 }
 
 async function findSubscriptionByStripeId(stripeSubscriptionId: string) {
-  const { subscriptions } = await import("@project-aqua/db/schema");
+  const { subscriptions } = await import("@lane4hq/db/schema");
   const [sub] = await db
     .select()
     .from(subscriptions)

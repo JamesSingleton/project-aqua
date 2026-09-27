@@ -16,7 +16,7 @@ export default function CoachInvitation({
 }: CoachInvitationProps) {
   return (
     <EmailLayout
-      preview={`Join ${teamName} on Project Aqua`}
+      preview={`Join ${teamName} on Lane4 HQ`}
       heading="You've been invited!"
     >
       <Text style={textStyle}>
@@ -32,6 +32,6 @@ export default function CoachInvitation({
 CoachInvitation.PreviewProps = {
   inviterName: "Coach Jane",
   teamName: "FAST Swim Club",
-  inviteUrl: "https://app.projectaqua.com/accept-invite?id=abc",
+  inviteUrl: "https://admin.lane4hq.com/accept-invite?id=abc",
   role: "assistant coach",
 } satisfies CoachInvitationProps;

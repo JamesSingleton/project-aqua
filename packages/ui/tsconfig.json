@@ -1,10 +1,10 @@
 {
-  "extends": "@project-aqua/typescript-config/react-library.json",
+  "extends": "@lane4hq/typescript-config/react-library.json",
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "paths": {
-      "@project-aqua/ui/*": ["./src/*"]
+      "@lane4hq/ui/*": ["./src/*"]
     }
   },
   "include": ["."],

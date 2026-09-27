@@ -1,18 +1,15 @@
-import { getSession } from "@project-aqua/auth/session";
-import { assertFeature } from "@project-aqua/billing/features";
-import { requireTeamRole } from "@project-aqua/db/authz";
-import { listMeetEventTemplatesSafe } from "@project-aqua/db/queries/meet-event-templates";
-import {
-  getMeetRelayLegsDetailed,
-  getMeets,
-} from "@project-aqua/db/queries/meets";
+import { getSession } from "@lane4hq/auth/session";
+import { assertFeature } from "@lane4hq/billing/features";
+import { requireTeamRole } from "@lane4hq/db/authz";
+import { listMeetEventTemplatesSafe } from "@lane4hq/db/queries/meet-event-templates";
+import { getMeetRelayLegsDetailed, getMeets } from "@lane4hq/db/queries/meets";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getMeetDetailAction } from "../../../actions";

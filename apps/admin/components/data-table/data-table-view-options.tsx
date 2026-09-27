@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@project-aqua/ui/components/button";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Command,
   CommandEmpty,
@@ -8,13 +8,13 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@project-aqua/ui/components/command";
+} from "@lane4hq/ui/components/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@project-aqua/ui/components/popover";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/popover";
+import { cn } from "@lane4hq/ui/lib/utils";
 import type { ReactTable, RowData } from "@tanstack/react-table";
 import { Settings2Icon } from "lucide-react";
 import * as React from "react";

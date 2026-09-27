@@ -2,12 +2,12 @@ import {
   currentSeasonRange,
   nextSeasonRange,
   seasonRangeFromLabel,
-} from "@project-aqua/swim-core/age";
+} from "@lane4hq/swim-core/age";
 import type {
   AcademicStanding,
   ClassYear,
   EligibilityStatus,
-} from "@project-aqua/swim-core/team-types";
+} from "@lane4hq/swim-core/team-types";
 import {
   advanceAcademicStanding,
   advanceClassYear,
@@ -15,7 +15,7 @@ import {
   parseAcademicStanding,
   parseClassYear,
   parseEligibilityStatus,
-} from "@project-aqua/swim-core/team-types";
+} from "@lane4hq/swim-core/team-types";
 import { and, asc, desc, eq, ilike, notInArray, or } from "drizzle-orm";
 import { db } from "../client";
 import { seasonEnrollments, teamSeasons } from "../schema/seasons";

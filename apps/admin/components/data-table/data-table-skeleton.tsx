@@ -1,4 +1,4 @@
-import { Skeleton } from "@project-aqua/ui/components/skeleton";
+import { Skeleton } from "@lane4hq/ui/components/skeleton";
 import {
   Table,
   TableBody,
@@ -6,7 +6,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@project-aqua/ui/components/table";
+} from "@lane4hq/ui/components/table";
 
 interface DataTableSkeletonProps {
   columnCount?: number;

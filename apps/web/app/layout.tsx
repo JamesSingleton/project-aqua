@@ -1,6 +1,6 @@
-import "@project-aqua/ui/globals.css";
+import "@lane4hq/ui/globals.css";
 import "./marketing.css";
-import { cn } from "@project-aqua/ui/lib/utils";
+import { cn } from "@lane4hq/ui/lib/utils";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import type { Metadata, Viewport } from "next";
@@ -17,7 +17,7 @@ const syne = Syne({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://projectaqua.com"),
+  metadataBase: new URL("https://www.lane4hq.com"),
   title: {
     template: `%s | ${SITE_NAME}`,
     default: SITE_TITLE,

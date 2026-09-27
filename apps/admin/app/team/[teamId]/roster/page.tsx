@@ -1,20 +1,20 @@
-import { isCoachingRole } from "@project-aqua/auth/roles";
-import { getSession } from "@project-aqua/auth/session";
-import { getMember, requireTeamMember } from "@project-aqua/db/authz";
-import { db } from "@project-aqua/db/client";
-import { getTeamMembers } from "@project-aqua/db/queries/members";
-import { getTeamUiPreferences } from "@project-aqua/db/queries/preferences";
+import { isCoachingRole } from "@lane4hq/auth/roles";
+import { getSession } from "@lane4hq/auth/session";
+import { getMember, requireTeamMember } from "@lane4hq/db/authz";
+import { db } from "@lane4hq/db/client";
+import { getTeamMembers } from "@lane4hq/db/queries/members";
+import { getTeamUiPreferences } from "@lane4hq/db/queries/preferences";
 import {
   getRoster,
   getRosterFacetCounts,
   getRosterPage,
   type RosterRowResult,
-} from "@project-aqua/db/queries/roster";
+} from "@lane4hq/db/queries/roster";
 import {
   ensureCurrentSeason,
   listTeamSeasons,
-} from "@project-aqua/db/queries/seasons";
-import { organization, type TeamUiState } from "@project-aqua/db/schema";
+} from "@lane4hq/db/queries/seasons";
+import { organization, type TeamUiState } from "@lane4hq/db/schema";
 import {
   CLASS_YEAR_LABELS,
   CLASS_YEARS,
@@ -24,21 +24,21 @@ import {
   supportsCollegeEligibility,
   supportsUsaSwimmingIntegration,
   teamTypeLabel,
-} from "@project-aqua/swim-core/team-types";
-import { buttonVariants } from "@project-aqua/ui/components/button";
+} from "@lane4hq/swim-core/team-types";
+import { buttonVariants } from "@lane4hq/ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@project-aqua/ui/components/tabs";
+} from "@lane4hq/ui/components/tabs";
 import type {
   ColumnVisibilityState,
   SortingState,

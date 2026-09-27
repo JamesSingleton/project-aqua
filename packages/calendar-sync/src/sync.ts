@@ -3,13 +3,13 @@ import {
   getCalendarConnectionById,
   getCalendarEvent,
   getEventLinkByExternal,
-  getEventLinksForAquaEvent,
+  getEventLinksForEvent,
   listCalendarEvents,
   recordSyncConflict,
   updateCalendarConnection,
   updateCalendarEvent,
   upsertEventLink,
-} from "@project-aqua/db/queries/calendar";
+} from "@lane4hq/db/queries/calendar";
 import {
   deleteGoogleEvent,
   listGoogleEvents,
@@ -21,18 +21,18 @@ import {
   upsertMicrosoftEvent,
 } from "./microsoft";
 
-/** Push a single Aqua event to all active connections for the org (caller filters). */
-export async function pushAquaEventToConnection(
+/** Push a single Lane4 HQ event to all active connections for the org (caller filters). */
+export async function pushEventToConnection(
   connectionId: string,
-  aquaEventId: string,
+  eventId: string,
 ) {
   const connection = await getCalendarConnectionById(connectionId);
   if (!connection || connection.status !== "active") return;
 
-  const event = await getCalendarEvent(aquaEventId, connection.organizationId);
+  const event = await getCalendarEvent(eventId, connection.organizationId);
   if (!event) return;
 
-  const links = await getEventLinksForAquaEvent(aquaEventId);
+  const links = await getEventLinksForEvent(eventId);
   const existing = links.find((l) => l.connectionId === connectionId);
 
   if (connection.provider === "google") {
@@ -49,13 +49,13 @@ export async function pushAquaEventToConnection(
       },
     );
     await upsertEventLink({
-      aquaEventId,
+      eventId,
       connectionId,
       provider: "google",
       externalCalendarId: connection.externalCalendarId,
       externalEventId: external.id,
       externalEtag: external.etag,
-      aquaVersionAtSync: event.aquaVersion,
+      eventVersionAtSync: event.version,
       direction: "push",
     });
     return;
@@ -74,24 +74,24 @@ export async function pushAquaEventToConnection(
     },
   );
   await upsertEventLink({
-    aquaEventId,
+    eventId,
     connectionId,
     provider: "microsoft",
     externalCalendarId: connection.externalCalendarId,
     externalEventId: external.id,
     externalEtag: external.etag,
-    aquaVersionAtSync: event.aquaVersion,
+    eventVersionAtSync: event.version,
     direction: "push",
   });
 }
 
-export async function deleteAquaEventFromConnection(
+export async function deleteEventFromConnection(
   connectionId: string,
-  aquaEventId: string,
+  eventId: string,
 ) {
   const connection = await getCalendarConnectionById(connectionId);
   if (!connection) return;
-  const links = await getEventLinksForAquaEvent(aquaEventId);
+  const links = await getEventLinksForEvent(eventId);
   const existing = links.find((l) => l.connectionId === connectionId);
   if (!existing) return;
 
@@ -111,8 +111,8 @@ export async function deleteAquaEventFromConnection(
 }
 
 /**
- * Pull remote changes. Aqua-wins for mapped team events when both sides dirty.
- * Unmapped remote events on the dedicated calendar are pulled into Aqua as `other`.
+ * Pull remote changes. Lane4 HQ wins for mapped team events when both sides dirty.
+ * Unmapped remote events on the dedicated calendar are pulled into Lane4 HQ as `other`.
  */
 export async function pullConnectionChanges(connectionId: string) {
   const connection = await getCalendarConnectionById(connectionId);
@@ -134,42 +134,42 @@ export async function pullConnectionChanges(connectionId: string) {
 
     for (const remote of listed.events) {
       if (remote.status === "cancelled") {
-        // Aqua remains source of truth — mapped events will be recreated on next push
+        // Lane4 HQ remains source of truth — mapped events will be recreated on next push
         continue;
       }
 
       const link = await getEventLinkByExternal(connectionId, remote.id);
       if (link) {
-        const aqua = await getCalendarEvent(
-          link.aquaEventId,
+        const local = await getCalendarEvent(
+          link.eventId,
           connection.organizationId,
         );
-        if (!aqua) continue;
+        if (!local) continue;
 
-        const aquaChanged = aqua.aquaVersion > link.aquaVersionAtSync;
+        const localChanged = local.version > link.eventVersionAtSync;
         const remoteChanged =
           remote.etag && link.externalEtag && remote.etag !== link.externalEtag;
 
-        if (aquaChanged && remoteChanged) {
+        if (localChanged && remoteChanged) {
           await recordSyncConflict({
             organizationId: connection.organizationId,
-            aquaEventId: aqua.id,
+            eventId: local.id,
             connectionId,
             provider: connection.provider,
             externalEventId: remote.id,
             details: {
-              message: "Both sides changed; Aqua version kept",
-              aquaVersion: aqua.aquaVersion,
+              message: "Both sides changed; Lane4 HQ version kept",
+              localVersion: local.version,
               remoteEtag: remote.etag,
             },
           });
-          // Re-push Aqua version
-          await pushAquaEventToConnection(connectionId, aqua.id);
+          // Re-push Lane4 HQ version
+          await pushEventToConnection(connectionId, local.id);
           continue;
         }
 
-        if (remoteChanged && !aquaChanged) {
-          await updateCalendarEvent(aqua.id, connection.organizationId, {
+        if (remoteChanged && !localChanged) {
+          await updateCalendarEvent(local.id, connection.organizationId, {
             title: remote.title,
             description: remote.description,
             location: remote.location,
@@ -177,25 +177,25 @@ export async function pullConnectionChanges(connectionId: string) {
             endsAt: remote.endsAt ? new Date(remote.endsAt) : undefined,
           });
           const updated = await getCalendarEvent(
-            aqua.id,
+            local.id,
             connection.organizationId,
           );
           await upsertEventLink({
-            aquaEventId: aqua.id,
+            eventId: local.id,
             connectionId,
             provider: connection.provider,
             externalCalendarId: connection.externalCalendarId,
             externalEventId: remote.id,
             externalEtag: remote.etag,
-            aquaVersionAtSync: updated?.aquaVersion ?? aqua.aquaVersion,
+            eventVersionAtSync: updated?.version ?? local.version,
             direction: "pull",
           });
         }
         continue;
       }
 
-      // Unmapped remote event on dedicated calendar → create in Aqua
-      const aquaEventId = await createCalendarEvent(connection.organizationId, {
+      // Unmapped remote event on dedicated calendar → create in Lane4 HQ
+      const eventId = await createCalendarEvent(connection.organizationId, {
         title: remote.title,
         description: remote.description,
         location: remote.location,
@@ -205,13 +205,13 @@ export async function pullConnectionChanges(connectionId: string) {
         createdByUserId: connection.userId,
       });
       await upsertEventLink({
-        aquaEventId,
+        eventId,
         connectionId,
         provider: connection.provider,
         externalCalendarId: connection.externalCalendarId,
         externalEventId: remote.id,
         externalEtag: remote.etag,
-        aquaVersionAtSync: 1,
+        eventVersionAtSync: 1,
         direction: "pull",
       });
     }
@@ -243,6 +243,6 @@ export async function pushAllEventsToConnection(connectionId: string) {
     to,
   });
   for (const event of events) {
-    await pushAquaEventToConnection(connectionId, event.id);
+    await pushEventToConnection(connectionId, event.id);
   }
 }

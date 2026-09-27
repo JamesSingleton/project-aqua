@@ -1,6 +1,6 @@
-# Project Aqua
+# Lane4 HQ
 
-Project Aqua is a visiting-team swim coach SaaS for rosters, meet entries, results, workouts, attendance, and calendars.
+Lane4 HQ is a visiting-team swim coach SaaS for rosters, meet entries, results, workouts, attendance, and calendars.
 
 The coach app covers meets your team attends. Host-team entry merging, a family portal, and a timing console are outside the current scope.
 

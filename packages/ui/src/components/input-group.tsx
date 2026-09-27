@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@project-aqua/ui/components/button";
-import { Input } from "@project-aqua/ui/components/input";
-import { Textarea } from "@project-aqua/ui/components/textarea";
-import { cn } from "@project-aqua/ui/lib/utils";
+import { Button } from "@lane4hq/ui/components/button";
+import { Input } from "@lane4hq/ui/components/input";
+import { Textarea } from "@lane4hq/ui/components/textarea";
+import { cn } from "@lane4hq/ui/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import type * as React from "react";
 

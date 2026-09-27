@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge } from "@project-aqua/ui/components/badge";
+import { Badge } from "@lane4hq/ui/components/badge";
 import {
   Select,
   SelectContent,
@@ -8,7 +8,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
+} from "@lane4hq/ui/components/select";
 import { parseAsString, useQueryState } from "nuqs";
 
 export type SeasonOption = {

@@ -1,11 +1,11 @@
-import { formatTime } from "@project-aqua/swim-core/times";
+import { formatTime } from "@lane4hq/swim-core/times";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import Link from "next/link";
 
 export type CutTrackerRow = {

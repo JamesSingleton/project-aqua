@@ -1,4 +1,4 @@
-import type { MeetEntriesView } from "@project-aqua/db/schema";
+import type { MeetEntriesView } from "@lane4hq/db/schema";
 import { saveMeetEntriesViewAction } from "./actions";
 
 const storageKey = (teamId: string) => `pa:meetEntriesView:${teamId}`;

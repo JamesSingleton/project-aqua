@@ -1,4 +1,4 @@
-import { getSession } from "@project-aqua/auth/session";
+import { getSession } from "@lane4hq/auth/session";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -9,7 +9,7 @@ import { getConfiguredSocialProviders } from "@/lib/auth-providers";
 
 export const metadata: Metadata = {
   title: "Sign up",
-  description: "Create a Project Aqua account to manage your swim team.",
+  description: "Create a Lane4 HQ account to manage your swim team.",
 };
 
 export default async function SignUpPage({

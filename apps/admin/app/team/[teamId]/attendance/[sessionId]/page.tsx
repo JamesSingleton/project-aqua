@@ -1,18 +1,18 @@
-import { getSession } from "@project-aqua/auth/session";
-import { requireTeamMember } from "@project-aqua/db/authz";
+import { getSession } from "@lane4hq/auth/session";
+import { requireTeamMember } from "@lane4hq/db/authz";
 import {
   getAttendanceForSession,
   getPracticeSession,
   getPracticeSessions,
-} from "@project-aqua/db/queries/attendance";
-import { getRoster } from "@project-aqua/db/queries/roster";
+} from "@lane4hq/db/queries/attendance";
+import { getRoster } from "@lane4hq/db/queries/roster";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";

@@ -1,4 +1,4 @@
-import { getSession } from "@project-aqua/auth/session";
+import { getSession } from "@lane4hq/auth/session";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -10,7 +10,7 @@ import { resolveTeamLandingPath } from "@/lib/resolve-team-landing";
 
 export const metadata: Metadata = {
   title: "Sign in",
-  description: "Sign in to your Project Aqua account.",
+  description: "Sign in to your Lane4 HQ account.",
 };
 
 export default async function SignInPage({

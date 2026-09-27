@@ -4,21 +4,21 @@ import {
   ELIGIBILITY_STATUS_LABELS,
   ELIGIBILITY_STATUSES,
   type EligibilityStatus,
-} from "@project-aqua/swim-core/team-types";
-import { Button } from "@project-aqua/ui/components/button";
+} from "@lane4hq/swim-core/team-types";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import {
   Field,
   FieldDescription,
   FieldGroup,
   FieldLabel,
-} from "@project-aqua/ui/components/field";
+} from "@lane4hq/ui/components/field";
 import {
   Select,
   SelectContent,
@@ -26,8 +26,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
-import { Textarea } from "@project-aqua/ui/components/textarea";
+} from "@lane4hq/ui/components/select";
+import { Textarea } from "@lane4hq/ui/components/textarea";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { updateSwimmerEligibilityAction } from "./actions";

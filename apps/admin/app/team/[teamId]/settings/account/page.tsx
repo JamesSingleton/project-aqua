@@ -1,10 +1,10 @@
-import { getSession } from "@project-aqua/auth/session";
-import { getMember, requireTeamMember } from "@project-aqua/db/authz";
-import { db } from "@project-aqua/db/client";
-import { getNotificationPreferences } from "@project-aqua/db/queries/notifications";
-import { getUserPreferences } from "@project-aqua/db/queries/preferences";
-import { listActiveSessionsForUser } from "@project-aqua/db/queries/sessions";
-import { user } from "@project-aqua/db/schema";
+import { getSession } from "@lane4hq/auth/session";
+import { getMember, requireTeamMember } from "@lane4hq/db/authz";
+import { db } from "@lane4hq/db/client";
+import { getNotificationPreferences } from "@lane4hq/db/queries/notifications";
+import { getUserPreferences } from "@lane4hq/db/queries/preferences";
+import { listActiveSessionsForUser } from "@lane4hq/db/queries/sessions";
+import { user } from "@lane4hq/db/schema";
 import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { EmailVerificationBanner } from "@/components/auth/email-verification-banner";
@@ -122,7 +122,7 @@ export default async function AccountSettingsPage({
 
       <SettingsSection
         title="Appearance"
-        description="Choose how Project Aqua looks across your devices."
+        description="Choose how Lane4 HQ looks across your devices."
         showSeparator
       >
         <AccountAppearanceForm teamId={teamId} initialTheme={userPrefs.theme} />

@@ -1,15 +1,15 @@
-import { db } from "@project-aqua/db/client";
+import { db } from "@lane4hq/db/client";
 import {
   addSwimmer,
   findSwimmerByGoverningBodyId,
   getSwimmerById,
-} from "@project-aqua/db/queries/roster";
+} from "@lane4hq/db/queries/roster";
 import {
   swimmerClubRegistrations,
   swimmers,
   teamSwimmerMemberships,
-} from "@project-aqua/db/schema";
-import { sendSwimsSyncSummary } from "@project-aqua/emails";
+} from "@lane4hq/db/schema";
+import { sendSwimsSyncSummary } from "@lane4hq/emails";
 import { and, eq } from "drizzle-orm";
 import { createSwimsClient } from "./client";
 
@@ -190,7 +190,7 @@ export async function syncCoachAptFromSwims(
   },
 ) {
   const { upsertStaffCredential } = await import(
-    "@project-aqua/db/queries/safesport"
+    "@lane4hq/db/queries/safesport"
   );
 
   await upsertStaffCredential({

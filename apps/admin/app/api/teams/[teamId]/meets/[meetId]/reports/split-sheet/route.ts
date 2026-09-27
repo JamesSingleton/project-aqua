@@ -1,6 +1,6 @@
-import { AuthError } from "@project-aqua/db/authz";
-import { renderToStream, SplitSheetPdfDocument } from "@project-aqua/reports";
-import { parseSplitCaptureInterval } from "@project-aqua/swim-core/split-capture";
+import { AuthError } from "@lane4hq/db/authz";
+import { renderToStream, SplitSheetPdfDocument } from "@lane4hq/reports";
+import { parseSplitCaptureInterval } from "@lane4hq/swim-core/split-capture";
 import { loadSplitSheetReport } from "@/app/team/[teamId]/meets/[meetId]/report/load-split-sheet-report";
 
 function safeFilename(name: string): string {

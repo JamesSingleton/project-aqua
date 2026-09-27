@@ -7,19 +7,19 @@ import {
   formatLocalDateOnly,
   formatLocalDateOnlyLabel,
   parseLocalDateOnly,
-} from "@project-aqua/swim-core/calendar-date";
-import { EVENT_CATALOG } from "@project-aqua/swim-core/event-catalog";
-import { formatBestTimeEventLabel } from "@project-aqua/swim-core/team-types";
-import { formatTime } from "@project-aqua/swim-core/times";
-import { Button } from "@project-aqua/ui/components/button";
-import { Calendar } from "@project-aqua/ui/components/calendar";
+} from "@lane4hq/swim-core/calendar-date";
+import { EVENT_CATALOG } from "@lane4hq/swim-core/event-catalog";
+import { formatBestTimeEventLabel } from "@lane4hq/swim-core/team-types";
+import { formatTime } from "@lane4hq/swim-core/times";
+import { Button } from "@lane4hq/ui/components/button";
+import { Calendar } from "@lane4hq/ui/components/calendar";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import {
   Dialog,
   DialogClose,
@@ -28,14 +28,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@project-aqua/ui/components/dialog";
-import { Input } from "@project-aqua/ui/components/input";
-import { Label } from "@project-aqua/ui/components/label";
+} from "@lane4hq/ui/components/dialog";
+import { Input } from "@lane4hq/ui/components/input";
+import { Label } from "@lane4hq/ui/components/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@project-aqua/ui/components/popover";
+} from "@lane4hq/ui/components/popover";
 import {
   Table,
   TableBody,
@@ -43,8 +43,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@project-aqua/ui/components/table";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/table";
+import { cn } from "@lane4hq/ui/lib/utils";
 import { CalendarIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";

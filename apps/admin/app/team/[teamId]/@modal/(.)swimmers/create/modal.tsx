@@ -5,7 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@project-aqua/ui/components/dialog";
+} from "@lane4hq/ui/components/dialog";
 import { useRouter } from "next/navigation";
 
 export function Modal({

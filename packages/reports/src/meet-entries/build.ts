@@ -1,13 +1,13 @@
 import {
   formatGenderLabel,
   formatStrokeLabel,
-} from "@project-aqua/swim-core/events";
-import type { MeetLineupSnapshot } from "@project-aqua/swim-core/meet-lineup-snapshot";
+} from "@lane4hq/swim-core/events";
+import type { MeetLineupSnapshot } from "@lane4hq/swim-core/meet-lineup-snapshot";
 import {
   normalizeLscCode,
   normalizeTeamCode,
-} from "@project-aqua/swim-core/team-codes";
-import { formatTime } from "@project-aqua/swim-core/times";
+} from "@lane4hq/swim-core/team-codes";
+import { formatTime } from "@lane4hq/swim-core/times";
 import type {
   MeetEntriesReport,
   MeetEntriesReportEvent,

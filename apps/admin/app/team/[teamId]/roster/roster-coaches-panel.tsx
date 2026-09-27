@@ -1,13 +1,13 @@
-import { COACH_ROLES, type CoachRole } from "@project-aqua/auth/roles";
-import { Badge } from "@project-aqua/ui/components/badge";
-import { buttonVariants } from "@project-aqua/ui/components/button";
+import { COACH_ROLES, type CoachRole } from "@lane4hq/auth/roles";
+import { Badge } from "@lane4hq/ui/components/badge";
+import { buttonVariants } from "@lane4hq/ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import {
   Table,
   TableBody,
@@ -15,7 +15,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@project-aqua/ui/components/table";
+} from "@lane4hq/ui/components/table";
 import Link from "next/link";
 
 export type RosterCoach = {

@@ -1,9 +1,6 @@
-import { getSession } from "@project-aqua/auth/session";
-import {
-  getOrganizationTeamType,
-  requireTeamMember,
-} from "@project-aqua/db/authz";
-import { supportsClassYear } from "@project-aqua/swim-core/team-types";
+import { getSession } from "@lane4hq/auth/session";
+import { getOrganizationTeamType, requireTeamMember } from "@lane4hq/db/authz";
+import { supportsClassYear } from "@lane4hq/swim-core/team-types";
 import type { Metadata } from "next";
 import CreateSwimmerForm from "./create-swimmer-form";
 

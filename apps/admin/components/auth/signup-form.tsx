@@ -1,17 +1,17 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signUp } from "@project-aqua/auth/client";
-import { Button } from "@project-aqua/ui/components/button";
+import { signUp } from "@lane4hq/auth/client";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Field,
   FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from "@project-aqua/ui/components/field";
-import { Input } from "@project-aqua/ui/components/input";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/field";
+import { Input } from "@lane4hq/ui/components/input";
+import { cn } from "@lane4hq/ui/lib/utils";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -89,7 +89,9 @@ export function SignupForm({
       return;
     }
 
-    router.push(callbackUrl);
+    const checkEmail = new URL("/check-email", window.location.origin);
+    checkEmail.searchParams.set("email", values.email);
+    router.push(`${checkEmail.pathname}${checkEmail.search}`);
     router.refresh();
   }
 
@@ -108,7 +110,7 @@ export function SignupForm({
           <div className="flex flex-col items-center gap-1 text-center">
             <h1 className="text-2xl font-bold">Create your account</h1>
             <p className="text-muted-foreground text-sm text-balance">
-              Start managing your swim team with Project Aqua
+              Start managing your swim team with Lane4 HQ
             </p>
           </div>
           {error ? <FieldError>{error}</FieldError> : null}

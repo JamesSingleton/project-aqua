@@ -1,17 +1,17 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { twoFactor } from "@project-aqua/auth/client";
-import { Button } from "@project-aqua/ui/components/button";
-import { Checkbox } from "@project-aqua/ui/components/checkbox";
+import { twoFactor } from "@lane4hq/auth/client";
+import { Button } from "@lane4hq/ui/components/button";
+import { Checkbox } from "@lane4hq/ui/components/checkbox";
 import {
   Field,
   FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from "@project-aqua/ui/components/field";
-import { Input } from "@project-aqua/ui/components/input";
+} from "@lane4hq/ui/components/field";
+import { Input } from "@lane4hq/ui/components/input";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

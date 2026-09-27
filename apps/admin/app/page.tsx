@@ -1,15 +1,15 @@
-import { getSession } from "@project-aqua/auth/session";
-import { getUserTeams } from "@project-aqua/db/authz";
-import { getUpcomingMeetsForOrganizations } from "@project-aqua/db/queries/meets";
-import { parseDateOnly } from "@project-aqua/swim-core/calendar-date";
-import { Button } from "@project-aqua/ui/components/button";
+import { getSession } from "@lane4hq/auth/session";
+import { getUserTeams } from "@lane4hq/db/authz";
+import { getUpcomingMeetsForOrganizations } from "@lane4hq/db/queries/meets";
+import { parseDateOnly } from "@lane4hq/swim-core/calendar-date";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";

@@ -1,7 +1,7 @@
 "use client";
 
-import { Checkbox } from "@project-aqua/ui/components/checkbox";
-import { Label } from "@project-aqua/ui/components/label";
+import { Checkbox } from "@lane4hq/ui/components/checkbox";
+import { Label } from "@lane4hq/ui/components/label";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export function ReportAlternatesToggle() {

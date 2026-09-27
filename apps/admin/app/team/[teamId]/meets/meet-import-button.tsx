@@ -8,19 +8,19 @@ import {
   parseEventGender,
   type RelayStroke,
   type Stroke,
-} from "@project-aqua/swim-core/events";
-import { formatTime } from "@project-aqua/swim-core/times";
+} from "@lane4hq/swim-core/events";
+import { formatTime } from "@lane4hq/swim-core/times";
 import {
   detectMeetFileFormat,
   isZipFilename,
-} from "@project-aqua/swim-formats/meet";
+} from "@lane4hq/swim-formats/meet";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@project-aqua/ui/components/alert";
-import { Button } from "@project-aqua/ui/components/button";
-import { Checkbox } from "@project-aqua/ui/components/checkbox";
+} from "@lane4hq/ui/components/alert";
+import { Button } from "@lane4hq/ui/components/button";
+import { Checkbox } from "@lane4hq/ui/components/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -28,14 +28,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@project-aqua/ui/components/dialog";
+} from "@lane4hq/ui/components/dialog";
 import {
   Field,
   FieldDescription,
   FieldLabel,
-} from "@project-aqua/ui/components/field";
-import { Input } from "@project-aqua/ui/components/input";
-import { Label } from "@project-aqua/ui/components/label";
+} from "@lane4hq/ui/components/field";
+import { Input } from "@lane4hq/ui/components/input";
+import { Label } from "@lane4hq/ui/components/label";
 import {
   Select,
   SelectContent,
@@ -43,8 +43,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/select";
+import { cn } from "@lane4hq/ui/lib/utils";
 import { AlertTriangleIcon, Loader, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { parseAsStringEnum, useQueryState } from "nuqs";
@@ -601,8 +601,8 @@ export function MeetImportButton({
                     {preview.skippedDiveEvents === 1
                       ? "1 diving event was found in this file and was not imported."
                       : `${preview.skippedDiveEvents} diving events were found in this file and were not imported.`}{" "}
-                    Project Aqua currently supports swim events only; diving
-                    support is planned.
+                    Lane4 HQ currently supports swim events only; diving support
+                    is planned.
                   </AlertDescription>
                 </Alert>
               ) : null}

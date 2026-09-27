@@ -1,17 +1,17 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "@project-aqua/auth/client";
-import { Button } from "@project-aqua/ui/components/button";
+import { signIn } from "@lane4hq/auth/client";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Field,
   FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from "@project-aqua/ui/components/field";
-import { Input } from "@project-aqua/ui/components/input";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/field";
+import { Input } from "@lane4hq/ui/components/input";
+import { cn } from "@lane4hq/ui/lib/utils";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -68,6 +68,13 @@ export function LoginForm({
     });
 
     if (result.error) {
+      const code = result.error.code;
+      if (code === "EMAIL_NOT_VERIFIED") {
+        const checkEmail = new URL("/check-email", window.location.origin);
+        checkEmail.searchParams.set("email", values.email);
+        router.push(`${checkEmail.pathname}${checkEmail.search}`);
+        return;
+      }
       setError(result.error.message ?? "Sign in failed");
       return;
     }

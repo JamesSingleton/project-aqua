@@ -1,29 +1,29 @@
-import { getSession } from "@project-aqua/auth/session";
+import { getSession } from "@lane4hq/auth/session";
 import {
   getOrganizationName,
   getOrganizationTeamType,
   requireTeamMember,
-} from "@project-aqua/db/authz";
+} from "@lane4hq/db/authz";
 import {
   getAnalyticsSummary,
   getAttendanceSeries,
   getVolumeSeries,
-} from "@project-aqua/db/queries/analytics";
-import { getTeamPlan } from "@project-aqua/db/queries/billing";
-import { getTeamBestTimes } from "@project-aqua/db/queries/progression";
+} from "@lane4hq/db/queries/analytics";
+import { getTeamPlan } from "@lane4hq/db/queries/billing";
+import { getTeamBestTimes } from "@lane4hq/db/queries/progression";
 import {
   getTimeStandardCuts,
   listTimeStandardSets,
-} from "@project-aqua/db/queries/time-standards";
-import { planHasFeature } from "@project-aqua/swim-core/plans";
-import { formatBestTimeEventLabel } from "@project-aqua/swim-core/team-types";
+} from "@lane4hq/db/queries/time-standards";
+import { planHasFeature } from "@lane4hq/swim-core/plans";
+import { formatBestTimeEventLabel } from "@lane4hq/swim-core/team-types";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import type { Metadata } from "next";
 import { AttendanceChart, VolumeChart } from "@/components/analytics-charts";
 import { PageHeader, TimingBoard } from "@/components/page-header";

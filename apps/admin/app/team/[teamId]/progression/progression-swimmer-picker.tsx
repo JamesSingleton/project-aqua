@@ -7,8 +7,8 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
-} from "@project-aqua/ui/components/combobox";
-import { Label } from "@project-aqua/ui/components/label";
+} from "@lane4hq/ui/components/combobox";
+import { Label } from "@lane4hq/ui/components/label";
 import {
   Select,
   SelectContent,
@@ -16,7 +16,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
+} from "@lane4hq/ui/components/select";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {

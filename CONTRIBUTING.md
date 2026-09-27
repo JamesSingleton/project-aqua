@@ -50,4 +50,4 @@ Do you have questions? Join the conversation in our [discussions](https://github
 
 ## License
 
-Project Aqua is open-source under the GNU Affero General Public License Version 3 (AGPLv3) or any later version.
+Lane4 HQ is open-source under the GNU Affero General Public License Version 3 (AGPLv3) or any later version.

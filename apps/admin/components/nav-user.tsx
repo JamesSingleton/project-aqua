@@ -4,7 +4,7 @@ import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "@project-aqua/ui/components/avatar";
+} from "@lane4hq/ui/components/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,13 +13,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@project-aqua/ui/components/dropdown-menu";
+} from "@lane4hq/ui/components/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@project-aqua/ui/components/sidebar";
+} from "@lane4hq/ui/components/sidebar";
 import {
   BadgeCheck,
   BookOpen,

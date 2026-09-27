@@ -1,13 +1,13 @@
-import { getSession } from "@project-aqua/auth/session";
-import { getMember, getOrganizationTeamType } from "@project-aqua/db/authz";
-import { db } from "@project-aqua/db/client";
-import { getTeamMembers } from "@project-aqua/db/queries/members";
-import { organization } from "@project-aqua/db/schema";
+import { getSession } from "@lane4hq/auth/session";
+import { getMember, getOrganizationTeamType } from "@lane4hq/db/authz";
+import { db } from "@lane4hq/db/client";
+import { getTeamMembers } from "@lane4hq/db/queries/members";
+import { organization } from "@lane4hq/db/schema";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@project-aqua/ui/components/alert";
+} from "@lane4hq/ui/components/alert";
 import { eq } from "drizzle-orm";
 import { AlertCircle } from "lucide-react";
 import type { Metadata } from "next";

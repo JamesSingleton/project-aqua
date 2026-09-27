@@ -3,7 +3,7 @@ import {
   removeUserAvatar,
   uploadTeamLogo,
   uploadUserAvatar,
-} from "@project-aqua/storage";
+} from "@lane4hq/storage";
 import postgres from "postgres";
 import { downloadPublicImage } from "./download-public-image";
 

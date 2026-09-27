@@ -1,12 +1,12 @@
 "use client";
 
-import { sendVerificationEmail } from "@project-aqua/auth/client";
+import { sendVerificationEmail } from "@lane4hq/auth/client";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@project-aqua/ui/components/alert";
-import { Button } from "@project-aqua/ui/components/button";
+} from "@lane4hq/ui/components/alert";
+import { Button } from "@lane4hq/ui/components/button";
 import { useState, useTransition } from "react";
 
 export function EmailVerificationBanner({

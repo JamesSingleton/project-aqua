@@ -1,5 +1,5 @@
-import { pullConnectionChanges } from "@project-aqua/calendar-sync/sync";
-import { updateCalendarConnection } from "@project-aqua/db/queries/calendar";
+import { pullConnectionChanges } from "@lane4hq/calendar-sync/sync";
+import { updateCalendarConnection } from "@lane4hq/db/queries/calendar";
 import { after } from "next/server";
 
 export async function POST(request: Request) {

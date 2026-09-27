@@ -1,5 +1,5 @@
 {
-  "extends": "@project-aqua/typescript-config/react-library.json",
+  "extends": "@lane4hq/typescript-config/react-library.json",
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "dist"

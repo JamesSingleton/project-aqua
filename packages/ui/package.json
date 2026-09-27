@@ -1,5 +1,5 @@
 {
-  "name": "@project-aqua/ui",
+  "name": "@lane4hq/ui",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -38,7 +38,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@project-aqua/typescript-config": "workspace:*",
+    "@lane4hq/typescript-config": "workspace:*",
     "@tailwindcss/postcss": "^4.3.3",
     "@turbo/gen": "^2.11.0",
     "@types/node": "catalog:",

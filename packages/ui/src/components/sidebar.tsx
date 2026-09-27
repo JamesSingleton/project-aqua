@@ -2,24 +2,24 @@
 
 import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
-import { Button } from "@project-aqua/ui/components/button";
-import { Input } from "@project-aqua/ui/components/input";
-import { Separator } from "@project-aqua/ui/components/separator";
+import { Button } from "@lane4hq/ui/components/button";
+import { Input } from "@lane4hq/ui/components/input";
+import { Separator } from "@lane4hq/ui/components/separator";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@project-aqua/ui/components/sheet";
-import { Skeleton } from "@project-aqua/ui/components/skeleton";
+} from "@lane4hq/ui/components/sheet";
+import { Skeleton } from "@lane4hq/ui/components/skeleton";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@project-aqua/ui/components/tooltip";
-import { useIsMobile } from "@project-aqua/ui/hooks/use-mobile";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/tooltip";
+import { useIsMobile } from "@lane4hq/ui/hooks/use-mobile";
+import { cn } from "@lane4hq/ui/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import { PanelLeftIcon } from "lucide-react";
 import * as React from "react";

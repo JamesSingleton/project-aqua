@@ -2,7 +2,7 @@ export const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL ??
   (process.env.NODE_ENV === "development"
     ? "http://localhost:3001"
-    : "https://project-aqua-admin.vercel.app");
+    : "https://admin.lane4hq.com");
 
 export const DOCS_URL =
   process.env.NEXT_PUBLIC_DOCS_URL ?? "http://localhost:3004";
@@ -12,7 +12,7 @@ export const SIGN_UP_URL = `${APP_URL}/sign-up`;
 export const GITHUB_URL = "https://github.com/JamesSingleton/project-aqua";
 export const GITHUB_ISSUES_URL = `${GITHUB_URL}/issues`;
 
-export const SITE_NAME = "Project Aqua";
+export const SITE_NAME = "Lane4 HQ";
 
 export const SITE_TAGLINE =
   "Roster, entries, and results for the team you coach.";

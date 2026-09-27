@@ -2,8 +2,8 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@project-aqua/ui/components/alert";
-import { Button } from "@project-aqua/ui/components/button";
+} from "@lane4hq/ui/components/alert";
+import { Button } from "@lane4hq/ui/components/button";
 import type { Metadata } from "next";
 import { PageIntro, Section } from "@/components/section";
 import { SupportForm } from "@/components/support-form";

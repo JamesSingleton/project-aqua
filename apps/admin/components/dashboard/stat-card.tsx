@@ -1,5 +1,5 @@
-import { Avatar, AvatarFallback } from "@project-aqua/ui/components/avatar";
-import { Button } from "@project-aqua/ui/components/button";
+import { Avatar, AvatarFallback } from "@lane4hq/ui/components/avatar";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Card,
   CardAction,
@@ -7,8 +7,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/card";
+import { cn } from "@lane4hq/ui/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 

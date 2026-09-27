@@ -1,17 +1,14 @@
 import {
   normalizeMeetEndDate,
   parseDateOnly,
-} from "@project-aqua/swim-core/calendar-date";
-import { isRelayStroke } from "@project-aqua/swim-core/entry-limits";
-import {
-  formatEventName,
-  parseEventGender,
-} from "@project-aqua/swim-core/events";
+} from "@lane4hq/swim-core/calendar-date";
+import { isRelayStroke } from "@lane4hq/swim-core/entry-limits";
+import { formatEventName, parseEventGender } from "@lane4hq/swim-core/events";
 import {
   RELAY_PRIMARY_LEG_COUNT,
   RELAY_TEAM_LETTERS,
-} from "@project-aqua/swim-core/relay-legs";
-import type { CreateMeetInput } from "@project-aqua/swim-core/validators";
+} from "@lane4hq/swim-core/relay-legs";
+import type { CreateMeetInput } from "@lane4hq/swim-core/validators";
 import { and, asc, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "../client";
 import {

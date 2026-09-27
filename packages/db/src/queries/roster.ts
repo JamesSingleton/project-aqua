@@ -1,17 +1,14 @@
-import { isMinorSwimmer } from "@project-aqua/swim-core/age";
+import { isMinorSwimmer } from "@lane4hq/swim-core/age";
 import {
   normalizeDateOfBirth,
   swimmerIdentitiesMatch,
-} from "@project-aqua/swim-core/people";
-import {
-  parseClassYear,
-  parseTeamType,
-} from "@project-aqua/swim-core/team-types";
+} from "@lane4hq/swim-core/people";
+import { parseClassYear, parseTeamType } from "@lane4hq/swim-core/team-types";
 import type {
   RosterRow,
   SwimmerContactsInput,
   SwimmerMedicalInput,
-} from "@project-aqua/swim-core/validators";
+} from "@lane4hq/swim-core/validators";
 import {
   and,
   asc,
@@ -1311,11 +1308,11 @@ export type ImportRosterSharePackResult = {
   linked: number;
   merged: number;
   alreadyOnTeam: number;
-  failed: Array<{ aquaSwimmerId: string; name: string; reason: string }>;
+  failed: Array<{ swimmerId: string; name: string; reason: string }>;
 };
 
 /**
- * Link athletes from a Project Aqua roster share pack onto a team.
+ * Link athletes from a Lane4 HQ roster share pack onto a team.
  * Confirms name+DOB against the stored person. When this team already has a
  * different person row matching name+DOB, merges that duplicate into the
  * pack's opaque id so we do not keep two people.
@@ -1323,7 +1320,7 @@ export type ImportRosterSharePackResult = {
 export async function importRosterSharePack(
   organizationId: string,
   athletes: Array<{
-    aquaSwimmerId: string;
+    swimmerId: string;
     firstName: string;
     lastName: string;
     preferredName?: string | null;
@@ -1346,10 +1343,10 @@ export async function importRosterSharePack(
       preferredName: athlete.preferredName,
       dateOfBirth: athlete.dateOfBirth,
     };
-    const existing = await getSwimmerIdentityById(athlete.aquaSwimmerId);
+    const existing = await getSwimmerIdentityById(athlete.swimmerId);
     if (!existing) {
       result.failed.push({
-        aquaSwimmerId: athlete.aquaSwimmerId,
+        swimmerId: athlete.swimmerId,
         name,
         reason: "Swimmer not found — pack may be from another environment",
       });
@@ -1365,7 +1362,7 @@ export async function importRosterSharePack(
       })
     ) {
       result.failed.push({
-        aquaSwimmerId: athlete.aquaSwimmerId,
+        swimmerId: athlete.swimmerId,
         name,
         reason: "Name/DOB does not match stored profile",
       });
@@ -1385,7 +1382,7 @@ export async function importRosterSharePack(
 
     if (localMatches.length > 1) {
       result.failed.push({
-        aquaSwimmerId: athlete.aquaSwimmerId,
+        swimmerId: athlete.swimmerId,
         name,
         reason:
           "Multiple local roster matches — resolve duplicates on this team first",
@@ -1417,7 +1414,7 @@ export async function importRosterSharePack(
         result.alreadyOnTeam += 1;
       } else {
         result.failed.push({
-          aquaSwimmerId: athlete.aquaSwimmerId,
+          swimmerId: athlete.swimmerId,
           name,
           reason: message,
         });

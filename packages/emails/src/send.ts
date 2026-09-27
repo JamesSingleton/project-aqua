@@ -96,12 +96,12 @@ export interface EmailProps {
 }
 
 const SUBJECTS: Record<EmailType, string> = {
-  "verify-email": "Verify your email — Project Aqua",
-  "reset-password": "Reset your password — Project Aqua",
-  "password-changed": "Your password was changed — Project Aqua",
-  "two-factor-otp": "Your sign-in code — Project Aqua",
-  "coach-welcome": "Welcome to Project Aqua!",
-  "team-welcome": "Your team is ready — Project Aqua",
+  "verify-email": "Verify your email — Lane4 HQ",
+  "reset-password": "Reset your password — Lane4 HQ",
+  "password-changed": "Your password was changed — Lane4 HQ",
+  "two-factor-otp": "Your sign-in code — Lane4 HQ",
+  "coach-welcome": "Welcome to Lane4 HQ!",
+  "team-welcome": "Your team is ready — Lane4 HQ",
   "coach-invitation": "You've been invited to join a team",
   "invitation-accepted": "Invitation accepted",
   "role-changed": "Your role was updated",

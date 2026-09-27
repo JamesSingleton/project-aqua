@@ -25,5 +25,5 @@ export default function ResetPassword({ name, url }: ResetPasswordProps) {
 
 ResetPassword.PreviewProps = {
   name: "Coach Jane",
-  url: "https://app.projectaqua.com/reset?token=abc",
+  url: "https://admin.lane4hq.com/reset?token=abc",
 } satisfies ResetPasswordProps;

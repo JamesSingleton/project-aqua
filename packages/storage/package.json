@@ -1,5 +1,5 @@
 {
-  "name": "@project-aqua/storage",
+  "name": "@lane4hq/storage",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -20,7 +20,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@project-aqua/typescript-config": "workspace:*",
+    "@lane4hq/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "typescript": "catalog:",

@@ -12,8 +12,8 @@ import {
   LineChart,
   XAxis,
   YAxis,
-} from "@project-aqua/ui/components/chart";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/chart";
+import { cn } from "@lane4hq/ui/lib/utils";
 
 function volumeChartConfig(unitLabel: string) {
   return {

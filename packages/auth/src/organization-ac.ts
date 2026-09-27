@@ -7,7 +7,7 @@ import {
 } from "better-auth/plugins/organization/access";
 
 /**
- * Better Auth organization access control for Project Aqua coach roles.
+ * Better Auth organization access control for Lane4 HQ coach roles.
  * Extends default owner/admin/member with head_coach and assistant_coach.
  */
 export const orgAc = defaultAc as AccessControl;

@@ -3,7 +3,7 @@ import { PageIntro, Section } from "@/components/section";
 
 export const metadata: Metadata = {
   title: "Terms",
-  description: "Terms for using the Project Aqua coach workspace.",
+  description: "Terms for using the Lane4 HQ coach workspace.",
 };
 
 export default function TermsPage() {
@@ -15,10 +15,9 @@ export default function TermsPage() {
       />
       <Section className="flex max-w-2xl flex-col gap-6 pt-0 text-muted-foreground">
         <p>
-          By creating an account you may use Project Aqua to manage roster,
-          meets, workouts, calendar, and times for teams you belong to. Team
-          owners control seats, billing, and who can import or export meet
-          files.
+          By creating an account you may use Lane4 HQ to manage roster, meets,
+          workouts, calendar, and times for teams you belong to. Team owners
+          control seats, billing, and who can import or export meet files.
         </p>
         <p>
           You own the data you enter. You grant us a license to host and process

@@ -1,16 +1,16 @@
 "use client";
 
-import type { AssociationEventCaps } from "@project-aqua/swim-core/association-event-caps";
-import type { SharedDraftQuota } from "@project-aqua/swim-core/draft-quota";
+import type { AssociationEventCaps } from "@lane4hq/swim-core/association-event-caps";
+import type { SharedDraftQuota } from "@lane4hq/swim-core/draft-quota";
 import {
   isRelayStroke,
   type MeetEntryLimits,
-} from "@project-aqua/swim-core/entry-limits";
-import { formatEventName } from "@project-aqua/swim-core/events";
-import type { EligibilityStatus } from "@project-aqua/swim-core/team-types";
-import { blocksMeetEntries } from "@project-aqua/swim-core/team-types";
-import { Button } from "@project-aqua/ui/components/button";
-import { Tabs, TabsList, TabsTrigger } from "@project-aqua/ui/components/tabs";
+} from "@lane4hq/swim-core/entry-limits";
+import { formatEventName } from "@lane4hq/swim-core/events";
+import type { EligibilityStatus } from "@lane4hq/swim-core/team-types";
+import { blocksMeetEntries } from "@lane4hq/swim-core/team-types";
+import { Button } from "@lane4hq/ui/components/button";
+import { Tabs, TabsList, TabsTrigger } from "@lane4hq/ui/components/tabs";
 import type { ComponentProps } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { writeUnconfirmedMeetEntriesView } from "../meet-entries-view";

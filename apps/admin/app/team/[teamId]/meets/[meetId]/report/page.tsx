@@ -3,11 +3,11 @@ import {
   type MeetEntriesReport,
   SplitSheetHtmlReport,
   type SplitSheetReport,
-} from "@project-aqua/reports";
+} from "@lane4hq/reports";
 import {
   parseSplitCaptureInterval,
   type SplitCaptureInterval,
-} from "@project-aqua/swim-core/split-capture";
+} from "@lane4hq/swim-core/split-capture";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -157,7 +157,7 @@ export default async function MeetEntryReportPage({
             splitInterval={splitInterval}
             blankRelayLines={blankRelayLines}
             title="Split sheet"
-            description="Blank boxes for writing splits on paper. Times are not saved in Aqua."
+            description="Blank boxes for writing splits on paper. Times are not saved in Lane4 HQ."
           />
           <SplitSheetHtmlReport report={report} />
         </div>

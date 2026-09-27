@@ -14,8 +14,8 @@
     "components": "@/components",
     "hooks": "@/hooks",
     "lib": "@/lib",
-    "utils": "@project-aqua/ui/lib/utils",
-    "ui": "@project-aqua/ui/components"
+    "utils": "@lane4hq/ui/lib/utils",
+    "ui": "@lane4hq/ui/components"
   },
   "rtl": false,
   "menuColor": "default-translucent",

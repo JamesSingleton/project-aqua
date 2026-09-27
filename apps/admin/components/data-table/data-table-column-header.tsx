@@ -1,14 +1,14 @@
 "use client";
 
-import { Button } from "@project-aqua/ui/components/button";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@project-aqua/ui/components/dropdown-menu";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/dropdown-menu";
+import { cn } from "@lane4hq/ui/lib/utils";
 import type { Column, RowData } from "@tanstack/react-table";
 import {
   ChevronDownIcon,

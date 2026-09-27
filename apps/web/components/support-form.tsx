@@ -4,17 +4,17 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@project-aqua/ui/components/alert";
-import { Button } from "@project-aqua/ui/components/button";
+} from "@lane4hq/ui/components/alert";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Field,
   FieldDescription,
   FieldGroup,
   FieldLabel,
-} from "@project-aqua/ui/components/field";
-import { Input } from "@project-aqua/ui/components/input";
-import { Spinner } from "@project-aqua/ui/components/spinner";
-import { Textarea } from "@project-aqua/ui/components/textarea";
+} from "@lane4hq/ui/components/field";
+import { Input } from "@lane4hq/ui/components/input";
+import { Spinner } from "@lane4hq/ui/components/spinner";
+import { Textarea } from "@lane4hq/ui/components/textarea";
 import { useActionState } from "react";
 import { type SupportState, sendSupportMessage } from "@/app/support/actions";
 

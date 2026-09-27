@@ -1,15 +1,15 @@
 /**
- * Project Aqua roster share pack — coach-to-coach identity linking.
+ * Lane4 HQ roster share pack — coach-to-coach identity linking.
  *
- * Contains opaque aqua swimmer IDs plus minimal confirm fields only.
+ * Contains opaque swimmer IDs plus minimal confirm fields only.
  * Never includes contacts, medical, email, or phone.
  */
 
-export const ROSTER_SHARE_PACK_FORMAT = "project-aqua-roster-share" as const;
+export const ROSTER_SHARE_PACK_FORMAT = "lane4hq-roster-share" as const;
 export const ROSTER_SHARE_PACK_VERSION = 1 as const;
 
 export type RosterSharePackAthlete = {
-  aquaSwimmerId: string;
+  swimmerId: string;
   firstName: string;
   lastName: string;
   preferredName?: string | null;
@@ -42,8 +42,8 @@ function isGender(value: unknown): value is "male" | "female" {
 function normalizeAthlete(raw: unknown): RosterSharePackAthlete | null {
   if (!raw || typeof raw !== "object") return null;
   const row = raw as Record<string, unknown>;
-  const aquaSwimmerId =
-    typeof row.aquaSwimmerId === "string" ? row.aquaSwimmerId.trim() : "";
+  const swimmerId =
+    typeof row.swimmerId === "string" ? row.swimmerId.trim() : "";
   const firstName =
     typeof row.firstName === "string" ? row.firstName.trim() : "";
   const lastName = typeof row.lastName === "string" ? row.lastName.trim() : "";
@@ -51,7 +51,7 @@ function normalizeAthlete(raw: unknown): RosterSharePackAthlete | null {
     typeof row.dateOfBirth === "string"
       ? row.dateOfBirth.trim().slice(0, 10)
       : "";
-  if (!aquaSwimmerId || !firstName || !lastName || !dateOfBirth) return null;
+  if (!swimmerId || !firstName || !lastName || !dateOfBirth) return null;
   if (!isGender(row.gender)) return null;
 
   const preferredName =
@@ -64,7 +64,7 @@ function normalizeAthlete(raw: unknown): RosterSharePackAthlete | null {
       : null;
 
   return {
-    aquaSwimmerId,
+    swimmerId,
     firstName,
     lastName,
     preferredName,
@@ -74,17 +74,16 @@ function normalizeAthlete(raw: unknown): RosterSharePackAthlete | null {
   };
 }
 
-/** True when filename looks like a Project Aqua share pack. */
+/** True when filename looks like a Lane4 HQ share pack. */
 export function isRosterSharePackFilename(filename: string): boolean {
   const lower = filename.toLowerCase();
   return (
-    lower.endsWith(".aqua.json") ||
-    lower.endsWith(".aqua-roster.json") ||
+    lower.endsWith(".lane4hq.json") ||
     (lower.endsWith(".json") && lower.includes("share"))
   );
 }
 
-/** True when content is a v1 Project Aqua roster share pack. */
+/** True when content is a v1 Lane4 HQ roster share pack. */
 export function isRosterSharePack(content: string): boolean {
   const trimmed = content.trim();
   if (!trimmed.startsWith("{")) return false;
@@ -106,7 +105,7 @@ export function buildRosterSharePack(
   const athletes = input.athletes
     .map((athlete) =>
       normalizeAthlete({
-        aquaSwimmerId: athlete.aquaSwimmerId,
+        swimmerId: athlete.swimmerId,
         firstName: athlete.firstName,
         lastName: athlete.lastName,
         preferredName: athlete.preferredName ?? null,
@@ -120,7 +119,7 @@ export function buildRosterSharePack(
   // Deduplicate by opaque id (same person selected twice).
   const byId = new Map<string, RosterSharePackAthlete>();
   for (const athlete of athletes) {
-    byId.set(athlete.aquaSwimmerId, athlete);
+    byId.set(athlete.swimmerId, athlete);
   }
 
   return {
@@ -205,5 +204,5 @@ export function rosterSharePackFilename(teamName: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 48);
-  return `${slug || "team"}-roster-share.aqua.json`;
+  return `${slug || "team"}-roster-share.lane4hq.json`;
 }

@@ -1,17 +1,17 @@
 "use server";
 
-import { getSession } from "@project-aqua/auth/session";
+import { getSession } from "@lane4hq/auth/session";
 import {
   requireCoachSafeSportCurrent,
   requireTeamRole,
-} from "@project-aqua/db/authz";
-import { assignMembershipGroup } from "@project-aqua/db/queries/groups";
-import { getSwimmerById, updateSwimmer } from "@project-aqua/db/queries/roster";
-import { isMinorSwimmer } from "@project-aqua/swim-core/age";
+} from "@lane4hq/db/authz";
+import { assignMembershipGroup } from "@lane4hq/db/queries/groups";
+import { getSwimmerById, updateSwimmer } from "@lane4hq/db/queries/roster";
+import { isMinorSwimmer } from "@lane4hq/swim-core/age";
 import {
   normalizeCreateSwimmerFormValues,
   rosterRowSchema,
-} from "@project-aqua/swim-core/validators";
+} from "@lane4hq/swim-core/validators";
 import { revalidatePath } from "next/cache";
 import type { CreateSwimmerFormValues } from "@/schemas";
 

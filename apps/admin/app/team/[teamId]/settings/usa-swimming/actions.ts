@@ -1,12 +1,12 @@
 "use server";
 
-import { getSession } from "@project-aqua/auth/session";
-import { assertFeature } from "@project-aqua/billing/features";
-import { requireTeamRole } from "@project-aqua/db/authz";
-import { db } from "@project-aqua/db/client";
-import { organization } from "@project-aqua/db/schema";
-import { createSwimsClient } from "@project-aqua/usa-swimming/client";
-import { syncRoster } from "@project-aqua/usa-swimming/sync";
+import { getSession } from "@lane4hq/auth/session";
+import { assertFeature } from "@lane4hq/billing/features";
+import { requireTeamRole } from "@lane4hq/db/authz";
+import { db } from "@lane4hq/db/client";
+import { organization } from "@lane4hq/db/schema";
+import { createSwimsClient } from "@lane4hq/usa-swimming/client";
+import { syncRoster } from "@lane4hq/usa-swimming/sync";
 import { eq } from "drizzle-orm";
 
 export async function getVendorClubsAction(teamId: string) {

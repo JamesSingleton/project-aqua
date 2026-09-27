@@ -1,7 +1,4 @@
-import {
-  canUseAiGeneration,
-  getPlanLimits,
-} from "@project-aqua/swim-core/plans";
+import { canUseAiGeneration, getPlanLimits } from "@lane4hq/swim-core/plans";
 import { getTeamPlan } from "./billing";
 import {
   countAiGenerationsLastMinutes,

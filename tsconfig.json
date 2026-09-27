@@ -1,3 +1,3 @@
 {
-  "extends": "@project-aqua/typescript-config/base.json"
+  "extends": "@lane4hq/typescript-config/base.json"
 }

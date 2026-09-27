@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@project-aqua/ui/components/button";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Drawer,
   DrawerClose,
@@ -10,7 +10,7 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from "@project-aqua/ui/components/drawer";
+} from "@lane4hq/ui/components/drawer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,8 +19,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@project-aqua/ui/components/dropdown-menu";
-import { Separator } from "@project-aqua/ui/components/separator";
+} from "@lane4hq/ui/components/dropdown-menu";
+import { Separator } from "@lane4hq/ui/components/separator";
 import { ChevronDown, Download } from "lucide-react";
 import { useState } from "react";
 import { exportMeetAction, exportMeetZipAction } from "../actions";

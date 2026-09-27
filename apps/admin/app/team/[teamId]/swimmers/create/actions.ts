@@ -1,22 +1,22 @@
 "use server";
 
-import { getSession } from "@project-aqua/auth/session";
-import { canAddSwimmer } from "@project-aqua/billing/features";
+import { getSession } from "@lane4hq/auth/session";
+import { canAddSwimmer } from "@lane4hq/billing/features";
 import {
   requireCoachSafeSportCurrent,
   requireTeamMember,
   requireTeamRole,
-} from "@project-aqua/db/authz";
-import { db } from "@project-aqua/db/client";
+} from "@lane4hq/db/authz";
+import { db } from "@lane4hq/db/client";
 import {
   addSwimmer,
   searchLinkableSwimmersByIdentity,
   searchSwimmerByUsaId,
-} from "@project-aqua/db/queries/roster";
-import { organization } from "@project-aqua/db/schema";
-import { sendMaappAcknowledgmentRequest } from "@project-aqua/emails";
-import { isMinorSwimmer } from "@project-aqua/swim-core/age";
-import { normalizeCreateSwimmerFormValues } from "@project-aqua/swim-core/validators";
+} from "@lane4hq/db/queries/roster";
+import { organization } from "@lane4hq/db/schema";
+import { sendMaappAcknowledgmentRequest } from "@lane4hq/emails";
+import { isMinorSwimmer } from "@lane4hq/swim-core/age";
+import { normalizeCreateSwimmerFormValues } from "@lane4hq/swim-core/validators";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import type { CreateSwimmerFormValues } from "@/schemas";

@@ -1,7 +1,7 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
-/** Legacy Stripe helpers — Polar SaaS checkout is validated in `@project-aqua/auth/keys`. */
+/** Legacy Stripe helpers — Polar SaaS checkout is validated in `@lane4hq/auth/keys`. */
 export const keys = () =>
   createEnv({
     skipValidation:

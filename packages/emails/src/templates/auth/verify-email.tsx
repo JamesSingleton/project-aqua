@@ -14,8 +14,8 @@ export default function VerifyEmail({ name, url }: VerifyEmailProps) {
     >
       <Text style={textStyle}>Hi {name},</Text>
       <Text style={textStyle}>
-        Thanks for signing up for Project Aqua. Please verify your email address
-        to get started.
+        Thanks for signing up for Lane4 HQ. Please verify your email address to
+        get started.
       </Text>
       <EmailButton href={url}>Verify email</EmailButton>
       <Text style={textStyle}>
@@ -27,5 +27,5 @@ export default function VerifyEmail({ name, url }: VerifyEmailProps) {
 
 VerifyEmail.PreviewProps = {
   name: "Coach Jane",
-  url: "https://app.projectaqua.com/verify?token=abc",
+  url: "https://admin.lane4hq.com/verify?token=abc",
 } satisfies VerifyEmailProps;

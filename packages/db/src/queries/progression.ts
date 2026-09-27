@@ -1,12 +1,12 @@
-import { snapshotBestTimeMeetName } from "@project-aqua/swim-core/calendar-date";
-import { isRelayStroke } from "@project-aqua/swim-core/entry-limits";
-import { getCatalogEvent } from "@project-aqua/swim-core/event-catalog";
-import type { Course } from "@project-aqua/swim-core/events";
+import { snapshotBestTimeMeetName } from "@lane4hq/swim-core/calendar-date";
+import { isRelayStroke } from "@lane4hq/swim-core/entry-limits";
+import { getCatalogEvent } from "@lane4hq/swim-core/event-catalog";
+import type { Course } from "@lane4hq/swim-core/events";
 import {
   individualEventKeyForRelayLeg,
   shouldCreditRelayLeadOff,
-} from "@project-aqua/swim-core/relay-legs";
-import { isFasterTime } from "@project-aqua/swim-core/times";
+} from "@lane4hq/swim-core/relay-legs";
+import { isFasterTime } from "@lane4hq/swim-core/times";
 import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { db } from "../client";
 import { swimEvents } from "../schema/events";
@@ -43,7 +43,7 @@ async function resolveMeetName(
 export {
   formatBestTimeAchievedLabel,
   snapshotBestTimeMeetName,
-} from "@project-aqua/swim-core/calendar-date";
+} from "@lane4hq/swim-core/calendar-date";
 
 /**
  * Resolve the swimmer's current PR row for a meet/catalog event.

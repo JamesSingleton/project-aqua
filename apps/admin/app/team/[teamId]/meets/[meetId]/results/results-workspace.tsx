@@ -1,17 +1,14 @@
 "use client";
 
-import { swimmerAgeOnDate } from "@project-aqua/swim-core/age";
-import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
-import { isRelayStroke } from "@project-aqua/swim-core/entry-limits";
-import {
-  formatEventName,
-  formatGenderShort,
-} from "@project-aqua/swim-core/events";
-import { formatTime } from "@project-aqua/swim-core/times";
-import { Badge } from "@project-aqua/ui/components/badge";
-import { Button } from "@project-aqua/ui/components/button";
-import { Input } from "@project-aqua/ui/components/input";
-import { Label } from "@project-aqua/ui/components/label";
+import { swimmerAgeOnDate } from "@lane4hq/swim-core/age";
+import { formatDateOnlyLabel } from "@lane4hq/swim-core/calendar-date";
+import { isRelayStroke } from "@lane4hq/swim-core/entry-limits";
+import { formatEventName, formatGenderShort } from "@lane4hq/swim-core/events";
+import { formatTime } from "@lane4hq/swim-core/times";
+import { Badge } from "@lane4hq/ui/components/badge";
+import { Button } from "@lane4hq/ui/components/button";
+import { Input } from "@lane4hq/ui/components/input";
+import { Label } from "@lane4hq/ui/components/label";
 import {
   Select,
   SelectContent,
@@ -19,8 +16,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
-import { Switch } from "@project-aqua/ui/components/switch";
+} from "@lane4hq/ui/components/select";
+import { Switch } from "@lane4hq/ui/components/switch";
 import {
   Table,
   TableBody,
@@ -28,13 +25,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@project-aqua/ui/components/table";
+} from "@lane4hq/ui/components/table";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@project-aqua/ui/components/tooltip";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/tooltip";
+import { cn } from "@lane4hq/ui/lib/utils";
 import {
   BanIcon,
   PlusIcon,

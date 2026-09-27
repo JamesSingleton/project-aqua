@@ -1,8 +1,8 @@
-import { getOrganizationAssociationCaps } from "@project-aqua/db/authz";
+import { getOrganizationAssociationCaps } from "@lane4hq/db/authz";
 import {
   type AssociationEventCaps,
   resolveAssociationEventCaps,
-} from "@project-aqua/swim-core/association-event-caps";
+} from "@lane4hq/swim-core/association-event-caps";
 
 export async function resolvedAssociationCapsForMeet(
   teamId: string,

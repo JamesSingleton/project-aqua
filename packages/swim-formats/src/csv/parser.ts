@@ -1,4 +1,4 @@
-import { parseClassYear } from "@project-aqua/swim-core/team-types";
+import { parseClassYear } from "@lane4hq/swim-core/team-types";
 import type { ParsedRosterRow } from "../types";
 
 export interface CsvColumnMapping {

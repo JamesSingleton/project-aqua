@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@project-aqua/ui/components/button";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Select,
   SelectContent,
@@ -8,7 +8,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
+} from "@lane4hq/ui/components/select";
 import type { ReactTable, RowData } from "@tanstack/react-table";
 import {
   ChevronLeftIcon,

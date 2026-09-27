@@ -9,7 +9,7 @@ import {
 } from "../../src/roster/share-pack";
 
 const sampleAthlete = {
-  aquaSwimmerId: "swimmer_abc123",
+  swimmerId: "swimmer_abc123",
   firstName: "Jane",
   lastName: "Doe",
   preferredName: "Jay",
@@ -32,7 +32,7 @@ describe("roster share pack", () => {
     expect(isRosterSharePack(json)).toBe(true);
   });
 
-  it("strips duplicate athletes by aquaSwimmerId", () => {
+  it("strips duplicate athletes by swimmerId", () => {
     const pack = buildRosterSharePack({
       sourceOrganizationId: "org_1",
       sourceOrganizationName: "Aqua Club",
@@ -59,7 +59,7 @@ describe("roster share pack", () => {
     expect(json).not.toContain("555-0100");
     expect(json).not.toContain("parent@example.com");
     expect(JSON.parse(json).athletes[0]).toEqual({
-      aquaSwimmerId: sampleAthlete.aquaSwimmerId,
+      swimmerId: sampleAthlete.swimmerId,
       firstName: "Jane",
       lastName: "Doe",
       preferredName: "Jay",
@@ -86,7 +86,7 @@ describe("roster share pack", () => {
     expect(() =>
       parseRosterSharePack(
         JSON.stringify({
-          format: "project-aqua-roster-share",
+          format: "lane4hq-roster-share",
           version: 99,
           sourceOrganizationId: "o",
           sourceOrganizationName: "t",
@@ -97,7 +97,7 @@ describe("roster share pack", () => {
     expect(() =>
       parseRosterSharePack(
         JSON.stringify({
-          format: "project-aqua-roster-share",
+          format: "lane4hq-roster-share",
           version: 1,
           sourceOrganizationId: "",
           sourceOrganizationName: "t",
@@ -108,7 +108,7 @@ describe("roster share pack", () => {
     expect(() =>
       parseRosterSharePack(
         JSON.stringify({
-          format: "project-aqua-roster-share",
+          format: "lane4hq-roster-share",
           version: 1,
           sourceOrganizationId: "o",
           sourceOrganizationName: "   ",
@@ -119,7 +119,7 @@ describe("roster share pack", () => {
     expect(() =>
       parseRosterSharePack(
         JSON.stringify({
-          format: "project-aqua-roster-share",
+          format: "lane4hq-roster-share",
           version: 1,
           sourceOrganizationId: "o",
           sourceOrganizationName: "t",
@@ -130,7 +130,7 @@ describe("roster share pack", () => {
     expect(() =>
       parseRosterSharePack(
         JSON.stringify({
-          format: "project-aqua-roster-share",
+          format: "lane4hq-roster-share",
           version: 1,
           sourceOrganizationId: "o",
           sourceOrganizationName: "t",
@@ -141,7 +141,7 @@ describe("roster share pack", () => {
     expect(() =>
       parseRosterSharePack(
         JSON.stringify({
-          format: "project-aqua-roster-share",
+          format: "lane4hq-roster-share",
           version: 1,
           sourceOrganizationId: "o",
           sourceOrganizationName: "t",
@@ -152,13 +152,13 @@ describe("roster share pack", () => {
     expect(() =>
       parseRosterSharePack(
         JSON.stringify({
-          format: "project-aqua-roster-share",
+          format: "lane4hq-roster-share",
           version: 1,
           sourceOrganizationId: "o",
           sourceOrganizationName: "t",
           athletes: [
             {
-              aquaSwimmerId: "x",
+              swimmerId: "x",
               firstName: 12,
               lastName: "Doe",
               dateOfBirth: "2012-01-01",
@@ -171,13 +171,13 @@ describe("roster share pack", () => {
     expect(() =>
       parseRosterSharePack(
         JSON.stringify({
-          format: "project-aqua-roster-share",
+          format: "lane4hq-roster-share",
           version: 1,
           sourceOrganizationId: "o",
           sourceOrganizationName: "t",
           athletes: [
             {
-              aquaSwimmerId: "x",
+              swimmerId: "x",
               firstName: "Jane",
               lastName: "Doe",
               dateOfBirth: "2012-01-01",
@@ -193,8 +193,10 @@ describe("roster share pack", () => {
     expect(isRosterSharePack("not json")).toBe(false);
     expect(isRosterSharePack("{]")).toBe(false);
     expect(isRosterSharePack('{"format":"nope"}')).toBe(false);
-    expect(isRosterSharePackFilename("club-roster-share.aqua.json")).toBe(true);
-    expect(isRosterSharePackFilename("pack.aqua-roster.json")).toBe(true);
+    expect(isRosterSharePackFilename("club-roster-share.lane4hq.json")).toBe(
+      true,
+    );
+    expect(isRosterSharePackFilename("CLUB-ROSTER.LANE4HQ.JSON")).toBe(true);
     expect(isRosterSharePackFilename("team-share.json")).toBe(true);
     expect(isRosterSharePackFilename("roster.csv")).toBe(false);
   });
@@ -204,9 +206,9 @@ describe("roster share pack", () => {
       sourceOrganizationId: "org_1",
       sourceOrganizationName: "Aqua Club",
       athletes: [
-        { ...sampleAthlete, aquaSwimmerId: "" },
+        { ...sampleAthlete, swimmerId: "" },
         {
-          aquaSwimmerId: "ok",
+          swimmerId: "ok",
           firstName: "Ann",
           lastName: "Bee",
           dateOfBirth: "2011-01-01",
@@ -215,7 +217,7 @@ describe("roster share pack", () => {
           governingBodyId: null,
         },
         {
-          aquaSwimmerId: "boy",
+          swimmerId: "boy",
           firstName: "Bob",
           lastName: "Bee",
           dateOfBirth: "2010-02-02",
@@ -223,13 +225,13 @@ describe("roster share pack", () => {
         },
       ],
     });
-    expect(pack.athletes.map((a) => a.aquaSwimmerId)).toEqual(["ok", "boy"]);
+    expect(pack.athletes.map((a) => a.swimmerId)).toEqual(["ok", "boy"]);
   });
 
   it("defaults exportedAt when missing on parse", () => {
     const parsed = parseRosterSharePack(
       JSON.stringify({
-        format: "project-aqua-roster-share",
+        format: "lane4hq-roster-share",
         version: 1,
         sourceOrganizationId: "o",
         sourceOrganizationName: "Team",
@@ -241,8 +243,10 @@ describe("roster share pack", () => {
 
   it("builds a safe download filename", () => {
     expect(rosterSharePackFilename("East High  Aquatic!")).toBe(
-      "east-high-aquatic-roster-share.aqua.json",
+      "east-high-aquatic-roster-share.lane4hq.json",
     );
-    expect(rosterSharePackFilename("!!!")).toBe("team-roster-share.aqua.json");
+    expect(rosterSharePackFilename("!!!")).toBe(
+      "team-roster-share.lane4hq.json",
+    );
   });
 });

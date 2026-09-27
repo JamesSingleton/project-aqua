@@ -8,7 +8,7 @@ Coaches are left choosing between software built for club ops, software built fo
 
 ## Solution
 
-Project Aqua is a modern, web-based team management platform built **coach-first**. Coaches manage swimmers on one or more teams from a single login, import rosters and meet files in industry-standard formats, build meet lineups with auto-populated seed times, export entry packs that hosts accept in Hy-Tek Meet Manager / SwimTopia / SwimCloud / TeamUnify, import results after meets, and track swimmer progression within each team and season.
+Lane4 HQ is a modern, web-based team management platform built **coach-first**. Coaches manage swimmers on one or more teams from a single login, import rosters and meet files in industry-standard formats, build meet lineups with auto-populated seed times, export entry packs that hosts accept in Hy-Tek Meet Manager / SwimTopia / SwimCloud / TeamUnify, import results after meets, and track swimmer progression within each team and season.
 
 v1 focuses exclusively on **visiting-team** workflows: the coach prepares their team's entries and consumes results from meets they attend. Host-side meet merge, timing consoles, and desktop meet management are explicitly deferred. The platform supports club, high school, college, and summer segments from a unified UX shell, with segment-specific depth phased so each audience gets a credible v1 without blocking others.
 
@@ -126,7 +126,7 @@ v1 focuses exclusively on **visiting-team** workflows: the coach prepares their 
 
 ### Product posture
 
-- **Visiting team only in v1.** Coaches export entries to meet hosts; Project Aqua does not merge other clubs' entry packs or run the meet.
+- **Visiting team only in v1.** Coaches export entries to meet hosts; Lane4 HQ does not merge other clubs' entry packs or run the meet.
 - **Multi-segment shell at launch** with phased depth: club (SWIMS + SafeSport), high school (class year, divisions), college (eligibility metadata), summer (light compliance).
 - **Segment launch independence:** high school can ship even if club SWIMS slips schedule.
 
@@ -215,8 +215,8 @@ No swimmer or meet count caps on free tier.
 
 ### Modules under test
 
-- `@project-aqua/swim-formats` — golden corpus (legacy CTCC 2005 CL2 results, modern AZSI D0+G0, EV3/HYV events, entry packs, SDIF, rosters).
-- `@project-aqua/swim-core` — entry limits, QT validation, athlete match.
+- `@lane4hq/swim-formats` — golden corpus (legacy CTCC 2005 CL2 results, modern AZSI D0+G0, EV3/HYV events, entry packs, SDIF, rosters).
+- `@lane4hq/swim-core` — entry limits, QT validation, athlete match.
 - Admin meet workflow integration tests at the primary seam where present.
 
 ### Prior art

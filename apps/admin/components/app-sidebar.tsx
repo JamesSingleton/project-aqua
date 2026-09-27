@@ -4,14 +4,14 @@ import {
   requiresSafeSportCompliance,
   supportsUsaSwimmingIntegration,
   type TeamType,
-} from "@project-aqua/swim-core/team-types";
+} from "@lane4hq/swim-core/team-types";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-} from "@project-aqua/ui/components/sidebar";
+} from "@lane4hq/ui/components/sidebar";
 import {
   BarChart3,
   Calendar,

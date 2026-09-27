@@ -1,4 +1,4 @@
-import { Separator } from "@project-aqua/ui/components/separator";
+import { Separator } from "@lane4hq/ui/components/separator";
 import { CtaLink } from "@/components/cta-link";
 import { MarketingCta } from "@/components/marketing-cta";
 import { ProductShot } from "@/components/product-shot";

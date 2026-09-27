@@ -1,4 +1,4 @@
-import type { SharedDraftQuota } from "@project-aqua/swim-core/draft-quota";
+import type { SharedDraftQuota } from "@lane4hq/swim-core/draft-quota";
 
 export function toSharedDraftQuota(input: {
   remaining: number;

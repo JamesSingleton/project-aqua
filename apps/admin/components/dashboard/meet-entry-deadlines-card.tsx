@@ -2,9 +2,9 @@ import {
   daysUntilDateOnly,
   deadlineUrgencyLevel,
   formatDateOnly,
-} from "@project-aqua/swim-core/calendar-date";
-import { Badge } from "@project-aqua/ui/components/badge";
-import { Button } from "@project-aqua/ui/components/button";
+} from "@lane4hq/swim-core/calendar-date";
+import { Badge } from "@lane4hq/ui/components/badge";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Card,
   CardAction,
@@ -13,8 +13,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/card";
+import { cn } from "@lane4hq/ui/lib/utils";
 import { AlertCircleIcon, ClipboardListIcon } from "lucide-react";
 import Link from "next/link";
 

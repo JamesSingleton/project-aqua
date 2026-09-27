@@ -1,7 +1,7 @@
 "use client";
 
-import { organization, useSession } from "@project-aqua/auth/client";
-import { Button } from "@project-aqua/ui/components/button";
+import { organization, useSession } from "@lane4hq/auth/client";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Card,
   CardContent,
@@ -9,7 +9,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";

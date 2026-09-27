@@ -1,10 +1,10 @@
-import { getSession } from "@project-aqua/auth/session";
-import { getAiQuotaStatus } from "@project-aqua/db/queries/ai-quota";
-import { getTeamPlan } from "@project-aqua/db/queries/billing";
-import { getTeamUiPreferences } from "@project-aqua/db/queries/preferences";
-import type { TeamUiState } from "@project-aqua/db/schema";
-import { formatEntryLimitsSummary } from "@project-aqua/swim-core/entry-limits";
-import { planHasFeature } from "@project-aqua/swim-core/plans";
+import { getSession } from "@lane4hq/auth/session";
+import { getAiQuotaStatus } from "@lane4hq/db/queries/ai-quota";
+import { getTeamPlan } from "@lane4hq/db/queries/billing";
+import { getTeamUiPreferences } from "@lane4hq/db/queries/preferences";
+import type { TeamUiState } from "@lane4hq/db/schema";
+import { formatEntryLimitsSummary } from "@lane4hq/swim-core/entry-limits";
+import { planHasFeature } from "@lane4hq/swim-core/plans";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { toSharedDraftQuota } from "@/lib/draft-quota";

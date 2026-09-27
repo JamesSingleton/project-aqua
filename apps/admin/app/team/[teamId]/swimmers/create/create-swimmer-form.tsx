@@ -1,13 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { isMinorSwimmer } from "@project-aqua/swim-core/age";
+import { isMinorSwimmer } from "@lane4hq/swim-core/age";
 import {
   CLASS_YEAR_LABELS,
   CLASS_YEARS,
   type ClassYear,
-} from "@project-aqua/swim-core/team-types";
-import { Button } from "@project-aqua/ui/components/button";
+} from "@lane4hq/swim-core/team-types";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Field,
   FieldDescription,
@@ -16,8 +16,8 @@ import {
   FieldLabel,
   FieldLegend,
   FieldSet,
-} from "@project-aqua/ui/components/field";
-import { Input } from "@project-aqua/ui/components/input";
+} from "@lane4hq/ui/components/field";
+import { Input } from "@lane4hq/ui/components/input";
 import {
   Select,
   SelectContent,
@@ -25,9 +25,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
-import { Textarea } from "@project-aqua/ui/components/textarea";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/select";
+import { Textarea } from "@lane4hq/ui/components/textarea";
+import { cn } from "@lane4hq/ui/lib/utils";
 import { CheckIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

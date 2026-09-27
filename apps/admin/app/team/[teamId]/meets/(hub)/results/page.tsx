@@ -1,9 +1,6 @@
-import {
-  getMeets,
-  getMeetsWithResultStats,
-} from "@project-aqua/db/queries/meets";
-import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
-import { Badge } from "@project-aqua/ui/components/badge";
+import { getMeets, getMeetsWithResultStats } from "@lane4hq/db/queries/meets";
+import { formatDateOnlyLabel } from "@lane4hq/swim-core/calendar-date";
+import { Badge } from "@lane4hq/ui/components/badge";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MeetImportButton } from "../../meet-import-button";

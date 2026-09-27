@@ -1,4 +1,4 @@
-import { formatTime } from "@project-aqua/swim-core/times";
+import { formatTime } from "@lane4hq/swim-core/times";
 import * as XLSX from "xlsx";
 import type { ParsedMeet, ParsedResult } from "../types";
 

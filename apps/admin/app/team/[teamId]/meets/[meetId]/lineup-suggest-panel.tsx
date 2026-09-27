@@ -1,13 +1,13 @@
 "use client";
 
-import { Button } from "@project-aqua/ui/components/button";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { applySuggestedLineupAction } from "../actions";

@@ -1,9 +1,9 @@
 {
-  "extends": "@project-aqua/typescript-config/nextjs.json",
+  "extends": "@lane4hq/typescript-config/nextjs.json",
   "compilerOptions": {
     "paths": {
       "@/*": ["./*"],
-      "@project-aqua/ui/*": ["../../packages/ui/src/*"]
+      "@lane4hq/ui/*": ["../../packages/ui/src/*"]
     }
   },
   "include": [

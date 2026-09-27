@@ -10,8 +10,8 @@ export default function PasswordChanged({ name }: PasswordChangedProps) {
     <EmailLayout preview="Your password was changed" heading="Password changed">
       <Text style={textStyle}>Hi {name},</Text>
       <Text style={textStyle}>
-        Your Project Aqua password was successfully changed. If you didn&apos;t
-        make this change, contact support immediately.
+        Your Lane4 HQ password was successfully changed. If you didn&apos;t make
+        this change, contact support immediately.
       </Text>
     </EmailLayout>
   );

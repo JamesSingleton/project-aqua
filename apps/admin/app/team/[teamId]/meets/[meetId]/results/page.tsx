@@ -2,8 +2,8 @@ import {
   getMeetRelayLegs,
   getMeetRelayResultsDetailed,
   getMeetResultsDetailed,
-} from "@project-aqua/db/queries/meets";
-import { formatEventName } from "@project-aqua/swim-core/events";
+} from "@lane4hq/db/queries/meets";
+import { formatEventName } from "@lane4hq/swim-core/events";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";

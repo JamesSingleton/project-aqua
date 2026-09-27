@@ -1,6 +1,6 @@
 "use client";
 
-import { organization } from "@project-aqua/auth/client";
+import { organization } from "@lane4hq/auth/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,14 +10,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
-} from "@project-aqua/ui/components/dropdown-menu";
+} from "@lane4hq/ui/components/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@project-aqua/ui/components/sidebar";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/sidebar";
+import { cn } from "@lane4hq/ui/lib/utils";
 import { ChevronsUpDown, Plus, Waves } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";

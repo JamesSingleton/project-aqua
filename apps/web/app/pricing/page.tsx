@@ -1,12 +1,12 @@
-import { Badge } from "@project-aqua/ui/components/badge";
+import { Badge } from "@lane4hq/ui/components/badge";
 import {
   Card,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
-import { Separator } from "@project-aqua/ui/components/separator";
+} from "@lane4hq/ui/components/card";
+import { Separator } from "@lane4hq/ui/components/separator";
 import {
   Table,
   TableBody,
@@ -14,7 +14,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@project-aqua/ui/components/table";
+} from "@lane4hq/ui/components/table";
 import type { Metadata } from "next";
 import { CtaLink } from "@/components/cta-link";
 import { MarketingCta } from "@/components/marketing-cta";

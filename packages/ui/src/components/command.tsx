@@ -6,13 +6,13 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@project-aqua/ui/components/dialog";
+} from "@lane4hq/ui/components/dialog";
 import {
   InputGroup,
   InputGroupAddon,
-} from "@project-aqua/ui/components/input-group";
+} from "@lane4hq/ui/components/input-group";
 
-import { cn } from "@project-aqua/ui/lib/utils";
+import { cn } from "@lane4hq/ui/lib/utils";
 import { Command as CommandPrimitive } from "cmdk";
 import { CheckIcon, SearchIcon } from "lucide-react";
 import type * as React from "react";

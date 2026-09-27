@@ -1,19 +1,19 @@
 "use server";
 
-import { getSession } from "@project-aqua/auth/session";
-import { requireTeamRole } from "@project-aqua/db/authz";
-import { db } from "@project-aqua/db/client";
-import { organization } from "@project-aqua/db/schema";
+import { getSession } from "@lane4hq/auth/session";
+import { requireTeamRole } from "@lane4hq/db/authz";
+import { db } from "@lane4hq/db/client";
+import { organization } from "@lane4hq/db/schema";
 import {
   ImageValidationError,
   removeTeamLogo,
   uploadTeamLogo,
-} from "@project-aqua/storage";
+} from "@lane4hq/storage";
 import {
   normalizeLscCode,
   normalizeTeamCode,
-} from "@project-aqua/swim-core/team-codes";
-import { parseTeamType } from "@project-aqua/swim-core/team-types";
+} from "@lane4hq/swim-core/team-codes";
+import { parseTeamType } from "@lane4hq/swim-core/team-types";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 

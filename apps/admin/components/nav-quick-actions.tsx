@@ -6,7 +6,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@project-aqua/ui/components/sidebar";
+} from "@lane4hq/ui/components/sidebar";
 import type { LucideIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { SidebarLink } from "@/components/sidebar-link";

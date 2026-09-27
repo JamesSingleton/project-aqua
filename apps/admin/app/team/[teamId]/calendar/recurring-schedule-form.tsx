@@ -1,28 +1,28 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { countWeeklyCalendarOccurrences } from "@project-aqua/swim-core/calendar-recurrence";
-import { Button } from "@project-aqua/ui/components/button";
+import { countWeeklyCalendarOccurrences } from "@lane4hq/swim-core/calendar-recurrence";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import {
   Field,
   FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from "@project-aqua/ui/components/field";
-import { Input } from "@project-aqua/ui/components/input";
+} from "@lane4hq/ui/components/field";
+import { Input } from "@lane4hq/ui/components/input";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-} from "@project-aqua/ui/components/input-group";
+} from "@lane4hq/ui/components/input-group";
 import {
   Select,
   SelectContent,
@@ -30,9 +30,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
-import { Textarea } from "@project-aqua/ui/components/textarea";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/select";
+import { Textarea } from "@lane4hq/ui/components/textarea";
+import { cn } from "@lane4hq/ui/lib/utils";
 import { Clock2Icon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";

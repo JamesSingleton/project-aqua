@@ -1,4 +1,4 @@
-import { Separator } from "@project-aqua/ui/components/separator";
+import { Separator } from "@lane4hq/ui/components/separator";
 import type { Metadata } from "next";
 import { MarketingCta } from "@/components/marketing-cta";
 import { PageIntro } from "@/components/section";
@@ -6,7 +6,7 @@ import { PageIntro } from "@/components/section";
 export const metadata: Metadata = {
   title: "Story",
   description:
-    "Why Project Aqua exists: the swim team management software I wish I had 10 years ago.",
+    "Why Lane4 HQ exists: the swim team management software I wish I had 10 years ago.",
 };
 
 export default function StoryPage() {
@@ -29,7 +29,7 @@ export default function StoryPage() {
           stayed with the program I was coaching that afternoon.
         </p>
         <p>
-          Project Aqua is that week. Roster, lineup, the file they asked for, a
+          Lane4 HQ is that week. Roster, lineup, the file they asked for, a
           split sheet, results, progression. One login for more than one team.
           Seed times on the free plan. No parent portal, because that was never
           the job.
