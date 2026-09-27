@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Reset password",
-  description: "Reset your Project Aqua account password.",
+  description: "Reset your Lane4 HQ account password.",
 };
 
 export default function ForgotPasswordLayout({

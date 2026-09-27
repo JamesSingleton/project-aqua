@@ -1,43 +1,43 @@
-import { getSession } from "@project-aqua/auth/session";
+import { getSession } from "@lane4hq/auth/session";
 import {
   getMember,
   getOrganizationTeamType,
   getUserTeams,
   hasCurrentSafeSportTraining,
-} from "@project-aqua/db/authz";
-import { db } from "@project-aqua/db/client";
+} from "@lane4hq/db/authz";
+import { db } from "@lane4hq/db/client";
 import {
   getAnalyticsSummary,
   getAttendanceSeries,
   getVolumeSeries,
-} from "@project-aqua/db/queries/analytics";
-import { getTeamCalendarProjection } from "@project-aqua/db/queries/calendar";
+} from "@lane4hq/db/queries/analytics";
+import { getTeamCalendarProjection } from "@lane4hq/db/queries/calendar";
 import {
   getMeetEntryProgressCounts,
   getMeets,
   getUpcomingMeetsForOrganizations,
-} from "@project-aqua/db/queries/meets";
-import { getTeamBestTimesInRange } from "@project-aqua/db/queries/progression";
+} from "@lane4hq/db/queries/meets";
+import { getTeamBestTimesInRange } from "@lane4hq/db/queries/progression";
 import {
   getRosterStats,
   getSwimsDashboardSummary,
-} from "@project-aqua/db/queries/roster";
-import { getComplianceSummary } from "@project-aqua/db/queries/safesport";
-import { getCurrentSeason } from "@project-aqua/db/queries/seasons";
-import { getRecentWorkouts } from "@project-aqua/db/queries/workouts";
-import { organization } from "@project-aqua/db/schema";
+} from "@lane4hq/db/queries/roster";
+import { getComplianceSummary } from "@lane4hq/db/queries/safesport";
+import { getCurrentSeason } from "@lane4hq/db/queries/seasons";
+import { getRecentWorkouts } from "@lane4hq/db/queries/workouts";
+import { organization } from "@lane4hq/db/schema";
 import {
   formatDateOnly,
   formatDateOnlyLabel,
   parseDateOnly,
   seasonTrainingPhase,
-} from "@project-aqua/swim-core/calendar-date";
+} from "@lane4hq/swim-core/calendar-date";
 import {
   formatBestTimeEventLabel,
   requiresSafeSportCompliance,
   supportsUsaSwimmingIntegration,
-} from "@project-aqua/swim-core/team-types";
-import { Button } from "@project-aqua/ui/components/button";
+} from "@lane4hq/swim-core/team-types";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Card,
   CardAction,
@@ -46,7 +46,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import { eq } from "drizzle-orm";
 import {
   CalendarDaysIcon,

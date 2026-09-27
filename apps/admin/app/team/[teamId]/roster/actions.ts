@@ -1,7 +1,7 @@
 "use server";
 
-import { getSession } from "@project-aqua/auth/session";
-import { canAddSwimmer } from "@project-aqua/billing/features";
+import { getSession } from "@lane4hq/auth/session";
+import { canAddSwimmer } from "@lane4hq/billing/features";
 import {
   canExportRoster,
   requireCoachSafeSportCurrent,
@@ -9,14 +9,11 @@ import {
   requireTeamMember,
   requireTeamRole,
   writeAuditLog,
-} from "@project-aqua/db/authz";
-import { db } from "@project-aqua/db/client";
-import {
-  createImportJob,
-  updateImportJob,
-} from "@project-aqua/db/queries/imports";
-import { patchTeamUiPreferences } from "@project-aqua/db/queries/preferences";
-import { getSwimmerBestTimes } from "@project-aqua/db/queries/progression";
+} from "@lane4hq/db/authz";
+import { db } from "@lane4hq/db/client";
+import { createImportJob, updateImportJob } from "@lane4hq/db/queries/imports";
+import { patchTeamUiPreferences } from "@lane4hq/db/queries/preferences";
+import { getSwimmerBestTimes } from "@lane4hq/db/queries/progression";
 import {
   addSwimmer,
   getRoster,
@@ -27,20 +24,20 @@ import {
   type RosterPageInput,
   removeSwimmerFromTeam,
   updateSwimmer,
-} from "@project-aqua/db/queries/roster";
+} from "@lane4hq/db/queries/roster";
 import {
   createMaappAcknowledgment,
   logAuditEvent,
-} from "@project-aqua/db/queries/safesport";
-import { organization } from "@project-aqua/db/schema";
+} from "@lane4hq/db/queries/safesport";
+import { organization } from "@lane4hq/db/schema";
 import {
   sendRosterImportComplete,
   sendRosterImportFailed,
-} from "@project-aqua/emails";
-import { isMinorSwimmer } from "@project-aqua/swim-core/age";
-import { parseClassYear } from "@project-aqua/swim-core/team-types";
-import { rosterRowSchema } from "@project-aqua/swim-core/validators";
-import { parseRosterCsv } from "@project-aqua/swim-formats/csv";
+} from "@lane4hq/emails";
+import { isMinorSwimmer } from "@lane4hq/swim-core/age";
+import { parseClassYear } from "@lane4hq/swim-core/team-types";
+import { rosterRowSchema } from "@lane4hq/swim-core/validators";
+import { parseRosterCsv } from "@lane4hq/swim-formats/csv";
 import {
   buildRosterSharePack,
   detectRosterFileFormat,
@@ -51,7 +48,7 @@ import {
   rosterImportErrorForFile,
   rosterSharePackFilename,
   serializeRosterSharePack,
-} from "@project-aqua/swim-formats/roster";
+} from "@lane4hq/swim-formats/roster";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
@@ -615,7 +612,7 @@ export async function importRosterFileAction(
   const format = detectRosterFileFormat(filename, text);
   if (!format) {
     throw new Error(
-      "Unsupported file type. Use a Project Aqua share pack (.aqua.json), CSV, SD3, CL2, HY3, or a roster ZIP.",
+      "Unsupported file type. Use a Lane4 HQ share pack (.aqua.json), CSV, SD3, CL2, HY3, or a roster ZIP.",
     );
   }
 

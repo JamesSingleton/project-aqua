@@ -17,7 +17,7 @@ export default function RemovedFromTeam({
     >
       <Text style={textStyle}>Hi {name},</Text>
       <Text style={textStyle}>
-        You have been removed from <strong>{teamName}</strong> on Project Aqua.
+        You have been removed from <strong>{teamName}</strong> on Lane4 HQ.
       </Text>
     </EmailLayout>
   );

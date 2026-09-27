@@ -1,7 +1,7 @@
-# Project Aqua — Team Management v1 PRD
+# Lane4 HQ — Team Management v1 PRD
 
 **Status:** Draft (grill-me rounds 1–2 complete)  
-**Product:** Project Aqua  
+**Product:** Lane4 HQ  
 **Scope:** Visiting-team coach SaaS — team management first, meet hosting later  
 **Audience:** Product, engineering, agents preparing `/to-spec`  
 **Last updated:** 2026-08-29
@@ -20,7 +20,7 @@ Coaches are left choosing between software built for club ops, software built fo
 
 ## Solution
 
-Project Aqua is a modern, web-based team management platform built **coach-first**. Coaches manage swimmers on one or more teams from a single login, import rosters and meet files in industry-standard formats, build meet lineups with auto-populated seed times, export entry packs that hosts accept in Hy-Tek Meet Manager / SwimTopia / SwimCloud / TeamUnify, import results after meets, and track swimmer progression within each team and season.
+Lane4 HQ is a modern, web-based team management platform built **coach-first**. Coaches manage swimmers on one or more teams from a single login, import rosters and meet files in industry-standard formats, build meet lineups with auto-populated seed times, export entry packs that hosts accept in Hy-Tek Meet Manager / SwimTopia / SwimCloud / TeamUnify, import results after meets, and track swimmer progression within each team and season.
 
 v1 focuses exclusively on **visiting-team** workflows: the coach prepares their team's entries and consumes results from meets they attend. Host-side meet merge, timing consoles, and desktop meet management are explicitly deferred. The platform supports club, high school, college, and summer segments from a unified UX shell, with segment-specific depth phased so each audience gets a credible v1 without blocking others.
 
@@ -142,7 +142,7 @@ v1 focuses exclusively on **visiting-team** workflows: the coach prepares their 
 
 ### Product posture
 
-- **Visiting team only in v1.** Coaches export entries to meet hosts; Project Aqua does not merge other clubs' entry packs or run the meet.
+- **Visiting team only in v1.** Coaches export entries to meet hosts; Lane4 HQ does not merge other clubs' entry packs or run the meet.
 - **Multi-segment shell at launch** with phased depth: club (SWIMS + SafeSport), high school (class year, divisions), college (eligibility metadata), summer (light compliance).
 - **Segment launch independence:** high school can ship even if club SWIMS slips schedule.
 
@@ -247,8 +247,8 @@ v1 focuses exclusively on **visiting-team** workflows: the coach prepares their 
 
 ### Prior art in codebase
 
-- Vitest golden corpus in `@project-aqua/swim-formats` with fixtures README documenting each file's purpose.
-- Domain helpers (athlete match, entry limits, QT validation) tested in `@project-aqua/swim-core`.
+- Vitest golden corpus in `@lane4hq/swim-formats` with fixtures README documenting each file's purpose.
+- Domain helpers (athlete match, entry limits, QT validation) tested in `@lane4hq/swim-core`.
 
 ---
 
@@ -294,7 +294,7 @@ The following are **explicitly excluded from v1** team management:
 
 Coach-provided files from high school and club programs anchor v1 acceptance:
 
-- **Local source (PII):** `Project Aqua Test Data/` (outside repo)
+- **Local source (PII):** `Lane4 HQ Test Data/` (outside repo)
 - **Sanitized fixtures:** `packages/swim-formats/fixtures/`
 
 All seven ZIP packs from the source folder are mirrored in fixtures. v1 is "done" when the golden path works on these files, not when a spec sheet claims theoretical SDIF compliance.

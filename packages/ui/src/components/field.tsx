@@ -1,9 +1,9 @@
 "use client";
 
-import { Label } from "@project-aqua/ui/components/label";
-import { Separator } from "@project-aqua/ui/components/separator";
+import { Label } from "@lane4hq/ui/components/label";
+import { Separator } from "@lane4hq/ui/components/separator";
 
-import { cn } from "@project-aqua/ui/lib/utils";
+import { cn } from "@lane4hq/ui/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import { useMemo } from "react";
 

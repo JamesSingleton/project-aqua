@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@project-aqua/ui/components/button";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Dialog,
   DialogClose,
@@ -9,7 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@project-aqua/ui/components/dialog";
+} from "@lane4hq/ui/components/dialog";
 import {
   Select,
   SelectContent,
@@ -17,8 +17,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
-import { Separator } from "@project-aqua/ui/components/separator";
+} from "@lane4hq/ui/components/select";
+import { Separator } from "@lane4hq/ui/components/separator";
 import type { ReactTable } from "@tanstack/react-table";
 import {
   DownloadIcon,
@@ -178,7 +178,7 @@ export function RosterActionBar({
           size="sm"
           disabled={pending}
           onClick={handleExportSharePack}
-          title="Share selected swimmers with another Project Aqua team via opaque IDs"
+          title="Share selected swimmers with another Lane4 HQ team via opaque IDs"
         >
           <Share2Icon data-icon="inline-start" />
           Share pack

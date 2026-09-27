@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@project-aqua/ui/components/button";
+import { Button } from "@lane4hq/ui/components/button";
 import { useEffect, useState } from "react";
 import {
   connectUsaSwimmingClubAction,

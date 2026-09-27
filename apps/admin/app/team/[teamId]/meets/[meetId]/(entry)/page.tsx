@@ -1,5 +1,5 @@
-import { getOrganizationAssociationCaps } from "@project-aqua/db/authz";
-import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
+import { getOrganizationAssociationCaps } from "@lane4hq/db/authz";
+import { formatDateOnlyLabel } from "@lane4hq/swim-core/calendar-date";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getMeetDetailAction } from "../../actions";

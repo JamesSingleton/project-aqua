@@ -1,7 +1,7 @@
 "use client";
 
-import { formatBestTimeEventLabel } from "@project-aqua/swim-core/team-types";
-import { formatTime } from "@project-aqua/swim-core/times";
+import { formatBestTimeEventLabel } from "@lane4hq/swim-core/team-types";
+import { formatTime } from "@lane4hq/swim-core/times";
 import {
   CartesianGrid,
   type ChartConfig,
@@ -12,8 +12,8 @@ import {
   LineChart,
   XAxis,
   YAxis,
-} from "@project-aqua/ui/components/chart";
-import { Label } from "@project-aqua/ui/components/label";
+} from "@lane4hq/ui/components/chart";
+import { Label } from "@lane4hq/ui/components/label";
 import { useMemo, useState } from "react";
 import { LabeledCombobox } from "@/components/labeled-combobox";
 

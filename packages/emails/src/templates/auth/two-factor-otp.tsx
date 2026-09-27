@@ -14,7 +14,7 @@ export default function TwoFactorOtp({ name, otp }: TwoFactorOtpProps) {
     >
       <Text style={textStyle}>Hi {name},</Text>
       <Text style={textStyle}>
-        Use this one-time code to finish signing in to Project Aqua:
+        Use this one-time code to finish signing in to Lane4 HQ:
       </Text>
       <Text
         style={{

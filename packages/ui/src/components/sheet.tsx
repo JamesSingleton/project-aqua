@@ -1,8 +1,8 @@
 "use client";
 
 import { Dialog as SheetPrimitive } from "@base-ui/react/dialog";
-import { Button } from "@project-aqua/ui/components/button";
-import { cn } from "@project-aqua/ui/lib/utils";
+import { Button } from "@lane4hq/ui/components/button";
+import { cn } from "@lane4hq/ui/lib/utils";
 import { XIcon } from "lucide-react";
 import type * as React from "react";
 

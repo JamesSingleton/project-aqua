@@ -1,6 +1,6 @@
 "use client";
 
-import { Tabs, TabsList, TabsTrigger } from "@project-aqua/ui/components/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@lane4hq/ui/components/tabs";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export function ReportGroupToggle() {

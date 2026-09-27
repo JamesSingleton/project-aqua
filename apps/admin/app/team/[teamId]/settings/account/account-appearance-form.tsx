@@ -1,16 +1,13 @@
 "use client";
 
-import type { ThemePreference } from "@project-aqua/db/schema";
+import type { ThemePreference } from "@lane4hq/db/schema";
 import {
   Field,
   FieldDescription,
   FieldLabel,
-} from "@project-aqua/ui/components/field";
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from "@project-aqua/ui/components/radio-group";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/field";
+import { RadioGroup, RadioGroupItem } from "@lane4hq/ui/components/radio-group";
+import { cn } from "@lane4hq/ui/lib/utils";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState, useTransition } from "react";

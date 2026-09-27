@@ -1,10 +1,10 @@
 "use server";
 
 import { openai } from "@ai-sdk/openai";
-import { getSession } from "@project-aqua/auth/session";
-import { ingestAiGenerationEvent } from "@project-aqua/billing/polar";
-import { requireTeamRole } from "@project-aqua/db/authz";
-import { assertAndRecordAiGeneration } from "@project-aqua/db/queries/ai-quota";
+import { getSession } from "@lane4hq/auth/session";
+import { ingestAiGenerationEvent } from "@lane4hq/billing/polar";
+import { requireTeamRole } from "@lane4hq/db/authz";
+import { assertAndRecordAiGeneration } from "@lane4hq/db/queries/ai-quota";
 import {
   getMeetById,
   getMeetCommitments,
@@ -16,20 +16,20 @@ import {
   replaceMeetRelayLegs,
   replaceMeetRelayTeams,
   updateMeetRelayTeamSeed,
-} from "@project-aqua/db/queries/meets";
-import { getRoster } from "@project-aqua/db/queries/roster";
-import { associationCountWithinCap } from "@project-aqua/swim-core/association-event-caps";
-import type { SharedDraftQuota } from "@project-aqua/swim-core/draft-quota";
+} from "@lane4hq/db/queries/meets";
+import { getRoster } from "@lane4hq/db/queries/roster";
+import { associationCountWithinCap } from "@lane4hq/swim-core/association-event-caps";
+import type { SharedDraftQuota } from "@lane4hq/swim-core/draft-quota";
 import {
   checkMeetEntryCounts,
   isRelayStroke,
   type MeetEntryLimits,
-} from "@project-aqua/swim-core/entry-limits";
+} from "@lane4hq/swim-core/entry-limits";
 import {
   formatEventName,
   isSwimmerEligibleForEvent,
-} from "@project-aqua/swim-core/events";
-import { getPlanLimits } from "@project-aqua/swim-core/plans";
+} from "@lane4hq/swim-core/events";
+import { getPlanLimits } from "@lane4hq/swim-core/plans";
 import {
   deriveRelayLetter,
   RELAY_MAX_LEGS,
@@ -37,9 +37,9 @@ import {
   RELAY_TEAM_LETTERS,
   racingRelayKeysByMember,
   strokeForRelayLeg,
-} from "@project-aqua/swim-core/relay-legs";
-import { blocksMeetEntries } from "@project-aqua/swim-core/team-types";
-import { formatTime } from "@project-aqua/swim-core/times";
+} from "@lane4hq/swim-core/relay-legs";
+import { blocksMeetEntries } from "@lane4hq/swim-core/team-types";
+import { formatTime } from "@lane4hq/swim-core/times";
 import { generateText } from "ai";
 import { revalidatePath } from "next/cache";
 import { resolvedAssociationCapsForMeet } from "./association-caps";

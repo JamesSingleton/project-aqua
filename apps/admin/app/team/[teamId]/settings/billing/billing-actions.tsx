@@ -1,8 +1,8 @@
 "use client";
 
-import { authClient } from "@project-aqua/auth/client";
-import type { PlanTier } from "@project-aqua/swim-core/plans";
-import { Button } from "@project-aqua/ui/components/button";
+import { authClient } from "@lane4hq/auth/client";
+import type { PlanTier } from "@lane4hq/swim-core/plans";
+import { Button } from "@lane4hq/ui/components/button";
 import { useState } from "react";
 
 export function BillingActions({

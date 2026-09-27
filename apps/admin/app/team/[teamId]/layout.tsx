@@ -1,17 +1,17 @@
-import { getSession } from "@project-aqua/auth/session";
+import { getSession } from "@lane4hq/auth/session";
 import {
   getOrganizationName,
   getOrganizationTeamType,
   getUserTeams,
   requireTeamMember,
-} from "@project-aqua/db/authz";
-import { getTeamPlans } from "@project-aqua/db/queries/billing";
-import { Separator } from "@project-aqua/ui/components/separator";
+} from "@lane4hq/db/authz";
+import { getTeamPlans } from "@lane4hq/db/queries/billing";
+import { Separator } from "@lane4hq/ui/components/separator";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "@project-aqua/ui/components/sidebar";
+} from "@lane4hq/ui/components/sidebar";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";

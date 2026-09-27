@@ -1,5 +1,5 @@
-import { AuthError } from "@project-aqua/db/authz";
-import { MeetEntriesPdfDocument, renderToStream } from "@project-aqua/reports";
+import { AuthError } from "@lane4hq/db/authz";
+import { MeetEntriesPdfDocument, renderToStream } from "@lane4hq/reports";
 import { loadMeetEntriesReport } from "@/app/team/[teamId]/meets/[meetId]/report/load-meet-entries-report";
 
 function safeFilename(name: string): string {

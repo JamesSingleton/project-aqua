@@ -1,4 +1,4 @@
-import type { AttendanceStatus } from "@project-aqua/swim-core/validators";
+import type { AttendanceStatus } from "@lane4hq/swim-core/validators";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "../client";
 import {

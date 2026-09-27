@@ -1,19 +1,19 @@
 "use client";
 
-import { Badge } from "@project-aqua/ui/components/badge";
+import { Badge } from "@lane4hq/ui/components/badge";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@project-aqua/ui/components/tabs";
+} from "@lane4hq/ui/components/tabs";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { fetchSwimmerPiiAction } from "../../roster/actions";

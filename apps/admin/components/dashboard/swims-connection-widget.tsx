@@ -1,12 +1,8 @@
 "use client";
 
-import { Button } from "@project-aqua/ui/components/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@project-aqua/ui/components/card";
-import { Separator } from "@project-aqua/ui/components/separator";
+import { Button } from "@lane4hq/ui/components/button";
+import { Card, CardContent, CardHeader } from "@lane4hq/ui/components/card";
+import { Separator } from "@lane4hq/ui/components/separator";
 import {
   CheckIcon,
   CopyIcon,

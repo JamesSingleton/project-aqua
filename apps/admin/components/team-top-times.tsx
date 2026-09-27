@@ -3,11 +3,11 @@
 import {
   buildTeamBestTimesReport,
   formatTeamBestTimesCsv,
-} from "@project-aqua/reports/team-best-times";
-import { formatTime } from "@project-aqua/swim-core/times";
-import { Button } from "@project-aqua/ui/components/button";
-import { Input } from "@project-aqua/ui/components/input";
-import { Label } from "@project-aqua/ui/components/label";
+} from "@lane4hq/reports/team-best-times";
+import { formatTime } from "@lane4hq/swim-core/times";
+import { Button } from "@lane4hq/ui/components/button";
+import { Input } from "@lane4hq/ui/components/input";
+import { Label } from "@lane4hq/ui/components/label";
 import {
   Select,
   SelectContent,
@@ -15,7 +15,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
+} from "@lane4hq/ui/components/select";
 import {
   Table,
   TableBody,
@@ -23,7 +23,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@project-aqua/ui/components/table";
+} from "@lane4hq/ui/components/table";
 import { DownloadIcon, FileTextIcon, XIcon } from "lucide-react";
 import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";

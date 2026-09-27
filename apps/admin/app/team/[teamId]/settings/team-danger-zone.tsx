@@ -1,17 +1,17 @@
 "use client";
 
-import { organization } from "@project-aqua/auth/client";
+import { organization } from "@lane4hq/auth/client";
 import {
   COACH_ROLES,
   type CoachRole,
   POST_TRANSFER_ROLES,
-} from "@project-aqua/auth/roles";
+} from "@lane4hq/auth/roles";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@project-aqua/ui/components/alert";
-import { Button } from "@project-aqua/ui/components/button";
+} from "@lane4hq/ui/components/alert";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Dialog,
   DialogClose,
@@ -21,8 +21,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@project-aqua/ui/components/dialog";
-import { Field, FieldLabel } from "@project-aqua/ui/components/field";
+} from "@lane4hq/ui/components/dialog";
+import { Field, FieldLabel } from "@lane4hq/ui/components/field";
 import {
   Select,
   SelectContent,
@@ -30,7 +30,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
+} from "@lane4hq/ui/components/select";
 import { TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";

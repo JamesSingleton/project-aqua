@@ -1,5 +1,5 @@
-import { db } from "@project-aqua/db/client";
-import { account } from "@project-aqua/db/schema";
+import { db } from "@lane4hq/db/client";
+import { account } from "@lane4hq/db/schema";
 import { and, eq } from "drizzle-orm";
 
 export async function getProviderTokens(

@@ -1,14 +1,14 @@
 "use server";
 
-import { getSession } from "@project-aqua/auth/session";
-import { requireTeamRole } from "@project-aqua/db/authz";
+import { getSession } from "@lane4hq/auth/session";
+import { requireTeamRole } from "@lane4hq/db/authz";
 import {
   assignMembershipGroup,
   assignMembershipGroupsBulk,
   createTrainingGroup,
   deleteTrainingGroup,
   listTrainingGroups,
-} from "@project-aqua/db/queries/groups";
+} from "@lane4hq/db/queries/groups";
 import { revalidatePath } from "next/cache";
 
 const ROLES = [

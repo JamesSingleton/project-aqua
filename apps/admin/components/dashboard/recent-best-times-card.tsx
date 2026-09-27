@@ -1,5 +1,5 @@
-import { formatTime } from "@project-aqua/swim-core/times";
-import { Button } from "@project-aqua/ui/components/button";
+import { formatTime } from "@lane4hq/swim-core/times";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Card,
   CardAction,
@@ -8,7 +8,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import Link from "next/link";
 
 export type RecentBestTime = {

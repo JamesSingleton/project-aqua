@@ -1,4 +1,4 @@
-import { normalizeMeetEndDate } from "@project-aqua/swim-core/calendar-date";
+import { normalizeMeetEndDate } from "@lane4hq/swim-core/calendar-date";
 import {
   buildEventKey,
   type Course,
@@ -6,8 +6,8 @@ import {
   parseEventGender,
   type RelayStroke,
   type Stroke,
-} from "@project-aqua/swim-core/events";
-import { parseTime } from "@project-aqua/swim-core/times";
+} from "@lane4hq/swim-core/events";
+import { parseTime } from "@lane4hq/swim-core/times";
 import type { ParsedEvent, ParsedMeet } from "../types";
 
 const STROKE_CODES: Record<string, string> = {

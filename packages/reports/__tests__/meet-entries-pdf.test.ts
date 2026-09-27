@@ -1,4 +1,4 @@
-import { buildMeetLineupSnapshot } from "@project-aqua/swim-core/meet-lineup-snapshot";
+import { buildMeetLineupSnapshot } from "@lane4hq/swim-core/meet-lineup-snapshot";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { describe, expect, it } from "vitest";
 import { buildMeetEntriesReport } from "../src/meet-entries/build";

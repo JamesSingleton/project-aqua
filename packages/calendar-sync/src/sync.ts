@@ -9,7 +9,7 @@ import {
   updateCalendarConnection,
   updateCalendarEvent,
   upsertEventLink,
-} from "@project-aqua/db/queries/calendar";
+} from "@lane4hq/db/queries/calendar";
 import {
   deleteGoogleEvent,
   listGoogleEvents,
@@ -21,7 +21,7 @@ import {
   upsertMicrosoftEvent,
 } from "./microsoft";
 
-/** Push a single Aqua event to all active connections for the org (caller filters). */
+/** Push a single Lane4 HQ event to all active connections for the org (caller filters). */
 export async function pushAquaEventToConnection(
   connectionId: string,
   aquaEventId: string,
@@ -111,8 +111,8 @@ export async function deleteAquaEventFromConnection(
 }
 
 /**
- * Pull remote changes. Aqua-wins for mapped team events when both sides dirty.
- * Unmapped remote events on the dedicated calendar are pulled into Aqua as `other`.
+ * Pull remote changes. Lane4 HQ wins for mapped team events when both sides dirty.
+ * Unmapped remote events on the dedicated calendar are pulled into Lane4 HQ as `other`.
  */
 export async function pullConnectionChanges(connectionId: string) {
   const connection = await getCalendarConnectionById(connectionId);
@@ -134,7 +134,7 @@ export async function pullConnectionChanges(connectionId: string) {
 
     for (const remote of listed.events) {
       if (remote.status === "cancelled") {
-        // Aqua remains source of truth — mapped events will be recreated on next push
+        // Lane4 HQ remains source of truth — mapped events will be recreated on next push
         continue;
       }
 
@@ -158,12 +158,12 @@ export async function pullConnectionChanges(connectionId: string) {
             provider: connection.provider,
             externalEventId: remote.id,
             details: {
-              message: "Both sides changed; Aqua version kept",
+              message: "Both sides changed; Lane4 HQ version kept",
               aquaVersion: aqua.aquaVersion,
               remoteEtag: remote.etag,
             },
           });
-          // Re-push Aqua version
+          // Re-push Lane4 HQ version
           await pushAquaEventToConnection(connectionId, aqua.id);
           continue;
         }
@@ -194,7 +194,7 @@ export async function pullConnectionChanges(connectionId: string) {
         continue;
       }
 
-      // Unmapped remote event on dedicated calendar → create in Aqua
+      // Unmapped remote event on dedicated calendar → create in Lane4 HQ
       const aquaEventId = await createCalendarEvent(connection.organizationId, {
         title: remote.title,
         description: remote.description,

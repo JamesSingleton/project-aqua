@@ -1,16 +1,16 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { resetPassword } from "@project-aqua/auth/client";
-import { Button } from "@project-aqua/ui/components/button";
+import { resetPassword } from "@lane4hq/auth/client";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from "@project-aqua/ui/components/field";
-import { Input } from "@project-aqua/ui/components/input";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/field";
+import { Input } from "@lane4hq/ui/components/input";
+import { cn } from "@lane4hq/ui/lib/utils";
 import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -80,7 +80,7 @@ export function ResetPasswordForm({
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="text-2xl font-bold">Choose a new password</h1>
           <p className="text-muted-foreground text-sm text-balance">
-            Enter a new password for your Project Aqua account.
+            Enter a new password for your Lane4 HQ account.
           </p>
         </div>
         {error ? <FieldError>{error}</FieldError> : null}

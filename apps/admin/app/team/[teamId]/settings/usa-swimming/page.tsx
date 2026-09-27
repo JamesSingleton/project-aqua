@@ -1,10 +1,10 @@
-import { getOrganizationTeamType } from "@project-aqua/db/authz";
-import { db } from "@project-aqua/db/client";
-import { organization } from "@project-aqua/db/schema";
+import { getOrganizationTeamType } from "@lane4hq/db/authz";
+import { db } from "@lane4hq/db/client";
+import { organization } from "@lane4hq/db/schema";
 import {
   supportsUsaSwimmingIntegration,
   teamTypeLabel,
-} from "@project-aqua/swim-core/team-types";
+} from "@lane4hq/swim-core/team-types";
 import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { SettingsSection } from "../settings-section";

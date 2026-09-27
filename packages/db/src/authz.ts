@@ -1,9 +1,9 @@
-import { isMinorSwimmer } from "@project-aqua/swim-core/age";
+import { isMinorSwimmer } from "@lane4hq/swim-core/age";
 import {
   parseTeamType,
   requiresSafeSportCompliance,
   type TeamType,
-} from "@project-aqua/swim-core/team-types";
+} from "@lane4hq/swim-core/team-types";
 import { and, eq, gt, inArray, isNull, or } from "drizzle-orm";
 import { db } from "./client";
 import {

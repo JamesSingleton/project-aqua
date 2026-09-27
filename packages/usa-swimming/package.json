@@ -1,5 +1,5 @@
 {
-  "name": "@project-aqua/usa-swimming",
+  "name": "@lane4hq/usa-swimming",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -15,13 +15,13 @@
     "lint:fix": "biome check --write ."
   },
   "dependencies": {
-    "@project-aqua/db": "workspace:*",
-    "@project-aqua/emails": "workspace:*",
-    "@project-aqua/swim-core": "workspace:*",
+    "@lane4hq/db": "workspace:*",
+    "@lane4hq/emails": "workspace:*",
+    "@lane4hq/swim-core": "workspace:*",
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {
-    "@project-aqua/typescript-config": "workspace:*",
+    "@lane4hq/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"
   }

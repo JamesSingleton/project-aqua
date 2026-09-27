@@ -1,6 +1,6 @@
 "use client";
 
-import type { ThemePreference } from "@project-aqua/db/schema";
+import type { ThemePreference } from "@lane4hq/db/schema";
 import { useTheme } from "next-themes";
 import { useEffect, useRef } from "react";
 

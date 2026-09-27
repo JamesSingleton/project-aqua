@@ -3,18 +3,18 @@
 import {
   formatBestTimeAchievedLabel,
   formatDateOnlyLabel,
-} from "@project-aqua/swim-core/calendar-date";
+} from "@lane4hq/swim-core/calendar-date";
 import {
   ACADEMIC_STANDING_LABELS,
   type AcademicStanding,
   ELIGIBILITY_STATUS_LABELS,
   type EligibilityStatus,
-} from "@project-aqua/swim-core/team-types";
-import { formatTime } from "@project-aqua/swim-core/times";
-import { Avatar, AvatarFallback } from "@project-aqua/ui/components/avatar";
-import { Badge } from "@project-aqua/ui/components/badge";
-import { Button, buttonVariants } from "@project-aqua/ui/components/button";
-import { Separator } from "@project-aqua/ui/components/separator";
+} from "@lane4hq/swim-core/team-types";
+import { formatTime } from "@lane4hq/swim-core/times";
+import { Avatar, AvatarFallback } from "@lane4hq/ui/components/avatar";
+import { Badge } from "@lane4hq/ui/components/badge";
+import { Button, buttonVariants } from "@lane4hq/ui/components/button";
+import { Separator } from "@lane4hq/ui/components/separator";
 import {
   Sheet,
   SheetContent,
@@ -22,8 +22,8 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@project-aqua/ui/components/sheet";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/sheet";
+import { cn } from "@lane4hq/ui/lib/utils";
 import { CheckIcon, CopyIcon, PencilIcon } from "lucide-react";
 import Link from "next/link";
 import {

@@ -1,19 +1,19 @@
 "use server";
 
-import { getSession } from "@project-aqua/auth/session";
-import { requireTeamRole } from "@project-aqua/db/authz";
+import { getSession } from "@lane4hq/auth/session";
+import { requireTeamRole } from "@lane4hq/db/authz";
 import {
   createPracticeSession,
   getAttendanceForSession,
   getPracticeSessions,
   setAttendance,
   setPracticeRsvp,
-} from "@project-aqua/db/queries/attendance";
-import { normalizeOptionalTextUndefined as normalizeOptionalText } from "@project-aqua/swim-core/text";
+} from "@lane4hq/db/queries/attendance";
+import { normalizeOptionalTextUndefined as normalizeOptionalText } from "@lane4hq/swim-core/text";
 import type {
   AttendanceStatus,
   RsvpStatus,
-} from "@project-aqua/swim-core/validators";
+} from "@lane4hq/swim-core/validators";
 import { revalidatePath } from "next/cache";
 
 const MAX_LOCATION_LENGTH = 200;

@@ -2,8 +2,8 @@ import {
   getMeetById,
   getMeetEntryProgressCounts,
   getMeetRelayLegs,
-} from "@project-aqua/db/queries/meets";
-import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
+} from "@lane4hq/db/queries/meets";
+import { formatDateOnlyLabel } from "@lane4hq/swim-core/calendar-date";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SetBreadcrumbEntity } from "@/components/breadcrumb-entities";

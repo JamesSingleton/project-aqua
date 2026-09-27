@@ -1,13 +1,13 @@
-import { getSession } from "@project-aqua/auth/session";
-import { getUserPreferences } from "@project-aqua/db/queries/preferences";
-import type { ThemePreference } from "@project-aqua/db/schema";
+import { getSession } from "@lane4hq/auth/session";
+import { getUserPreferences } from "@lane4hq/db/queries/preferences";
+import type { ThemePreference } from "@lane4hq/db/schema";
 import { GeistMono } from "geist/font/mono";
 import { GeistPixelSquare } from "geist/font/pixel";
 import { GeistSans } from "geist/font/sans";
 import type { Metadata, Viewport } from "next";
 
-import "@project-aqua/ui/globals.css";
-import { cn } from "@project-aqua/ui/lib/utils";
+import "@lane4hq/ui/globals.css";
+import { cn } from "@lane4hq/ui/lib/utils";
 import Providers from "@/components/providers";
 import { env } from "@/env";
 
@@ -16,11 +16,11 @@ void env.BETTER_AUTH_URL;
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Project Aqua",
-    default: "Project Aqua",
+    template: "%s | Lane4 HQ",
+    default: "Lane4 HQ",
   },
   description:
-    "Project Aqua is the all-in-one solution for managing swim teams, tracking stats, registering for events, and setting up meets.",
+    "Lane4 HQ is the all-in-one solution for managing swim teams, tracking stats, registering for events, and setting up meets.",
   robots: {
     index: false,
     follow: false,

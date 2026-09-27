@@ -2,7 +2,7 @@ import {
   storageObjectUrl,
   TEAM_LOGO_BUCKET,
   USER_AVATAR_BUCKET,
-} from "@project-aqua/storage";
+} from "@lane4hq/storage";
 
 type StorageBucket = typeof TEAM_LOGO_BUCKET | typeof USER_AVATAR_BUCKET;
 

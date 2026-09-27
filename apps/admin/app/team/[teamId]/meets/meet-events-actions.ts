@@ -1,14 +1,14 @@
 "use server";
 
-import { getSession } from "@project-aqua/auth/session";
-import { assertFeature } from "@project-aqua/billing/features";
-import { requireTeamRole } from "@project-aqua/db/authz";
+import { getSession } from "@lane4hq/auth/session";
+import { assertFeature } from "@lane4hq/billing/features";
+import { requireTeamRole } from "@lane4hq/db/authz";
 import {
   createMeetEventTemplate,
   deleteMeetEventTemplate,
   isMeetEventTemplatesTableMissing,
   listMeetEventTemplates,
-} from "@project-aqua/db/queries/meet-event-templates";
+} from "@lane4hq/db/queries/meet-event-templates";
 import {
   addMeetEvent,
   addResolvedMeetResults,
@@ -23,25 +23,25 @@ import {
   getMeetRelayLegsDetailed,
   suggestMeetEventNumber,
   updateMeetEvent,
-} from "@project-aqua/db/queries/meets";
-import { getRoster } from "@project-aqua/db/queries/roster";
-import { isRelayStroke } from "@project-aqua/swim-core/entry-limits";
-import type { RelayStroke, Stroke } from "@project-aqua/swim-core/events";
+} from "@lane4hq/db/queries/meets";
+import { getRoster } from "@lane4hq/db/queries/roster";
+import { isRelayStroke } from "@lane4hq/swim-core/entry-limits";
+import type { RelayStroke, Stroke } from "@lane4hq/swim-core/events";
 import {
   buildEventKey,
   formatMeetEventDeletePhrase,
-} from "@project-aqua/swim-core/events";
+} from "@lane4hq/swim-core/events";
 import {
   BUILT_IN_MEET_EVENT_PRESETS,
   type MeetEventPresetRow,
-} from "@project-aqua/swim-core/meet-event-presets";
-import { formatMeetLineupCsv } from "@project-aqua/swim-core/meet-lineup-snapshot";
-import { parseMeetResultsCsv } from "@project-aqua/swim-core/meet-results-csv";
-import { parseTime } from "@project-aqua/swim-core/times";
+} from "@lane4hq/swim-core/meet-event-presets";
+import { formatMeetLineupCsv } from "@lane4hq/swim-core/meet-lineup-snapshot";
+import { parseMeetResultsCsv } from "@lane4hq/swim-core/meet-results-csv";
+import { parseTime } from "@lane4hq/swim-core/times";
 import {
   manualMeetEventSchema,
   meetEventTemplateNameSchema,
-} from "@project-aqua/swim-core/validators";
+} from "@lane4hq/swim-core/validators";
 import { revalidatePath } from "next/cache";
 import { loadMeetLineupSnapshot } from "./load-meet-lineup-snapshot";
 

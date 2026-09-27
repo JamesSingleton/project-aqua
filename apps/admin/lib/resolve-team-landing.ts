@@ -1,4 +1,4 @@
-import { getUserTeams } from "@project-aqua/db/authz";
+import { getUserTeams } from "@lane4hq/db/authz";
 import { pickTeamLandingPath, type TeamLandingPath } from "./team-landing";
 
 export async function resolveTeamLandingPath(

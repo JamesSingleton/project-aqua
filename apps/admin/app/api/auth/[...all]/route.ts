@@ -1,4 +1,4 @@
-import { auth } from "@project-aqua/auth/server";
+import { auth } from "@lane4hq/auth/server";
 import { toNextJsHandler } from "better-auth/next-js";
 import { checkBotId } from "botid/server";
 

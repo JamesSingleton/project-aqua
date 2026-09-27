@@ -25,7 +25,7 @@ export async function ensureMicrosoftTeamCalendar(
   userId: string,
   teamName: string,
 ) {
-  const name = `Project Aqua – ${teamName}`;
+  const name = `Lane4 HQ – ${teamName}`;
   const list = await graphFetch(userId, "/me/calendars");
   const existing = (list?.value ?? []).find(
     (c: { name?: string }) => c.name === name,

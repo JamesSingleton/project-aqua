@@ -244,7 +244,7 @@ importers:
       '@neon/config':
         specifier: ^1.7.2
         version: 1.7.2
-      '@project-aqua/typescript-config':
+      '@lane4hq/typescript-config':
         specifier: workspace:*
         version: link:packages/typescript-config
       '@types/node':
@@ -268,37 +268,37 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.9.1
         version: 5.9.1(@standard-schema/spec@1.1.0)(ajv-errors@3.0.0(ajv@8.20.0))(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(arktype@2.2.3)(react-hook-form@7.88.0(react@19.3.0))(zod@4.6.5)
-      '@project-aqua/auth':
+      '@lane4hq/auth':
         specifier: workspace:*
         version: link:../../packages/auth
-      '@project-aqua/billing':
+      '@lane4hq/billing':
         specifier: workspace:*
         version: link:../../packages/billing
-      '@project-aqua/calendar-sync':
+      '@lane4hq/calendar-sync':
         specifier: workspace:*
         version: link:../../packages/calendar-sync
-      '@project-aqua/db':
+      '@lane4hq/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@project-aqua/emails':
+      '@lane4hq/emails':
         specifier: workspace:*
         version: link:../../packages/emails
-      '@project-aqua/reports':
+      '@lane4hq/reports':
         specifier: workspace:*
         version: link:../../packages/reports
-      '@project-aqua/storage':
+      '@lane4hq/storage':
         specifier: workspace:*
         version: link:../../packages/storage
-      '@project-aqua/swim-core':
+      '@lane4hq/swim-core':
         specifier: workspace:*
         version: link:../../packages/swim-core
-      '@project-aqua/swim-formats':
+      '@lane4hq/swim-formats':
         specifier: workspace:*
         version: link:../../packages/swim-formats
-      '@project-aqua/ui':
+      '@lane4hq/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@project-aqua/usa-swimming':
+      '@lane4hq/usa-swimming':
         specifier: workspace:*
         version: link:../../packages/usa-swimming
       '@t3-oss/env-nextjs':
@@ -350,7 +350,7 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@project-aqua/typescript-config':
+      '@lane4hq/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
       '@types/node':
@@ -392,7 +392,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@project-aqua/ui':
+      '@lane4hq/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       geist:
@@ -417,7 +417,7 @@ importers:
         specifier: ^6.28.1
         version: 6.28.1(@react-email/render@2.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))
     devDependencies:
-      '@project-aqua/typescript-config':
+      '@lane4hq/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
       '@types/eslint':
@@ -447,13 +447,13 @@ importers:
       '@polar-sh/sdk':
         specifier: 'catalog:'
         version: 0.49.0
-      '@project-aqua/db':
+      '@lane4hq/db':
         specifier: workspace:*
         version: link:../db
-      '@project-aqua/emails':
+      '@lane4hq/emails':
         specifier: workspace:*
         version: link:../emails
-      '@project-aqua/swim-core':
+      '@lane4hq/swim-core':
         specifier: workspace:*
         version: link:../swim-core
       '@t3-oss/env-nextjs':
@@ -469,7 +469,7 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@project-aqua/typescript-config':
+      '@lane4hq/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
@@ -502,13 +502,13 @@ importers:
       '@polar-sh/sdk':
         specifier: 'catalog:'
         version: 0.49.0
-      '@project-aqua/db':
+      '@lane4hq/db':
         specifier: workspace:*
         version: link:../db
-      '@project-aqua/emails':
+      '@lane4hq/emails':
         specifier: workspace:*
         version: link:../emails
-      '@project-aqua/swim-core':
+      '@lane4hq/swim-core':
         specifier: workspace:*
         version: link:../swim-core
       '@t3-oss/env-nextjs':
@@ -524,7 +524,7 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@project-aqua/typescript-config':
+      '@lane4hq/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
@@ -536,14 +536,14 @@ importers:
 
   packages/calendar-sync:
     dependencies:
-      '@project-aqua/db':
+      '@lane4hq/db':
         specifier: workspace:*
         version: link:../db
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.2(kysely@0.29.6)(postgres@3.4.9)
     devDependencies:
-      '@project-aqua/typescript-config':
+      '@lane4hq/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
@@ -555,7 +555,7 @@ importers:
 
   packages/db:
     dependencies:
-      '@project-aqua/swim-core':
+      '@lane4hq/swim-core':
         specifier: workspace:*
         version: link:../swim-core
       '@t3-oss/env-nextjs':
@@ -571,10 +571,10 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@project-aqua/storage':
+      '@lane4hq/storage':
         specifier: workspace:*
         version: link:../storage
-      '@project-aqua/typescript-config':
+      '@lane4hq/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
@@ -620,7 +620,7 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@project-aqua/typescript-config':
+      '@lane4hq/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
@@ -638,7 +638,7 @@ importers:
 
   packages/reports:
     dependencies:
-      '@project-aqua/swim-core':
+      '@lane4hq/swim-core':
         specifier: workspace:*
         version: link:../swim-core
       '@react-pdf/renderer':
@@ -651,7 +651,7 @@ importers:
         specifier: 'catalog:'
         version: 19.3.0(react@19.3.0)
     devDependencies:
-      '@project-aqua/typescript-config':
+      '@lane4hq/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
@@ -688,7 +688,7 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@project-aqua/typescript-config':
+      '@lane4hq/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
@@ -713,7 +713,7 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@project-aqua/typescript-config':
+      '@lane4hq/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
@@ -734,7 +734,7 @@ importers:
 
   packages/swim-formats:
     dependencies:
-      '@project-aqua/swim-core':
+      '@lane4hq/swim-core':
         specifier: workspace:*
         version: link:../swim-core
       fflate:
@@ -744,7 +744,7 @@ importers:
         specifier: ^0.18.5
         version: 0.18.5
     devDependencies:
-      '@project-aqua/typescript-config':
+      '@lane4hq/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
@@ -822,7 +822,7 @@ importers:
         specifier: ^4.6.5
         version: 4.6.5
     devDependencies:
-      '@project-aqua/typescript-config':
+      '@lane4hq/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@tailwindcss/postcss':
@@ -849,20 +849,20 @@ importers:
 
   packages/usa-swimming:
     dependencies:
-      '@project-aqua/db':
+      '@lane4hq/db':
         specifier: workspace:*
         version: link:../db
-      '@project-aqua/emails':
+      '@lane4hq/emails':
         specifier: workspace:*
         version: link:../emails
-      '@project-aqua/swim-core':
+      '@lane4hq/swim-core':
         specifier: workspace:*
         version: link:../swim-core
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.2(kysely@0.29.6)(postgres@3.4.9)
     devDependencies:
-      '@project-aqua/typescript-config':
+      '@lane4hq/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':

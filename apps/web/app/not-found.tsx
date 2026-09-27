@@ -1,11 +1,11 @@
-import { Button } from "@project-aqua/ui/components/button";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Empty,
   EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
-} from "@project-aqua/ui/components/empty";
+} from "@lane4hq/ui/components/empty";
 import Link from "next/link";
 
 export default function NotFound() {

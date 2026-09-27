@@ -1,8 +1,8 @@
-import { keys as auth } from "@project-aqua/auth/keys";
-import { keys as billing } from "@project-aqua/billing/keys";
-import { keys as database } from "@project-aqua/db/keys";
-import { keys as email } from "@project-aqua/emails/keys";
-import { keys as storage } from "@project-aqua/storage/keys";
+import { keys as auth } from "@lane4hq/auth/keys";
+import { keys as billing } from "@lane4hq/billing/keys";
+import { keys as database } from "@lane4hq/db/keys";
+import { keys as email } from "@lane4hq/emails/keys";
+import { keys as storage } from "@lane4hq/storage/keys";
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 

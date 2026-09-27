@@ -3,7 +3,7 @@ import { PageIntro, Section } from "@/components/section";
 
 export const metadata: Metadata = {
   title: "Privacy",
-  description: "How Project Aqua handles account, roster, and meet data.",
+  description: "How Lane4 HQ handles account, roster, and meet data.",
 };
 
 export default function PrivacyPage() {
@@ -11,7 +11,7 @@ export default function PrivacyPage() {
     <>
       <PageIntro
         title="Privacy"
-        description="Project Aqua stores the absolute minimum needed to run a coach workspace. We do not sell roster data."
+        description="Lane4 HQ stores the absolute minimum needed to run a coach workspace. We do not sell roster data."
       />
       <Section className="flex max-w-2xl flex-col gap-6 pt-0 text-muted-foreground">
         <p>

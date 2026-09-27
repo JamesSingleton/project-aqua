@@ -1,13 +1,13 @@
 "use server";
 
-import { getSession } from "@project-aqua/auth/session";
-import { requireTeamRole } from "@project-aqua/db/authz";
+import { getSession } from "@lane4hq/auth/session";
+import { requireTeamRole } from "@lane4hq/db/authz";
 import {
   type CommitSeasonRollInput,
   commitSeasonRoll,
   listMembershipsNotInSeason,
   previewSeasonRoll,
-} from "@project-aqua/db/queries/seasons";
+} from "@lane4hq/db/queries/seasons";
 import { revalidatePath } from "next/cache";
 
 export async function previewNewSeasonAction(

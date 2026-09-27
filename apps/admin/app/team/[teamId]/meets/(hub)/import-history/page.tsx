@@ -1,4 +1,4 @@
-import { Badge } from "@project-aqua/ui/components/badge";
+import { Badge } from "@lane4hq/ui/components/badge";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getImportJobHistoryAction } from "../../actions";

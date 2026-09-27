@@ -50,7 +50,7 @@ target_rows=$(
     -c 'select (select count(*) from "user") + (select count(*) from organization)'
 )
 if [[ "$target_rows" == "0" ]]; then
-  dump_file=$(mktemp "${TMPDIR:-/tmp}/project-aqua-data.XXXXXX.dump")
+  dump_file=$(mktemp "${TMPDIR:-/tmp}/lane4hq-data.XXXXXX.dump")
   trap 'rm -f "$dump_file"' EXIT
 
   run_pg pg_dump \
@@ -92,6 +92,6 @@ env \
   -u PGPASSWORD \
   -u PGPORT \
   -u PGUSER \
-  pnpm --filter @project-aqua/db exec tsx scripts/migrate-image-urls.ts
+  pnpm --filter @lane4hq/db exec tsx scripts/migrate-image-urls.ts
 
 echo "Existing database rows and public images migrated."

@@ -1,7 +1,7 @@
 "use client";
 
-import type { SplitCaptureInterval } from "@project-aqua/swim-core/split-capture";
-import { Button } from "@project-aqua/ui/components/button";
+import type { SplitCaptureInterval } from "@lane4hq/swim-core/split-capture";
+import { Button } from "@lane4hq/ui/components/button";
 import { Download } from "lucide-react";
 import { useState } from "react";
 import { confirmMeetEntriesViewOnExport } from "../../meet-entries-view";

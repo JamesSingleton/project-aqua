@@ -1,8 +1,8 @@
-import { getSession } from "@project-aqua/auth/session";
-import { requireSwimmerTeamAccess } from "@project-aqua/db/authz";
-import { getSwimmerById } from "@project-aqua/db/queries/roster";
-import { isMinorSwimmer } from "@project-aqua/swim-core/age";
-import { Badge } from "@project-aqua/ui/components/badge";
+import { getSession } from "@lane4hq/auth/session";
+import { requireSwimmerTeamAccess } from "@lane4hq/db/authz";
+import { getSwimmerById } from "@lane4hq/db/queries/roster";
+import { isMinorSwimmer } from "@lane4hq/swim-core/age";
+import { Badge } from "@lane4hq/ui/components/badge";
 import { notFound } from "next/navigation";
 import { SetBreadcrumbEntity } from "@/components/breadcrumb-entities";
 import { SwimmerNav } from "./swimmer-nav";

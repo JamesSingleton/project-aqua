@@ -1,5 +1,5 @@
 {
-  "name": "@project-aqua/calendar-sync",
+  "name": "@lane4hq/calendar-sync",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -15,11 +15,11 @@
     "lint:fix": "biome check --write ."
   },
   "dependencies": {
-    "@project-aqua/db": "workspace:*",
+    "@lane4hq/db": "workspace:*",
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {
-    "@project-aqua/typescript-config": "workspace:*",
+    "@lane4hq/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"
   }

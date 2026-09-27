@@ -1,5 +1,5 @@
-import { formatDateOnly } from "@project-aqua/swim-core/calendar-date";
-import { MAX_BULK_CALENDAR_EVENTS } from "@project-aqua/swim-core/calendar-recurrence";
+import { formatDateOnly } from "@lane4hq/swim-core/calendar-date";
+import { MAX_BULK_CALENDAR_EVENTS } from "@lane4hq/swim-core/calendar-recurrence";
 import { and, asc, desc, eq, gte, isNull, lte } from "drizzle-orm";
 import { db } from "../client";
 import {

@@ -17,7 +17,7 @@ export function getResendClient(): Resend {
 }
 
 export function getEmailFrom(): string {
-  return keys().EMAIL_FROM ?? "Project Aqua <onboarding@resend.dev>";
+  return keys().EMAIL_FROM ?? "Lane4 HQ <onboarding@resend.dev>";
 }
 
 export function getBaseUrl(): string {

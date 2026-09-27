@@ -7,8 +7,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@project-aqua/ui/components/table";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/table";
+import { cn } from "@lane4hq/ui/lib/utils";
 import {
   flexRender,
   type ReactTable,

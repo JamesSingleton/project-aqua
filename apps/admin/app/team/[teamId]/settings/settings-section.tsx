@@ -1,5 +1,5 @@
-import { Separator } from "@project-aqua/ui/components/separator";
-import { cn } from "@project-aqua/ui/lib/utils";
+import { Separator } from "@lane4hq/ui/components/separator";
+import { cn } from "@lane4hq/ui/lib/utils";
 
 export function SettingsSection({
   title,

@@ -1,4 +1,4 @@
-import { formatTime } from "@project-aqua/swim-core/times";
+import { formatTime } from "@lane4hq/swim-core/times";
 import { Document, Page, Text, View } from "@react-pdf/renderer";
 import type { TeamBestTimesReport } from "../../types";
 import {

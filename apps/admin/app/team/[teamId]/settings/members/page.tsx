@@ -1,9 +1,9 @@
-import { getSession } from "@project-aqua/auth/session";
-import { getMember, requireTeamMember } from "@project-aqua/db/authz";
+import { getSession } from "@lane4hq/auth/session";
+import { getMember, requireTeamMember } from "@lane4hq/db/authz";
 import {
   getTeamInvitations,
   getTeamMembers,
-} from "@project-aqua/db/queries/members";
+} from "@lane4hq/db/queries/members";
 import type { Metadata } from "next";
 import { SettingsSection } from "../settings-section";
 import { MembersPanel } from "./members-panel";

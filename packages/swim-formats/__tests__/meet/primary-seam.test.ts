@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { applyResultToBestTime } from "@project-aqua/swim-core/best-times";
-import { parseTime } from "@project-aqua/swim-core/times";
+import { applyResultToBestTime } from "@lane4hq/swim-core/best-times";
+import { parseTime } from "@lane4hq/swim-core/times";
 import { describe, expect, it } from "vitest";
 import { parseCl2Meet } from "../../src/cl2/parser";
 import { parseEv3 } from "../../src/ev3/parser";

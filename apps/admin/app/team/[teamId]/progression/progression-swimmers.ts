@@ -1,7 +1,7 @@
 import {
   formatSwimmerLastFirst,
   sortSwimmersByLastName,
-} from "@project-aqua/swim-core/people";
+} from "@lane4hq/swim-core/people";
 
 export type ProgressionSwimmer = {
   swimmerId: string;

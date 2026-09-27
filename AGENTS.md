@@ -1,4 +1,4 @@
-# Project Aqua — Agent conventions
+# Lane4 HQ — Agent conventions
 
 Short rules for AI agents working in this monorepo. Prefer existing packages and patterns over inventing new ones.
 
@@ -19,7 +19,7 @@ Do not use other model families (Claude, GPT, GLM, etc.) unless the human explic
 
 ## Swim file formats
 
-- **Runtime parsers/exporters:** `@project-aqua/swim-formats` (TypeScript). Import from package subpaths (e.g. `@project-aqua/swim-formats/hy3`), not ad-hoc parsers.
+- **Runtime parsers/exporters:** `@lane4hq/swim-formats` (TypeScript). Import from package subpaths (e.g. `@lane4hq/swim-formats/hy3`), not ad-hoc parsers.
 - **Oracle only:** the external Python [`hytek-parser`](https://github.com/SwimComm/hytek-parser) package is a **parity reference** for HY3/HYV — not a production sidecar.
 - Supported interchange: HY3, CL2, EV3, HYV, SDIF/SD3, XLS (MM event reports), ZIP packs.
 - Fixtures live in `packages/swim-formats/fixtures/` (PII-safe mirrors of real TM/MM packs). Do not commit raw coach dumps outside that discipline.
@@ -27,9 +27,9 @@ Do not use other model families (Claude, GPT, GLM, etc.) unless the human explic
 
 ## Testing
 
-- Format work is not done until `pnpm --filter @project-aqua/swim-formats test` passes (Vitest + coverage).
+- Format work is not done until `pnpm --filter @lane4hq/swim-formats test` passes (Vitest + coverage).
 - Prefer golden corpus tests (`__tests__/meet/golden-corpus.test.ts`) and export→re-import round-trips for export changes.
-- Domain helpers (athlete match, entry limits, QT) belong in `@project-aqua/swim-core` with unit tests.
+- Domain helpers (athlete match, entry limits, QT) belong in `@lane4hq/swim-core` with unit tests.
 
 ## Apps & packages
 

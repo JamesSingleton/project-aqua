@@ -1,4 +1,4 @@
-import type { EventGender } from "@project-aqua/swim-core/events";
+import type { EventGender } from "@lane4hq/swim-core/events";
 
 export interface ParsedMeet {
   name: string;

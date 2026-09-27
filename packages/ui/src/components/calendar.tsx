@@ -1,7 +1,7 @@
 "use client";
 
-import { Button, buttonVariants } from "@project-aqua/ui/components/button";
-import { cn } from "@project-aqua/ui/lib/utils";
+import { Button, buttonVariants } from "@lane4hq/ui/components/button";
+import { cn } from "@lane4hq/ui/lib/utils";
 import {
   ChevronDownIcon,
   ChevronLeftIcon,

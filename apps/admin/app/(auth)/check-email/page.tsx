@@ -5,8 +5,7 @@ import { CheckEmailForm } from "@/components/auth/check-email-form";
 
 export const metadata: Metadata = {
   title: "Check your email",
-  description:
-    "Verify your email to finish creating your Project Aqua account.",
+  description: "Verify your email to finish creating your Lane4 HQ account.",
 };
 
 export default function CheckEmailPage() {

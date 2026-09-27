@@ -39,7 +39,7 @@ export async function sendSupportMessage(
   try {
     const resend = new Resend(apiKey);
     const result = await resend.emails.send({
-      from: process.env.EMAIL_FROM ?? "Project Aqua <onboarding@resend.dev>",
+      from: process.env.EMAIL_FROM ?? "Lane4 HQ <onboarding@resend.dev>",
       to,
       replyTo: email,
       subject: `Support from ${name}`,

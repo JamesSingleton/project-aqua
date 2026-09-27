@@ -1,4 +1,4 @@
-import { TEAM_TYPES, type TeamType } from "@project-aqua/swim-core/team-types";
+import { TEAM_TYPES, type TeamType } from "@lane4hq/swim-core/team-types";
 import { z } from "zod";
 import { firstNameSchema, lastNameSchema } from "./account-profile";
 

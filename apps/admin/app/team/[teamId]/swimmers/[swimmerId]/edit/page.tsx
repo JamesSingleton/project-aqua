@@ -1,15 +1,15 @@
-import { getSession } from "@project-aqua/auth/session";
+import { getSession } from "@lane4hq/auth/session";
 import {
   getOrganizationTeamType,
   requireSwimmerTeamAccess,
-} from "@project-aqua/db/authz";
-import { listTrainingGroups } from "@project-aqua/db/queries/groups";
+} from "@lane4hq/db/authz";
+import { listTrainingGroups } from "@lane4hq/db/queries/groups";
 import {
   getSwimmerById,
   getSwimmerContactsForMembership,
   getSwimmerMedicalForMembership,
-} from "@project-aqua/db/queries/roster";
-import { supportsClassYear } from "@project-aqua/swim-core/team-types";
+} from "@lane4hq/db/queries/roster";
+import { supportsClassYear } from "@lane4hq/swim-core/team-types";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { EditSwimmerForm } from "./edit-swimmer-form";

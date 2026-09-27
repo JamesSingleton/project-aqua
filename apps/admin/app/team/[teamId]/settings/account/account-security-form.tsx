@@ -1,17 +1,17 @@
 "use client";
 
-import { changePassword, twoFactor } from "@project-aqua/auth/client";
-import { Button } from "@project-aqua/ui/components/button";
-import { Checkbox } from "@project-aqua/ui/components/checkbox";
+import { changePassword, twoFactor } from "@lane4hq/auth/client";
+import { Button } from "@lane4hq/ui/components/button";
+import { Checkbox } from "@lane4hq/ui/components/checkbox";
 import {
   Field,
   FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from "@project-aqua/ui/components/field";
-import { Input } from "@project-aqua/ui/components/input";
-import { Separator } from "@project-aqua/ui/components/separator";
+} from "@lane4hq/ui/components/field";
+import { Input } from "@lane4hq/ui/components/input";
+import { Separator } from "@lane4hq/ui/components/separator";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import QRCode from "react-qr-code";
@@ -147,7 +147,7 @@ export function AccountSecurityForm({
         <div>
           <h4 className="text-sm font-medium">Change password</h4>
           <p className="text-muted-foreground text-sm">
-            Update the password used to sign in to Project Aqua.
+            Update the password used to sign in to Lane4 HQ.
           </p>
         </div>
         <FieldGroup className="max-w-md gap-4">

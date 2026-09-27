@@ -1,12 +1,12 @@
 "use client";
 
-import { TEAM_TYPES, type TeamType } from "@project-aqua/swim-core/team-types";
-import { Button } from "@project-aqua/ui/components/button";
+import { TEAM_TYPES, type TeamType } from "@lane4hq/swim-core/team-types";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Field,
   FieldDescription,
   FieldLabel,
-} from "@project-aqua/ui/components/field";
+} from "@lane4hq/ui/components/field";
 import {
   Select,
   SelectContent,
@@ -14,7 +14,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
+} from "@lane4hq/ui/components/select";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { updateTeamTypeAction } from "./actions";

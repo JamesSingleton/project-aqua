@@ -34,7 +34,7 @@ export function ReportHeader({ report }: { report: ReportChrome }) {
               marginBottom: 4,
             }}
           >
-            Project Aqua
+            Lane4 HQ
           </Text>
           <Text style={{ fontSize: 16, fontWeight: 600, color: colors.ink }}>
             {report.reportTitle}

@@ -1,28 +1,28 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { isRelayStroke } from "@project-aqua/swim-core/entry-limits";
+import { isRelayStroke } from "@lane4hq/swim-core/entry-limits";
 import {
   RELAY_PRIMARY_LEG_COUNT,
   RELAY_TEAM_LETTERS,
   relayLegRoleLabel,
-} from "@project-aqua/swim-core/relay-legs";
-import { Button } from "@project-aqua/ui/components/button";
+} from "@lane4hq/swim-core/relay-legs";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
-import { Checkbox } from "@project-aqua/ui/components/checkbox";
+} from "@lane4hq/ui/components/card";
+import { Checkbox } from "@lane4hq/ui/components/checkbox";
 import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from "@project-aqua/ui/components/field";
-import { Input } from "@project-aqua/ui/components/input";
+} from "@lane4hq/ui/components/field";
+import { Input } from "@lane4hq/ui/components/input";
 import {
   Select,
   SelectContent,
@@ -30,7 +30,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
+} from "@lane4hq/ui/components/select";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";

@@ -35,5 +35,5 @@ TeamWelcome.PreviewProps = {
   name: "Coach Jane",
   teamName: "FAST Swim Club",
   teamId: "team_123",
-  baseUrl: "https://app.projectaqua.com",
+  baseUrl: "https://admin.lane4hq.com",
 } satisfies TeamWelcomeProps;

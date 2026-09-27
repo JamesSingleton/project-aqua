@@ -5,29 +5,26 @@ import {
   checkQualifyingTime,
   isRelayStroke,
   type MeetEntryLimits,
-} from "@project-aqua/swim-core/entry-limits";
-import {
-  formatEventName,
-  formatGenderShort,
-} from "@project-aqua/swim-core/events";
+} from "@lane4hq/swim-core/entry-limits";
+import { formatEventName, formatGenderShort } from "@lane4hq/swim-core/events";
 import {
   deriveRelayLetter,
   formatAssignmentCountLine,
   isRelayAlternateSlot,
   racingRelayCount,
   relayLegRoleLabel,
-} from "@project-aqua/swim-core/relay-legs";
-import { formatTime } from "@project-aqua/swim-core/times";
-import { Badge } from "@project-aqua/ui/components/badge";
-import { Button } from "@project-aqua/ui/components/button";
+} from "@lane4hq/swim-core/relay-legs";
+import { formatTime } from "@lane4hq/swim-core/times";
+import { Badge } from "@lane4hq/ui/components/badge";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
-import { Label } from "@project-aqua/ui/components/label";
+} from "@lane4hq/ui/components/card";
+import { Label } from "@lane4hq/ui/components/label";
 import {
   Select,
   SelectContent,
@@ -35,7 +32,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
+} from "@lane4hq/ui/components/select";
 import {
   Table,
   TableBody,
@@ -43,7 +40,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@project-aqua/ui/components/table";
+} from "@lane4hq/ui/components/table";
 import { useRouter } from "next/navigation";
 import { Fragment, useMemo, useState, useTransition } from "react";
 import { updateMeetEntryStatusAction } from "../actions";

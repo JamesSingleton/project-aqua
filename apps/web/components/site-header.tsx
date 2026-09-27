@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@project-aqua/ui/components/button";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -9,7 +9,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
-} from "@project-aqua/ui/components/navigation-menu";
+} from "@lane4hq/ui/components/navigation-menu";
 import {
   Sheet,
   SheetClose,
@@ -18,8 +18,8 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@project-aqua/ui/components/sheet";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/sheet";
+import { cn } from "@lane4hq/ui/lib/utils";
 import { MenuIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -55,11 +55,11 @@ export function SiteHeader() {
       <div className="mx-auto flex max-w-6xl items-center gap-2 rounded-2xl bg-background/80 p-1 ring-1 ring-foreground/10 backdrop-blur-xl">
         <Link
           href="/"
-          aria-label="Project Aqua home"
+          aria-label="Lane4 HQ home"
           className="press-scale flex items-center gap-2 rounded-xl px-2 py-1.5 text-sm font-medium"
         >
           <BrandLogo />
-          <span className="hidden sm:inline">Project Aqua</span>
+          <span className="hidden sm:inline">Lane4 HQ</span>
         </Link>
 
         <NavigationMenu className="hidden flex-1 md:flex">
@@ -144,7 +144,7 @@ export function SiteHeader() {
               className="w-[min(20rem,100%)] overscroll-contain"
             >
               <SheetHeader>
-                <SheetTitle>Project Aqua</SheetTitle>
+                <SheetTitle>Lane4 HQ</SheetTitle>
                 <SheetDescription>{SITE_TAGLINE}</SheetDescription>
               </SheetHeader>
               <nav

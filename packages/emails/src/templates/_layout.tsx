@@ -26,13 +26,13 @@ export function EmailLayout({ preview, heading, children }: EmailLayoutProps) {
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
-            <Text style={logo}>Project Aqua</Text>
+            <Text style={logo}>Lane4 HQ</Text>
           </Section>
           <Heading style={h1}>{heading}</Heading>
           {children}
           <Hr style={hr} />
           <Text style={footer}>
-            Project Aqua — Competitive swim team management
+            Lane4 HQ — Competitive swim team management
           </Text>
         </Container>
       </Body>

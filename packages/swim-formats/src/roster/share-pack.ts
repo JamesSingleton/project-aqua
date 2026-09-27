@@ -1,5 +1,5 @@
 /**
- * Project Aqua roster share pack — coach-to-coach identity linking.
+ * Lane4 HQ roster share pack — coach-to-coach identity linking.
  *
  * Contains opaque aqua swimmer IDs plus minimal confirm fields only.
  * Never includes contacts, medical, email, or phone.
@@ -74,7 +74,7 @@ function normalizeAthlete(raw: unknown): RosterSharePackAthlete | null {
   };
 }
 
-/** True when filename looks like a Project Aqua share pack. */
+/** True when filename looks like a Lane4 HQ share pack. */
 export function isRosterSharePackFilename(filename: string): boolean {
   const lower = filename.toLowerCase();
   return (
@@ -84,7 +84,7 @@ export function isRosterSharePackFilename(filename: string): boolean {
   );
 }
 
-/** True when content is a v1 Project Aqua roster share pack. */
+/** True when content is a v1 Lane4 HQ roster share pack. */
 export function isRosterSharePack(content: string): boolean {
   const trimmed = content.trim();
   if (!trimmed.startsWith("{")) return false;

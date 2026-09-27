@@ -1,17 +1,14 @@
-import { isMinorSwimmer } from "@project-aqua/swim-core/age";
+import { isMinorSwimmer } from "@lane4hq/swim-core/age";
 import {
   normalizeDateOfBirth,
   swimmerIdentitiesMatch,
-} from "@project-aqua/swim-core/people";
-import {
-  parseClassYear,
-  parseTeamType,
-} from "@project-aqua/swim-core/team-types";
+} from "@lane4hq/swim-core/people";
+import { parseClassYear, parseTeamType } from "@lane4hq/swim-core/team-types";
 import type {
   RosterRow,
   SwimmerContactsInput,
   SwimmerMedicalInput,
-} from "@project-aqua/swim-core/validators";
+} from "@lane4hq/swim-core/validators";
 import {
   and,
   asc,
@@ -1315,7 +1312,7 @@ export type ImportRosterSharePackResult = {
 };
 
 /**
- * Link athletes from a Project Aqua roster share pack onto a team.
+ * Link athletes from a Lane4 HQ roster share pack onto a team.
  * Confirms name+DOB against the stored person. When this team already has a
  * different person row matching name+DOB, merges that duplicate into the
  * pack's opaque id so we do not keep two people.

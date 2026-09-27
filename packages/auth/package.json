@@ -1,5 +1,5 @@
 {
-  "name": "@project-aqua/auth",
+  "name": "@lane4hq/auth",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -21,9 +21,9 @@
   "dependencies": {
     "@polar-sh/better-auth": "^1.8.4",
     "@polar-sh/sdk": "catalog:",
-    "@project-aqua/db": "workspace:*",
-    "@project-aqua/emails": "workspace:*",
-    "@project-aqua/swim-core": "workspace:*",
+    "@lane4hq/db": "workspace:*",
+    "@lane4hq/emails": "workspace:*",
+    "@lane4hq/swim-core": "workspace:*",
     "@t3-oss/env-nextjs": "catalog:",
     "better-auth": "catalog:",
     "@better-auth/drizzle-adapter": "catalog:",
@@ -35,7 +35,7 @@
     "react": "catalog:"
   },
   "devDependencies": {
-    "@project-aqua/typescript-config": "workspace:*",
+    "@lane4hq/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@vitest/coverage-v8": "catalog:",

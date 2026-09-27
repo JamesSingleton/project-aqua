@@ -1,11 +1,8 @@
 "use client";
 
-import { revokeSession, revokeSessions } from "@project-aqua/auth/client";
-import { Button } from "@project-aqua/ui/components/button";
-import {
-  FieldDescription,
-  FieldError,
-} from "@project-aqua/ui/components/field";
+import { revokeSession, revokeSessions } from "@lane4hq/auth/client";
+import { Button } from "@lane4hq/ui/components/button";
+import { FieldDescription, FieldError } from "@lane4hq/ui/components/field";
 import { Laptop, Smartphone } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";

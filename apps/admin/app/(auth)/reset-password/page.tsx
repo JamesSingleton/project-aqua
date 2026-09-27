@@ -5,7 +5,7 @@ import { ResetPasswordContent } from "./reset-password-content";
 
 export const metadata: Metadata = {
   title: "Reset password",
-  description: "Set a new password for your Project Aqua account.",
+  description: "Set a new password for your Lane4 HQ account.",
 };
 
 export default function ResetPasswordPage() {

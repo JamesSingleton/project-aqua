@@ -1,8 +1,8 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Project Aqua Docs",
-  "description": "Guides for coaches using Project Aqua.",
+  "name": "Lane4 HQ Docs",
+  "description": "Guides for coaches using Lane4 HQ.",
   "colors": {
     "primary": "#0f766e",
     "light": "#14b8a6",

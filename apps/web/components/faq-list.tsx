@@ -3,7 +3,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@project-aqua/ui/components/accordion";
+} from "@lane4hq/ui/components/accordion";
 import { faqs } from "@/lib/site";
 
 export function FaqList() {

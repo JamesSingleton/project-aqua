@@ -1,15 +1,11 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  authClient,
-  organization,
-  useSession,
-} from "@project-aqua/auth/client";
-import { PLAN_LIMITS, type PlanTier } from "@project-aqua/swim-core/plans";
-import { TEAM_TYPES } from "@project-aqua/swim-core/team-types";
-import { Avatar, AvatarFallback } from "@project-aqua/ui/components/avatar";
-import { Button } from "@project-aqua/ui/components/button";
+import { authClient, organization, useSession } from "@lane4hq/auth/client";
+import { PLAN_LIMITS, type PlanTier } from "@lane4hq/swim-core/plans";
+import { TEAM_TYPES } from "@lane4hq/swim-core/team-types";
+import { Avatar, AvatarFallback } from "@lane4hq/ui/components/avatar";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Field,
   FieldDescription,
@@ -18,12 +14,9 @@ import {
   FieldLabel,
   FieldLegend,
   FieldSet,
-} from "@project-aqua/ui/components/field";
-import { Input } from "@project-aqua/ui/components/input";
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from "@project-aqua/ui/components/radio-group";
+} from "@lane4hq/ui/components/field";
+import { Input } from "@lane4hq/ui/components/input";
+import { RadioGroup, RadioGroupItem } from "@lane4hq/ui/components/radio-group";
 import {
   Select,
   SelectContent,
@@ -31,8 +24,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/select";
+import { cn } from "@lane4hq/ui/lib/utils";
 import {
   ArrowLeft,
   ArrowRight,
@@ -120,7 +113,7 @@ function BrandMark() {
       <div className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-full">
         <Waves className="size-4" />
       </div>
-      <span className="text-xl font-bold">Project Aqua</span>
+      <span className="text-xl font-bold">Lane4 HQ</span>
     </Link>
   );
 }

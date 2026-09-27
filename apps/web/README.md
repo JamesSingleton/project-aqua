@@ -1,6 +1,6 @@
-# Project Aqua - Swimming Software for Coaches
+# Lane4 HQ - Swimming Software for Coaches
 
-Project Aqua is a comprehensive swimming software designed to streamline the management of swim teams by providing coaches with tools for workout planning, athlete tracking, performance analysis, and communication. With SwimCoaches, coaches can effectively manage multiple teams, track progress, analyze performance, and communicate with athletes, all in one platform.
+Lane4 HQ is a comprehensive swimming software designed to streamline the management of swim teams by providing coaches with tools for workout planning, athlete tracking, performance analysis, and communication. With SwimCoaches, coaches can effectively manage multiple teams, track progress, analyze performance, and communicate with athletes, all in one platform.
 
 ## Features
 

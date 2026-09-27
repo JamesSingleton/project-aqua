@@ -1,10 +1,10 @@
 "use client";
 
-import type { MeetEntryLimits } from "@project-aqua/swim-core/entry-limits";
+import type { MeetEntryLimits } from "@lane4hq/swim-core/entry-limits";
 import {
   type Gender,
   isSwimmerEligibleForEvent,
-} from "@project-aqua/swim-core/events";
+} from "@lane4hq/swim-core/events";
 import {
   canAssignRacingRelayLeg,
   deriveRelayLetter,
@@ -14,9 +14,9 @@ import {
   type RelayLegCountInput,
   relaySlotLabel,
   strokeForRelayLeg,
-} from "@project-aqua/swim-core/relay-legs";
-import { formatTime, parseTime } from "@project-aqua/swim-core/times";
-import { Button } from "@project-aqua/ui/components/button";
+} from "@lane4hq/swim-core/relay-legs";
+import { formatTime, parseTime } from "@lane4hq/swim-core/times";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Card,
   CardAction,
@@ -24,10 +24,10 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
-import { Checkbox } from "@project-aqua/ui/components/checkbox";
-import { Field, FieldLabel } from "@project-aqua/ui/components/field";
-import { Input } from "@project-aqua/ui/components/input";
+} from "@lane4hq/ui/components/card";
+import { Checkbox } from "@lane4hq/ui/components/checkbox";
+import { Field, FieldLabel } from "@lane4hq/ui/components/field";
+import { Input } from "@lane4hq/ui/components/input";
 import {
   Select,
   SelectContent,
@@ -35,8 +35,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/select";
+import { cn } from "@lane4hq/ui/lib/utils";
 import { Lock, LockOpen, Minus, RefreshCw, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";

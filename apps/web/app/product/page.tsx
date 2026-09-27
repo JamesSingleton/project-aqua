@@ -1,4 +1,4 @@
-import { Separator } from "@project-aqua/ui/components/separator";
+import { Separator } from "@lane4hq/ui/components/separator";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MarketingCta } from "@/components/marketing-cta";

@@ -1,12 +1,9 @@
-import { getSession } from "@project-aqua/auth/session";
-import {
-  getOrganizationTeamType,
-  requireTeamRole,
-} from "@project-aqua/db/authz";
+import { getSession } from "@lane4hq/auth/session";
+import { getOrganizationTeamType, requireTeamRole } from "@lane4hq/db/authz";
 import {
   requiresSafeSportCompliance,
   teamTypeLabel,
-} from "@project-aqua/swim-core/team-types";
+} from "@lane4hq/swim-core/team-types";
 import type { Metadata } from "next";
 import { SettingsSection } from "../settings-section";
 import { getSafeSportDashboardAction } from "./actions";

@@ -7,7 +7,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@project-aqua/ui/components/breadcrumb";
+} from "@lane4hq/ui/components/breadcrumb";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Fragment } from "react";

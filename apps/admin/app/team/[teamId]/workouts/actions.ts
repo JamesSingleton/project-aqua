@@ -1,12 +1,12 @@
 "use server";
 
 import { openai } from "@ai-sdk/openai";
-import { getSession } from "@project-aqua/auth/session";
-import { ingestAiGenerationEvent } from "@project-aqua/billing/polar";
-import { requireTeamRole } from "@project-aqua/db/authz";
-import { assertAndRecordAiGeneration } from "@project-aqua/db/queries/ai-quota";
-import { getAttendanceSummary } from "@project-aqua/db/queries/attendance";
-import { getTeamTopTimes } from "@project-aqua/db/queries/progression";
+import { getSession } from "@lane4hq/auth/session";
+import { ingestAiGenerationEvent } from "@lane4hq/billing/polar";
+import { requireTeamRole } from "@lane4hq/db/authz";
+import { assertAndRecordAiGeneration } from "@lane4hq/db/queries/ai-quota";
+import { getAttendanceSummary } from "@lane4hq/db/queries/attendance";
+import { getTeamTopTimes } from "@lane4hq/db/queries/progression";
 import {
   attachWorkoutToPractice,
   createWorkout,
@@ -15,14 +15,14 @@ import {
   getWorkoutById,
   listWorkouts,
   updateWorkout,
-} from "@project-aqua/db/queries/workouts";
-import type { SharedDraftQuota } from "@project-aqua/swim-core/draft-quota";
-import { getPlanLimits } from "@project-aqua/swim-core/plans";
-import { formatTime } from "@project-aqua/swim-core/times";
+} from "@lane4hq/db/queries/workouts";
+import type { SharedDraftQuota } from "@lane4hq/swim-core/draft-quota";
+import { getPlanLimits } from "@lane4hq/swim-core/plans";
+import { formatTime } from "@lane4hq/swim-core/times";
 import {
   parseWorkoutText,
   textEditDistance,
-} from "@project-aqua/swim-core/workout-parser";
+} from "@lane4hq/swim-core/workout-parser";
 import { generateText } from "ai";
 import { revalidatePath } from "next/cache";
 

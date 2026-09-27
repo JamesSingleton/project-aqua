@@ -1,8 +1,8 @@
-import type { SwimsWebhookPayload } from "@project-aqua/usa-swimming";
+import type { SwimsWebhookPayload } from "@lane4hq/usa-swimming";
 import {
   handleSwimsWebhook,
   verifySwimsWebhook,
-} from "@project-aqua/usa-swimming/webhooks";
+} from "@lane4hq/usa-swimming/webhooks";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 

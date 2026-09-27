@@ -1,11 +1,11 @@
 "use client";
 
-import { swimmerAgeOnDate } from "@project-aqua/swim-core/age";
+import { swimmerAgeOnDate } from "@lane4hq/swim-core/age";
 import {
   type AssociationEventCaps,
   canAddScoringEntry,
-} from "@project-aqua/swim-core/association-event-caps";
-import { consecutivePairsForMember } from "@project-aqua/swim-core/consecutive-events";
+} from "@lane4hq/swim-core/association-event-caps";
+import { consecutivePairsForMember } from "@lane4hq/swim-core/consecutive-events";
 import {
   canAddMeetEntry,
   checkMeetEntryCounts,
@@ -15,12 +15,12 @@ import {
   formatFilledCapAdvice,
   isRelayStroke,
   type MeetEntryLimits,
-} from "@project-aqua/swim-core/entry-limits";
+} from "@lane4hq/swim-core/entry-limits";
 import {
   formatEventName,
   formatGenderLabel,
   isSwimmerEligibleForEvent,
-} from "@project-aqua/swim-core/events";
+} from "@lane4hq/swim-core/events";
 import {
   deriveRelayLetter,
   formatAssignmentCountLine,
@@ -28,20 +28,20 @@ import {
   racingRelayCount,
   racingRelayKeysByMember,
   relayLegRoleLabel,
-} from "@project-aqua/swim-core/relay-legs";
+} from "@lane4hq/swim-core/relay-legs";
 import {
   blocksMeetEntries,
   ELIGIBILITY_STATUS_LABELS,
   type EligibilityStatus,
-} from "@project-aqua/swim-core/team-types";
-import { formatTime, parseTime } from "@project-aqua/swim-core/times";
+} from "@lane4hq/swim-core/team-types";
+import { formatTime, parseTime } from "@lane4hq/swim-core/times";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@project-aqua/ui/components/alert";
-import { Button } from "@project-aqua/ui/components/button";
-import { Checkbox } from "@project-aqua/ui/components/checkbox";
+} from "@lane4hq/ui/components/alert";
+import { Button } from "@lane4hq/ui/components/button";
+import { Checkbox } from "@lane4hq/ui/components/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,8 +50,8 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from "@project-aqua/ui/components/dropdown-menu";
-import { Input } from "@project-aqua/ui/components/input";
+} from "@lane4hq/ui/components/dropdown-menu";
+import { Input } from "@lane4hq/ui/components/input";
 import {
   Select,
   SelectContent,
@@ -59,14 +59,14 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
-import { Spinner } from "@project-aqua/ui/components/spinner";
+} from "@lane4hq/ui/components/select";
+import { Spinner } from "@lane4hq/ui/components/spinner";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@project-aqua/ui/components/tooltip";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/tooltip";
+import { cn } from "@lane4hq/ui/lib/utils";
 import {
   AlertTriangleIcon,
   ArrowDownUpIcon,

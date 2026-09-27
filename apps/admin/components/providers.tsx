@@ -1,6 +1,6 @@
 "use client";
-import type { ThemePreference } from "@project-aqua/db/schema";
-import { TooltipProvider } from "@project-aqua/ui/components/tooltip";
+import type { ThemePreference } from "@lane4hq/db/schema";
+import { TooltipProvider } from "@lane4hq/ui/components/tooltip";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { ReactNode } from "react";
 import { AuthProvider } from "./auth-provider";

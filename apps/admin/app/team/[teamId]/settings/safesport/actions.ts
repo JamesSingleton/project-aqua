@@ -1,13 +1,13 @@
 "use server";
 
-import { getSession } from "@project-aqua/auth/session";
-import { getMember, requireTeamRole } from "@project-aqua/db/authz";
+import { getSession } from "@lane4hq/auth/session";
+import { getMember, requireTeamRole } from "@lane4hq/db/authz";
 import {
   createSafesportReport,
   getComplianceSummary,
   getStaffCredentials,
   upsertStaffCredential,
-} from "@project-aqua/db/queries/safesport";
+} from "@lane4hq/db/queries/safesport";
 import { revalidatePath } from "next/cache";
 
 export async function getSafeSportDashboardAction(teamId: string) {

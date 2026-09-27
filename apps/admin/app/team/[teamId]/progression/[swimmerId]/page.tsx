@@ -1,16 +1,16 @@
-import { isCoachingRole } from "@project-aqua/auth/roles";
-import { getSession } from "@project-aqua/auth/session";
-import { getMember, getOrganizationTeamType } from "@project-aqua/db/authz";
+import { isCoachingRole } from "@lane4hq/auth/roles";
+import { getSession } from "@lane4hq/auth/session";
+import { getMember, getOrganizationTeamType } from "@lane4hq/db/authz";
 import {
   getSwimmerBestTimes,
   getSwimmerResultSeries,
   getSwimmerTimeHistory,
-} from "@project-aqua/db/queries/progression";
-import { getRoster, getSwimmerById } from "@project-aqua/db/queries/roster";
+} from "@lane4hq/db/queries/progression";
+import { getRoster, getSwimmerById } from "@lane4hq/db/queries/roster";
 import {
   ensureCurrentSeason,
   listTeamSeasons,
-} from "@project-aqua/db/queries/seasons";
+} from "@lane4hq/db/queries/seasons";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SetBreadcrumbEntity } from "@/components/breadcrumb-entities";

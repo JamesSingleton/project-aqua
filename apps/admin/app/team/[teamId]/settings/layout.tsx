@@ -1,4 +1,4 @@
-import { getOrganizationTeamType } from "@project-aqua/db/authz";
+import { getOrganizationTeamType } from "@lane4hq/db/authz";
 import { PageHeader } from "@/components/page-header";
 import { SettingsNav } from "./settings-nav";
 

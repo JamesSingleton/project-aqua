@@ -1,7 +1,7 @@
 "use client";
 
-import { Badge } from "@project-aqua/ui/components/badge";
-import { Button } from "@project-aqua/ui/components/button";
+import { Badge } from "@lane4hq/ui/components/badge";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Command,
   CommandEmpty,
@@ -10,14 +10,14 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@project-aqua/ui/components/command";
+} from "@lane4hq/ui/components/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@project-aqua/ui/components/popover";
-import { Separator } from "@project-aqua/ui/components/separator";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/popover";
+import { Separator } from "@lane4hq/ui/components/separator";
+import { cn } from "@lane4hq/ui/lib/utils";
 import type { Column, RowData } from "@tanstack/react-table";
 import { CheckIcon, PlusCircleIcon, XCircleIcon } from "lucide-react";
 import * as React from "react";

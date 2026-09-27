@@ -4,7 +4,7 @@ import {
   type EventGender,
   type RelayStroke,
   type Stroke,
-} from "@project-aqua/swim-core/events";
+} from "@lane4hq/swim-core/events";
 import { parseResultRoundType, parseSdifHeatLane } from "../g0-meta";
 import { parseCl2Roster } from "../roster/cl2";
 import {

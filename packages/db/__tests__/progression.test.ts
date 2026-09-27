@@ -1,7 +1,7 @@
 import {
   formatBestTimeAchievedLabel,
   snapshotBestTimeMeetName,
-} from "@project-aqua/swim-core/calendar-date";
+} from "@lane4hq/swim-core/calendar-date";
 import { describe, expect, it } from "vitest";
 
 describe("org-scope progression helpers", () => {

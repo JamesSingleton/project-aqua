@@ -1,6 +1,6 @@
 "use client";
 
-import { authClient } from "@project-aqua/auth/client";
+import { authClient } from "@lane4hq/auth/client";
 import { getMarketingUrl } from "./marketing-url";
 
 export type SignOutResult = { ok: true } | { ok: false; error: string };

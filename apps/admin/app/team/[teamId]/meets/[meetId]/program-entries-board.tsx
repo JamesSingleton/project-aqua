@@ -5,14 +5,14 @@ import {
   canAddRelayTeam,
   canAddScoringEntry,
   formatAssociationCapLine,
-} from "@project-aqua/swim-core/association-event-caps";
-import { previousSameGenderEvent } from "@project-aqua/swim-core/consecutive-events";
-import { isRelayStroke } from "@project-aqua/swim-core/entry-limits";
+} from "@lane4hq/swim-core/association-event-caps";
+import { previousSameGenderEvent } from "@lane4hq/swim-core/consecutive-events";
+import { isRelayStroke } from "@lane4hq/swim-core/entry-limits";
 import {
   formatEventName,
   formatGenderLabel,
   isSwimmerEligibleForEvent,
-} from "@project-aqua/swim-core/events";
+} from "@lane4hq/swim-core/events";
 import {
   deriveRelayLetter,
   RELAY_MAX_LEGS,
@@ -20,35 +20,35 @@ import {
   RELAY_TEAM_LETTERS,
   relayLegRoleLabel,
   relaySlotLabel,
-} from "@project-aqua/swim-core/relay-legs";
+} from "@lane4hq/swim-core/relay-legs";
 import {
   blocksMeetEntries,
   type EligibilityStatus,
-} from "@project-aqua/swim-core/team-types";
-import { formatTime, parseTime } from "@project-aqua/swim-core/times";
-import { Button } from "@project-aqua/ui/components/button";
-import { Checkbox } from "@project-aqua/ui/components/checkbox";
+} from "@lane4hq/swim-core/team-types";
+import { formatTime, parseTime } from "@lane4hq/swim-core/times";
+import { Button } from "@lane4hq/ui/components/button";
+import { Checkbox } from "@lane4hq/ui/components/checkbox";
 import {
   Field,
   FieldDescription,
   FieldLabel,
   FieldLegend,
   FieldSet,
-} from "@project-aqua/ui/components/field";
-import { Input } from "@project-aqua/ui/components/input";
+} from "@lane4hq/ui/components/field";
+import { Input } from "@lane4hq/ui/components/input";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-} from "@project-aqua/ui/components/input-group";
-import { ScrollArea } from "@project-aqua/ui/components/scroll-area";
-import { Spinner } from "@project-aqua/ui/components/spinner";
+} from "@lane4hq/ui/components/input-group";
+import { ScrollArea } from "@lane4hq/ui/components/scroll-area";
+import { Spinner } from "@lane4hq/ui/components/spinner";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@project-aqua/ui/components/tooltip";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/tooltip";
+import { cn } from "@lane4hq/ui/lib/utils";
 import { Minus, Plus, Search, TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";

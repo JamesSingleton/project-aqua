@@ -1,22 +1,22 @@
 "use server";
 
-import { getSession } from "@project-aqua/auth/session";
-import { getMember, requireTeamMember } from "@project-aqua/db/authz";
-import { db } from "@project-aqua/db/client";
+import { getSession } from "@lane4hq/auth/session";
+import { getMember, requireTeamMember } from "@lane4hq/db/authz";
+import { db } from "@lane4hq/db/client";
 import {
   type NotificationPreferenceInput,
   upsertNotificationPreferences,
-} from "@project-aqua/db/queries/notifications";
+} from "@lane4hq/db/queries/notifications";
 import {
   isThemePreference,
   upsertUserTheme,
-} from "@project-aqua/db/queries/preferences";
-import { member, user } from "@project-aqua/db/schema";
+} from "@lane4hq/db/queries/preferences";
+import { member, user } from "@lane4hq/db/schema";
 import {
   ImageValidationError,
   removeUserAvatar,
   uploadUserAvatar,
-} from "@project-aqua/storage";
+} from "@lane4hq/storage";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { accountProfileFormSchema } from "@/schemas/account-profile";

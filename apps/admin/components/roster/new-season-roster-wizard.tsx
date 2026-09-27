@@ -4,7 +4,7 @@ import {
   formatLocalDateOnly,
   formatLocalDateOnlyLabel,
   parseLocalDateOnly,
-} from "@project-aqua/swim-core/calendar-date";
+} from "@lane4hq/swim-core/calendar-date";
 import {
   ACADEMIC_STANDING_LABELS,
   type AcademicStanding,
@@ -12,11 +12,11 @@ import {
   type ClassYear,
   ELIGIBILITY_STATUS_LABELS,
   type EligibilityStatus,
-} from "@project-aqua/swim-core/team-types";
-import { Badge } from "@project-aqua/ui/components/badge";
-import { Button } from "@project-aqua/ui/components/button";
-import { Calendar } from "@project-aqua/ui/components/calendar";
-import { Checkbox } from "@project-aqua/ui/components/checkbox";
+} from "@lane4hq/swim-core/team-types";
+import { Badge } from "@lane4hq/ui/components/badge";
+import { Button } from "@lane4hq/ui/components/button";
+import { Calendar } from "@lane4hq/ui/components/calendar";
+import { Checkbox } from "@lane4hq/ui/components/checkbox";
 import {
   Dialog,
   DialogClose,
@@ -26,14 +26,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@project-aqua/ui/components/dialog";
-import { Input } from "@project-aqua/ui/components/input";
-import { Label } from "@project-aqua/ui/components/label";
+} from "@lane4hq/ui/components/dialog";
+import { Input } from "@lane4hq/ui/components/input";
+import { Label } from "@lane4hq/ui/components/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@project-aqua/ui/components/popover";
+} from "@lane4hq/ui/components/popover";
 import {
   Table,
   TableBody,
@@ -41,8 +41,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@project-aqua/ui/components/table";
-import { cn } from "@project-aqua/ui/lib/utils";
+} from "@lane4hq/ui/components/table";
+import { cn } from "@lane4hq/ui/lib/utils";
 import { CalendarIcon, CalendarPlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useState, useTransition } from "react";

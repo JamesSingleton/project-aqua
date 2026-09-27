@@ -1,18 +1,18 @@
 "use server";
 
-import { getSession } from "@project-aqua/auth/session";
-import { assertFeature } from "@project-aqua/billing/features";
+import { getSession } from "@lane4hq/auth/session";
+import { assertFeature } from "@lane4hq/billing/features";
 import {
   getOrganizationMeetImportIdentity,
   requireCoachSafeSportCurrent,
   requireTeamMember,
   requireTeamRole,
-} from "@project-aqua/db/authz";
+} from "@lane4hq/db/authz";
 import {
   createImportJob,
   getImportJobs,
   updateImportJob,
-} from "@project-aqua/db/queries/imports";
+} from "@lane4hq/db/queries/imports";
 import {
   addMeetEntry,
   addMeetEvent,
@@ -39,62 +39,62 @@ import {
   updateMeetEvent,
   upsertMeetCommitment,
   upsertMeetRelayResult,
-} from "@project-aqua/db/queries/meets";
-import { patchTeamUiPreferences } from "@project-aqua/db/queries/preferences";
-import { recomputeBestTimesForSwimmer } from "@project-aqua/db/queries/progression";
+} from "@lane4hq/db/queries/meets";
+import { patchTeamUiPreferences } from "@lane4hq/db/queries/preferences";
+import { recomputeBestTimesForSwimmer } from "@lane4hq/db/queries/progression";
 import {
   addSwimmer,
   findSwimmerByGoverningBodyId,
   getRoster,
-} from "@project-aqua/db/queries/roster";
-import type { MeetEntriesView } from "@project-aqua/db/schema";
-import { sendMeetImportComplete } from "@project-aqua/emails";
-import { isMinorSwimmer } from "@project-aqua/swim-core/age";
-import { canAddScoringEntry } from "@project-aqua/swim-core/association-event-caps";
-import { formatDateOnly } from "@project-aqua/swim-core/calendar-date";
+} from "@lane4hq/db/queries/roster";
+import type { MeetEntriesView } from "@lane4hq/db/schema";
+import { sendMeetImportComplete } from "@lane4hq/emails";
+import { isMinorSwimmer } from "@lane4hq/swim-core/age";
+import { canAddScoringEntry } from "@lane4hq/swim-core/association-event-caps";
+import { formatDateOnly } from "@lane4hq/swim-core/calendar-date";
 import {
   canAddMeetEntry,
   checkQualifyingTime,
   isRelayStroke,
-} from "@project-aqua/swim-core/entry-limits";
+} from "@lane4hq/swim-core/entry-limits";
 import {
   buildEventKey,
   type EventGender,
   isSwimmerEligibleForEvent,
   type RelayStroke,
   type Stroke,
-} from "@project-aqua/swim-core/events";
-import { suggestIndividualLineup } from "@project-aqua/swim-core/lineup-suggest";
+} from "@lane4hq/swim-core/events";
+import { suggestIndividualLineup } from "@lane4hq/swim-core/lineup-suggest";
 import {
   type FileAthleteMatch,
   fileAthleteKey,
   type MatchFileAthlete,
   type MatchRosterAthlete,
   matchResultAthletes,
-} from "@project-aqua/swim-core/meet-athlete-match";
+} from "@lane4hq/swim-core/meet-athlete-match";
 import {
   detectMeetEventImportConflicts,
   type EventConflictResolution,
   resolveImportedEventForMerge,
-} from "@project-aqua/swim-core/meet-import-merge";
-import { hostPackLineup } from "@project-aqua/swim-core/meet-lineup-snapshot";
-import { normalizePersonName } from "@project-aqua/swim-core/people";
+} from "@lane4hq/swim-core/meet-import-merge";
+import { hostPackLineup } from "@lane4hq/swim-core/meet-lineup-snapshot";
+import { normalizePersonName } from "@lane4hq/swim-core/people";
 import {
   deriveRelayLetter,
   racingRelayKeysByMember,
-} from "@project-aqua/swim-core/relay-legs";
-import { matchesTeamCode } from "@project-aqua/swim-core/team-codes";
-import { blocksMeetEntries } from "@project-aqua/swim-core/team-types";
-import { parseTime } from "@project-aqua/swim-core/times";
-import { createMeetSchema } from "@project-aqua/swim-core/validators";
+} from "@lane4hq/swim-core/relay-legs";
+import { matchesTeamCode } from "@lane4hq/swim-core/team-codes";
+import { blocksMeetEntries } from "@lane4hq/swim-core/team-types";
+import { parseTime } from "@lane4hq/swim-core/times";
+import { createMeetSchema } from "@lane4hq/swim-core/validators";
 import {
   exportCl2,
   exportMeetZip,
   meetZipDownloadFilename,
   type ParsedMeet,
   type ParsedRelayEntry,
-} from "@project-aqua/swim-formats";
-import { exportHy3 } from "@project-aqua/swim-formats/hy3";
+} from "@lane4hq/swim-formats";
+import { exportHy3 } from "@lane4hq/swim-formats/hy3";
 import {
   detectMeetFileFormat,
   isZipFilename,
@@ -102,8 +102,8 @@ import {
   parseMeetFile,
   parseMeetFileFromBytes,
   parseMeetFilesFromBytes,
-} from "@project-aqua/swim-formats/meet";
-import { exportSdif } from "@project-aqua/swim-formats/sdif";
+} from "@lane4hq/swim-formats/meet";
+import { exportSdif } from "@lane4hq/swim-formats/sdif";
 import { revalidatePath } from "next/cache";
 import { cache } from "react";
 import { resolvedAssociationCapsForMeet } from "./association-caps";

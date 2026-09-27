@@ -1,5 +1,5 @@
 {
-  "name": "@project-admin/web",
+  "name": "@lane4hq/web",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -13,7 +13,7 @@
     "check:types": "tsc --noEmit"
   },
   "dependencies": {
-    "@project-aqua/ui": "workspace:*",
+    "@lane4hq/ui": "workspace:*",
     "geist": "^1.7.2",
     "lucide-react": "catalog:",
     "next": "catalog:",
@@ -23,7 +23,7 @@
     "resend": "^6.28.1"
   },
   "devDependencies": {
-    "@project-aqua/typescript-config": "workspace:*",
+    "@lane4hq/typescript-config": "workspace:*",
     "@types/eslint": "^9.6.1",
     "@types/node": "catalog:",
     "@types/react": "catalog:",

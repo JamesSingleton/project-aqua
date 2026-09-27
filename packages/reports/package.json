@@ -1,5 +1,5 @@
 {
-  "name": "@project-aqua/reports",
+  "name": "@lane4hq/reports",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -24,13 +24,13 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@project-aqua/swim-core": "workspace:*",
+    "@lane4hq/swim-core": "workspace:*",
     "@react-pdf/renderer": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"
   },
   "devDependencies": {
-    "@project-aqua/typescript-config": "workspace:*",
+    "@lane4hq/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

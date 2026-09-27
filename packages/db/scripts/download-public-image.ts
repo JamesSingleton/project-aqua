@@ -2,7 +2,7 @@ import { lookup as dnsLookup } from "node:dns";
 import { get as httpGet } from "node:http";
 import { get as httpsGet } from "node:https";
 import { BlockList, isIP, type LookupFunction } from "node:net";
-import { type ImageInput, MAX_IMAGE_BYTES } from "@project-aqua/storage";
+import { type ImageInput, MAX_IMAGE_BYTES } from "@lane4hq/storage";
 
 const MAX_REDIRECTS = 5;
 
@@ -131,7 +131,7 @@ export async function downloadPublicImage(
     const request = get(
       url,
       {
-        headers: { "user-agent": "Project-Aqua-Neon-Migration/1.0" },
+        headers: { "user-agent": "Lane4HQ-Neon-Migration/1.0" },
         lookup: imageLookup(allowPrivateAddress),
       },
       (response) => {

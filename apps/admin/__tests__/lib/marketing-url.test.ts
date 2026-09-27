@@ -4,8 +4,8 @@ import { getMarketingUrl } from "@/lib/marketing-url";
 describe("getMarketingUrl", () => {
   it("uses NEXT_PUBLIC_MARKETING_URL when set", () => {
     const original = process.env.NEXT_PUBLIC_MARKETING_URL;
-    process.env.NEXT_PUBLIC_MARKETING_URL = "https://projectaqua.com";
-    expect(getMarketingUrl()).toBe("https://projectaqua.com");
+    process.env.NEXT_PUBLIC_MARKETING_URL = "https://www.lane4hq.com";
+    expect(getMarketingUrl()).toBe("https://www.lane4hq.com");
     process.env.NEXT_PUBLIC_MARKETING_URL = original;
   });
 

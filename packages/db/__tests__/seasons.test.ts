@@ -1,4 +1,4 @@
-import { currentSeasonRange } from "@project-aqua/swim-core/age";
+import { currentSeasonRange } from "@lane4hq/swim-core/age";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const limit = vi.fn();

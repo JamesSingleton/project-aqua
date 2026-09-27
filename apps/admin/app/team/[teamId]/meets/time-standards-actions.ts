@@ -1,8 +1,8 @@
 "use server";
 
-import { getSession } from "@project-aqua/auth/session";
-import { requireTeamRole } from "@project-aqua/db/authz";
-import { ensureSwimEvent } from "@project-aqua/db/queries/meets";
+import { getSession } from "@lane4hq/auth/session";
+import { requireTeamRole } from "@lane4hq/db/authz";
+import { ensureSwimEvent } from "@lane4hq/db/queries/meets";
 import {
   createTimeStandardSet,
   deleteTimeStandardCut,
@@ -16,7 +16,7 @@ import {
   updateTimeStandardCutTime,
   updateTimeStandardSet,
   upsertTimeStandardCut,
-} from "@project-aqua/db/queries/time-standards";
+} from "@lane4hq/db/queries/time-standards";
 import {
   type Course,
   type EventGender,
@@ -24,8 +24,8 @@ import {
   parseEventKey,
   type RelayStroke,
   type Stroke,
-} from "@project-aqua/swim-core/events";
-import { parseTime } from "@project-aqua/swim-core/times";
+} from "@lane4hq/swim-core/events";
+import { parseTime } from "@lane4hq/swim-core/times";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 

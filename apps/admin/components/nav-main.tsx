@@ -4,7 +4,7 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@project-aqua/ui/components/collapsible";
+} from "@lane4hq/ui/components/collapsible";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -14,7 +14,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-} from "@project-aqua/ui/components/sidebar";
+} from "@lane4hq/ui/components/sidebar";
 import { ChevronRight, type LucideIcon } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";

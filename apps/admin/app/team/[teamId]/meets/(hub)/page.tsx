@@ -1,9 +1,9 @@
-import { getMeets } from "@project-aqua/db/queries/meets";
+import { getMeets } from "@lane4hq/db/queries/meets";
 import {
   formatDateOnly,
   formatDateOnlyLabel,
-} from "@project-aqua/swim-core/calendar-date";
-import { Button } from "@project-aqua/ui/components/button";
+} from "@lane4hq/swim-core/calendar-date";
+import { Button } from "@lane4hq/ui/components/button";
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { MeetTableRow } from "@/components/meets/meets-columns";

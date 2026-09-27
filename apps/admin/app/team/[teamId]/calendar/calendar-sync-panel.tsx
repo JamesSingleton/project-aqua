@@ -1,15 +1,15 @@
 "use client";
 
-import { authClient } from "@project-aqua/auth/client";
-import { Button } from "@project-aqua/ui/components/button";
+import { authClient } from "@lane4hq/auth/client";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
-import { Input } from "@project-aqua/ui/components/input";
+} from "@lane4hq/ui/components/card";
+import { Input } from "@lane4hq/ui/components/input";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
@@ -169,7 +169,7 @@ export function CalendarSyncPanel({
         <CardHeader>
           <CardTitle>Bidirectional sync</CardTitle>
           <CardDescription>
-            Creates a dedicated “Project Aqua – Team” calendar. Aqua wins on
+            Creates a dedicated “Lane4 HQ – Team” calendar. Lane4 HQ wins on
             conflicts for team events.
           </CardDescription>
         </CardHeader>
@@ -251,7 +251,8 @@ export function CalendarSyncPanel({
           <CardHeader>
             <CardTitle>Recent sync conflicts</CardTitle>
             <CardDescription>
-              External edits were overwritten by the team calendar (Aqua wins)
+              External edits were overwritten by the team calendar (Lane4 HQ
+              wins)
             </CardDescription>
           </CardHeader>
           <CardContent>

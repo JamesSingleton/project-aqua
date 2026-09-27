@@ -4,8 +4,8 @@ import {
   requiresSafeSportCompliance,
   supportsUsaSwimmingIntegration,
   type TeamType,
-} from "@project-aqua/swim-core/team-types";
-import { Tabs, TabsList, TabsTrigger } from "@project-aqua/ui/components/tabs";
+} from "@lane4hq/swim-core/team-types";
+import { Tabs, TabsList, TabsTrigger } from "@lane4hq/ui/components/tabs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 

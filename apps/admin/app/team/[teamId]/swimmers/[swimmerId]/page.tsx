@@ -1,12 +1,12 @@
-import { getSession } from "@project-aqua/auth/session";
-import { requireSwimmerTeamAccess } from "@project-aqua/db/authz";
+import { getSession } from "@lane4hq/auth/session";
+import { requireSwimmerTeamAccess } from "@lane4hq/db/authz";
 import {
   getClubRegistrationForMembership,
   getSwimmerAffiliations,
   getSwimmerById,
-} from "@project-aqua/db/queries/roster";
-import { isMinorSwimmer } from "@project-aqua/swim-core/age";
-import type { EligibilityStatus } from "@project-aqua/swim-core/team-types";
+} from "@lane4hq/db/queries/roster";
+import { isMinorSwimmer } from "@lane4hq/swim-core/age";
+import type { EligibilityStatus } from "@lane4hq/swim-core/team-types";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SwimmerEligibilityCard } from "./swimmer-eligibility-card";

@@ -1,9 +1,9 @@
-import { getSession } from "@project-aqua/auth/session";
-import { requireTeamRole } from "@project-aqua/db/authz";
+import { getSession } from "@lane4hq/auth/session";
+import { requireTeamRole } from "@lane4hq/db/authz";
 import {
   buildMeetEntriesReport,
   type MeetEntriesReport,
-} from "@project-aqua/reports";
+} from "@lane4hq/reports";
 import { loadMeetLineupSnapshot } from "../../load-meet-lineup-snapshot";
 
 export async function loadMeetEntriesReport(

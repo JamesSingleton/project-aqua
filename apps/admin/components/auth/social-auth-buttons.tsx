@@ -1,8 +1,8 @@
 "use client";
 
-import { signIn } from "@project-aqua/auth/client";
-import { Button } from "@project-aqua/ui/components/button";
-import { Separator } from "@project-aqua/ui/components/separator";
+import { signIn } from "@lane4hq/auth/client";
+import { Button } from "@lane4hq/ui/components/button";
+import { Separator } from "@lane4hq/ui/components/separator";
 import type { SocialProvider } from "@/lib/auth-providers";
 
 function GoogleIcon() {

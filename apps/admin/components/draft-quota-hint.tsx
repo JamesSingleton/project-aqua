@@ -1,9 +1,9 @@
-import type { SharedDraftQuota } from "@project-aqua/swim-core/draft-quota";
+import type { SharedDraftQuota } from "@lane4hq/swim-core/draft-quota";
 import {
   canUseSharedDraftQuota,
   type DraftQuotaSurface,
   formatSharedDraftQuotaHint,
-} from "@project-aqua/swim-core/draft-quota";
+} from "@lane4hq/swim-core/draft-quota";
 
 export function DraftQuotaHint({
   surface,

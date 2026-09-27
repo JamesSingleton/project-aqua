@@ -25,7 +25,7 @@ export async function ensureGoogleTeamCalendar(
   userId: string,
   teamName: string,
 ) {
-  const summary = `Project Aqua – ${teamName}`;
+  const summary = `Lane4 HQ – ${teamName}`;
   const list = await googleFetch(userId, "/users/me/calendarList");
   const existing = (list?.items ?? []).find(
     (c: { summary?: string }) => c.summary === summary,
@@ -36,7 +36,7 @@ export async function ensureGoogleTeamCalendar(
 
   const created = await googleFetch(userId, "/calendars", {
     method: "POST",
-    body: JSON.stringify({ summary, description: "Synced from Project Aqua" }),
+    body: JSON.stringify({ summary, description: "Synced from Lane4 HQ" }),
   });
   return { id: created.id as string, name: summary };
 }

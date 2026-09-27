@@ -1,16 +1,16 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { sendVerificationEmail } from "@project-aqua/auth/client";
-import { Button } from "@project-aqua/ui/components/button";
+import { sendVerificationEmail } from "@lane4hq/auth/client";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Field,
   FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from "@project-aqua/ui/components/field";
-import { Input } from "@project-aqua/ui/components/input";
+} from "@lane4hq/ui/components/field";
+import { Input } from "@lane4hq/ui/components/input";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";

@@ -1,4 +1,4 @@
-import type { getTeamCalendarProjection } from "@project-aqua/db/queries/calendar";
+import type { getTeamCalendarProjection } from "@lane4hq/db/queries/calendar";
 
 type ProjectedEvent = Awaited<
   ReturnType<typeof getTeamCalendarProjection>
@@ -30,7 +30,7 @@ export function buildIcsCalendar(
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Project Aqua//Team Calendar//EN",
+    "PRODID:-//Lane4 HQ//Team Calendar//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     `X-WR-CALNAME:${escapeText(teamName)}`,
@@ -40,7 +40,7 @@ export function buildIcsCalendar(
     const end =
       event.endsAt ?? new Date(event.startsAt.getTime() + 60 * 60 * 1000);
     lines.push("BEGIN:VEVENT");
-    lines.push(`UID:${escapeText(event.id)}@projectaqua`);
+    lines.push(`UID:${escapeText(event.id)}@lane4hq`);
     lines.push(`DTSTAMP:${toIcsDate(new Date())}`);
     lines.push(`DTSTART:${toIcsDate(event.startsAt)}`);
     lines.push(`DTEND:${toIcsDate(end)}`);

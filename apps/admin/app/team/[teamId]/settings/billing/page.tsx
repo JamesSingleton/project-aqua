@@ -1,16 +1,13 @@
-import { getAiQuotaStatus } from "@project-aqua/db/queries/ai-quota";
-import {
-  getTeamPlan,
-  getTeamSubscription,
-} from "@project-aqua/db/queries/billing";
-import { PLAN_LIMITS } from "@project-aqua/swim-core/plans";
+import { getAiQuotaStatus } from "@lane4hq/db/queries/ai-quota";
+import { getTeamPlan, getTeamSubscription } from "@lane4hq/db/queries/billing";
+import { PLAN_LIMITS } from "@lane4hq/swim-core/plans";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@project-aqua/ui/components/alert";
-import { Progress } from "@project-aqua/ui/components/progress";
-import { Separator } from "@project-aqua/ui/components/separator";
+} from "@lane4hq/ui/components/alert";
+import { Progress } from "@lane4hq/ui/components/progress";
+import { Separator } from "@lane4hq/ui/components/separator";
 import type { Metadata } from "next";
 import { SettingsSection } from "../settings-section";
 import { BillingActions } from "./billing-actions";

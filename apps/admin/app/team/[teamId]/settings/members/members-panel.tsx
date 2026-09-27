@@ -1,21 +1,17 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { organization } from "@project-aqua/auth/client";
-import {
-  COACH_ROLES,
-  type CoachRole,
-  INVITE_ROLES,
-} from "@project-aqua/auth/roles";
-import { Badge } from "@project-aqua/ui/components/badge";
-import { Button } from "@project-aqua/ui/components/button";
+import { organization } from "@lane4hq/auth/client";
+import { COACH_ROLES, type CoachRole, INVITE_ROLES } from "@lane4hq/auth/roles";
+import { Badge } from "@lane4hq/ui/components/badge";
+import { Button } from "@lane4hq/ui/components/button";
 import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
-} from "@project-aqua/ui/components/field";
-import { Input } from "@project-aqua/ui/components/input";
+} from "@lane4hq/ui/components/field";
+import { Input } from "@lane4hq/ui/components/input";
 import {
   Select,
   SelectContent,
@@ -23,8 +19,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@project-aqua/ui/components/select";
-import { Separator } from "@project-aqua/ui/components/separator";
+} from "@lane4hq/ui/components/select";
+import { Separator } from "@lane4hq/ui/components/separator";
 import {
   Table,
   TableBody,
@@ -32,7 +28,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@project-aqua/ui/components/table";
+} from "@lane4hq/ui/components/table";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";

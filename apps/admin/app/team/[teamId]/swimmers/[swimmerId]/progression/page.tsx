@@ -1,21 +1,21 @@
-import { isCoachingRole } from "@project-aqua/auth/roles";
-import { getSession } from "@project-aqua/auth/session";
+import { isCoachingRole } from "@lane4hq/auth/roles";
+import { getSession } from "@lane4hq/auth/session";
 import {
   getMember,
   getOrganizationTeamType,
   requireSwimmerTeamAccess,
-} from "@project-aqua/db/authz";
+} from "@lane4hq/db/authz";
 import {
   getSwimmerBestTimes,
   getSwimmerResultSeries,
   getSwimmerTimeHistory,
-} from "@project-aqua/db/queries/progression";
-import { getSwimmerById } from "@project-aqua/db/queries/roster";
+} from "@lane4hq/db/queries/progression";
+import { getSwimmerById } from "@lane4hq/db/queries/roster";
 import {
   ensureCurrentSeason,
   listTeamSeasons,
-} from "@project-aqua/db/queries/seasons";
-import { Label } from "@project-aqua/ui/components/label";
+} from "@lane4hq/db/queries/seasons";
+import { Label } from "@lane4hq/ui/components/label";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SeasonSelector } from "@/components/roster/season-selector";

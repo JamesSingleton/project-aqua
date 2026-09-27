@@ -1,9 +1,9 @@
 "use server";
 
-import { getSession } from "@project-aqua/auth/session";
-import { requireTeamRole } from "@project-aqua/db/authz";
-import { updateSwimmer } from "@project-aqua/db/queries/roster";
-import { parseEligibilityStatus } from "@project-aqua/swim-core/team-types";
+import { getSession } from "@lane4hq/auth/session";
+import { requireTeamRole } from "@lane4hq/db/authz";
+import { updateSwimmer } from "@lane4hq/db/queries/roster";
+import { parseEligibilityStatus } from "@lane4hq/swim-core/team-types";
 import { revalidatePath } from "next/cache";
 
 export async function updateSwimmerEligibilityAction(

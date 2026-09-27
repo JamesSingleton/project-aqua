@@ -1,4 +1,4 @@
-import { getAiQuotaStatus } from "@project-aqua/db/queries/ai-quota";
+import { getAiQuotaStatus } from "@lane4hq/db/queries/ai-quota";
 import type { Metadata } from "next";
 import { toSharedDraftQuota } from "@/lib/draft-quota";
 import { WorkoutEditor } from "../workout-editor";

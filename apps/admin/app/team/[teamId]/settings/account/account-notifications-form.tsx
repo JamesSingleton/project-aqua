@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@project-aqua/ui/components/button";
-import { Label } from "@project-aqua/ui/components/label";
-import { Switch } from "@project-aqua/ui/components/switch";
+import { Button } from "@lane4hq/ui/components/button";
+import { Label } from "@lane4hq/ui/components/label";
+import { Switch } from "@lane4hq/ui/components/switch";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { updateNotificationPreferencesAction } from "./actions";

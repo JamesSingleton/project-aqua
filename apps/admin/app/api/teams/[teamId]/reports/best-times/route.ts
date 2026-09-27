@@ -1,15 +1,15 @@
-import { getSession } from "@project-aqua/auth/session";
+import { getSession } from "@lane4hq/auth/session";
 import {
   AuthError,
   getOrganizationMeetImportIdentity,
   requireTeamRole,
-} from "@project-aqua/db/authz";
-import { getTeamBestTimes } from "@project-aqua/db/queries/progression";
+} from "@lane4hq/db/authz";
+import { getTeamBestTimes } from "@lane4hq/db/queries/progression";
 import {
   buildTeamBestTimesReport,
   renderToStream,
   TeamBestTimesPdfDocument,
-} from "@project-aqua/reports";
+} from "@lane4hq/reports";
 
 function safeFilename(name: string): string {
   return name.replace(/[^\w.-]+/g, "_").replace(/^_+|_+$/g, "") || "team";

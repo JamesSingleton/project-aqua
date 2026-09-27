@@ -1,13 +1,13 @@
-import { formatDateOnlyLabel } from "@project-aqua/swim-core/calendar-date";
-import { formatBestTimeEventLabel } from "@project-aqua/swim-core/team-types";
-import { formatTime } from "@project-aqua/swim-core/times";
+import { formatDateOnlyLabel } from "@lane4hq/swim-core/calendar-date";
+import { formatBestTimeEventLabel } from "@lane4hq/swim-core/team-types";
+import { formatTime } from "@lane4hq/swim-core/times";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@project-aqua/ui/components/card";
+} from "@lane4hq/ui/components/card";
 import {
   Table,
   TableBody,
@@ -15,7 +15,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@project-aqua/ui/components/table";
+} from "@lane4hq/ui/components/table";
 import { type BestTimeRow, BestTimesCard } from "@/components/best-times-card";
 import {
   SwimmerEventChart,

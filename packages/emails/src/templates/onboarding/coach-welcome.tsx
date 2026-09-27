@@ -11,10 +11,10 @@ export default function CoachWelcome({
   dashboardUrl,
 }: CoachWelcomeProps) {
   return (
-    <EmailLayout preview="Welcome to Project Aqua" heading="Welcome, coach!">
+    <EmailLayout preview="Welcome to Lane4 HQ" heading="Welcome, coach!">
       <Text style={textStyle}>Hi {name},</Text>
       <Text style={textStyle}>
-        Welcome to Project Aqua! You&apos;re all set to start managing your swim
+        Welcome to Lane4 HQ! You&apos;re all set to start managing your swim
         team.
       </Text>
       <Text style={textStyle}>Quick start:</Text>
@@ -28,5 +28,5 @@ export default function CoachWelcome({
 
 CoachWelcome.PreviewProps = {
   name: "Coach Jane",
-  dashboardUrl: "https://app.projectaqua.com/onboarding",
+  dashboardUrl: "https://admin.lane4hq.com/onboarding",
 } satisfies CoachWelcomeProps;

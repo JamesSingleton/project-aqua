@@ -1,9 +1,6 @@
-import {
-  eventGenderToCode,
-  parseEventGender,
-} from "@project-aqua/swim-core/events";
-import { teamFilePrefix } from "@project-aqua/swim-core/team-codes";
-import { formatTime, parseTime } from "@project-aqua/swim-core/times";
+import { eventGenderToCode, parseEventGender } from "@lane4hq/swim-core/events";
+import { teamFilePrefix } from "@lane4hq/swim-core/team-codes";
+import { formatTime, parseTime } from "@lane4hq/swim-core/times";
 import { strToU8, zipSync } from "fflate";
 import { cl2G0RoundSuffix, resultRoundCode } from "../g0-meta";
 import type { ParsedEvent, ParsedMeet, ParsedResult } from "../types";
@@ -80,7 +77,7 @@ function sdifAthleteLine(
 /** Export a meet (events + entries + results) as SDIF-ish text. */
 export function exportSdif(meet: ParsedMeet): string {
   const lines: string[] = [];
-  lines.push(`A01V3      02Meet Entries                  Project Aqua`);
+  lines.push(`A01V3      02Meet Entries                  Lane4 HQ`);
   lines.push(
     new FixedLine()
       .set(1, 2, "B1")
@@ -381,7 +378,7 @@ export function exportHy3(meet: ParsedMeet): string {
       new FixedLine()
         .set(1, 2, "A1")
         .set(3, 30, title)
-        .set(33, 30, "Project Aqua, Ltd    Win-TM 1.0"),
+        .set(33, 30, "Lane4 HQ, Ltd    Win-TM 1.0"),
     ),
   );
 
