@@ -89,7 +89,9 @@ export function SignupForm({
       return;
     }
 
-    router.push(callbackUrl);
+    const checkEmail = new URL("/check-email", window.location.origin);
+    checkEmail.searchParams.set("email", values.email);
+    router.push(`${checkEmail.pathname}${checkEmail.search}`);
     router.refresh();
   }
 

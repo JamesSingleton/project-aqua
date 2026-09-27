@@ -110,6 +110,7 @@ const authSchema = {
   session: schema.session,
   account: schema.account,
   verification: schema.verification,
+  rateLimit: schema.rateLimit,
   twoFactor: schema.twoFactor,
   organization: schema.organization,
   member: schema.member,
@@ -150,6 +151,9 @@ function createAuth(polarClient: Polar) {
       database: {
         joins: true,
       },
+      ipAddress: {
+        ipAddressHeaders: ["x-forwarded-for", "x-real-ip"],
+      },
     },
     user: {
       additionalFields: {
@@ -168,15 +172,27 @@ function createAuth(polarClient: Polar) {
     },
     emailAndPassword: {
       enabled: true,
-      requireEmailVerification: false,
+      requireEmailVerification: true,
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ user, url }) => {
         await sendResetPassword({ user, url });
       },
     },
     emailVerification: {
+      sendOnSignUp: true,
+      sendOnSignIn: true,
+      autoSignInAfterVerification: true,
       sendVerificationEmail: async ({ user, url }) => {
         await sendVerifyEmail({ user, url });
+      },
+    },
+    rateLimit: {
+      // Neon-backed counters so limits hold across Vercel instances.
+      storage: "database",
+      customRules: {
+        "/sign-up/email": { window: 60, max: 5 },
+        "/sign-in/email": { window: 60, max: 10 },
+        "/request-password-reset": { window: 60, max: 5 },
       },
     },
     socialProviders: {
@@ -235,11 +251,15 @@ function createAuth(polarClient: Polar) {
       organization({
         ac: orgAc,
         roles: orgRoles,
-        allowUserToCreateOrganization: true,
+        allowUserToCreateOrganization: async (user) => {
+          return user.emailVerified === true;
+        },
         creatorRole: "owner",
         invitationExpiresIn: 60 * 60 * 24 * 7,
         invitationLimit: 50,
         cancelPendingInvitationsOnReInvite: true,
+        requireEmailVerificationOnInvitation: true,
+        disableOrganizationDeletion: true,
         membershipLimit: async (_user, org) => membershipLimitForOrg(org?.id),
         sendInvitationEmail: async (data) => {
           await sendCoachInvitation({

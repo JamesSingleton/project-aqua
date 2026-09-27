@@ -68,6 +68,13 @@ export function LoginForm({
     });
 
     if (result.error) {
+      const code = result.error.code;
+      if (code === "EMAIL_NOT_VERIFIED") {
+        const checkEmail = new URL("/check-email", window.location.origin);
+        checkEmail.searchParams.set("email", values.email);
+        router.push(`${checkEmail.pathname}${checkEmail.search}`);
+        return;
+      }
       setError(result.error.message ?? "Sign in failed");
       return;
     }
