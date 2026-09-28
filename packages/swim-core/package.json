@@ -44,7 +44,6 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@lane4hq/swim-formats": "workspace:*",
     "@lane4hq/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",

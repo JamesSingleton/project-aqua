@@ -1266,7 +1266,11 @@ export async function addSwimmer(
   if (governingBodyId) {
     const existing = await findSwimmerByGoverningBodyId(governingBodyId);
     if (existing) {
-      const result = await createMembershipForTeam(organizationId, existing.id, data);
+      const result = await createMembershipForTeam(
+        organizationId,
+        existing.id,
+        data,
+      );
       return { ...result, linkedExisting: true as const };
     }
   }

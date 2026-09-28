@@ -713,9 +713,6 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@lane4hq/swim-formats':
-        specifier: workspace:*
-        version: link:../swim-formats
       '@lane4hq/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config

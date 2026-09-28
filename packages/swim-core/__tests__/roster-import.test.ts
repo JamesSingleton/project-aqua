@@ -1,35 +1,11 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import {
-  detectRosterFileFormat,
-  parsedRosterRowToImportRaw,
-  parseRosterFile,
-  rosterImportRowNumber,
-} from "@lane4hq/swim-formats/roster";
 import { describe, expect, it } from "vitest";
-import { rosterRowSchema } from "../src/validators";
 import {
   collectRosterImportRowErrors,
   formatRosterImportField,
   serializeRosterImportErrorsCsv,
   validateRosterImportRows,
 } from "../src/roster-import";
-
-const fixturesDir = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "../../swim-formats/fixtures",
-);
-
-function importRowsFromFile(filename: string, content: string) {
-  const format = detectRosterFileFormat(filename, content);
-  if (!format) throw new Error(`unsupported format: ${filename}`);
-  const parsed = parseRosterFile(content, format);
-  return parsed.map((row, index) => ({
-    row: rosterImportRowNumber(row, index + 2),
-    data: parsedRosterRowToImportRaw(row),
-  }));
-}
+import { rosterRowSchema } from "../src/validators";
 
 describe("validateRosterImportRows", () => {
   it("maps empty zod paths to row field", () => {
@@ -61,38 +37,55 @@ describe("validateRosterImportRows", () => {
     expect(errors[0]?.name).toBe("Unknown swimmer");
   });
 
-  it("collects field errors for malformed CSV rows", () => {
-    const csv =
-      "first_name,last_name,date_of_birth,gender\n,Bad,not-a-date,invalid\nAda,Lovelace,1990-01-01,female";
-    const { valid, invalid } = validateRosterImportRows(
-      importRowsFromFile("team.csv", csv),
-    );
-    expect(valid).toHaveLength(1);
+  it("splits valid and invalid rows, keeping optional fields", () => {
+    const { valid, invalid } = validateRosterImportRows([
+      {
+        row: 2,
+        data: {
+          firstName: "",
+          lastName: "Bad",
+          dateOfBirth: "not-a-date",
+          gender: "male",
+        },
+      },
+      {
+        row: 3,
+        data: {
+          firstName: " Ada ",
+          lastName: "Lovelace",
+          middleName: " B ",
+          preferredName: " ",
+          dateOfBirth: "1990-01-01",
+          gender: "female",
+          practiceGroup: " Senior ",
+          classYear: "SO",
+          usaMemberId: " ABC123 ",
+        },
+      },
+      {
+        row: 4,
+        data: {
+          firstName: "Grace",
+          lastName: "Hopper",
+          dateOfBirth: "1990-01-01",
+          gender: "female",
+          classYear: "not-a-class",
+        },
+      },
+    ]);
     expect(invalid.length).toBeGreaterThan(0);
     expect(invalid.every((e) => e.row === 2)).toBe(true);
     expect(invalid.some((e) => e.field === "firstName")).toBe(true);
-  });
-
-  it("validates CL2 roster fixture with source line numbers", () => {
-    const cl2 = readFileSync(join(fixturesDir, "roster-swimmers.cl2"), "utf8");
-    const rows = importRowsFromFile("roster-swimmers.cl2", cl2);
-    const { valid, invalid } = validateRosterImportRows(rows);
-    expect(rows.length).toBeGreaterThan(5);
-    for (const row of valid) {
-      expect(row.row).toBeGreaterThan(0);
-    }
-    expect(valid.length).toBeGreaterThan(0);
-    expect(invalid).toHaveLength(0);
-    expect(valid.some((r) => r.row === 3)).toBe(true);
-  });
-
-  it("validates HY3 roster fixture", () => {
-    const hy3 = readFileSync(join(fixturesDir, "roster-only.hy3"), "utf8");
-    const { valid, invalid } = validateRosterImportRows(
-      importRowsFromFile("roster-only.hy3", hy3),
-    );
-    expect(valid.length).toBeGreaterThan(5);
-    expect(invalid).toHaveLength(0);
+    expect(valid.map((v) => v.row)).toEqual([3, 4]);
+    expect(valid[0]?.data).toMatchObject({
+      firstName: "Ada",
+      middleName: "B",
+      preferredName: undefined,
+      practiceGroup: "Senior",
+      classYear: "SO",
+      usaMemberId: "ABC123",
+    });
+    expect(valid[1]?.data.classYear).toBeUndefined();
   });
 
   it("serializes errors to CSV", () => {

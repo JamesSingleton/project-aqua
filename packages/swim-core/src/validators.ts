@@ -59,20 +59,22 @@ export const rosterRowObjectSchema = z.object({
 /** Team Manager file rows (CL2/HY3/CSV) — same fields as roster rows, no guardian refinement. */
 export const rosterFileImportRowSchema = rosterRowObjectSchema;
 
-export const rosterRowSchema = rosterRowObjectSchema.superRefine((data, ctx) => {
-  if (isMinorSwimmer(data.dateOfBirth) && !data.linkExistingSwimmerId) {
-    const parentEmail = data.contacts?.parentEmail;
-    const parentName = data.contacts?.parentName;
-    if (!parentEmail || !parentName) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          "Parent/guardian name and email are required for minor swimmers",
-        path: ["contacts", "parentEmail"],
-      });
+export const rosterRowSchema = rosterRowObjectSchema.superRefine(
+  (data, ctx) => {
+    if (isMinorSwimmer(data.dateOfBirth) && !data.linkExistingSwimmerId) {
+      const parentEmail = data.contacts?.parentEmail;
+      const parentName = data.contacts?.parentName;
+      if (!parentEmail || !parentName) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "Parent/guardian name and email are required for minor swimmers",
+          path: ["contacts", "parentEmail"],
+        });
+      }
     }
-  }
-});
+  },
+);
 
 export type RosterRow = z.infer<typeof rosterRowSchema>;
 export type RosterFileImportRow = z.infer<typeof rosterFileImportRowSchema>;
