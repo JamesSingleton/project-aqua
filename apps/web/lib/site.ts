@@ -9,7 +9,7 @@ export const DOCS_URL =
 
 export const SIGN_IN_URL = `${APP_URL}/sign-in`;
 export const SIGN_UP_URL = `${APP_URL}/sign-up`;
-export const GITHUB_URL = "https://github.com/JamesSingleton/project-aqua";
+export const GITHUB_URL = "https://github.com/JamesSingleton/lane4-hq";
 export const GITHUB_ISSUES_URL = `${GITHUB_URL}/issues`;
 
 export const SITE_NAME = "Lane4 HQ";
