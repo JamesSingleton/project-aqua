@@ -67,6 +67,7 @@ export type MeetEntriesSharedEntryRow = {
 export type MeetEntriesSharedCommitmentRow = {
   membershipId: string;
   status: string;
+  relayOnly: boolean;
   notes?: string | null;
   firstName: string;
   lastName: string;

@@ -162,6 +162,33 @@ describe("exportSdif", () => {
     expect(text).toContain("27.50");
   });
 
+  it("skips non-relay-only meet athletes when writing SDIF roster D0 lines", () => {
+    const text = exportSdif({
+      ...baseMeet,
+      entries: [],
+      results: [],
+      athletes: [
+        { name: "Relay Only", relayOnly: true },
+        { name: "Not Relay Only", relayOnly: false },
+      ],
+    });
+    expect(text).toContain("Relay");
+    expect(text).not.toContain("Not Relay");
+  });
+
+  it("does not duplicate SDIF D0 lines when a relay-only athlete also has entries", () => {
+    const countD0 = (text: string) =>
+      text.split(/\r?\n/).filter((line) => line.startsWith("D0")).length;
+    const baseline = countD0(exportSdif(baseMeet));
+    const withRegistry = countD0(
+      exportSdif({
+        ...baseMeet,
+        athletes: [{ name: "Ada Lovelace", relayOnly: true }],
+      }),
+    );
+    expect(withRegistry).toBe(baseline);
+  });
+
   it("exports events, entries, results, and terminator", () => {
     const text = exportSdif(baseMeet);
     expect(text).toContain("A01V3");
@@ -1629,5 +1656,43 @@ describe("relay-only athletes and championship alternates", () => {
     );
     const letters = parsed.relays?.map((r) => r.relayLetter).sort();
     expect(letters).toEqual(["A", "B"]);
+  });
+
+  it("round-trips explicit relay-only roster athletes without relay assignments (HY3/CL2/SD3)", () => {
+    const rosterOnly: ParsedMeet = {
+      name: "Invitational",
+      course: "SCY",
+      startDate: "2026-01-15",
+      events: meet.events,
+      entries: [],
+      results: [],
+      athletes: [
+        {
+          name: "Pre-Assignment Relay",
+          dateOfBirth: "2012-08-01",
+          gender: "female",
+          relayOnly: true,
+        },
+      ],
+    };
+
+    const hy3Parsed = parseHy3(exportHy3(rosterOnly));
+    expect(
+      hy3Parsed.athletes?.find((a) => a.name.includes("Pre-Assignment"))
+        ?.relayOnly,
+    ).toBe(true);
+
+    const cl2 = exportCl2(rosterOnly);
+    expect(cl2).toContain("Pre-Assignment");
+    expect(cl2).toContain("D0");
+
+    const sdif = exportSdif(rosterOnly);
+    expect(sdif).toContain("Pre-Assignment");
+    expect(sdif).toContain("D0");
+    expect(
+      parseSdif(sdif).entries.some((e) =>
+        e.swimmerName.includes("Pre-Assignment"),
+      ),
+    ).toBe(true);
   });
 });

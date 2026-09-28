@@ -148,6 +148,7 @@ export async function loadMeetLineupSnapshot(
     commitments: commitments.map((commitment) => ({
       membershipId: commitment.membershipId,
       status: commitment.status,
+      relayOnly: commitment.relayOnly,
     })),
     members,
   });

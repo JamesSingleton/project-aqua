@@ -141,6 +141,8 @@ export const meetCommitments = pgTable(
       .notNull()
       .references(() => teamSwimmerMemberships.id, { onDelete: "cascade" }),
     status: meetCommitmentStatusEnum("status").notNull().default("pending"),
+    /** Coach-declared relay-only roster (no individual events). */
+    relayOnly: boolean("relay_only").notNull().default(false),
     notes: text("notes"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),

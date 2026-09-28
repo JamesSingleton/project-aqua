@@ -43,6 +43,13 @@
       "when": 1790626673455,
       "tag": "0005_swims_webhook_deliveries",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790629440679,
+      "tag": "0006_meet_commitment_relay_only",
+      "breakpoints": true
     }
   ]
 }

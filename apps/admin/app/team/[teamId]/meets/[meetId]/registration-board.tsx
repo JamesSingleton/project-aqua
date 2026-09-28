@@ -21,6 +21,7 @@ import {
   formatGenderLabel,
   isSwimmerEligibleForEvent,
 } from "@lane4hq/swim-core/events";
+import { isRelayOnlyMeetAthlete } from "@lane4hq/swim-core/meet-lineup-snapshot";
 import {
   deriveRelayLetter,
   formatAssignmentCountLine,
@@ -40,6 +41,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@lane4hq/ui/components/alert";
+import { Badge } from "@lane4hq/ui/components/badge";
 import { Button } from "@lane4hq/ui/components/button";
 import { Checkbox } from "@lane4hq/ui/components/checkbox";
 import {
@@ -83,6 +85,7 @@ import {
   addMeetEntryAction,
   deleteMeetEntryAction,
   setMeetAttendanceAction,
+  setMeetRelayOnlyAction,
   updateMeetEntryAction,
 } from "../actions";
 import { removeMeetRelaySlotAction } from "../relay-actions";
@@ -133,6 +136,7 @@ type EntryRow = {
 type AttendanceRow = {
   membershipId: string;
   status: string;
+  relayOnly: boolean;
   notes?: string | null;
   firstName: string;
   lastName: string;
@@ -365,6 +369,11 @@ export function RegistrationBoard({
 
   const attendanceByMembership = useMemo(
     () => new Map(attendance.map((row) => [row.membershipId, row.status])),
+    [attendance],
+  );
+
+  const relayOnlyByMembership = useMemo(
+    () => new Map(attendance.map((row) => [row.membershipId, row.relayOnly])),
     [attendance],
   );
 
@@ -683,6 +692,26 @@ export function RegistrationBoard({
     });
   }
 
+  function setRelayOnlyForMember(
+    targetMembershipId: string,
+    relayOnly: boolean,
+  ) {
+    setPendingAction(`relay-only:${relayOnly ? "on" : "off"}`);
+    startTransition(async () => {
+      try {
+        await setMeetRelayOnlyAction(
+          teamId,
+          meetId,
+          targetMembershipId,
+          relayOnly,
+        );
+        refresh();
+      } finally {
+        setPendingAction(null);
+      }
+    });
+  }
+
   function addEntry(event: EventRow) {
     const resolved = resolveSeed(event.id, event.eventKey);
     if (!resolved) return;
@@ -898,8 +927,18 @@ export function RegistrationBoard({
                 assignmentByMembership.alts.get(row.membershipId) ?? 0;
               const hasIndividual =
                 (individualCountByMembership.get(row.membershipId) ?? 0) > 0;
-              const relaysOnly =
-                relayLegSet.has(row.membershipId) && !hasIndividual;
+              const onRelayAssignment = relayLegSet.has(row.membershipId);
+              const showRelayOnlyBadge =
+                !notGoing &&
+                !profileIneligible &&
+                isRelayOnlyMeetAthlete({
+                  explicitRelayOnly:
+                    relayOnlyByMembership.get(row.membershipId) ?? false,
+                  onRelayAssignment,
+                  hasRacingIndividual: hasIndividual,
+                });
+              const explicitRelayOnly =
+                relayOnlyByMembership.get(row.membershipId) ?? false;
               const active = row.membershipId === membershipId;
               const rowAge = swimmerAgeOnDate(row.dateOfBirth, meetStartDate);
               const statusLabel = rowStatusLabel(
@@ -945,10 +984,12 @@ export function RegistrationBoard({
                           </>
                         ) : null}
                         <span>{formatAssignmentCountLine(events, alts)}</span>
-                        {relaysOnly ? (
+                        {showRelayOnlyBadge ? (
                           <>
                             <span>·</span>
-                            <span>Relays only</span>
+                            <Badge variant="secondary" className="text-[10px]">
+                              Relay only
+                            </Badge>
                           </>
                         ) : null}
                       </span>
@@ -992,13 +1033,40 @@ export function RegistrationBoard({
                             Attending this meet
                           </DropdownMenuItem>
                         ) : (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              setNotGoingForMember(row.membershipId, true)
-                            }
-                          >
-                            Won&apos;t attend this meet
-                          </DropdownMenuItem>
+                          <>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                setNotGoingForMember(row.membershipId, true)
+                              }
+                            >
+                              Won&apos;t attend this meet
+                            </DropdownMenuItem>
+                            {!hasIndividual ? (
+                              explicitRelayOnly ? (
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    setRelayOnlyForMember(
+                                      row.membershipId,
+                                      false,
+                                    )
+                                  }
+                                >
+                                  Clear relay only
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    setRelayOnlyForMember(
+                                      row.membershipId,
+                                      true,
+                                    )
+                                  }
+                                >
+                                  Mark as relay only
+                                </DropdownMenuItem>
+                              )
+                            ) : null}
+                          </>
                         )}
                       </DropdownMenuContent>
                     </DropdownMenu>

@@ -5,6 +5,7 @@ import {
   formatMeetLineupCsv,
   hostPackLineup,
   isHostPackExcluded,
+  isRelayOnlyMeetAthlete,
   type MeetLineupMember,
 } from "../src/meet-lineup-snapshot";
 
@@ -296,6 +297,66 @@ describe("buildMeetLineupSnapshot", () => {
     expect(
       snapshot.relayTeams.map((team) => `${team.meetEventId}:${team.letter}`),
     ).toEqual(["e2:A", "e2:B", "e3:A"]);
+  });
+});
+
+describe("isRelayOnlyMeetAthlete", () => {
+  it("treats explicit relay-only as true without relay assignments", () => {
+    expect(
+      isRelayOnlyMeetAthlete({
+        explicitRelayOnly: true,
+        onRelayAssignment: false,
+        hasRacingIndividual: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("is false when the swimmer has racing individual entries", () => {
+    expect(
+      isRelayOnlyMeetAthlete({
+        explicitRelayOnly: true,
+        onRelayAssignment: true,
+        hasRacingIndividual: true,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("explicit meet relay-only commitments", () => {
+  it("includes declared relay-only swimmers before relay legs exist", () => {
+    const snapshot = buildMeetLineupSnapshot(
+      baseInput({
+        entries: [],
+        relayLegs: [],
+        relayTeams: [],
+        commitments: [
+          { membershipId: "m2", status: "committed", relayOnly: true },
+        ],
+      }),
+    );
+
+    expect(snapshot.athletes.map((row) => row.membershipId)).toContain("m2");
+    expect(
+      snapshot.athletes.find((row) => row.membershipId === "m2")?.relayOnly,
+    ).toBe(true);
+
+    const host = hostPackLineup(snapshot);
+    expect(host.athletes.map((row) => row.membershipId)).toEqual(["m2"]);
+    expect(host.athletes[0]?.relayOnly).toBe(true);
+  });
+
+  it("drops explicit relay-only swimmers marked not going", () => {
+    const snapshot = buildMeetLineupSnapshot(
+      baseInput({
+        entries: [],
+        relayLegs: [],
+        commitments: [
+          { membershipId: "m2", status: "not_going", relayOnly: true },
+        ],
+      }),
+    );
+    expect(snapshot.athletes).toEqual([]);
+    expect(hostPackLineup(snapshot).athletes).toEqual([]);
   });
 });
 
