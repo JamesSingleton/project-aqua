@@ -24,21 +24,27 @@ export const COACH_ROLES = [
 ] as const;
 
 import {
+  canManageRosterFiles,
   canManageTeam,
+  EXPORT_ROLES,
   getTeamCapabilities,
+  ROSTER_MANAGEMENT_ROLES,
+  type RosterManagementRole,
   roleHasExportAccess,
   TEAM_MANAGEMENT_ROLES,
   type TeamCapabilities,
   type TeamManagementRole,
 } from "./team-capabilities";
 
-export const EXPORT_ROLES = TEAM_MANAGEMENT_ROLES;
-
 export type CoachRole = (typeof COACH_ROLES)[number];
 
 export {
+  canManageRosterFiles,
   canManageTeam,
+  EXPORT_ROLES,
   getTeamCapabilities,
+  ROSTER_MANAGEMENT_ROLES,
+  type RosterManagementRole,
   roleHasExportAccess,
   TEAM_MANAGEMENT_ROLES,
   type TeamCapabilities,
@@ -327,11 +333,20 @@ export async function requireMinorPiiAccess(
   return { member: m, membership };
 }
 
+export async function requireRosterImportExportAccess(
+  userId: string | undefined,
+  organizationId: string,
+) {
+  const m = await requireTeamRole(userId, organizationId, [
+    ...ROSTER_MANAGEMENT_ROLES,
+  ]);
+  await requireCoachSafeSportCurrent(userId, organizationId);
+  return m;
+}
+
 export async function canExportRoster(
   userId: string | undefined,
   organizationId: string,
 ) {
-  const m = await requireTeamRole(userId, organizationId, [...EXPORT_ROLES]);
-  await requireCoachSafeSportCurrent(userId, organizationId);
-  return m;
+  return requireRosterImportExportAccess(userId, organizationId);
 }

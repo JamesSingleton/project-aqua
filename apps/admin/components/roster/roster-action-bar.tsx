@@ -37,9 +37,7 @@ import {
   removeSwimmersAction,
 } from "@/app/team/[teamId]/roster/actions";
 import { assignGroupsBulkAction } from "@/app/team/[teamId]/roster/groups-actions";
-import { useTeamCapabilities } from "@/components/team-capabilities";
 import type { DataTableFeatures } from "@/lib/data-table-features";
-import { TEAM_MANAGE_ROLE_TOOLTIP } from "@/lib/team-role-messages";
 import type { Athlete } from "@/types";
 import { isArchived } from "./reactivate-swimmer-dialog";
 
@@ -58,7 +56,6 @@ export function RosterActionBar({
   seasonId?: string;
   groups: GroupOption[];
 }) {
-  const { canManageTeam } = useTeamCapabilities();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [removeOpen, setRemoveOpen] = useState(false);
@@ -194,9 +191,8 @@ export function RosterActionBar({
           type="button"
           variant="secondary"
           size="sm"
-          disabled={pending || !canManageTeam}
+          disabled={pending}
           onClick={handleExportCsv}
-          title={!canManageTeam ? TEAM_MANAGE_ROLE_TOOLTIP : undefined}
         >
           <DownloadIcon data-icon="inline-start" />
           Export CSV
@@ -205,13 +201,9 @@ export function RosterActionBar({
           type="button"
           variant="secondary"
           size="sm"
-          disabled={pending || !canManageTeam}
+          disabled={pending}
           onClick={handleExportSharePack}
-          title={
-            !canManageTeam
-              ? TEAM_MANAGE_ROLE_TOOLTIP
-              : "Share selected swimmers with another Lane4 HQ team via opaque IDs"
-          }
+          title="Share selected swimmers with another Lane4 HQ team via opaque IDs"
         >
           <Share2Icon data-icon="inline-start" />
           Share pack

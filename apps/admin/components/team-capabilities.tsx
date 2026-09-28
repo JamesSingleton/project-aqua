@@ -3,7 +3,10 @@
 import type { TeamCapabilities } from "@lane4hq/db/authz";
 import { createContext, use } from "react";
 
-const defaultCapabilities: TeamCapabilities = { canManageTeam: false };
+const defaultCapabilities: TeamCapabilities = {
+  canManageTeam: false,
+  canManageRosterFiles: false,
+};
 
 const TeamCapabilitiesContext =
   createContext<TeamCapabilities>(defaultCapabilities);
