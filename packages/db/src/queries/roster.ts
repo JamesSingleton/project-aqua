@@ -954,30 +954,256 @@ async function enrollInCurrentSeason(
   return season.id;
 }
 
+/**
+ * Marks a membership active again and makes sure it has an active enrollment
+ * in the target season. Prior-season enrollments are left untouched.
+ */
+async function restoreMembership(
+  organizationId: string,
+  membershipId: string,
+  options?: { seasonId?: string; data?: RosterRow },
+) {
+  await db
+    .update(teamSwimmerMemberships)
+    .set({ status: "active", leftAt: null, updatedAt: new Date() })
+    .where(eq(teamSwimmerMemberships.id, membershipId));
+
+  const seasonId = await resolveSeasonId(organizationId, options?.seasonId);
+  const enrollment = await getEnrollmentForMembershipInSeason(
+    membershipId,
+    seasonId,
+  );
+  const data = options?.data;
+
+  if (!enrollment) {
+    const groupId = data ? resolveGroupId(data) : undefined;
+    await enrollMembershipInSeason(seasonId, {
+      membershipId,
+      classYear: data ? resolveClassYear(data) : null,
+      groupId: groupId ?? null,
+    });
+    return seasonId;
+  }
+
+  const groupId = data ? resolveGroupId(data) : undefined;
+  const classYear = data ? resolveClassYear(data) : null;
+  await updateSeasonEnrollment(enrollment.id, organizationId, {
+    status: "active",
+    leftAt: null,
+    ...(groupId !== undefined && { groupId }),
+    ...(classYear && { classYear }),
+  });
+  return seasonId;
+}
+
+export type ReactivateSwimmerResult =
+  | { status: "reactivated"; swimmerId: string; membershipId: string }
+  | { status: "already_active"; swimmerId: string; membershipId: string }
+  | { status: "not_found"; swimmerId: string };
+
+/** Brings an archived swimmer back onto the team for the given (default current) season. */
+export async function reactivateSwimmerOnTeam(
+  swimmerId: string,
+  organizationId: string,
+  options?: { seasonId?: string },
+): Promise<ReactivateSwimmerResult> {
+  const [membership] = await db
+    .select({
+      id: teamSwimmerMemberships.id,
+      status: teamSwimmerMemberships.status,
+    })
+    .from(teamSwimmerMemberships)
+    .where(
+      and(
+        eq(teamSwimmerMemberships.organizationId, organizationId),
+        eq(teamSwimmerMemberships.swimmerId, swimmerId),
+      ),
+    )
+    .limit(1);
+
+  if (!membership) return { status: "not_found", swimmerId };
+
+  if (membership.status === "active") {
+    const seasonId = await resolveSeasonId(organizationId, options?.seasonId);
+    const enrollment = await getEnrollmentForMembershipInSeason(
+      membership.id,
+      seasonId,
+    );
+    if (enrollment?.status === "active") {
+      return {
+        status: "already_active",
+        swimmerId,
+        membershipId: membership.id,
+      };
+    }
+  }
+
+  await restoreMembership(organizationId, membership.id, {
+    seasonId: options?.seasonId,
+  });
+  return { status: "reactivated", swimmerId, membershipId: membership.id };
+}
+
+export type ArchivedTeamSwimmer = {
+  swimmerId: string;
+  membershipId: string;
+  firstName: string;
+  lastName: string;
+  preferredName: string | null;
+  dateOfBirth: string | null;
+  governingBodyId: string | null;
+  leftAt: Date | null;
+};
+
+/**
+ * Archived (inactive) swimmers on this team who match a USA Swimming ID or
+ * name + date of birth. Used so create/import reactivate instead of duplicating.
+ */
+export async function findArchivedTeamSwimmers(
+  organizationId: string,
+  identity: {
+    governingBodyId?: string | null;
+    firstName?: string;
+    lastName?: string;
+    preferredName?: string | null;
+    dateOfBirth?: string | null;
+  },
+): Promise<ArchivedTeamSwimmer[]> {
+  const governingBodyId = identity.governingBodyId?.trim() || null;
+  const dateOfBirth = identity.dateOfBirth?.trim()
+    ? normalizeDateOfBirth(identity.dateOfBirth)
+    : null;
+  const firstName = identity.firstName?.trim() ?? "";
+  const lastName = identity.lastName?.trim() ?? "";
+  const canMatchIdentity = Boolean(firstName && lastName && dateOfBirth);
+
+  if (!governingBodyId && !canMatchIdentity) return [];
+
+  const narrowing: SQL[] = [];
+  if (governingBodyId) {
+    narrowing.push(eq(swimmers.governingBodyId, governingBodyId));
+  }
+  if (canMatchIdentity && dateOfBirth) {
+    narrowing.push(eq(swimmers.dateOfBirth, dateOfBirth));
+  }
+
+  const rows = await db
+    .select({
+      swimmerId: swimmers.id,
+      membershipId: teamSwimmerMemberships.id,
+      firstName: swimmers.firstName,
+      lastName: swimmers.lastName,
+      preferredName: swimmers.preferredName,
+      dateOfBirth: swimmers.dateOfBirth,
+      governingBodyId: swimmers.governingBodyId,
+      leftAt: teamSwimmerMemberships.leftAt,
+    })
+    .from(teamSwimmerMemberships)
+    .innerJoin(swimmers, eq(teamSwimmerMemberships.swimmerId, swimmers.id))
+    .where(
+      and(
+        eq(teamSwimmerMemberships.organizationId, organizationId),
+        eq(teamSwimmerMemberships.status, "inactive"),
+        or(...narrowing),
+      ),
+    )
+    .limit(20);
+
+  return rows.filter((row) => {
+    if (governingBodyId && row.governingBodyId === governingBodyId) {
+      return true;
+    }
+    if (!canMatchIdentity || !dateOfBirth || !row.dateOfBirth) return false;
+    return swimmerIdentitiesMatch(
+      {
+        firstName,
+        lastName,
+        preferredName: identity.preferredName ?? null,
+        dateOfBirth,
+      },
+      { ...row, dateOfBirth: row.dateOfBirth },
+    );
+  });
+}
+
+async function reactivateMembershipFromRow(
+  organizationId: string,
+  swimmerId: string,
+  membershipId: string,
+  data: RosterRow,
+) {
+  const governingBodyId = resolveGoverningBodyId(data);
+
+  await db.transaction(async (tx) => {
+    if (data.practiceGroup !== undefined || data.trainingGroups !== undefined) {
+      await tx
+        .update(teamSwimmerMemberships)
+        .set({
+          ...(data.practiceGroup !== undefined && {
+            practiceGroup: data.practiceGroup ?? null,
+          }),
+          ...(data.trainingGroups !== undefined && {
+            trainingGroups: data.trainingGroups ?? [],
+          }),
+        })
+        .where(eq(teamSwimmerMemberships.id, membershipId));
+    }
+
+    if (governingBodyId) {
+      await tx
+        .insert(swimmerClubRegistrations)
+        .values({
+          id: generateId(),
+          membershipId,
+          usaMemberId: governingBodyId,
+        })
+        .onConflictDoNothing();
+    }
+
+    await upsertMembershipContacts(tx, membershipId, data.contacts);
+    await upsertMembershipMedical(tx, membershipId, data.medical);
+  });
+
+  await restoreMembership(organizationId, membershipId, { data });
+
+  return { swimmerId, membershipId, reactivated: true as const };
+}
+
 async function createMembershipForTeam(
   organizationId: string,
   swimmerId: string,
   data: RosterRow,
-) {
+): Promise<{ swimmerId: string; membershipId: string; reactivated?: true }> {
+  const [existing] = await db
+    .select({
+      id: teamSwimmerMemberships.id,
+      status: teamSwimmerMemberships.status,
+    })
+    .from(teamSwimmerMemberships)
+    .where(
+      and(
+        eq(teamSwimmerMemberships.organizationId, organizationId),
+        eq(teamSwimmerMemberships.swimmerId, swimmerId),
+      ),
+    )
+    .limit(1);
+
+  if (existing?.status === "active") {
+    throw new Error("Swimmer is already on this team");
+  }
+  if (existing) {
+    return reactivateMembershipFromRow(
+      organizationId,
+      swimmerId,
+      existing.id,
+      data,
+    );
+  }
+
   const membershipId = generateId();
   const governingBodyId = resolveGoverningBodyId(data);
 
   await db.transaction(async (tx) => {
-    const [existing] = await tx
-      .select({ id: teamSwimmerMemberships.id })
-      .from(teamSwimmerMemberships)
-      .where(
-        and(
-          eq(teamSwimmerMemberships.organizationId, organizationId),
-          eq(teamSwimmerMemberships.swimmerId, swimmerId),
-        ),
-      )
-      .limit(1);
-
-    if (existing) {
-      throw new Error("Swimmer is already on this team");
-    }
-
     await tx.insert(teamSwimmerMemberships).values({
       id: membershipId,
       organizationId,
@@ -1041,6 +1267,23 @@ export async function addSwimmer(
     const existing = await findSwimmerByGoverningBodyId(governingBodyId);
     if (existing) {
       return createMembershipForTeam(organizationId, existing.id, data);
+    }
+  }
+
+  if (!data.forceNewPerson) {
+    const archived = await findArchivedTeamSwimmers(organizationId, {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      preferredName: data.preferredName,
+      dateOfBirth: data.dateOfBirth,
+    });
+    if (archived.length === 1) {
+      return reactivateMembershipFromRow(
+        organizationId,
+        archived[0]!.swimmerId,
+        archived[0]!.membershipId,
+        data,
+      );
     }
   }
 
@@ -1307,6 +1550,7 @@ export async function getSwimmerIdentityById(swimmerId: string) {
 export type ImportRosterSharePackResult = {
   linked: number;
   merged: number;
+  reactivated: number;
   alreadyOnTeam: number;
   failed: Array<{ swimmerId: string; name: string; reason: string }>;
 };
@@ -1331,6 +1575,7 @@ export async function importRosterSharePack(
   const result: ImportRosterSharePackResult = {
     linked: 0,
     merged: 0,
+    reactivated: 0,
     alreadyOnTeam: 0,
     failed: [],
   };
@@ -1400,14 +1645,22 @@ export async function importRosterSharePack(
         continue;
       }
 
-      await addExistingSwimmerToTeam(existing.id, organizationId, {
-        firstName: existing.firstName,
-        lastName: existing.lastName,
-        preferredName: existing.preferredName ?? undefined,
-        dateOfBirth: existing.dateOfBirth,
-        gender: existing.gender,
-      });
-      result.linked += 1;
+      const added = await addExistingSwimmerToTeam(
+        existing.id,
+        organizationId,
+        {
+          firstName: existing.firstName,
+          lastName: existing.lastName,
+          preferredName: existing.preferredName ?? undefined,
+          dateOfBirth: existing.dateOfBirth,
+          gender: existing.gender,
+        },
+      );
+      if (added.reactivated) {
+        result.reactivated += 1;
+      } else {
+        result.linked += 1;
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Link failed";
       if (message.includes("already on this team")) {

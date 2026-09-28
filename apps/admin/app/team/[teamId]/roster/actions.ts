@@ -1,7 +1,10 @@
 "use server";
 
 import { getSession } from "@lane4hq/auth/session";
-import { canAddSwimmer } from "@lane4hq/billing/features";
+import {
+  canAddSwimmer,
+  remainingSwimmerSlots,
+} from "@lane4hq/billing/features";
 import {
   canExportRoster,
   requireCoachSafeSportCurrent,
@@ -19,9 +22,11 @@ import {
   getRoster,
   getRosterForExport,
   getSwimmerContactsForMembership,
+  getSwimmerIdentityById,
   getSwimmerMedicalForMembership,
   importRosterSharePack,
   type RosterPageInput,
+  reactivateSwimmerOnTeam,
   removeSwimmerFromTeam,
   updateSwimmer,
 } from "@lane4hq/db/queries/roster";
@@ -138,6 +143,68 @@ export async function removeSwimmersAction(
   );
   revalidatePath(`/team/${teamId}/roster`);
   return { removed: uniqueIds.length };
+}
+
+export async function reactivateSwimmersAction(
+  teamId: string,
+  swimmerIds: string[],
+  options?: { seasonId?: string },
+) {
+  const session = await getSession();
+  await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+  const uniqueIds = [...new Set(swimmerIds.filter(Boolean))];
+  if (uniqueIds.length === 0) {
+    throw new Error("Select at least one swimmer");
+  }
+
+  const identities = await Promise.all(
+    uniqueIds.map((id) => getSwimmerIdentityById(id)),
+  );
+  if (identities.some((s) => s?.dateOfBirth && isMinorSwimmer(s.dateOfBirth))) {
+    await requireCoachSafeSportCurrent(session?.user?.id, teamId);
+  }
+
+  const slots = await remainingSwimmerSlots(teamId);
+  if (slots < uniqueIds.length) {
+    throw new Error(
+      slots === 0
+        ? "Swimmer limit reached for your plan. Upgrade to reactivate swimmers."
+        : `Your plan has room for ${slots} more swimmer${slots === 1 ? "" : "s"}. Select fewer or upgrade.`,
+    );
+  }
+
+  let reactivated = 0;
+  for (const swimmerId of uniqueIds) {
+    const result = await reactivateSwimmerOnTeam(swimmerId, teamId, {
+      seasonId: options?.seasonId,
+    });
+    if (result.status === "reactivated") reactivated++;
+  }
+
+  if (session?.user?.id && reactivated > 0) {
+    await writeAuditLog({
+      organizationId: teamId,
+      actorUserId: session.user.id,
+      action: "roster.swimmer.reactivate",
+      resourceType: "organization",
+      resourceId: teamId,
+      metadata: { swimmerIds: uniqueIds, seasonId: options?.seasonId ?? null },
+    });
+  }
+
+  revalidatePath(`/team/${teamId}/roster`);
+  for (const swimmerId of uniqueIds) {
+    revalidatePath(`/team/${teamId}/swimmers/${swimmerId}`);
+  }
+  return { reactivated };
+}
+
+export async function reactivateSwimmerAction(
+  teamId: string,
+  swimmerId: string,
+  options?: { seasonId?: string },
+) {
+  return reactivateSwimmersAction(teamId, [swimmerId], options);
 }
 
 export async function fetchRosterAction(teamId: string) {
@@ -418,6 +485,7 @@ async function importRosterSharePackRows(teamId: string, content: string) {
           sourceOrganizationName: pack.sourceOrganizationName,
           linked: result.linked,
           merged: result.merged,
+          reactivated: result.reactivated,
           alreadyOnTeam: result.alreadyOnTeam,
           failed: result.failed.length,
         },
@@ -433,7 +501,7 @@ async function importRosterSharePackRows(teamId: string, content: string) {
       await sendRosterImportComplete(session.user.email, {
         teamName: "Your team",
         added: result.linked + result.merged,
-        updated: result.alreadyOnTeam,
+        updated: result.alreadyOnTeam + result.reactivated,
       });
     }
 
@@ -441,6 +509,7 @@ async function importRosterSharePackRows(teamId: string, content: string) {
       added: result.linked + result.merged,
       linked: result.linked,
       merged: result.merged,
+      reactivated: result.reactivated,
       alreadyOnTeam: result.alreadyOnTeam,
       failed: result.failed,
       sourceTeamName: pack.sourceOrganizationName,
@@ -516,8 +585,9 @@ async function importRosterRows(
 
   try {
     let added = 0;
+    let reactivated = 0;
     for (const row of rows) {
-      await addSwimmer(
+      const result = await addSwimmer(
         teamId,
         {
           firstName: row.firstName,
@@ -530,24 +600,25 @@ async function importRosterRows(
         },
         { viewerUserId: session?.user?.id },
       );
-      added++;
+      if ("reactivated" in result && result.reactivated) reactivated++;
+      else added++;
     }
 
     revalidatePath(`/team/${teamId}/roster`);
     await updateImportJob(jobId, {
       status: "complete",
-      resultSummary: JSON.stringify({ added }),
+      resultSummary: JSON.stringify({ added, reactivated }),
     });
 
     if (session?.user?.email) {
       await sendRosterImportComplete(session.user.email, {
         teamName: "Your team",
         added,
-        updated: 0,
+        updated: reactivated,
       });
     }
 
-    return { added };
+    return { added, reactivated };
   } catch (error) {
     await updateImportJob(jobId, {
       status: "failed",
@@ -570,11 +641,12 @@ export async function importRosterCsvAction(teamId: string, content: string) {
 }
 
 export type ImportRosterFileResult =
-  | { added: number }
+  | { added: number; reactivated: number }
   | {
       added: number;
       linked: number;
       merged: number;
+      reactivated: number;
       alreadyOnTeam: number;
       failed: Array<{ swimmerId: string; name: string; reason: string }>;
       sourceTeamName: string;

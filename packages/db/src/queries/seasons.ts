@@ -16,7 +16,16 @@ import {
   parseClassYear,
   parseEligibilityStatus,
 } from "@lane4hq/swim-core/team-types";
-import { and, asc, desc, eq, ilike, notInArray, or } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  notInArray,
+  or,
+} from "drizzle-orm";
 import { db } from "../client";
 import { seasonEnrollments, teamSeasons } from "../schema/seasons";
 import { swimmers, teamSwimmerMemberships } from "../schema/swimmers";
@@ -466,6 +475,21 @@ export async function commitSeasonRoll(
         status: "active" as const,
       })),
     );
+
+    // Returners picked from archived swimmers come back onto the team.
+    await db
+      .update(teamSwimmerMemberships)
+      .set({ status: "active", leftAt: null, updatedAt: new Date() })
+      .where(
+        and(
+          eq(teamSwimmerMemberships.organizationId, organizationId),
+          inArray(
+            teamSwimmerMemberships.id,
+            input.enrollments.map((e) => e.membershipId),
+          ),
+          eq(teamSwimmerMemberships.status, "inactive"),
+        ),
+      );
   }
 
   return season;

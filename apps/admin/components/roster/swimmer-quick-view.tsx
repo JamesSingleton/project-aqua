@@ -24,7 +24,12 @@ import {
   SheetTitle,
 } from "@lane4hq/ui/components/sheet";
 import { cn } from "@lane4hq/ui/lib/utils";
-import { CheckIcon, CopyIcon, PencilIcon } from "lucide-react";
+import {
+  ArchiveRestoreIcon,
+  CheckIcon,
+  CopyIcon,
+  PencilIcon,
+} from "lucide-react";
 import Link from "next/link";
 import {
   type ReactNode,
@@ -36,6 +41,10 @@ import {
 import { fetchSwimmerQuickViewAction } from "@/app/team/[teamId]/roster/actions";
 import type { Athlete } from "@/types";
 import { ClassYearDisplay } from "./class-year-display";
+import {
+  isArchived,
+  ReactivateSwimmerDialog,
+} from "./reactivate-swimmer-dialog";
 
 type QuickViewDetails = Awaited<ReturnType<typeof fetchSwimmerQuickViewAction>>;
 
@@ -179,6 +188,8 @@ export function SwimmerQuickView({
     athlete.seasonsOfCompetitionUsed != null ||
     Boolean(athlete.eligibilityNotes);
 
+  const archived = isArchived(athlete);
+  const [reactivateOpen, setReactivateOpen] = useState(false);
   const [details, setDetails] = useState<QuickViewDetails | null>(null);
   const [loadError, setLoadError] = useState("");
   const [pending, startTransition] = useTransition();
@@ -473,28 +484,58 @@ export function SwimmerQuickView({
           ) : null}
         </div>
 
-        <SheetFooter className="border-t sm:flex-row">
-          <Link
-            href={editHref}
-            prefetch={false}
-            className={cn(
-              buttonVariants({ variant: "outline" }),
-              "w-full sm:w-auto",
-            )}
-          >
-            <PencilIcon data-icon="inline-start" />
-            Edit
-          </Link>
-          <Link
-            href={profileHref}
-            className={cn(buttonVariants(), "w-full sm:flex-1")}
-            onClick={() => onOpenChange(false)}
-            prefetch={false}
-          >
-            View full profile
-          </Link>
-        </SheetFooter>
+        {archived ? (
+          <SheetFooter className="border-t sm:flex-row">
+            <Link
+              href={profileHref}
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "w-full sm:w-auto",
+              )}
+              onClick={() => onOpenChange(false)}
+              prefetch={false}
+            >
+              View full profile
+            </Link>
+            <Button
+              type="button"
+              className="w-full sm:flex-1"
+              onClick={() => setReactivateOpen(true)}
+            >
+              <ArchiveRestoreIcon data-icon="inline-start" />
+              Reactivate
+            </Button>
+          </SheetFooter>
+        ) : (
+          <SheetFooter className="border-t sm:flex-row">
+            <Link
+              href={editHref}
+              prefetch={false}
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "w-full sm:w-auto",
+              )}
+            >
+              <PencilIcon data-icon="inline-start" />
+              Edit
+            </Link>
+            <Link
+              href={profileHref}
+              className={cn(buttonVariants(), "w-full sm:flex-1")}
+              onClick={() => onOpenChange(false)}
+              prefetch={false}
+            >
+              View full profile
+            </Link>
+          </SheetFooter>
+        )}
       </SheetContent>
+      <ReactivateSwimmerDialog
+        teamId={teamId}
+        athlete={athlete}
+        open={reactivateOpen}
+        onOpenChange={setReactivateOpen}
+      />
     </Sheet>
   );
 }

@@ -21,6 +21,7 @@ import {
 import { Separator } from "@lane4hq/ui/components/separator";
 import type { ReactTable } from "@tanstack/react-table";
 import {
+  ArchiveRestoreIcon,
   DownloadIcon,
   Share2Icon,
   Trash2Icon,
@@ -32,11 +33,13 @@ import { useState, useTransition } from "react";
 import {
   exportRosterCsvAction,
   exportRosterSharePackAction,
+  reactivateSwimmersAction,
   removeSwimmersAction,
 } from "@/app/team/[teamId]/roster/actions";
 import { assignGroupsBulkAction } from "@/app/team/[teamId]/roster/groups-actions";
 import type { DataTableFeatures } from "@/lib/data-table-features";
 import type { Athlete } from "@/types";
+import { isArchived } from "./reactivate-swimmer-dialog";
 
 type GroupOption = { id: string; name: string };
 
@@ -67,16 +70,38 @@ export function RosterActionBar({
 
   const swimmerIds = rows.map((row) => row.original.id);
   const membershipIds = rows.map((row) => row.original.membershipId);
+  const archivedIds: string[] = [];
+  const activeIds: string[] = [];
+  for (const row of rows) {
+    (isArchived(row.original) ? archivedIds : activeIds).push(row.original.id);
+  }
+  const mixedSelection = archivedIds.length > 0 && activeIds.length > 0;
+  const removeCount = activeIds.length;
 
   function clearSelection() {
     table.toggleAllRowsSelected(false);
+  }
+
+  function handleReactivate() {
+    setError("");
+    startTransition(async () => {
+      try {
+        await reactivateSwimmersAction(teamId, archivedIds, { seasonId });
+        clearSelection();
+        router.refresh();
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Could not reactivate swimmers",
+        );
+      }
+    });
   }
 
   function confirmRemove() {
     setError("");
     startTransition(async () => {
       try {
-        await removeSwimmersAction(teamId, swimmerIds);
+        await removeSwimmersAction(teamId, activeIds);
         setRemoveOpen(false);
         clearSelection();
         router.refresh();
@@ -217,16 +242,30 @@ export function RosterActionBar({
             Assign
           </Button>
         </div>
-        <Button
-          type="button"
-          variant="destructive"
-          size="sm"
-          disabled={pending}
-          onClick={() => setRemoveOpen(true)}
-        >
-          <Trash2Icon data-icon="inline-start" />
-          Remove
-        </Button>
+        {archivedIds.length > 0 ? (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={pending}
+            onClick={handleReactivate}
+          >
+            <ArchiveRestoreIcon data-icon="inline-start" />
+            {mixedSelection ? `Reactivate ${archivedIds.length}` : "Reactivate"}
+          </Button>
+        ) : null}
+        {removeCount > 0 ? (
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            disabled={pending}
+            onClick={() => setRemoveOpen(true)}
+          >
+            <Trash2Icon data-icon="inline-start" />
+            {mixedSelection ? `Remove ${removeCount}` : "Remove"}
+          </Button>
+        ) : null}
       </div>
 
       {error && !removeOpen ? (
@@ -242,10 +281,10 @@ export function RosterActionBar({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              Remove {selectedCount} swimmer{selectedCount === 1 ? "" : "s"}?
+              Remove {removeCount} swimmer{removeCount === 1 ? "" : "s"}?
             </DialogTitle>
             <DialogDescription>
-              Remove the selected swimmer{selectedCount === 1 ? "" : "s"} from
+              Remove the selected swimmer{removeCount === 1 ? "" : "s"} from
               this team&apos;s roster? Profiles and times stay in the system;
               they just won&apos;t appear on this season&apos;s roster.
             </DialogDescription>

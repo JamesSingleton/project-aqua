@@ -148,7 +148,10 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
         content,
         encoding,
       );
-      let successMessage = `Imported ${result.added} swimmers`;
+      let successMessage =
+        result.reactivated > 0
+          ? `Imported ${result.added}, reactivated ${result.reactivated}`
+          : `Imported ${result.added} swimmers`;
       if ("sourceTeamName" in result) {
         const parts: string[] = [`From ${result.sourceTeamName}`];
         if (result.merged > 0) {
@@ -159,7 +162,14 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
         if (result.linked > 0) {
           parts.push(`linked ${result.linked} new`);
         }
-        if (result.merged === 0 && result.linked === 0) {
+        if (result.reactivated > 0) {
+          parts.push(`reactivated ${result.reactivated}`);
+        }
+        if (
+          result.merged === 0 &&
+          result.linked === 0 &&
+          result.reactivated === 0
+        ) {
           parts.push(`processed ${result.added}`);
         }
         if (result.alreadyOnTeam > 0) {

@@ -32,12 +32,21 @@ export async function getTeamPlanLimits(organizationId: string) {
   return getPlanLimits(plan);
 }
 
-export async function canAddSwimmer(organizationId: string): Promise<boolean> {
+/** Active roster slots left on the team's plan (Infinity when unlimited). */
+export async function remainingSwimmerSlots(
+  organizationId: string,
+): Promise<number> {
   const limits = await getTeamPlanLimits(organizationId);
-  if (limits.maxSwimmers === Number.POSITIVE_INFINITY) return true;
+  if (limits.maxSwimmers === Number.POSITIVE_INFINITY) {
+    return Number.POSITIVE_INFINITY;
+  }
   const { getRosterStats } = await import("@lane4hq/db/queries/roster");
   const stats = await getRosterStats(organizationId);
-  return stats.totalSwimmers < (limits.maxSwimmers as number);
+  return Math.max(0, (limits.maxSwimmers as number) - stats.totalSwimmers);
+}
+
+export async function canAddSwimmer(organizationId: string): Promise<boolean> {
+  return (await remainingSwimmerSlots(organizationId)) > 0;
 }
 
 export { getOwnerEmail, getTeamPlan, updateSubscription };
