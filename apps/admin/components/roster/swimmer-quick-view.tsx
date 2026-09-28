@@ -228,7 +228,7 @@ export function SwimmerQuickView({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col gap-0 sm:max-w-md">
+      <SheetContent className="flex max-h-dvh w-full flex-col gap-0 sm:max-w-md">
         <SheetHeader className="border-b">
           <div className="flex items-start gap-3 pr-8">
             <Avatar size="lg">
@@ -272,7 +272,7 @@ export function SwimmerQuickView({
           </div>
         </SheetHeader>
 
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-4">
           <SwimmerIdCopy swimmerId={athlete.id} />
 
           <section className="flex flex-col gap-3">
@@ -485,7 +485,7 @@ export function SwimmerQuickView({
         </div>
 
         {archived ? (
-          <SheetFooter className="border-t sm:flex-row">
+          <SheetFooter className="border-t pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-row">
             <Link
               href={profileHref}
               className={cn(
@@ -507,7 +507,7 @@ export function SwimmerQuickView({
             </Button>
           </SheetFooter>
         ) : (
-          <SheetFooter className="border-t sm:flex-row">
+          <SheetFooter className="border-t pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-row">
             <Link
               href={editHref}
               prefetch={false}

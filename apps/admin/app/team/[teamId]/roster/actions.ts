@@ -6,9 +6,9 @@ import {
   remainingSwimmerSlots,
 } from "@lane4hq/billing/features";
 import {
-  canExportRoster,
   requireCoachSafeSportCurrent,
   requireMinorPiiAccess,
+  requireRosterImportExportAccess,
   requireTeamMember,
   requireTeamRole,
   writeAuditLog,
@@ -315,7 +315,7 @@ export async function exportRosterCsvAction(
     headerStore.get("x-real-ip") ??
     undefined;
 
-  await canExportRoster(session?.user?.id, teamId);
+  await requireRosterImportExportAccess(session?.user?.id, teamId);
 
   const hasFilters =
     options &&
@@ -324,7 +324,8 @@ export async function exportRosterCsvAction(
       options.status?.length ||
       options.gender?.length ||
       options.groupId?.length ||
-      options.classYear?.length);
+      options.classYear?.length ||
+      (options.sort?.length ?? 0) > 0);
 
   const roster = hasFilters
     ? await getRosterForExport(teamId, {
@@ -355,6 +356,21 @@ export async function exportRosterCsvAction(
   ];
 
   if (session?.user?.id) {
+    const exportMetadata: Record<string, unknown> = {
+      rowCount: roster.length,
+    };
+    if (hasFilters && options) {
+      exportMetadata.filters = {
+        q: options.q,
+        status: options.status,
+        gender: options.gender,
+        groupId: options.groupId,
+        classYear: options.classYear,
+        sort: options.sort,
+        swimmerIds: options.swimmerIds,
+        seasonId: options.seasonId,
+      };
+    }
     await writeAuditLog({
       organizationId: teamId,
       actorUserId: session.user.id,
@@ -362,6 +378,7 @@ export async function exportRosterCsvAction(
       resourceType: "organization",
       resourceId: teamId,
       ipAddress: ip,
+      metadata: exportMetadata,
     });
   }
 
@@ -379,7 +396,7 @@ export async function exportRosterSharePackAction(
     headerStore.get("x-real-ip") ??
     undefined;
 
-  await canExportRoster(session?.user?.id, teamId);
+  await requireRosterImportExportAccess(session?.user?.id, teamId);
 
   const swimmerIds = [...new Set(options.swimmerIds.filter(Boolean))];
   if (swimmerIds.length === 0) {
@@ -454,7 +471,7 @@ export async function exportRosterSharePackAction(
 
 async function importRosterSharePackRows(teamId: string, content: string) {
   const session = await getSession();
-  await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+  await requireRosterImportExportAccess(session?.user?.id, teamId);
 
   const pack = parseRosterSharePack(content);
   if (pack.sourceOrganizationId === teamId) {
@@ -621,7 +638,7 @@ export async function previewRosterFileImportAction(
   encoding: "utf8" | "base64" = "utf8",
 ): Promise<RosterFileImportPreviewResult> {
   const session = await getSession();
-  await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+  await requireRosterImportExportAccess(session?.user?.id, teamId);
 
   if (filename.toLowerCase().endsWith(".zip")) {
     const parsed = parseRosterFileRows(filename, content, encoding);
@@ -684,14 +701,10 @@ async function importValidatedRosterRows(
   summary: { invalidRowCount: number; errors: RosterImportRowError[] },
 ) {
   const session = await getSession();
-  await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+  await requireRosterImportExportAccess(session?.user?.id, teamId);
 
   if (rows.length === 0 && summary.invalidRowCount === 0) {
     throw new Error("No swimmers found in file");
-  }
-
-  if (rows.some((r) => isMinorSwimmer(r.data.dateOfBirth))) {
-    await requireCoachSafeSportCurrent(session?.user?.id, teamId);
   }
 
   const jobId = await createImportJob(teamId, jobType);
