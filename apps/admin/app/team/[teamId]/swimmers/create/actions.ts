@@ -10,6 +10,7 @@ import {
 import { db } from "@lane4hq/db/client";
 import {
   addSwimmer,
+  findArchivedTeamSwimmers,
   searchLinkableSwimmersByIdentity,
   searchSwimmerByUsaId,
 } from "@lane4hq/db/queries/roster";
@@ -82,6 +83,27 @@ export async function lookupUsaSwimmerAction(
   await requireTeamMember(session?.user?.id, teamId);
   if (!usaMemberId.trim()) return null;
   return searchSwimmerByUsaId(usaMemberId.trim());
+}
+
+export async function lookupArchivedSwimmerAction(
+  teamId: string,
+  identity: {
+    usaMemberId?: string;
+    firstName?: string;
+    lastName?: string;
+    preferredName?: string;
+    dateOfBirth?: string;
+  },
+) {
+  const session = await getSession();
+  await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+  return findArchivedTeamSwimmers(teamId, {
+    governingBodyId: identity.usaMemberId,
+    firstName: identity.firstName,
+    lastName: identity.lastName,
+    preferredName: identity.preferredName,
+    dateOfBirth: identity.dateOfBirth,
+  });
 }
 
 export async function lookupLinkableSwimmerAction(

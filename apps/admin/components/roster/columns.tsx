@@ -27,6 +27,7 @@ import {
 } from "@lane4hq/ui/components/tooltip";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
+  ArchiveRestoreIcon,
   CopyIcon,
   EllipsisVerticalIcon,
   EyeIcon,
@@ -43,6 +44,10 @@ import type { DataTableFeatures } from "@/lib/data-table-features";
 import type { Athlete } from "@/types";
 import type { Option } from "@/types/data-table";
 import { ClassYearDisplay } from "./class-year-display";
+import {
+  isArchived,
+  ReactivateSwimmerDialog,
+} from "./reactivate-swimmer-dialog";
 import { SwimmerQuickView } from "./swimmer-quick-view";
 
 function statusVariant(status: string) {
@@ -64,8 +69,10 @@ function RowActions({
   const router = useRouter();
   const [quickViewOpen, setQuickViewOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
+  const [reactivateOpen, setReactivateOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
+  const archived = isArchived(athlete);
   const profileHref = `/team/${teamId}/swimmers/${athlete.id}`;
   const editHref = `${profileHref}/edit`;
 
@@ -87,23 +94,42 @@ function RowActions({
   return (
     <>
       <div className="flex items-center gap-1">
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Remove from roster"
-                disabled={pending}
-                onClick={() => setRemoveOpen(true)}
-              />
-            }
-          >
-            <Trash2Icon />
-          </TooltipTrigger>
-          <TooltipContent>Remove from roster</TooltipContent>
-        </Tooltip>
+        {archived ? (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Reactivate"
+                  onClick={() => setReactivateOpen(true)}
+                />
+              }
+            >
+              <ArchiveRestoreIcon />
+            </TooltipTrigger>
+            <TooltipContent>Reactivate</TooltipContent>
+          </Tooltip>
+        ) : (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Remove from roster"
+                  disabled={pending}
+                  onClick={() => setRemoveOpen(true)}
+                />
+              }
+            >
+              <Trash2Icon />
+            </TooltipTrigger>
+            <TooltipContent>Remove from roster</TooltipContent>
+          </Tooltip>
+        )}
 
         <Tooltip>
           <TooltipTrigger
@@ -165,14 +191,21 @@ function RowActions({
                 <CopyIcon />
                 Copy swimmer ID
               </DropdownMenuItem>
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => setRemoveOpen(true)}
-                disabled={pending}
-              >
-                <Trash2Icon />
-                Remove from roster
-              </DropdownMenuItem>
+              {archived ? (
+                <DropdownMenuItem onClick={() => setReactivateOpen(true)}>
+                  <ArchiveRestoreIcon />
+                  Reactivate
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => setRemoveOpen(true)}
+                  disabled={pending}
+                >
+                  <Trash2Icon />
+                  Remove from roster
+                </DropdownMenuItem>
+              )}
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -208,6 +241,13 @@ function RowActions({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ReactivateSwimmerDialog
+        teamId={teamId}
+        athlete={athlete}
+        open={reactivateOpen}
+        onOpenChange={setReactivateOpen}
+      />
 
       <SwimmerQuickView
         teamId={teamId}

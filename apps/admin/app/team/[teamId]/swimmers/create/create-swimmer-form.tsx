@@ -28,21 +28,36 @@ import {
 } from "@lane4hq/ui/components/select";
 import { Textarea } from "@lane4hq/ui/components/textarea";
 import { cn } from "@lane4hq/ui/lib/utils";
-import { CheckIcon } from "lucide-react";
+import { ArchiveRestoreIcon, CheckIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { DatePickerField } from "@/components/date-picker-field";
 import {
   type CreateSwimmerFormValues,
   createSwimmerFormSchema,
 } from "@/schemas";
+import { reactivateSwimmerAction } from "../../roster/actions";
 import {
   createSwimmerAction,
+  lookupArchivedSwimmerAction,
   lookupLinkableSwimmerAction,
   lookupUsaSwimmerAction,
 } from "./actions";
+
+type ArchivedMatch = Awaited<
+  ReturnType<typeof lookupArchivedSwimmerAction>
+>[number];
+
+function archivedOnLabel(leftAt: Date | string | null) {
+  if (!leftAt) return null;
+  return new Date(leftAt).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
 type IdentityMatch = {
   id: string;
@@ -101,6 +116,103 @@ const CONTACT_FIELDS = [
   "contacts.emergencyName",
   "contacts.emergencyPhone",
 ] as const;
+
+function ArchivedMatchNotice({
+  matches,
+  pending,
+  onReactivate,
+  onCreateNew,
+}: {
+  matches: ArchivedMatch[];
+  pending: boolean;
+  onReactivate: (match: ArchivedMatch) => void;
+  onCreateNew?: () => void;
+}) {
+  const single = matches.length === 1 ? matches[0] : null;
+  const createNew = onCreateNew ? (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      disabled={pending}
+      onClick={onCreateNew}
+    >
+      Create as new person
+    </Button>
+  ) : null;
+
+  if (single) {
+    const archivedOn = archivedOnLabel(single.leftAt);
+    return (
+      <div
+        role="status"
+        className="bg-muted sm:col-span-2 flex flex-col gap-3 rounded-lg px-3 py-3 text-sm"
+      >
+        <p className="text-pretty">
+          <span className="font-medium">
+            {single.firstName} {single.lastName}
+          </span>{" "}
+          was archived from this team{archivedOn ? ` on ${archivedOn}` : ""}.
+          Reactivate to bring back their profile, meet history, and times.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            disabled={pending}
+            onClick={() => onReactivate(single)}
+          >
+            <ArchiveRestoreIcon data-icon="inline-start" />
+            {pending ? "Reactivating..." : "Reactivate swimmer"}
+          </Button>
+          {createNew}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      role="status"
+      className="bg-muted sm:col-span-2 flex flex-col gap-3 rounded-lg px-3 py-3 text-sm"
+    >
+      <p className="text-pretty">
+        {matches.length} archived swimmers on this team match this name and date
+        of birth. Reactivate the right one, or create a new profile.
+      </p>
+      <ul className="flex flex-col gap-2">
+        {matches.map((match) => {
+          const archivedOn = archivedOnLabel(match.leftAt);
+          return (
+            <li
+              key={match.swimmerId}
+              className="flex flex-wrap items-center justify-between gap-2"
+            >
+              <span>
+                {match.firstName} {match.lastName}
+                {archivedOn ? (
+                  <span className="text-muted-foreground">
+                    {" "}
+                    · archived {archivedOn}
+                  </span>
+                ) : null}
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                disabled={pending}
+                onClick={() => onReactivate(match)}
+              >
+                Reactivate
+              </Button>
+            </li>
+          );
+        })}
+      </ul>
+      {createNew ? <div>{createNew}</div> : null}
+    </div>
+  );
+}
 
 function StepIndicator({
   currentStep,
@@ -192,6 +304,9 @@ export default function CreateSwimmerForm({
   } | null>(null);
   const [identityMatches, setIdentityMatches] = useState<IdentityMatch[]>([]);
   const [linkExisting, setLinkExisting] = useState(false);
+  const [archivedMatches, setArchivedMatches] = useState<ArchivedMatch[]>([]);
+  const [archivedByUsaId, setArchivedByUsaId] = useState(false);
+  const [reactivating, startReactivate] = useTransition();
   const declinedIdentityKeyRef = useRef<string | null>(null);
 
   const form = useForm<CreateSwimmerFormValues>({
@@ -231,6 +346,8 @@ export default function CreateSwimmerForm({
   function clearLinkState() {
     setUsaLookup(null);
     setIdentityMatches([]);
+    setArchivedMatches([]);
+    setArchivedByUsaId(false);
     setLinkExisting(false);
     setValue("linkExistingSwimmerId", undefined);
     setValue("forceNewPerson", undefined);
@@ -259,6 +376,21 @@ export default function CreateSwimmerForm({
     }
 
     try {
+      const archived = await lookupArchivedSwimmerAction(teamId, {
+        usaMemberId: usaId,
+      });
+      if (archived.length > 0) {
+        setUsaLookup(null);
+        setIdentityMatches([]);
+        setLinkExisting(false);
+        setValue("linkExistingSwimmerId", undefined);
+        setArchivedMatches(archived.slice(0, 1));
+        setArchivedByUsaId(true);
+        return;
+      }
+      setArchivedMatches([]);
+      setArchivedByUsaId(false);
+
       const found = await lookupUsaSwimmerAction(teamId, usaId);
       setIdentityMatches([]);
       setUsaLookup(found);
@@ -297,10 +429,19 @@ export default function CreateSwimmerForm({
     const key = identityLookupKey(identity);
     if (declinedIdentityKeyRef.current === key) {
       setIdentityMatches([]);
+      setArchivedMatches([]);
       return;
     }
 
     try {
+      const archived = await lookupArchivedSwimmerAction(teamId, identity);
+      setArchivedByUsaId(false);
+      setArchivedMatches(archived);
+      if (archived.length > 0) {
+        setIdentityMatches([]);
+        return;
+      }
+
       const matches = await lookupLinkableSwimmerAction(teamId, identity);
       setIdentityMatches(matches);
       if (matches.length === 1 && matches[0]) {
@@ -325,9 +466,29 @@ export default function CreateSwimmerForm({
       dateOfBirth: values.dateOfBirth ?? "",
     });
     setIdentityMatches([]);
+    setArchivedMatches([]);
     setLinkExisting(false);
     setValue("linkExistingSwimmerId", undefined);
     setValue("forceNewPerson", true);
+  }
+
+  function reactivate(match: ArchivedMatch) {
+    setSubmitError("");
+    startReactivate(async () => {
+      try {
+        await reactivateSwimmerAction(teamId, match.swimmerId);
+        if (variant === "modal") {
+          router.back();
+        } else {
+          router.push(`/team/${teamId}/roster`);
+        }
+        router.refresh();
+      } catch (err) {
+        setSubmitError(
+          err instanceof Error ? err.message : "Could not reactivate swimmer",
+        );
+      }
+    });
   }
 
   async function goNext() {
@@ -406,11 +567,15 @@ export default function CreateSwimmerForm({
               Skip &amp; add swimmer
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting
-                ? "Adding..."
-                : linkExisting
-                  ? "Link swimmer"
-                  : "Add swimmer"}
+              {archivedMatches.length === 1
+                ? isSubmitting
+                  ? "Reactivating..."
+                  : "Reactivate swimmer"
+                : isSubmitting
+                  ? "Adding..."
+                  : linkExisting
+                    ? "Link swimmer"
+                    : "Add swimmer"}
             </Button>
           </>
         ) : (
@@ -474,6 +639,16 @@ export default function CreateSwimmerForm({
                       : "Leave blank if you do not have it — name and DOB can still link across your teams."}
                   </FieldDescription>
                 </Field>
+                {archivedMatches.length > 0 ? (
+                  <ArchivedMatchNotice
+                    matches={archivedMatches}
+                    pending={reactivating}
+                    onReactivate={reactivate}
+                    onCreateNew={
+                      archivedByUsaId ? undefined : declineIdentityLink
+                    }
+                  />
+                ) : null}
                 {!usaLookup &&
                 identityMatches.length === 1 &&
                 identityMatches[0] ? (
