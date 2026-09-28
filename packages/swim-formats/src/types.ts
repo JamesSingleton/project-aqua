@@ -1,4 +1,5 @@
 import type { EventGender } from "@lane4hq/swim-core/events";
+import type { SwimmerContactsInput } from "@lane4hq/swim-core/validators";
 
 export interface ParsedMeet {
   name: string;
@@ -156,4 +157,9 @@ export interface ParsedRosterRow {
   practiceGroup?: string;
   classYear?: string;
   usaMemberId?: string;
+  middleName?: string;
+  preferredName?: string;
+  contacts?: SwimmerContactsInput;
+  /** 1-based line number in the source file when known. */
+  sourceLine?: number;
 }

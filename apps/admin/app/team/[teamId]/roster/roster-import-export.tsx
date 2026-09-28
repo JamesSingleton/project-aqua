@@ -1,6 +1,10 @@
 "use client";
 
 import {
+  type RosterImportRowError,
+  serializeRosterImportErrorsCsv,
+} from "@lane4hq/swim-core/roster-import";
+import {
   detectRosterFileFormat,
   isRosterSharePack,
 } from "@lane4hq/swim-formats/roster";
@@ -9,11 +13,20 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@lane4hq/ui/components/dialog";
 import { Progress } from "@lane4hq/ui/components/progress";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@lane4hq/ui/components/table";
 import { cn } from "@lane4hq/ui/lib/utils";
 import {
   CircleAlert,
@@ -26,7 +39,11 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useRef, useState } from "react";
-import { importRosterFileAction } from "./actions";
+import {
+  importRosterFileAction,
+  previewRosterFileImportAction,
+  type RosterFileImportPreviewResult,
+} from "./actions";
 
 const ROSTER_ACCEPT =
   ".csv,.sd3,.sdif,.cl2,.hy3,.zip,.json,.lane4hq.json,application/json,application/vnd.ms-excel,text/csv,text/plain";
@@ -41,10 +58,84 @@ type ImportEntry = {
   message?: string;
 };
 
+type PendingFileImport = {
+  filename: string;
+  content: string;
+  encoding: "utf8" | "base64";
+  preview: RosterFileImportPreviewResult;
+};
+
 function formatBytes(size: number) {
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatFileImportSuccessMessage(
+  result: Awaited<ReturnType<typeof importRosterFileAction>>,
+) {
+  if ("sourceTeamName" in result) {
+    const parts: string[] = [`From ${result.sourceTeamName}`];
+    if (result.merged > 0) {
+      parts.push(
+        `merged ${result.merged} duplicate${result.merged === 1 ? "" : "s"}`,
+      );
+    }
+    if (result.linked > 0) {
+      parts.push(`linked ${result.linked} new`);
+    }
+    if (result.reactivated > 0) {
+      parts.push(`reactivated ${result.reactivated}`);
+    }
+    if (
+      result.merged === 0 &&
+      result.linked === 0 &&
+      result.reactivated === 0
+    ) {
+      parts.push(`processed ${result.added}`);
+    }
+    if (result.alreadyOnTeam > 0) {
+      parts.push(`${result.alreadyOnTeam} already on team`);
+    }
+    if (result.failed.length > 0) {
+      parts.push(`${result.failed.length} failed`);
+    }
+    return parts.join(" · ");
+  }
+
+  const parts: string[] = [];
+  if (result.imported > 0) {
+    parts.push(
+      `imported ${result.imported} new swimmer${result.imported === 1 ? "" : "s"}`,
+    );
+  }
+  if (result.linkedExisting > 0) {
+    parts.push(`linked ${result.linkedExisting} existing`);
+  }
+  if (result.reactivated > 0) {
+    parts.push(`reactivated ${result.reactivated}`);
+  }
+  if (result.skipped > 0) {
+    parts.push(`skipped ${result.skipped}`);
+  }
+  if (result.invalidRowCount > 0) {
+    parts.push(
+      `${result.invalidRowCount} invalid row${result.invalidRowCount === 1 ? "" : "s"}`,
+    );
+  }
+  return parts.length > 0 ? parts.join(" · ") : "Import complete";
+}
+
+function downloadErrorCsv(errors: RosterImportRowError[], filename: string) {
+  const blob = new Blob([serializeRosterImportErrorsCsv(errors)], {
+    type: "text/csv",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${filename.replace(/\.[^.]+$/, "")}-import-errors.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export function RosterImportButton({ teamId }: { teamId: string }) {
@@ -54,7 +145,11 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
   const [open, setOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [entries, setEntries] = useState<ImportEntry[]>([]);
-  const busy = entries.some((e) => e.status === "uploading");
+  const [pendingImport, setPendingImport] = useState<PendingFileImport | null>(
+    null,
+  );
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const busy = entries.some((e) => e.status === "uploading") || previewLoading;
 
   function handleExportTemplate() {
     const blob = new Blob(
@@ -69,6 +164,42 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
     a.download = "roster-template.csv";
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function runImport(
+    filename: string,
+    content: string,
+    encoding: "utf8" | "base64",
+    entryId: string,
+  ) {
+    setEntries((prev) =>
+      prev.map((entry) =>
+        entry.id === entryId ? { ...entry, progress: 75 } : entry,
+      ),
+    );
+
+    const result = await importRosterFileAction(
+      teamId,
+      filename,
+      content,
+      encoding,
+    );
+    const successMessage = formatFileImportSuccessMessage(result);
+
+    setEntries((prev) =>
+      prev.map((entry) =>
+        entry.id === entryId
+          ? {
+              ...entry,
+              status: "success",
+              progress: 100,
+              message: successMessage,
+            }
+          : entry,
+      ),
+    );
+    setPendingImport(null);
+    router.refresh();
   }
 
   async function importFile(file: File) {
@@ -100,6 +231,7 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
       },
       ...prev,
     ]);
+    setPendingImport(null);
 
     try {
       const isZip = file.name.toLowerCase().endsWith(".zip");
@@ -136,64 +268,38 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
         }
       }
 
-      setEntries((prev) =>
-        prev.map((entry) =>
-          entry.id === id ? { ...entry, progress: 75 } : entry,
-        ),
-      );
+      if (isRosterSharePack(content)) {
+        await runImport(file.name, content, encoding, id);
+        return;
+      }
 
-      const result = await importRosterFileAction(
+      setPreviewLoading(true);
+      const preview = await previewRosterFileImportAction(
         teamId,
         file.name,
         content,
         encoding,
       );
-      let successMessage =
-        result.reactivated > 0
-          ? `Imported ${result.added}, reactivated ${result.reactivated}`
-          : `Imported ${result.added} swimmers`;
-      if ("sourceTeamName" in result) {
-        const parts: string[] = [`From ${result.sourceTeamName}`];
-        if (result.merged > 0) {
-          parts.push(
-            `merged ${result.merged} duplicate${result.merged === 1 ? "" : "s"}`,
-          );
-        }
-        if (result.linked > 0) {
-          parts.push(`linked ${result.linked} new`);
-        }
-        if (result.reactivated > 0) {
-          parts.push(`reactivated ${result.reactivated}`);
-        }
-        if (
-          result.merged === 0 &&
-          result.linked === 0 &&
-          result.reactivated === 0
-        ) {
-          parts.push(`processed ${result.added}`);
-        }
-        if (result.alreadyOnTeam > 0) {
-          parts.push(`${result.alreadyOnTeam} already on team`);
-        }
-        if (result.failed.length > 0) {
-          parts.push(`${result.failed.length} failed`);
-        }
-        successMessage = parts.join(" · ");
-      }
+      setPreviewLoading(false);
+
       setEntries((prev) =>
         prev.map((entry) =>
           entry.id === id
-            ? {
-                ...entry,
-                status: "success",
-                progress: 100,
-                message: successMessage,
-              }
+            ? { ...entry, status: "uploading", progress: 50 }
             : entry,
         ),
       );
-      router.refresh();
+
+      setPendingImport({
+        filename: file.name,
+        content,
+        encoding,
+        preview,
+      });
+
+      setEntries((prev) => prev.filter((entry) => entry.id !== id));
     } catch (err) {
+      setPreviewLoading(false);
       setEntries((prev) =>
         prev.map((entry) =>
           entry.id === id
@@ -209,6 +315,44 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
     }
   }
 
+  async function confirmPendingImport() {
+    if (!pendingImport) return;
+    const id = `${pendingImport.filename}-${Date.now()}`;
+    setEntries((prev) => [
+      {
+        id,
+        name: pendingImport.filename,
+        sizeLabel: "",
+        status: "uploading",
+        progress: 40,
+      },
+      ...prev,
+    ]);
+
+    try {
+      await runImport(
+        pendingImport.filename,
+        pendingImport.content,
+        pendingImport.encoding,
+        id,
+      );
+    } catch (err) {
+      setEntries((prev) =>
+        prev.map((entry) =>
+          entry.id === id
+            ? {
+                ...entry,
+                status: "failed",
+                progress: 100,
+                message: err instanceof Error ? err.message : "Import failed",
+              }
+            : entry,
+        ),
+      );
+      setPendingImport(null);
+    }
+  }
+
   async function handleFiles(fileList: FileList | File[]) {
     const files = Array.from(fileList).slice(0, 1);
     for (const file of files) {
@@ -221,89 +365,126 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
   const succeeded = entries.filter((e) => e.status === "success");
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) {
+          setPendingImport(null);
+        }
+      }}
+    >
       <DialogTrigger render={<Button type="button" variant="outline" />}>
         <Upload data-icon="inline-start" />
         Import
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Import roster</DialogTitle>
           <DialogDescription>
             Import a Lane4 HQ share pack (.lane4hq.json) to link athletes by
             opaque ID. If this team already has the same person (name + DOB), we
             merge into the shared profile instead of creating a duplicate. CSV /
-            SD3 / CL2 / HY3 from Team Manager are also supported.
+            SD3 / CL2 / HY3 from Team Manager show a preview with row-level
+            errors before import.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          <div
-            role="button"
-            tabIndex={0}
-            data-dragging={dragging || undefined}
-            aria-disabled={busy}
-            className={cn(
-              "border-input has-[input:focus]:border-ring has-[input:focus]:ring-ring/50 data-[dragging=true]:bg-accent/50 flex min-h-52 flex-col items-center justify-center gap-4 overflow-hidden rounded-sm border border-dashed p-6 text-center has-[input:focus]:ring-[3px]",
-              busy && "pointer-events-none opacity-60",
-            )}
-            onClick={() => inputRef.current?.click()}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                inputRef.current?.click();
+          {pendingImport ? (
+            <RosterImportPreview
+              pending={pendingImport}
+              busy={busy}
+              onCancel={() => setPendingImport(null)}
+              onConfirm={() => void confirmPendingImport()}
+              onDownloadErrors={() =>
+                downloadErrorCsv(
+                  pendingImport.preview.errors,
+                  pendingImport.filename,
+                )
               }
-            }}
-            onDragEnter={(e) => {
-              e.preventDefault();
-              setDragging(true);
-            }}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragging(true);
-            }}
-            onDragLeave={(e) => {
-              e.preventDefault();
-              setDragging(false);
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragging(false);
-              if (e.dataTransfer.files?.length) {
-                void handleFiles(e.dataTransfer.files);
-              }
-            }}
-          >
-            <input
-              ref={inputRef}
-              id={inputId}
-              type="file"
-              accept={ROSTER_ACCEPT}
-              disabled={busy}
-              className="sr-only"
-              aria-label="Upload roster file"
-              onChange={(e) => {
-                if (e.target.files?.length) {
-                  void handleFiles(e.target.files);
-                }
-                e.target.value = "";
-              }}
             />
-            <Upload className="size-10 stroke-1" aria-hidden />
-            <p className="text-base font-medium">
-              Drag &amp; Drop or Choose file to upload
-            </p>
-            <p className="text-muted-foreground text-sm">
-              Share pack, CSV, SD3, CL2, or HY3 · Up to{" "}
-              {MAX_FILE_BYTES / (1024 * 1024)} MB
-            </p>
-          </div>
+          ) : (
+            <>
+              <div
+                role="button"
+                tabIndex={0}
+                data-dragging={dragging || undefined}
+                aria-disabled={busy}
+                className={cn(
+                  "border-input has-[input:focus]:border-ring has-[input:focus]:ring-ring/50 data-[dragging=true]:bg-accent/50 flex min-h-52 flex-col items-center justify-center gap-4 overflow-hidden rounded-sm border border-dashed p-6 text-center has-[input:focus]:ring-[3px]",
+                  busy && "pointer-events-none opacity-60",
+                )}
+                onClick={() => inputRef.current?.click()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    inputRef.current?.click();
+                  }
+                }}
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  setDragging(true);
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragging(true);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  setDragging(false);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragging(false);
+                  if (e.dataTransfer.files?.length) {
+                    void handleFiles(e.dataTransfer.files);
+                  }
+                }}
+              >
+                <input
+                  ref={inputRef}
+                  id={inputId}
+                  type="file"
+                  accept={ROSTER_ACCEPT}
+                  disabled={busy}
+                  className="sr-only"
+                  aria-label="Upload roster file"
+                  onChange={(e) => {
+                    if (e.target.files?.length) {
+                      void handleFiles(e.target.files);
+                    }
+                    e.target.value = "";
+                  }}
+                />
+                <Upload className="size-10 stroke-1" aria-hidden />
+                <p className="text-base font-medium">
+                  Drag &amp; Drop or Choose file to upload
+                </p>
+                <p className="text-muted-foreground text-sm">
+                  Share pack, CSV, SD3, CL2, or HY3 · Up to{" "}
+                  {MAX_FILE_BYTES / (1024 * 1024)} MB
+                </p>
+              </div>
 
-          <div className="flex justify-center">
-            <Button type="button" variant="link" onClick={handleExportTemplate}>
-              Download CSV template
-            </Button>
-          </div>
+              <div className="flex justify-center">
+                <Button
+                  type="button"
+                  variant="link"
+                  onClick={handleExportTemplate}
+                >
+                  Download CSV template
+                </Button>
+              </div>
+            </>
+          )}
+
+          {previewLoading ? (
+            <div className="text-muted-foreground flex items-center gap-2 text-sm">
+              <Loader className="size-4 animate-spin" aria-hidden />
+              Checking rows…
+            </div>
+          ) : null}
 
           {uploading.length > 0 ? (
             <div className="flex flex-col gap-3">
@@ -368,6 +549,107 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
   );
 }
 
+function RosterImportPreview({
+  pending,
+  busy,
+  onCancel,
+  onConfirm,
+  onDownloadErrors,
+}: {
+  pending: PendingFileImport;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  onDownloadErrors: () => void;
+}) {
+  const { preview, filename } = pending;
+  const canImport = preview.validCount > 0;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="bg-muted rounded-lg p-4">
+        <p className="font-medium">{filename}</p>
+        <p className="text-muted-foreground mt-1 text-sm">
+          {preview.totalRows} row{preview.totalRows === 1 ? "" : "s"} ·{" "}
+          <span className="text-foreground">{preview.validCount} valid</span>
+          {" · "}
+          <span
+            className={
+              preview.invalidCount > 0 ? "text-destructive" : "text-foreground"
+            }
+          >
+            {preview.invalidCount} invalid
+          </span>
+        </p>
+      </div>
+
+      {preview.errors.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          <h3 className="text-sm font-medium">Invalid rows</h3>
+          <div className="max-h-64 overflow-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-14">Row</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead className="w-28">Field</TableHead>
+                  <TableHead>Message</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {preview.errors.map((error, index) => (
+                  <TableRow key={`${error.row}-${error.field}-${index}`}>
+                    <TableCell>{error.row}</TableCell>
+                    <TableCell className="max-w-[8rem] truncate">
+                      {error.name}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs">
+                      {error.field}
+                    </TableCell>
+                    <TableCell className="text-sm">{error.message}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      ) : null}
+
+      <DialogFooter className="gap-2 sm:justify-between">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={busy}
+        >
+          Cancel
+        </Button>
+        <div className="flex flex-wrap gap-2">
+          {preview.errors.length > 0 ? (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onDownloadErrors}
+              disabled={busy}
+            >
+              Download errors CSV
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            onClick={onConfirm}
+            disabled={busy || !canImport}
+          >
+            {canImport
+              ? `Import ${preview.validCount} valid row${preview.validCount === 1 ? "" : "s"}`
+              : "No valid rows"}
+          </Button>
+        </div>
+      </DialogFooter>
+    </div>
+  );
+}
+
 function ImportFileCard({
   entry,
   onDismiss,
@@ -382,16 +664,18 @@ function ImportFileCard({
           <FileText className="size-8 shrink-0" aria-hidden />
           <div className="flex min-w-0 flex-col">
             <p className="truncate font-medium">{entry.name}</p>
-            <p
-              className={cn(
-                "text-xs",
-                entry.status === "failed"
-                  ? "text-destructive"
-                  : "text-muted-foreground",
-              )}
-            >
-              {entry.sizeLabel}
-            </p>
+            {entry.sizeLabel ? (
+              <p
+                className={cn(
+                  "text-xs",
+                  entry.status === "failed"
+                    ? "text-destructive"
+                    : "text-muted-foreground",
+                )}
+              >
+                {entry.sizeLabel}
+              </p>
+            ) : null}
           </div>
         </div>
         {onDismiss || entry.status === "uploading" ? (

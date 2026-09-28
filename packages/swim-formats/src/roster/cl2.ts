@@ -88,14 +88,16 @@ function parseCl2D01Line(
 
 /** Hy-Tek CL2 / SD3 roster extraction (Team Manager & Meet Manager exports). */
 export function parseCl2Roster(content: string): ParsedRosterRow[] {
-  const lines = content.split(/\r?\n/).filter((line) => line.trim());
+  const allLines = content.split(/\r?\n/);
   const swimmers = new Map<string, ParsedRosterRow>();
   const seasonYear = extractSeasonYear(content) ?? new Date().getFullYear();
 
-  for (const line of lines) {
+  for (let i = 0; i < allLines.length; i++) {
+    const line = allLines[i]!;
+    if (!line.trim()) continue;
     if (line.startsWith("D01")) {
       const parsed = parseCl2D01Line(line, seasonYear);
-      if (parsed) mergeSwimmer(swimmers, parsed);
+      if (parsed) mergeSwimmer(swimmers, { ...parsed, sourceLine: i + 1 });
       continue;
     }
 
