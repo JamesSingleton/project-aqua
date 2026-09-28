@@ -1266,7 +1266,12 @@ export async function addSwimmer(
   if (governingBodyId) {
     const existing = await findSwimmerByGoverningBodyId(governingBodyId);
     if (existing) {
-      return createMembershipForTeam(organizationId, existing.id, data);
+      const result = await createMembershipForTeam(
+        organizationId,
+        existing.id,
+        data,
+      );
+      return { ...result, linkedExisting: true as const };
     }
   }
 
@@ -1298,7 +1303,12 @@ export async function addSwimmer(
       dateOfBirth: data.dateOfBirth,
     });
     if (matches.length === 1) {
-      return createMembershipForTeam(organizationId, matches[0]!.id, data);
+      const result = await createMembershipForTeam(
+        organizationId,
+        matches[0]!.id,
+        data,
+      );
+      return { ...result, linkedExisting: true as const };
     }
   }
 

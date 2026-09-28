@@ -1,7 +1,9 @@
 import { getSession } from "@lane4hq/auth/session";
 import {
+  getMember,
   getOrganizationName,
   getOrganizationTeamType,
+  getTeamCapabilities,
   getUserTeams,
   requireTeamMember,
 } from "@lane4hq/db/authz";
@@ -17,6 +19,7 @@ import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { BreadcrumbEntitiesProvider } from "@/components/breadcrumb-entities";
 import { TeamBreadcrumb } from "@/components/team-breadcrumb";
+import { TeamCapabilitiesProvider } from "@/components/team-capabilities";
 
 export async function generateMetadata({
   params,
@@ -72,30 +75,34 @@ export default async function TeamIdLayout({
   }));
   const teamName =
     teamsWithPlans.find((team) => team.id === teamId)?.name ?? "Team";
+  const member = await getMember(session.user.id, teamId);
+  const capabilities = getTeamCapabilities(member?.role);
 
   return (
-    <SidebarProvider>
-      <BreadcrumbEntitiesProvider>
-        <AppSidebar
-          teamId={teamId}
-          teamType={teamType}
-          teams={teamsWithPlans}
-          user={session.user}
-        />
-        <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-            <div className="flex items-center gap-2 px-4">
-              <SidebarTrigger className="-ml-1" />
-              <Separator orientation="vertical" className="mr-2 h-4" />
-              <TeamBreadcrumb teamId={teamId} teamName={teamName} />
+    <TeamCapabilitiesProvider capabilities={capabilities}>
+      <SidebarProvider>
+        <BreadcrumbEntitiesProvider>
+          <AppSidebar
+            teamId={teamId}
+            teamType={teamType}
+            teams={teamsWithPlans}
+            user={session.user}
+          />
+          <SidebarInset>
+            <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+              <div className="flex items-center gap-2 px-4">
+                <SidebarTrigger className="-ml-1" />
+                <Separator orientation="vertical" className="mr-2 h-4" />
+                <TeamBreadcrumb teamId={teamId} teamName={teamName} />
+              </div>
+            </header>
+            <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 pt-0">
+              {children}
             </div>
-          </header>
-          <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 pt-0">
-            {children}
-          </div>
-          {modal}
-        </SidebarInset>
-      </BreadcrumbEntitiesProvider>
-    </SidebarProvider>
+            {modal}
+          </SidebarInset>
+        </BreadcrumbEntitiesProvider>
+      </SidebarProvider>
+    </TeamCapabilitiesProvider>
   );
 }

@@ -1,6 +1,6 @@
 {
-  "id": "e33aabc8-a26d-45c9-954d-0cab7759ff4a",
-  "prevId": "d5a6182b-2e2a-449a-8f8d-a59f2a3faff6",
+  "id": "a35daceb-f8d7-4af2-ad8f-1cbb40be665c",
+  "prevId": "e33aabc8-a26d-45c9-954d-0cab7759ff4a",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -2256,6 +2256,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'pending'"
+        },
+        "relay_only": {
+          "name": "relay_only",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "notes": {
           "name": "notes",

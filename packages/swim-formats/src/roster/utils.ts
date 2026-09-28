@@ -154,6 +154,7 @@ export function mergeSwimmer(
   candidate: Partial<ParsedRosterRow> & {
     firstName: string;
     lastName: string;
+    sourceLine?: number;
   },
 ): void {
   const dateOfBirth =
@@ -172,6 +173,10 @@ export function mergeSwimmer(
     practiceGroup: candidate.practiceGroup,
     classYear: candidate.classYear,
     usaMemberId: candidate.usaMemberId,
+    middleName: candidate.middleName,
+    preferredName: candidate.preferredName,
+    contacts: candidate.contacts,
+    sourceLine: candidate.sourceLine,
   };
 
   const key = swimmerKey(row);
@@ -186,6 +191,10 @@ export function mergeSwimmer(
     practiceGroup: row.practiceGroup ?? existing.practiceGroup,
     classYear: row.classYear ?? existing.classYear,
     usaMemberId: row.usaMemberId ?? existing.usaMemberId,
+    middleName: row.middleName ?? existing.middleName,
+    preferredName: row.preferredName ?? existing.preferredName,
+    contacts: row.contacts ?? existing.contacts,
+    sourceLine: existing.sourceLine ?? row.sourceLine,
   });
 }
 

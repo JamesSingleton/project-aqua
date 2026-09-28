@@ -21,8 +21,15 @@ import {
   DropdownMenuTrigger,
 } from "@lane4hq/ui/components/dropdown-menu";
 import { Separator } from "@lane4hq/ui/components/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@lane4hq/ui/components/tooltip";
 import { ChevronDown, Download } from "lucide-react";
 import { useState } from "react";
+import { useTeamCapabilities } from "@/components/team-capabilities";
+import { TEAM_MANAGE_ROLE_TOOLTIP } from "@/lib/team-role-messages";
 import { exportMeetAction, exportMeetZipAction } from "../actions";
 import { confirmMeetEntriesViewOnExport } from "../meet-entries-view";
 import { exportMeetEntriesCsvAction } from "../meet-events-actions";
@@ -138,10 +145,25 @@ export function MeetExportButtons({
   meetName: string;
   hasLineup: boolean;
 }) {
+  const { canManageTeam } = useTeamCapabilities();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const baseName = meetName.replace(/[^\w.-]+/g, "_");
+
+  if (!canManageTeam) {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={<Button type="button" variant="outline" size="sm" disabled />}
+        >
+          <Download data-icon="inline-start" />
+          Export
+        </TooltipTrigger>
+        <TooltipContent>{TEAM_MANAGE_ROLE_TOOLTIP}</TooltipContent>
+      </Tooltip>
+    );
+  }
 
   async function runJob(job: ExportJob) {
     if (hasLineup === false) return;

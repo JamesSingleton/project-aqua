@@ -14,6 +14,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
 import { useDataTable } from "@/hooks/use-data-table";
+import { rosterExportInputFromTableState } from "@/lib/roster-export-input";
 import type { Athlete } from "@/types";
 import type { Option } from "@/types/data-table";
 import { columns } from "./columns";
@@ -108,7 +109,12 @@ export function RosterTable({
     setExporting(true);
     setExportMessage("");
     try {
-      const csv = await exportRosterCsvAction(teamId, { seasonId });
+      const exportInput = rosterExportInputFromTableState({
+        columnFilters: table.state.columnFilters,
+        sorting,
+        seasonId,
+      });
+      const csv = await exportRosterCsvAction(teamId, exportInput);
       const blob = new Blob([csv], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
