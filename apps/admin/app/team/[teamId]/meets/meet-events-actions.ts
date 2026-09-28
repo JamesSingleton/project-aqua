@@ -35,7 +35,10 @@ import {
   BUILT_IN_MEET_EVENT_PRESETS,
   type MeetEventPresetRow,
 } from "@lane4hq/swim-core/meet-event-presets";
-import { formatMeetLineupCsv } from "@lane4hq/swim-core/meet-lineup-snapshot";
+import {
+  formatMeetLineupCsv,
+  hostPackLineup,
+} from "@lane4hq/swim-core/meet-lineup-snapshot";
 import { parseMeetResultsCsv } from "@lane4hq/swim-core/meet-results-csv";
 import { parseTime } from "@lane4hq/swim-core/times";
 import {
@@ -400,7 +403,7 @@ export async function exportMeetEntriesCsvAction(
   await requireMeetImportAccess(teamId, session?.user?.id);
   const loaded = await loadMeetLineupSnapshot(teamId, meetId);
   if (!loaded) throw new Error("Meet not found");
-  return formatMeetLineupCsv(loaded.snapshot);
+  return formatMeetLineupCsv(hostPackLineup(loaded.snapshot));
 }
 
 export async function importMeetResultsCsvAction(

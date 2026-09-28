@@ -1,6 +1,10 @@
 import { formatDateOnly, parseDateOnly } from "./calendar-date";
 import { isRelayStroke } from "./entry-limits";
 import { formatEventName, formatGenderLabel } from "./events";
+import {
+  indexMeetCommitments,
+  type MeetCommitmentMaps,
+} from "./meet-attendance";
 import { deriveRelayLetter } from "./relay-legs";
 import { blocksMeetEntries, parseTeamType } from "./team-types";
 import { formatTime } from "./times";
@@ -95,6 +99,8 @@ export type BuildMeetLineupSnapshotInput = {
 export type LineupInclusion = {
   scratched: boolean;
   notGoing: boolean;
+  pending: boolean;
+  meetNotEligible: boolean;
   ineligible: boolean;
   missingFromRoster: boolean;
 };
@@ -102,7 +108,11 @@ export type LineupInclusion = {
 /** Host packs omit these people; paper review keeps them. */
 export function isHostPackExcluded(inclusion: LineupInclusion): boolean {
   return (
-    inclusion.notGoing || inclusion.ineligible || inclusion.missingFromRoster
+    inclusion.notGoing ||
+    inclusion.pending ||
+    inclusion.meetNotEligible ||
+    inclusion.ineligible ||
+    inclusion.missingFromRoster
   );
 }
 
@@ -224,13 +234,17 @@ function memberName(member: MeetLineupMember | undefined): {
 function inclusionFor(
   membershipId: string,
   member: MeetLineupMember | undefined,
-  notGoingIds: Set<string>,
+  maps: MeetCommitmentMaps,
   scratched: boolean,
 ): LineupInclusion {
+  const profileIneligible = blocksMeetEntries(member?.eligibilityStatus);
+  const meetNotEligible = maps.meetNotEligibleIds.has(membershipId);
   return {
     scratched,
-    notGoing: notGoingIds.has(membershipId),
-    ineligible: blocksMeetEntries(member?.eligibilityStatus),
+    notGoing: maps.notGoingIds.has(membershipId),
+    pending: maps.pendingIds.has(membershipId),
+    meetNotEligible,
+    ineligible: profileIneligible || meetNotEligible,
     missingFromRoster: !member,
   };
 }
@@ -265,11 +279,7 @@ export function buildMeetLineupSnapshot(
   const membersById = new Map(
     input.members.map((member) => [member.membershipId, member] as const),
   );
-  const notGoingIds = new Set(
-    (input.commitments ?? [])
-      .filter((commitment) => commitment.status === "not_going")
-      .map((commitment) => commitment.membershipId),
-  );
+  const commitmentMaps = indexMeetCommitments(input.commitments);
   const eventById = new Map(input.events.map((event) => [event.id, event]));
 
   const events = input.events
@@ -301,7 +311,7 @@ export function buildMeetLineupSnapshot(
       inclusion: inclusionFor(
         entry.membershipId,
         member,
-        notGoingIds,
+        commitmentMaps,
         entry.status === "scratched",
       ),
     });
@@ -334,7 +344,7 @@ export function buildMeetLineupSnapshot(
       lastName,
       legOrder: leg.legOrder,
       classYear: optionalText(member?.classYear) ?? null,
-      inclusion: inclusionFor(leg.membershipId, member, notGoingIds, false),
+      inclusion: inclusionFor(leg.membershipId, member, commitmentMaps, false),
     });
     groups.set(key, group);
   }
@@ -374,7 +384,7 @@ export function buildMeetLineupSnapshot(
     const inclusion = inclusionFor(
       membershipId,
       member,
-      notGoingIds,
+      commitmentMaps,
       Boolean(anyIndividual?.inclusion.scratched) && !onRelay,
     );
     return athleteFromMember(

@@ -1,9 +1,11 @@
 import {
   getMeetById,
+  getMeetCommitments,
   getMeetEntryProgressCounts,
   getMeetRelayLegs,
 } from "@lane4hq/db/queries/meets";
 import { formatDateOnlyLabel } from "@lane4hq/swim-core/calendar-date";
+import { listPendingExportExclusions } from "@lane4hq/swim-core/meet-attendance";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SetBreadcrumbEntity } from "@/components/breadcrumb-entities";
@@ -25,12 +27,21 @@ export default async function MeetDetailLayout({
   const meet = await getMeetById(meetId, teamId);
   if (!meet) notFound();
 
-  const [entryProgress, relayLegs] = await Promise.all([
+  const [entryProgress, relayLegs, commitments] = await Promise.all([
     getMeetEntryProgressCounts([meetId]),
     getMeetRelayLegs(meetId),
+    getMeetCommitments(meetId),
   ]);
   const hasLineup =
     (entryProgress.get(meetId)?.entryCount ?? 0) > 0 || relayLegs.length > 0;
+  const pendingExportSwimmers = listPendingExportExclusions(
+    commitments.map((row) => ({
+      membershipId: row.membershipId,
+      status: row.status,
+      firstName: row.firstName,
+      lastName: row.lastName,
+    })),
+  );
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -79,6 +90,7 @@ export default async function MeetDetailLayout({
               meetId={meetId}
               meetName={meet.name}
               hasLineup={hasLineup}
+              pendingExportSwimmers={pendingExportSwimmers}
             />
             <DeleteMeetButton
               teamId={teamId}

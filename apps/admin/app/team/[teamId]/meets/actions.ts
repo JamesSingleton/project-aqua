@@ -73,6 +73,11 @@ import {
   matchResultAthletes,
 } from "@lane4hq/swim-core/meet-athlete-match";
 import {
+  blocksMeetEntryForAttendance,
+  indexMeetCommitments,
+  type MeetAttendanceUiStatus,
+} from "@lane4hq/swim-core/meet-attendance";
+import {
   detectMeetEventImportConflicts,
   type EventConflictResolution,
   resolveImportedEventForMerge,
@@ -1819,7 +1824,7 @@ export async function setMeetAttendanceAction(
   teamId: string,
   meetId: string,
   membershipId: string,
-  status: "not_going" | null,
+  status: MeetAttendanceUiStatus,
   notes?: string,
 ) {
   const session = await getSession();
@@ -1831,7 +1836,7 @@ export async function setMeetAttendanceAction(
   const meet = await getMeetById(meetId, teamId);
   if (!meet) throw new Error("Meet not found");
 
-  if (status == null) {
+  if (status === "committed") {
     await deleteMeetCommitment(meetId, membershipId);
   } else {
     await upsertMeetCommitment(meetId, membershipId, status, notes);
@@ -1843,7 +1848,7 @@ export async function setMeetAttendanceBulkAction(
   teamId: string,
   meetId: string,
   membershipIds: string[],
-  status: "not_going" | null,
+  status: MeetAttendanceUiStatus,
 ) {
   const session = await getSession();
   await requireTeamRole(session?.user?.id, teamId, [
@@ -1859,7 +1864,7 @@ export async function setMeetAttendanceBulkAction(
 
   await Promise.all(
     uniqueIds.map((membershipId) =>
-      status == null
+      status === "committed"
         ? deleteMeetCommitment(meetId, membershipId)
         : upsertMeetCommitment(meetId, membershipId, status),
     ),
@@ -1884,8 +1889,23 @@ export async function setMeetCommitmentAction(
       notes,
     );
   }
-  if (status === "committed" || status === "pending") {
-    return setMeetAttendanceAction(teamId, meetId, membershipId, null, notes);
+  if (status === "committed") {
+    return setMeetAttendanceAction(
+      teamId,
+      meetId,
+      membershipId,
+      "committed",
+      notes,
+    );
+  }
+  if (status === "pending") {
+    return setMeetAttendanceAction(
+      teamId,
+      meetId,
+      membershipId,
+      "pending",
+      notes,
+    );
   }
 }
 
@@ -1904,7 +1924,15 @@ export async function setMeetCommitmentsBulkAction(
       "not_going",
     );
   }
-  return setMeetAttendanceBulkAction(teamId, meetId, membershipIds, null);
+  if (status === "committed") {
+    return setMeetAttendanceBulkAction(
+      teamId,
+      meetId,
+      membershipIds,
+      "committed",
+    );
+  }
+  return setMeetAttendanceBulkAction(teamId, meetId, membershipIds, "pending");
 }
 
 export async function addMeetEntryAction(
@@ -1943,11 +1971,13 @@ export async function addMeetEntryAction(
   const swimmer = roster.find((r) => r.membershipId === data.membershipId);
   if (!swimmer) throw new Error("Swimmer not found on roster");
 
-  const notGoing = commitments.find(
-    (c) => c.membershipId === data.membershipId && c.status === "not_going",
+  const blocked = commitments.find(
+    (c) =>
+      c.membershipId === data.membershipId &&
+      blocksMeetEntryForAttendance(c.status),
   );
-  if (notGoing) {
-    throw new Error("This swimmer is marked not going to this meet.");
+  if (blocked) {
+    throw new Error("This swimmer cannot be entered in events for this meet.");
   }
 
   if (blocksMeetEntries(swimmer.eligibilityStatus)) {
@@ -2211,14 +2241,11 @@ export async function applySuggestedLineupAction(
     events.map((e) => e.eventKey),
   );
 
-  const notGoingIds = new Set(
-    commitments
-      .filter((c) => c.status === "not_going")
-      .map((c) => c.membershipId),
-  );
+  const commitmentMaps = indexMeetCommitments(commitments);
   const pool = roster.filter(
     (r) =>
-      !notGoingIds.has(r.membershipId) &&
+      !commitmentMaps.notGoingIds.has(r.membershipId) &&
+      !commitmentMaps.meetNotEligibleIds.has(r.membershipId) &&
       !blocksMeetEntries(r.eligibilityStatus),
   );
 

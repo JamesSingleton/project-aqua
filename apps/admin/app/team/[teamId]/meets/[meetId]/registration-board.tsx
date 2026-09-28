@@ -22,6 +22,11 @@ import {
   isSwimmerEligibleForEvent,
 } from "@lane4hq/swim-core/events";
 import {
+  MEET_ATTENDANCE_UI_LABELS,
+  type MeetAttendanceUiStatus,
+  resolveMeetAttendanceUiStatus,
+} from "@lane4hq/swim-core/meet-attendance";
+import {
   deriveRelayLetter,
   formatAssignmentCountLine,
   isRelayAlternateSlot,
@@ -52,6 +57,7 @@ import {
   DropdownMenuTrigger,
 } from "@lane4hq/ui/components/dropdown-menu";
 import { Input } from "@lane4hq/ui/components/input";
+import { Label } from "@lane4hq/ui/components/label";
 import {
   Select,
   SelectContent,
@@ -83,6 +89,7 @@ import {
   addMeetEntryAction,
   deleteMeetEntryAction,
   setMeetAttendanceAction,
+  setMeetAttendanceBulkAction,
   updateMeetEntryAction,
 } from "../actions";
 import { removeMeetRelaySlotAction } from "../relay-actions";
@@ -156,21 +163,46 @@ type RosterFilter =
   | "all"
   | "has_entries"
   | "no_entries"
+  | "committed"
+  | "pending"
   | "not_going"
+  | "not_eligible"
   | "ineligible";
 
-type RosterSort = "last_name" | "first_name" | "group";
+const ATTENDANCE_FILTERS: MeetAttendanceUiStatus[] = [
+  "committed",
+  "pending",
+  "not_going",
+  "not_eligible",
+];
 
 function rowStatusLabel(
-  notGoing: boolean,
+  attendance: MeetAttendanceUiStatus,
   eligibilityStatus: EligibilityStatus | null,
 ) {
   if (blocksMeetEntries(eligibilityStatus)) {
     return ELIGIBILITY_STATUS_LABELS.ineligible;
   }
-  if (notGoing) return "Not going";
+  if (attendance !== "committed") {
+    return MEET_ATTENDANCE_UI_LABELS[attendance];
+  }
   return null;
 }
+
+function attendanceFilterCount(
+  roster: RosterRow[],
+  attendanceByMembership: Map<string, string>,
+  status: MeetAttendanceUiStatus,
+) {
+  return roster.filter(
+    (row) =>
+      resolveMeetAttendanceUiStatus(
+        attendanceByMembership.get(row.membershipId),
+      ) === status,
+  ).length;
+}
+
+type RosterSort = "last_name" | "first_name" | "group";
 
 function formatEventLine(event: {
   eventNumber: number | null;
@@ -355,6 +387,7 @@ export function RegistrationBoard({
   const [filter, setFilter] = useState<RosterFilter>("all");
   const [sort, setSort] = useState<RosterSort>("last_name");
   const [groupFilter, setGroupFilter] = useState<string>("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [membershipId, setMembershipId] = useState("");
   const [seedDrafts, setSeedDrafts] = useState<Record<string, string>>({});
   const [exhibitionDrafts, setExhibitionDrafts] = useState<
@@ -442,7 +475,10 @@ export function RegistrationBoard({
 
       if (filter === "has_entries" && !hasAssignment) return false;
       if (filter === "no_entries" && hasAssignment) return false;
-      if (filter === "not_going" && status !== "not_going") return false;
+      if (ATTENDANCE_FILTERS.includes(filter as MeetAttendanceUiStatus)) {
+        const ui = resolveMeetAttendanceUiStatus(status);
+        if (ui !== filter) return false;
+      }
       if (
         filter === "ineligible" &&
         !blocksMeetEntries(row.eligibilityStatus)
@@ -483,14 +519,17 @@ export function RegistrationBoard({
   }, [filteredRoster, membershipId]);
 
   const selectedSwimmer = roster.find((r) => r.membershipId === membershipId);
-  const attendanceStatus = membershipId
-    ? attendanceByMembership.get(membershipId)
-    : undefined;
-  const isNotGoing = attendanceStatus === "not_going";
+  const selectedAttendance = membershipId
+    ? resolveMeetAttendanceUiStatus(attendanceByMembership.get(membershipId))
+    : "committed";
   const isProfileIneligible = blocksMeetEntries(
     selectedSwimmer?.eligibilityStatus,
   );
-  const isBlocked = isNotGoing || isProfileIneligible;
+  const isBlocked =
+    isProfileIneligible ||
+    selectedAttendance === "not_going" ||
+    selectedAttendance === "not_eligible";
+  const isPendingAttendance = selectedAttendance === "pending";
 
   const swimmerEntries = useMemo(
     () =>
@@ -666,20 +705,47 @@ export function RegistrationBoard({
     });
   }
 
-  function setNotGoingForMember(targetMembershipId: string, notGoing: boolean) {
-    setPendingAction(`attendance:${notGoing ? "not_going" : "clear"}`);
+  function setAttendanceForMember(
+    targetMembershipId: string,
+    status: MeetAttendanceUiStatus,
+  ) {
+    setPendingAction(`attendance:${targetMembershipId}:${status}`);
     startTransition(async () => {
       try {
         await setMeetAttendanceAction(
           teamId,
           meetId,
           targetMembershipId,
-          notGoing ? "not_going" : null,
+          status,
         );
         refresh();
       } finally {
         setPendingAction(null);
       }
+    });
+  }
+
+  function setAttendanceBulk(status: MeetAttendanceUiStatus) {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setPendingAction(`attendance:bulk:${status}`);
+    startTransition(async () => {
+      try {
+        await setMeetAttendanceBulkAction(teamId, meetId, ids, status);
+        setSelectedIds(new Set());
+        refresh();
+      } finally {
+        setPendingAction(null);
+      }
+    });
+  }
+
+  function toggleSelected(id: string, checked: boolean) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
     });
   }
 
@@ -762,6 +828,17 @@ export function RegistrationBoard({
     ? swimmerAgeOnDate(selectedSwimmer.dateOfBirth, meetStartDate)
     : null;
 
+  const filterLabel =
+    filter === "all"
+      ? `All (${roster.length})`
+      : filter === "has_entries"
+        ? `Has entries (${roster.filter((r) => (assignmentByMembership.events.get(r.membershipId) ?? 0) + (assignmentByMembership.alts.get(r.membershipId) ?? 0) > 0).length})`
+        : filter === "no_entries"
+          ? `No entries yet (${roster.filter((r) => (assignmentByMembership.events.get(r.membershipId) ?? 0) + (assignmentByMembership.alts.get(r.membershipId) ?? 0) === 0).length})`
+          : filter === "ineligible"
+            ? `Ineligible (${roster.filter((r) => blocksMeetEntries(r.eligibilityStatus)).length})`
+            : `${MEET_ATTENDANCE_UI_LABELS[filter as MeetAttendanceUiStatus]} (${attendanceFilterCount(roster, attendanceByMembership, filter as MeetAttendanceUiStatus)})`;
+
   return (
     <div className="flex min-h-112 min-w-0 w-full flex-col gap-4 lg:flex-row lg:items-stretch">
       {/* Lane board */}
@@ -777,6 +854,48 @@ export function RegistrationBoard({
               aria-label="Search swimmers"
             />
           </div>
+          {selectedIds.size > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-muted-foreground text-xs">
+                {selectedIds.size} selected
+              </span>
+              <Select
+                onValueChange={(value) => {
+                  if (
+                    value === "committed" ||
+                    value === "pending" ||
+                    value === "not_going" ||
+                    value === "not_eligible"
+                  ) {
+                    setAttendanceBulk(value);
+                  }
+                }}
+              >
+                <SelectTrigger className="h-8 w-auto min-w-40">
+                  <SelectValue placeholder="Set status…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {ATTENDANCE_FILTERS.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {MEET_ATTENDANCE_UI_LABELS[status]}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8"
+                disabled={pending}
+                onClick={() => setSelectedIds(new Set())}
+              >
+                Clear
+              </Button>
+            </div>
+          ) : null}
           <div className="flex flex-wrap items-center gap-2">
             <Select
               value={filter}
@@ -785,25 +904,21 @@ export function RegistrationBoard({
               }}
             >
               <SelectTrigger className="h-8 w-auto min-w-36">
-                <SelectValue>
-                  {filter === "all"
-                    ? `All (${roster.length})`
-                    : filter === "has_entries"
-                      ? `Has entries (${roster.filter((r) => (assignmentByMembership.events.get(r.membershipId) ?? 0) + (assignmentByMembership.alts.get(r.membershipId) ?? 0) > 0).length})`
-                      : filter === "no_entries"
-                        ? `No entries yet (${roster.filter((r) => (assignmentByMembership.events.get(r.membershipId) ?? 0) + (assignmentByMembership.alts.get(r.membershipId) ?? 0) === 0 && !attendanceByMembership.get(r.membershipId)).length})`
-                        : filter === "not_going"
-                          ? `Not going (${roster.filter((r) => attendanceByMembership.get(r.membershipId) === "not_going").length})`
-                          : `Ineligible (${roster.filter((r) => blocksMeetEntries(r.eligibilityStatus)).length})`}
-                </SelectValue>
+                <SelectValue>{filterLabel}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="has_entries">Has entries</SelectItem>
                   <SelectItem value="no_entries">No entries yet</SelectItem>
-                  <SelectItem value="not_going">Not going</SelectItem>
-                  <SelectItem value="ineligible">Ineligible</SelectItem>
+                  {ATTENDANCE_FILTERS.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {MEET_ATTENDANCE_UI_LABELS[status]}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="ineligible">
+                    Ineligible (profile)
+                  </SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>
@@ -887,8 +1002,9 @@ export function RegistrationBoard({
             </li>
           ) : (
             filteredRoster.map((row) => {
-              const notGoing =
-                attendanceByMembership.get(row.membershipId) === "not_going";
+              const attendance = resolveMeetAttendanceUiStatus(
+                attendanceByMembership.get(row.membershipId),
+              );
               const profileIneligible = blocksMeetEntries(
                 row.eligibilityStatus,
               );
@@ -903,7 +1019,7 @@ export function RegistrationBoard({
               const active = row.membershipId === membershipId;
               const rowAge = swimmerAgeOnDate(row.dateOfBirth, meetStartDate);
               const statusLabel = rowStatusLabel(
-                notGoing,
+                attendance,
                 row.eligibilityStatus,
               );
 
@@ -915,6 +1031,15 @@ export function RegistrationBoard({
                       active && "bg-muted/60",
                     )}
                   >
+                    <Checkbox
+                      className="mt-2 shrink-0"
+                      checked={selectedIds.has(row.membershipId)}
+                      onCheckedChange={(checked) =>
+                        toggleSelected(row.membershipId, checked === true)
+                      }
+                      aria-label={`Select ${row.firstName} ${row.lastName}`}
+                      onClick={(event) => event.stopPropagation()}
+                    />
                     <button
                       type="button"
                       className="flex min-w-0 flex-1 flex-col gap-0.5 py-1 pl-1 text-left"
@@ -936,7 +1061,10 @@ export function RegistrationBoard({
                               className={cn(
                                 "inline-block size-1.5 rounded-full",
                                 profileIneligible && "bg-amber-500",
-                                notGoing && "bg-destructive",
+                                attendance === "not_going" && "bg-destructive",
+                                attendance === "pending" && "bg-amber-500",
+                                attendance === "not_eligible" &&
+                                  "bg-muted-foreground",
                               )}
                               aria-hidden
                             />
@@ -972,6 +1100,16 @@ export function RegistrationBoard({
                         }
                       />
                       <DropdownMenuContent align="end">
+                        {ATTENDANCE_FILTERS.map((status) => (
+                          <DropdownMenuItem
+                            key={status}
+                            onClick={() =>
+                              setAttendanceForMember(row.membershipId, status)
+                            }
+                          >
+                            {MEET_ATTENDANCE_UI_LABELS[status]}
+                          </DropdownMenuItem>
+                        ))}
                         {profileIneligible ? (
                           <DropdownMenuItem
                             render={
@@ -983,23 +1121,7 @@ export function RegistrationBoard({
                           >
                             Update eligibility on profile
                           </DropdownMenuItem>
-                        ) : notGoing ? (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              setNotGoingForMember(row.membershipId, false)
-                            }
-                          >
-                            Attending this meet
-                          </DropdownMenuItem>
-                        ) : (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              setNotGoingForMember(row.membershipId, true)
-                            }
-                          >
-                            Won&apos;t attend this meet
-                          </DropdownMenuItem>
-                        )}
+                        ) : null}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -1045,27 +1167,39 @@ export function RegistrationBoard({
               </div>
               {!isProfileIneligible ? (
                 <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-                  {isNotGoing ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
+                  <Label htmlFor="meet-attendance-status" className="sr-only">
+                    Meet attendance
+                  </Label>
+                  <Select
+                    value={selectedAttendance}
+                    onValueChange={(value) => {
+                      if (
+                        value === "committed" ||
+                        value === "pending" ||
+                        value === "not_going" ||
+                        value === "not_eligible"
+                      ) {
+                        setAttendanceForMember(membershipId, value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger
+                      id="meet-attendance-status"
+                      className="h-8 w-[10.5rem]"
                       disabled={pending}
-                      onClick={() => setNotGoingForMember(membershipId, false)}
                     >
-                      Attending this meet
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={pending}
-                      onClick={() => setNotGoingForMember(membershipId, true)}
-                    >
-                      Won&apos;t attend this meet
-                    </Button>
-                  )}
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {ATTENDANCE_FILTERS.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {MEET_ATTENDANCE_UI_LABELS[status]}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </div>
               ) : null}
             </header>
@@ -1091,13 +1225,31 @@ export function RegistrationBoard({
                   </AlertDescription>
                 </Alert>
               ) : null}
-              {isNotGoing ? (
+              {selectedAttendance === "not_going" ? (
                 <Alert>
                   <AlertTitle>Not going to this meet</AlertTitle>
                   <AlertDescription>
                     This swimmer will not export and cannot be entered in
-                    events. Use &ldquo;Attending this meet&rdquo; above if plans
-                    change.
+                    events. Set status to Committed if plans change.
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+              {selectedAttendance === "not_eligible" ? (
+                <Alert>
+                  <AlertTitle>Not eligible for this meet</AlertTitle>
+                  <AlertDescription>
+                    This swimmer will not export and cannot be entered in
+                    events.
+                  </AlertDescription>
+                </Alert>
+              ) : null}
+              {isPendingAttendance ? (
+                <Alert>
+                  <AlertTriangleIcon />
+                  <AlertTitle>Pending commitment</AlertTitle>
+                  <AlertDescription>
+                    Entries are allowed, but this swimmer is excluded from
+                    HY3/CL2/SD3 export until status is Committed.
                   </AlertDescription>
                 </Alert>
               ) : null}

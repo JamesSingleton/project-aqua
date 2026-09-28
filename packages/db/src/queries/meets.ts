@@ -477,6 +477,7 @@ export async function upsertMeetCommitment(
   status: "pending" | "committed" | "declined" | "not_going" | "not_eligible",
   notes?: string,
 ) {
+  const storedStatus = status === "declined" ? "not_going" : status;
   const [existing] = await db
     .select()
     .from(meetCommitments)
@@ -492,7 +493,7 @@ export async function upsertMeetCommitment(
     await db
       .update(meetCommitments)
       .set({
-        status,
+        status: storedStatus,
         notes: notes ?? existing.notes,
         updatedAt: new Date(),
       })
@@ -505,7 +506,7 @@ export async function upsertMeetCommitment(
     id,
     meetId,
     membershipId,
-    status,
+    status: storedStatus,
     notes: notes ?? null,
   });
   return id;

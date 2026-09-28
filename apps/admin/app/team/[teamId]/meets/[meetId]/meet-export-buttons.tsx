@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@lane4hq/ui/components/alert";
 import { Button } from "@lane4hq/ui/components/button";
 import {
   Drawer,
@@ -132,11 +137,13 @@ export function MeetExportButtons({
   meetId,
   meetName,
   hasLineup,
+  pendingExportSwimmers = [],
 }: {
   teamId: string;
   meetId: string;
   meetName: string;
   hasLineup: boolean;
+  pendingExportSwimmers?: string[];
 }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState<string | null>(null);
@@ -193,6 +200,16 @@ export function MeetExportButtons({
   const busy = loading !== null;
   const lineupLocked = !hasLineup;
   const lineupHint = "Add entries before exporting a lineup.";
+  const pendingExportNote =
+    pendingExportSwimmers.length > 0 ? (
+      <Alert className="text-left">
+        <AlertTitle>Pending swimmers excluded from export</AlertTitle>
+        <AlertDescription>
+          {pendingExportSwimmers.join(", ")} — set status to Committed on the
+          entries board to include them in HY3/CL2/SD3.
+        </AlertDescription>
+      </Alert>
+    ) : null;
 
   function renderMenuItems(actions: ExportAction[]) {
     return actions.map((action) => (
@@ -247,7 +264,9 @@ export function MeetExportButtons({
                 <p className="text-muted-foreground px-1.5 py-1 text-xs">
                   {lineupHint}
                 </p>
-              ) : null}
+              ) : (
+                pendingExportNote
+              )}
               {renderMenuItems(LINEUP_ACTIONS)}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
@@ -277,6 +296,7 @@ export function MeetExportButtons({
               </DrawerDescription>
             </DrawerHeader>
             <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+              {!lineupLocked ? pendingExportNote : null}
               <div className="flex flex-col gap-1">
                 <p className="text-muted-foreground text-xs">Lineup</p>
                 {lineupLocked ? (

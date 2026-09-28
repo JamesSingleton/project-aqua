@@ -160,6 +160,7 @@ describe("other schemas", () => {
     expect(meetAttendanceStatusSchema.parse("not_eligible")).toBe(
       "not_eligible",
     );
+    expect(meetAttendanceStatusSchema.parse("pending")).toBe("pending");
     expect(meetEntryStatusSchema.parse("approved")).toBe("approved");
   });
 });

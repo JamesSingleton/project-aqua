@@ -36,6 +36,13 @@
       "when": 1790545842842,
       "tag": "0004_rename_aqua_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790590000000,
+      "tag": "0005_meet_commitment_declined_to_not_going",
+      "breakpoints": true
     }
   ]
 }

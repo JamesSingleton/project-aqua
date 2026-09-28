@@ -157,6 +157,8 @@ describe("buildMeetLineupSnapshot", () => {
     ).toEqual({
       scratched: false,
       notGoing: false,
+      pending: false,
+      meetNotEligible: false,
       ineligible: true,
       missingFromRoster: false,
     });
@@ -389,6 +391,19 @@ describe("hostPackLineup", () => {
     expect(host.relayTeams).toEqual([]);
     expect(host.athletes).toEqual([]);
   });
+
+  it("drops pending swimmers from host packs", () => {
+    const snapshot = buildMeetLineupSnapshot(
+      baseInput({
+        commitments: [{ membershipId: "m1", status: "pending" }],
+      }),
+    );
+    const host = hostPackLineup(snapshot);
+    expect(host.individuals.some((row) => row.membershipId === "m1")).toBe(
+      false,
+    );
+    expect(host.athletes.some((row) => row.membershipId === "m1")).toBe(false);
+  });
 });
 
 describe("isHostPackExcluded", () => {
@@ -397,6 +412,8 @@ describe("isHostPackExcluded", () => {
       isHostPackExcluded({
         scratched: false,
         notGoing: false,
+        pending: false,
+        meetNotEligible: false,
         ineligible: false,
         missingFromRoster: false,
       }),
@@ -405,6 +422,8 @@ describe("isHostPackExcluded", () => {
       isHostPackExcluded({
         scratched: false,
         notGoing: false,
+        pending: false,
+        meetNotEligible: false,
         ineligible: true,
         missingFromRoster: false,
       }),
@@ -413,6 +432,8 @@ describe("isHostPackExcluded", () => {
       isHostPackExcluded({
         scratched: false,
         notGoing: false,
+        pending: false,
+        meetNotEligible: false,
         ineligible: false,
         missingFromRoster: true,
       }),

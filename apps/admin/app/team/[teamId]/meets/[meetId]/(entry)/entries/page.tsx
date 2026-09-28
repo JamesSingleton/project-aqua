@@ -4,6 +4,10 @@ import { getTeamPlan } from "@lane4hq/db/queries/billing";
 import { getTeamUiPreferences } from "@lane4hq/db/queries/preferences";
 import type { TeamUiState } from "@lane4hq/db/schema";
 import { formatEntryLimitsSummary } from "@lane4hq/swim-core/entry-limits";
+import {
+  blocksMeetEntryForAttendance,
+  resolveMeetAttendanceUiStatus,
+} from "@lane4hq/swim-core/meet-attendance";
 import { planHasFeature } from "@lane4hq/swim-core/plans";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -26,8 +30,8 @@ export async function generateMetadata({
   return { title: `${detail.meet.name} - Entries` };
 }
 
-function isMeetExcluded(status: string) {
-  return status === "not_going";
+function isMeetEntryBlocked(status: string) {
+  return blocksMeetEntryForAttendance(status);
 }
 
 export default async function MeetEntriesPage({
@@ -62,7 +66,15 @@ export default async function MeetEntriesPage({
   const notGoingMembershipIds = [
     ...new Set(
       commitments
-        .filter((c) => isMeetExcluded(c.status))
+        .filter((c) => isMeetEntryBlocked(c.status))
+        .map((c) => c.membershipId),
+    ),
+  ];
+
+  const pendingMembershipIds = [
+    ...new Set(
+      commitments
+        .filter((c) => resolveMeetAttendanceUiStatus(c.status) === "pending")
         .map((c) => c.membershipId),
     ),
   ];
@@ -155,6 +167,7 @@ export default async function MeetEntriesPage({
       seedTimeMs: team.seedTimeMs,
     })),
     notGoingMembershipIds,
+    pendingMembershipIds,
   };
 
   return (
