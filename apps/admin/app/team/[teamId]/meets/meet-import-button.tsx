@@ -44,6 +44,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@lane4hq/ui/components/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@lane4hq/ui/components/tooltip";
 import { cn } from "@lane4hq/ui/lib/utils";
 import { AlertTriangleIcon, Loader, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -51,6 +56,8 @@ import { parseAsStringEnum, useQueryState } from "nuqs";
 import { useEffect, useId, useRef, useState } from "react";
 import { DatePickerField } from "@/components/date-picker-field";
 import { LabeledCombobox } from "@/components/labeled-combobox";
+import { useTeamCapabilities } from "@/components/team-capabilities";
+import { TEAM_MANAGE_ROLE_TOOLTIP } from "@/lib/team-role-messages";
 import {
   type AthleteMapAction,
   importMeetFileAction,
@@ -157,6 +164,7 @@ export function MeetImportButton({
   triggerVariant?: "default" | "outline";
   triggerSize?: "default" | "sm";
 }) {
+  const { canManageTeam } = useTeamCapabilities();
   const router = useRouter();
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -426,6 +434,27 @@ export function MeetImportButton({
 
   const reviewHasAgeGroups =
     review?.events.some((event) => event.ageGroup != null) ?? false;
+
+  if (!canManageTeam) {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant={triggerVariant}
+              size={triggerSize}
+              disabled
+            />
+          }
+        >
+          <Upload data-icon="inline-start" />
+          {triggerLabel}
+        </TooltipTrigger>
+        <TooltipContent>{TEAM_MANAGE_ROLE_TOOLTIP}</TooltipContent>
+      </Tooltip>
+    );
+  }
 
   return (
     <Dialog

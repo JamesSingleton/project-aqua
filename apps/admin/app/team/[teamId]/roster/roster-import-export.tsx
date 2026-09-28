@@ -14,6 +14,11 @@ import {
   DialogTrigger,
 } from "@lane4hq/ui/components/dialog";
 import { Progress } from "@lane4hq/ui/components/progress";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@lane4hq/ui/components/tooltip";
 import { cn } from "@lane4hq/ui/lib/utils";
 import {
   CircleAlert,
@@ -26,6 +31,8 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useRef, useState } from "react";
+import { useTeamCapabilities } from "@/components/team-capabilities";
+import { TEAM_MANAGE_ROLE_TOOLTIP } from "@/lib/team-role-messages";
 import { importRosterFileAction } from "./actions";
 
 const ROSTER_ACCEPT =
@@ -48,6 +55,7 @@ function formatBytes(size: number) {
 }
 
 export function RosterImportButton({ teamId }: { teamId: string }) {
+  const { canManageTeam } = useTeamCapabilities();
   const router = useRouter();
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -219,6 +227,20 @@ export function RosterImportButton({ teamId }: { teamId: string }) {
   const uploading = entries.filter((e) => e.status === "uploading");
   const failed = entries.filter((e) => e.status === "failed");
   const succeeded = entries.filter((e) => e.status === "success");
+
+  if (!canManageTeam) {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={<Button type="button" variant="outline" disabled />}
+        >
+          <Upload data-icon="inline-start" />
+          Import
+        </TooltipTrigger>
+        <TooltipContent>{TEAM_MANAGE_ROLE_TOOLTIP}</TooltipContent>
+      </Tooltip>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

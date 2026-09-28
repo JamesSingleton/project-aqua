@@ -9,6 +9,8 @@ import {
 import { Progress } from "@lane4hq/ui/components/progress";
 import { Separator } from "@lane4hq/ui/components/separator";
 import type { Metadata } from "next";
+import { NotPermittedPanel } from "@/components/not-permitted-panel";
+import { getTeamCapabilitiesForCurrentMember } from "@/lib/team-member-capabilities";
 import { SettingsSection } from "../settings-section";
 import { BillingActions } from "./billing-actions";
 
@@ -31,6 +33,16 @@ export default async function BillingSettingsPage({
   params: Promise<{ teamId: string }>;
 }) {
   const { teamId } = await params;
+  const { canManageTeam } = await getTeamCapabilitiesForCurrentMember(teamId);
+  if (!canManageTeam) {
+    return (
+      <NotPermittedPanel
+        title="Billing is restricted"
+        description="Only team owners and head coaches can view billing and subscription settings."
+      />
+    );
+  }
+
   const [plan, subscription, quota] = await Promise.all([
     getTeamPlan(teamId),
     getTeamSubscription(teamId),

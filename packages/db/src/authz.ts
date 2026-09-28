@@ -23,9 +23,27 @@ export const COACH_ROLES = [
   "member",
 ] as const;
 
-export const EXPORT_ROLES = ["owner", "head_coach"] as const;
+import {
+  canManageTeam,
+  getTeamCapabilities,
+  roleHasExportAccess,
+  TEAM_MANAGEMENT_ROLES,
+  type TeamCapabilities,
+  type TeamManagementRole,
+} from "./team-capabilities";
+
+export const EXPORT_ROLES = TEAM_MANAGEMENT_ROLES;
 
 export type CoachRole = (typeof COACH_ROLES)[number];
+
+export {
+  canManageTeam,
+  getTeamCapabilities,
+  roleHasExportAccess,
+  TEAM_MANAGEMENT_ROLES,
+  type TeamCapabilities,
+  type TeamManagementRole,
+};
 
 const SAFESPORT_TYPES = [
   "safesport_core",
