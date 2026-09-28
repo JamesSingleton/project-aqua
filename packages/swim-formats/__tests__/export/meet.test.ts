@@ -1678,7 +1678,8 @@ describe("relay-only athletes and championship alternates", () => {
 
     const hy3Parsed = parseHy3(exportHy3(rosterOnly));
     expect(
-      hy3Parsed.athletes?.find((a) => a.name.includes("Pre-Assignment"))?.relayOnly,
+      hy3Parsed.athletes?.find((a) => a.name.includes("Pre-Assignment"))
+        ?.relayOnly,
     ).toBe(true);
 
     const cl2 = exportCl2(rosterOnly);

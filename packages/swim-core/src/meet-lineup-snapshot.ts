@@ -81,8 +81,7 @@ function explicitRelayOnlyIds(
     (commitments ?? [])
       .filter(
         (commitment) =>
-          commitment.relayOnly &&
-          !isMeetAttendanceExcluded(commitment.status),
+          commitment.relayOnly && !isMeetAttendanceExcluded(commitment.status),
       )
       .map((commitment) => commitment.membershipId),
   );

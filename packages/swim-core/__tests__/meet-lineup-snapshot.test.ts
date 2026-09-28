@@ -329,7 +329,9 @@ describe("explicit meet relay-only commitments", () => {
         entries: [],
         relayLegs: [],
         relayTeams: [],
-        commitments: [{ membershipId: "m2", status: "committed", relayOnly: true }],
+        commitments: [
+          { membershipId: "m2", status: "committed", relayOnly: true },
+        ],
       }),
     );
 
