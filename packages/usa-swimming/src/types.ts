@@ -27,4 +27,11 @@ export interface SwimsWebhookPayload {
   memberId: string;
   recordId?: string;
   data?: Partial<SwimsMember>;
+  /** Vendor delivery id when provided (preferred for idempotency). */
+  deliveryId?: string;
+  eventId?: string;
+  id?: string;
+  timestamp?: string | number;
+  occurredAt?: string;
+  eventTime?: string | number;
 }

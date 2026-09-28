@@ -1,6 +1,6 @@
 import type { SwimsWebhookPayload } from "@lane4hq/usa-swimming";
 import {
-  handleSwimsWebhook,
+  processSwimsWebhook,
   verifySwimsWebhook,
 } from "@lane4hq/usa-swimming/webhooks";
 import { headers } from "next/headers";
@@ -15,20 +15,54 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const payload = (await request.json()) as SwimsWebhookPayload & {
-    organizationId: string;
-  };
+  let payload: SwimsWebhookPayload;
+  try {
+    payload = (await request.json()) as SwimsWebhookPayload;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
-  if (!payload.organizationId) {
+  if (!payload.clubId?.trim()) {
+    return NextResponse.json({ error: "Missing clubId" }, { status: 400 });
+  }
+  if (!payload.memberId?.trim() || !payload.event) {
     return NextResponse.json(
-      { error: "Missing organizationId" },
+      { error: "Missing event or memberId" },
       { status: 400 },
     );
   }
 
   try {
-    await handleSwimsWebhook(payload, payload.organizationId);
-    return NextResponse.json({ received: true });
+    const result = await processSwimsWebhook(payload);
+
+    if (result.kind === "duplicate") {
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+    if (result.kind === "stale") {
+      return NextResponse.json({ error: "Stale webhook" }, { status: 400 });
+    }
+    if (result.kind === "unknown_club") {
+      return NextResponse.json({
+        received: true,
+        skipped: "unknown_club",
+        clubId: result.clubId,
+      });
+    }
+
+    if (result.failedOrganizationIds.length === result.organizationIds.length) {
+      return NextResponse.json(
+        { error: "Webhook processing failed for all organizations" },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({
+      received: true,
+      organizationIds: result.organizationIds,
+      ...(result.failedOrganizationIds.length > 0
+        ? { failedOrganizationIds: result.failedOrganizationIds }
+        : {}),
+    });
   } catch (error) {
     console.error("SWIMS webhook error:", error);
     return NextResponse.json(
