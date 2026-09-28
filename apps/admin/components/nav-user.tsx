@@ -28,6 +28,7 @@ import {
   LogOut,
 } from "lucide-react";
 import Link from "next/link";
+import { useTeamCapabilities } from "@/components/team-capabilities";
 import { getDocsUrl } from "@/lib/docs-url";
 import { signOutToMarketing } from "@/lib/sign-out";
 
@@ -43,6 +44,7 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+  const { canManageTeam } = useTeamCapabilities();
 
   function handleSignOut() {
     void signOutToMarketing().then((result) => {
@@ -116,13 +118,15 @@ export function NavUser({
                 <BadgeCheck />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem
-                nativeButton={false}
-                render={<Link href={billingHref} prefetch={false} />}
-              >
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
+              {canManageTeam ? (
+                <DropdownMenuItem
+                  nativeButton={false}
+                  render={<Link href={billingHref} prefetch={false} />}
+                >
+                  <CreditCard />
+                  Billing
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem
                 nativeButton={false}
                 render={<a href={docsHref} target="_blank" rel="noreferrer" />}

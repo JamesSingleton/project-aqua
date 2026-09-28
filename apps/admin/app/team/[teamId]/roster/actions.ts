@@ -6,9 +6,9 @@ import {
   remainingSwimmerSlots,
 } from "@lane4hq/billing/features";
 import {
-  canExportRoster,
   requireCoachSafeSportCurrent,
   requireMinorPiiAccess,
+  requireRosterImportExportAccess,
   requireTeamMember,
   requireTeamRole,
   writeAuditLog,
@@ -309,7 +309,7 @@ export async function exportRosterCsvAction(
     headerStore.get("x-real-ip") ??
     undefined;
 
-  await canExportRoster(session?.user?.id, teamId);
+  await requireRosterImportExportAccess(session?.user?.id, teamId);
 
   const hasFilters =
     options &&
@@ -390,7 +390,7 @@ export async function exportRosterSharePackAction(
     headerStore.get("x-real-ip") ??
     undefined;
 
-  await canExportRoster(session?.user?.id, teamId);
+  await requireRosterImportExportAccess(session?.user?.id, teamId);
 
   const swimmerIds = [...new Set(options.swimmerIds.filter(Boolean))];
   if (swimmerIds.length === 0) {
@@ -465,7 +465,7 @@ export async function exportRosterSharePackAction(
 
 async function importRosterSharePackRows(teamId: string, content: string) {
   const session = await getSession();
-  await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+  await requireRosterImportExportAccess(session?.user?.id, teamId);
 
   const pack = parseRosterSharePack(content);
   if (pack.sourceOrganizationId === teamId) {
@@ -587,14 +587,10 @@ async function importRosterRows(
   jobType: string,
 ) {
   const session = await getSession();
-  await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+  await requireRosterImportExportAccess(session?.user?.id, teamId);
 
   if (rows.length === 0) {
     throw new Error("No swimmers found in file");
-  }
-
-  if (rows.some((r) => isMinorSwimmer(r.dateOfBirth))) {
-    await requireCoachSafeSportCurrent(session?.user?.id, teamId);
   }
 
   const jobId = await createImportJob(teamId, jobType);
