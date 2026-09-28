@@ -476,6 +476,7 @@ export async function upsertMeetCommitment(
   membershipId: string,
   status: "pending" | "committed" | "declined" | "not_going" | "not_eligible",
   notes?: string,
+  relayOnly?: boolean,
 ) {
   const storedStatus = status === "declined" ? "not_going" : status;
   const [existing] = await db
@@ -495,6 +496,7 @@ export async function upsertMeetCommitment(
       .set({
         status: storedStatus,
         notes: notes ?? existing.notes,
+        relayOnly: relayOnly ?? existing.relayOnly,
         updatedAt: new Date(),
       })
       .where(eq(meetCommitments.id, existing.id));
@@ -508,8 +510,52 @@ export async function upsertMeetCommitment(
     membershipId,
     status: storedStatus,
     notes: notes ?? null,
+    relayOnly: relayOnly ?? false,
   });
   return id;
+}
+
+export async function setMeetCommitmentRelayOnly(
+  meetId: string,
+  membershipId: string,
+  relayOnly: boolean,
+) {
+  const [existing] = await db
+    .select()
+    .from(meetCommitments)
+    .where(
+      and(
+        eq(meetCommitments.meetId, meetId),
+        eq(meetCommitments.membershipId, membershipId),
+      ),
+    )
+    .limit(1);
+
+  if (relayOnly) {
+    if (existing) {
+      await db
+        .update(meetCommitments)
+        .set({ relayOnly: true, updatedAt: new Date() })
+        .where(eq(meetCommitments.id, existing.id));
+      return existing.id;
+    }
+    const id = generateId();
+    await db.insert(meetCommitments).values({
+      id,
+      meetId,
+      membershipId,
+      status: "committed",
+      relayOnly: true,
+    });
+    return id;
+  }
+
+  if (!existing) return null;
+  await db
+    .update(meetCommitments)
+    .set({ relayOnly: false, updatedAt: new Date() })
+    .where(eq(meetCommitments.id, existing.id));
+  return existing.id;
 }
 
 export async function deleteMeetCommitment(
@@ -532,6 +578,7 @@ export async function getMeetCommitments(meetId: string) {
       id: meetCommitments.id,
       membershipId: meetCommitments.membershipId,
       status: meetCommitments.status,
+      relayOnly: meetCommitments.relayOnly,
       notes: meetCommitments.notes,
       firstName: swimmers.firstName,
       lastName: swimmers.lastName,

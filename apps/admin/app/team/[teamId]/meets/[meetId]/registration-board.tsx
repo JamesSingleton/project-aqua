@@ -26,6 +26,7 @@ import {
   type MeetAttendanceUiStatus,
   resolveMeetAttendanceUiStatus,
 } from "@lane4hq/swim-core/meet-attendance";
+import { isRelayOnlyMeetAthlete } from "@lane4hq/swim-core/meet-lineup-snapshot";
 import {
   deriveRelayLetter,
   formatAssignmentCountLine,
@@ -45,6 +46,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@lane4hq/ui/components/alert";
+import { Badge } from "@lane4hq/ui/components/badge";
 import { Button } from "@lane4hq/ui/components/button";
 import { Checkbox } from "@lane4hq/ui/components/checkbox";
 import {
@@ -90,6 +92,7 @@ import {
   deleteMeetEntryAction,
   setMeetAttendanceAction,
   setMeetAttendanceBulkAction,
+  setMeetRelayOnlyAction,
   updateMeetEntryAction,
 } from "../actions";
 import { removeMeetRelaySlotAction } from "../relay-actions";
@@ -140,6 +143,7 @@ type EntryRow = {
 type AttendanceRow = {
   membershipId: string;
   status: string;
+  relayOnly: boolean;
   notes?: string | null;
   firstName: string;
   lastName: string;
@@ -398,6 +402,11 @@ export function RegistrationBoard({
 
   const attendanceByMembership = useMemo(
     () => new Map(attendance.map((row) => [row.membershipId, row.status])),
+    [attendance],
+  );
+
+  const relayOnlyByMembership = useMemo(
+    () => new Map(attendance.map((row) => [row.membershipId, row.relayOnly])),
     [attendance],
   );
 
@@ -740,6 +749,26 @@ export function RegistrationBoard({
     });
   }
 
+  function setRelayOnlyForMember(
+    targetMembershipId: string,
+    relayOnly: boolean,
+  ) {
+    setPendingAction(`relay-only:${relayOnly ? "on" : "off"}`);
+    startTransition(async () => {
+      try {
+        await setMeetRelayOnlyAction(
+          teamId,
+          meetId,
+          targetMembershipId,
+          relayOnly,
+        );
+        refresh();
+      } finally {
+        setPendingAction(null);
+      }
+    });
+  }
+
   function toggleSelected(id: string, checked: boolean) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -1014,8 +1043,20 @@ export function RegistrationBoard({
                 assignmentByMembership.alts.get(row.membershipId) ?? 0;
               const hasIndividual =
                 (individualCountByMembership.get(row.membershipId) ?? 0) > 0;
-              const relaysOnly =
-                relayLegSet.has(row.membershipId) && !hasIndividual;
+              const onRelayAssignment = relayLegSet.has(row.membershipId);
+              const attendanceBlocksEntry =
+                attendance === "not_going" || attendance === "not_eligible";
+              const showRelayOnlyBadge =
+                !attendanceBlocksEntry &&
+                !profileIneligible &&
+                isRelayOnlyMeetAthlete({
+                  explicitRelayOnly:
+                    relayOnlyByMembership.get(row.membershipId) ?? false,
+                  onRelayAssignment,
+                  hasRacingIndividual: hasIndividual,
+                });
+              const explicitRelayOnly =
+                relayOnlyByMembership.get(row.membershipId) ?? false;
               const active = row.membershipId === membershipId;
               const rowAge = swimmerAgeOnDate(row.dateOfBirth, meetStartDate);
               const statusLabel = rowStatusLabel(
@@ -1073,10 +1114,12 @@ export function RegistrationBoard({
                           </>
                         ) : null}
                         <span>{formatAssignmentCountLine(events, alts)}</span>
-                        {relaysOnly ? (
+                        {showRelayOnlyBadge ? (
                           <>
                             <span>·</span>
-                            <span>Relays only</span>
+                            <Badge variant="secondary" className="text-[10px]">
+                              Relay only
+                            </Badge>
                           </>
                         ) : null}
                       </span>
@@ -1120,6 +1163,22 @@ export function RegistrationBoard({
                             }
                           >
                             Update eligibility on profile
+                          </DropdownMenuItem>
+                        ) : null}
+                        {!profileIneligible &&
+                        !attendanceBlocksEntry &&
+                        !hasIndividual ? (
+                          <DropdownMenuItem
+                            onClick={() =>
+                              setRelayOnlyForMember(
+                                row.membershipId,
+                                !explicitRelayOnly,
+                              )
+                            }
+                          >
+                            {explicitRelayOnly
+                              ? "Clear relay only"
+                              : "Mark as relay only"}
                           </DropdownMenuItem>
                         ) : null}
                       </DropdownMenuContent>

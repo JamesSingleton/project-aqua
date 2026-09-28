@@ -1,0 +1,1 @@
+ALTER TABLE "meet_commitments" ADD COLUMN "relay_only" boolean DEFAULT false NOT NULL;

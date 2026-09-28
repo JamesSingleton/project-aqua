@@ -144,6 +144,7 @@ export default async function MeetEntriesPage({
     commitments: commitments.map((c) => ({
       membershipId: c.membershipId,
       status: c.status,
+      relayOnly: c.relayOnly,
       notes: c.notes,
       firstName: c.firstName,
       lastName: c.lastName,

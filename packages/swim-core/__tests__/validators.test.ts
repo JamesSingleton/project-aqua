@@ -7,6 +7,7 @@ import {
   meetEntryRowSchema,
   meetEntryStatusSchema,
   normalizeCreateSwimmerFormValues,
+  rosterFileImportRowSchema,
   rosterRowSchema,
   rsvpStatusSchema,
 } from "../src/validators";
@@ -75,6 +76,26 @@ describe("rosterRowSchema", () => {
         linkExistingSwimmerId: "swimmer-1",
       }).success,
     ).toBe(true);
+  });
+});
+
+describe("rosterFileImportRowSchema", () => {
+  it("accepts Team Manager minors without contacts", () => {
+    expect(
+      rosterFileImportRowSchema.safeParse({
+        ...adultBase,
+        dateOfBirth: "2015-01-01",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("still requires core identity fields", () => {
+    expect(
+      rosterFileImportRowSchema.safeParse({
+        ...adultBase,
+        firstName: "",
+      }).success,
+    ).toBe(false);
   });
 });
 

@@ -40,8 +40,22 @@
     {
       "idx": 5,
       "version": "7",
-      "when": 1790590000000,
-      "tag": "0005_meet_commitment_declined_to_not_going",
+      "when": 1790626673455,
+      "tag": "0005_swims_webhook_deliveries",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790629440679,
+      "tag": "0006_meet_commitment_relay_only",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790629605965,
+      "tag": "0007_meet_commitment_declined_to_not_going",
       "breakpoints": true
     }
   ]

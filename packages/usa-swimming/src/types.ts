@@ -1,3 +1,24 @@
+/** Partner API (`SwimsEvent` / `SwimsEventData`) — see SWIMS Swagger. */
+export interface SwimsEventData {
+  vendorRecordId?: string | null;
+  memberIds?: string[] | null;
+  clubIds?: string[] | null;
+  oldClubId?: string | null;
+  oldMemberId?: string | null;
+  newClubId?: string | null;
+  newMemberId?: string | null;
+}
+
+/** Membership change notification from `/swims/SwimsThirdParty/EventsWithinDateTime` / vendor push. */
+export interface SwimsEvent {
+  eventSequence: number;
+  eventTypeId: number;
+  eventType?: string | null;
+  clubId?: string | null;
+  modifiedDatetime: string;
+  eventData?: SwimsEventData | null;
+}
+
 export interface SwimsMember {
   memberId: string;
   firstName: string;
@@ -21,10 +42,14 @@ export type SwimsWebhookEvent =
   | "member.transfer_from"
   | "member.cancel";
 
+/** Normalized payload used after parsing vendor JSON. */
 export interface SwimsWebhookPayload {
   event: SwimsWebhookEvent;
   clubId: string;
   memberId: string;
   recordId?: string;
-  data?: Partial<SwimsMember>;
+  eventSequence?: number;
+  modifiedDatetime?: string;
+  /** Raw SWIMS `eventType` when supplied. */
+  eventType?: string;
 }

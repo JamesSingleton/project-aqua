@@ -33,6 +33,7 @@ import {
   getRosterBestTimesForEvents,
   replaceMeetRelayLegs,
   replaceMeetRelayTeams,
+  setMeetCommitmentRelayOnly,
   updateMeet,
   updateMeetEntry,
   updateMeetEntryStatus,
@@ -1841,6 +1842,25 @@ export async function setMeetAttendanceAction(
   } else {
     await upsertMeetCommitment(meetId, membershipId, status, notes);
   }
+  revalidateMeetPaths(teamId, meetId);
+}
+
+export async function setMeetRelayOnlyAction(
+  teamId: string,
+  meetId: string,
+  membershipId: string,
+  relayOnly: boolean,
+) {
+  const session = await getSession();
+  await requireTeamRole(session?.user?.id, teamId, [
+    "owner",
+    "head_coach",
+    "assistant_coach",
+  ]);
+  const meet = await getMeetById(meetId, teamId);
+  if (!meet) throw new Error("Meet not found");
+
+  await setMeetCommitmentRelayOnly(meetId, membershipId, relayOnly);
   revalidateMeetPaths(teamId, meetId);
 }
 

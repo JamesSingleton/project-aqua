@@ -2,6 +2,7 @@ import { formatDateOnly, parseDateOnly } from "./calendar-date";
 import { isRelayStroke } from "./entry-limits";
 import { formatEventName, formatGenderLabel } from "./events";
 import {
+  blocksMeetEntryForAttendance,
   indexMeetCommitments,
   type MeetCommitmentMaps,
 } from "./meet-attendance";
@@ -61,7 +62,32 @@ export type MeetLineupRelayTeamInput = {
 export type MeetLineupCommitmentInput = {
   membershipId: string;
   status: string;
+  relayOnly?: boolean;
 };
+
+/** Host-pack / roster relay-only: explicit flag or relay assignment without individuals. */
+export function isRelayOnlyMeetAthlete(input: {
+  explicitRelayOnly: boolean;
+  onRelayAssignment: boolean;
+  hasRacingIndividual: boolean;
+}): boolean {
+  if (input.hasRacingIndividual) return false;
+  return input.explicitRelayOnly || input.onRelayAssignment;
+}
+
+function explicitRelayOnlyIds(
+  commitments: MeetLineupCommitmentInput[] | undefined,
+): Set<string> {
+  return new Set(
+    (commitments ?? [])
+      .filter(
+        (commitment) =>
+          commitment.relayOnly &&
+          !blocksMeetEntryForAttendance(commitment.status),
+      )
+      .map((commitment) => commitment.membershipId),
+  );
+}
 
 export type MeetLineupTeamInput = {
   name?: string | null;
@@ -280,6 +306,7 @@ export function buildMeetLineupSnapshot(
     input.members.map((member) => [member.membershipId, member] as const),
   );
   const commitmentMaps = indexMeetCommitments(input.commitments);
+  const declaredRelayOnlyIds = explicitRelayOnlyIds(input.commitments);
   const eventById = new Map(input.events.map((event) => [event.id, event]));
 
   const events = input.events
@@ -371,6 +398,7 @@ export function buildMeetLineupSnapshot(
   const athleteIds = new Set<string>([
     ...individuals.map((entry) => entry.membershipId),
     ...relayTeams.flatMap((team) => team.legs.map((leg) => leg.membershipId)),
+    ...declaredRelayOnlyIds,
   ]);
 
   const athletes: MeetLineupAthlete[] = [...athleteIds].map((membershipId) => {
@@ -378,6 +406,7 @@ export function buildMeetLineupSnapshot(
     const onRelay = relayTeams.some((team) =>
       team.legs.some((leg) => leg.membershipId === membershipId),
     );
+    const explicitRelayOnly = declaredRelayOnlyIds.has(membershipId);
     const anyIndividual = individuals.find(
       (entry) => entry.membershipId === membershipId,
     );
@@ -391,7 +420,11 @@ export function buildMeetLineupSnapshot(
       membershipId,
       member,
       inclusion,
-      onRelay && !racingIndividualIds.has(membershipId),
+      isRelayOnlyMeetAthlete({
+        explicitRelayOnly,
+        onRelayAssignment: onRelay,
+        hasRacingIndividual: racingIndividualIds.has(membershipId),
+      }),
     );
   });
 
@@ -453,17 +486,25 @@ export function hostPackLineup(
   const athletes = snapshot.athletes
     .filter(
       (athlete) =>
-        athleteIds.has(athlete.membershipId) &&
-        !isHostPackExcluded(athlete.inclusion),
+        !isHostPackExcluded(athlete.inclusion) &&
+        (athleteIds.has(athlete.membershipId) ||
+          (athlete.relayOnly &&
+            !racingIndividualIds.has(athlete.membershipId))),
     )
-    .map((athlete) => ({
-      ...athlete,
-      relayOnly:
-        !racingIndividualIds.has(athlete.membershipId) &&
-        relayTeams.some((team) =>
-          team.legs.some((leg) => leg.membershipId === athlete.membershipId),
-        ),
-    }));
+    .map((athlete) => {
+      const onRelay = relayTeams.some((team) =>
+        team.legs.some((leg) => leg.membershipId === athlete.membershipId),
+      );
+      const wasRelayOnly = athlete.relayOnly;
+      return {
+        ...athlete,
+        relayOnly: isRelayOnlyMeetAthlete({
+          explicitRelayOnly: wasRelayOnly && !onRelay,
+          onRelayAssignment: onRelay,
+          hasRacingIndividual: racingIndividualIds.has(athlete.membershipId),
+        }),
+      };
+    });
 
   return { ...snapshot, individuals, relayTeams, athletes };
 }
