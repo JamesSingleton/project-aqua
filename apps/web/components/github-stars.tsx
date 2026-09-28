@@ -31,7 +31,7 @@ export async function GithubStars() {
 async function fetchStarCount(): Promise<number | null> {
   try {
     const response = await fetch(
-      "https://api.github.com/repos/JamesSingleton/project-aqua",
+      "https://api.github.com/repos/JamesSingleton/lane4-hq",
       {
         next: { revalidate: 3600 },
         headers: { Accept: "application/vnd.github+json" },

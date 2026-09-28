@@ -318,7 +318,7 @@ flowchart LR
 
 ### Published spec
 
-- **GitHub issue #42:** https://github.com/JamesSingleton/project-aqua/issues/42 (`ready-for-agent`)
+- **GitHub issue #42:** https://github.com/JamesSingleton/lane4-hq/issues/42 (`ready-for-agent`)
 - **Repo mirror:** `docs/specs/team-management-v1.spec.md`
 
 ---

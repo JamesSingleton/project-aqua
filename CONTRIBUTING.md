@@ -42,11 +42,11 @@ GitHub has support for draft pull requests, which will disable the merge button 
 
 If you plan to contribute a change based on an open issue, please assign yourself. Issues that are not assigned are assumed open, and to avoid conflicts, please assign yourself before beginning work on any issues.
 
-If you would like to contribute to the project for the first time, please consider joining checking the [help wanted](https://github.com/JamesSingleton/project-aqua/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22), [🚀 Good first issue](https://github.com/JamesSingleton/project-aqua/issues?q=is%3Aopen+is%3Aissue+label%3A%22🚀+Good+first+issue%22), or [🐛 Bug](https://github.com/JamesSingleton/project-aqua/issues?q=is%3Aopen+is%3Aissue+label%3A%22🐛+Bug%22+) labels.
+If you would like to contribute to the project for the first time, please consider joining checking the [help wanted](https://github.com/JamesSingleton/lane4-hq/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22), [🚀 Good first issue](https://github.com/JamesSingleton/lane4-hq/issues?q=is%3Aopen+is%3Aissue+label%3A%22🚀+Good+first+issue%22), or [🐛 Bug](https://github.com/JamesSingleton/lane4-hq/issues?q=is%3Aopen+is%3Aissue+label%3A%22🐛+Bug%22+) labels.
 
 ## Community
 
-Do you have questions? Join the conversation in our [discussions](https://github.com/JamesSingleton/project-aqua/discussions).
+Do you have questions? Join the conversation in our [discussions](https://github.com/JamesSingleton/lane4-hq/discussions).
 
 ## License
 
