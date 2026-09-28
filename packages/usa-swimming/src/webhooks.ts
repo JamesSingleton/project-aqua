@@ -1,12 +1,24 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { db } from "@lane4hq/db/client";
 import { organization, usaSwimmingWebhookDelivery } from "@lane4hq/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq, lt } from "drizzle-orm";
 import { syncMemberFromSwims } from "./sync";
-import type { SwimsWebhookPayload } from "./types";
+import type {
+  SwimsEvent,
+  SwimsEventData,
+  SwimsWebhookEvent,
+  SwimsWebhookPayload,
+} from "./types";
 
-/** Reject webhooks with explicit timestamps older than this (replay protection). */
-export const SWIMS_WEBHOOK_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+/** When Swagger defines no delivery id and no event timestamp, only suppress identical retries briefly. */
+const WEBHOOK_REPLAY_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+type DeliveryDedupeStrategy = "sequence" | "occurrence" | "replay_window";
+
+export type SwimsWebhookDeliveryKey = {
+  id: string;
+  strategy: DeliveryDedupeStrategy;
+};
 
 export function verifySwimsWebhook(
   thumbprint: string | null,
@@ -19,48 +31,170 @@ export function verifySwimsWebhook(
   return timingSafeEqual(received, expected);
 }
 
-export function getSwimsWebhookDeliveryId(
-  payload: SwimsWebhookPayload,
-): string {
-  const explicit =
-    payload.deliveryId?.trim() || payload.eventId?.trim() || payload.id?.trim();
-  if (explicit) return explicit;
-  return createHash("sha256")
-    .update(stableWebhookPayloadJson(payload))
-    .digest("hex");
+function isSwimsWebhookEvent(value: string): value is SwimsWebhookEvent {
+  return (
+    value === "member.register" ||
+    value === "member.renew" ||
+    value === "member.transfer_to" ||
+    value === "member.transfer_from" ||
+    value === "member.cancel"
+  );
 }
 
-function stableWebhookPayloadJson(payload: SwimsWebhookPayload): string {
-  return JSON.stringify({
+function mapSwimsEventType(
+  eventType: string | null | undefined,
+): SwimsWebhookEvent | null {
+  if (!eventType?.trim()) return null;
+  if (isSwimsWebhookEvent(eventType)) return eventType;
+
+  const normalized = eventType.toLowerCase();
+  if (normalized.includes("register")) return "member.register";
+  if (normalized.includes("renew")) return "member.renew";
+  if (normalized.includes("transfer") && normalized.includes("from")) {
+    return "member.transfer_from";
+  }
+  if (normalized.includes("transfer") && normalized.includes("to")) {
+    return "member.transfer_to";
+  }
+  if (normalized.includes("cancel")) return "member.cancel";
+  return null;
+}
+
+function memberIdFromEventData(
+  event: SwimsWebhookEvent,
+  data: SwimsEventData | null | undefined,
+): string | null {
+  if (!data) return null;
+  if (event === "member.transfer_to" && data.newMemberId?.trim()) {
+    return data.newMemberId.trim();
+  }
+  if (event === "member.transfer_from" && data.oldMemberId?.trim()) {
+    return data.oldMemberId.trim();
+  }
+  const fromList = data.memberIds?.find((id) => id?.trim())?.trim();
+  return (
+    fromList ?? data.newMemberId?.trim() ?? data.oldMemberId?.trim() ?? null
+  );
+}
+
+function clubIdFromSwimsEvent(
+  event: SwimsWebhookEvent,
+  swimsEvent: SwimsEvent,
+): string | null {
+  const data = swimsEvent.eventData;
+  if (event === "member.transfer_to" && data?.newClubId?.trim()) {
+    return data.newClubId.trim();
+  }
+  if (event === "member.transfer_from" && data?.oldClubId?.trim()) {
+    return data.oldClubId.trim();
+  }
+  if (swimsEvent.clubId?.trim()) return swimsEvent.clubId.trim();
+  const fromList = data?.clubIds?.find((id) => id?.trim())?.trim();
+  return fromList ?? data?.newClubId?.trim() ?? data?.oldClubId?.trim() ?? null;
+}
+
+function parseSwimsEventBody(
+  raw: Record<string, unknown>,
+): SwimsWebhookPayload | null {
+  if (typeof raw.eventSequence !== "number" || !raw.modifiedDatetime) {
+    return null;
+  }
+
+  const swimsEvent = raw as unknown as SwimsEvent;
+  const event = mapSwimsEventType(swimsEvent.eventType ?? undefined);
+  if (!event) return null;
+
+  const clubId = clubIdFromSwimsEvent(event, swimsEvent);
+  const memberId = memberIdFromEventData(event, swimsEvent.eventData);
+  if (!clubId || !memberId) return null;
+
+  return {
+    event,
+    clubId,
+    memberId,
+    recordId: swimsEvent.eventData?.vendorRecordId?.trim() || undefined,
+    eventSequence: swimsEvent.eventSequence,
+    modifiedDatetime: String(swimsEvent.modifiedDatetime),
+    eventType: swimsEvent.eventType ?? undefined,
+  };
+}
+
+function parseLegacyWebhookBody(
+  raw: Record<string, unknown>,
+): SwimsWebhookPayload | null {
+  if (typeof raw.clubId !== "string" || typeof raw.memberId !== "string") {
+    return null;
+  }
+  if (typeof raw.event !== "string" || !isSwimsWebhookEvent(raw.event)) {
+    return null;
+  }
+
+  return {
+    event: raw.event,
+    clubId: raw.clubId.trim(),
+    memberId: raw.memberId.trim(),
+    recordId:
+      typeof raw.recordId === "string" ? raw.recordId.trim() : undefined,
+    eventSequence:
+      typeof raw.eventSequence === "number" ? raw.eventSequence : undefined,
+    modifiedDatetime:
+      typeof raw.modifiedDatetime === "string"
+        ? raw.modifiedDatetime
+        : undefined,
+    eventType: typeof raw.eventType === "string" ? raw.eventType : undefined,
+  };
+}
+
+/** Parse vendor JSON (Swagger `SwimsEvent` or legacy flat test/fixture shape). */
+export function parseSwimsWebhookBody(
+  raw: unknown,
+): SwimsWebhookPayload | null {
+  if (!raw || typeof raw !== "object") return null;
+  const record = raw as Record<string, unknown>;
+  return parseSwimsEventBody(record) ?? parseLegacyWebhookBody(record);
+}
+
+export function getSwimsWebhookDeliveryKey(
+  payload: SwimsWebhookPayload,
+): SwimsWebhookDeliveryKey {
+  if (payload.eventSequence != null) {
+    return {
+      id: `seq:${payload.eventSequence}`,
+      strategy: "sequence",
+    };
+  }
+
+  if (payload.modifiedDatetime) {
+    const material = JSON.stringify({
+      event: payload.event,
+      eventType: payload.eventType ?? null,
+      clubId: payload.clubId,
+      memberId: payload.memberId,
+      modifiedDatetime: payload.modifiedDatetime,
+    });
+    return {
+      id: `occ:${createHash("sha256").update(material).digest("hex")}`,
+      strategy: "occurrence",
+    };
+  }
+
+  const material = JSON.stringify({
     event: payload.event,
     clubId: payload.clubId,
     memberId: payload.memberId,
     recordId: payload.recordId ?? null,
-    data: payload.data ?? null,
   });
+  return {
+    id: `replay:${createHash("sha256").update(material).digest("hex")}`,
+    strategy: "replay_window",
+  };
 }
 
-export function getSwimsWebhookTimestampMs(
+/** @deprecated Use getSwimsWebhookDeliveryKey */
+export function getSwimsWebhookDeliveryId(
   payload: SwimsWebhookPayload,
-): number | null {
-  const raw =
-    payload.timestamp ?? payload.occurredAt ?? payload.eventTime ?? null;
-  if (raw == null) return null;
-  if (typeof raw === "number") {
-    return raw < 1e12 ? raw * 1000 : raw;
-  }
-  const parsed = Date.parse(raw);
-  return Number.isNaN(parsed) ? null : parsed;
-}
-
-export function isSwimsWebhookStale(
-  payload: SwimsWebhookPayload,
-  nowMs = Date.now(),
-  maxAgeMs = SWIMS_WEBHOOK_MAX_AGE_MS,
-): boolean {
-  const ts = getSwimsWebhookTimestampMs(payload);
-  if (ts == null) return false;
-  return nowMs - ts > maxAgeMs;
+): string {
+  return getSwimsWebhookDeliveryKey(payload).id;
 }
 
 export async function findOrganizationIdsByUsaSwimmingClubId(
@@ -75,7 +209,6 @@ export async function findOrganizationIdsByUsaSwimmingClubId(
 
 export type SwimsWebhookProcessResult =
   | { kind: "duplicate" }
-  | { kind: "stale" }
   | { kind: "unknown_club"; clubId: string }
   | {
       kind: "processed";
@@ -84,19 +217,39 @@ export type SwimsWebhookProcessResult =
     };
 
 async function claimWebhookDelivery(
-  deliveryId: string,
+  key: SwimsWebhookDeliveryKey,
   payload: SwimsWebhookPayload,
 ): Promise<boolean> {
   const inserted = await db
     .insert(usaSwimmingWebhookDelivery)
     .values({
-      id: deliveryId,
+      id: key.id,
       event: payload.event,
       clubId: payload.clubId,
     })
     .onConflictDoNothing()
     .returning({ id: usaSwimmingWebhookDelivery.id });
-  return inserted.length > 0;
+
+  if (inserted.length > 0) return true;
+  if (key.strategy !== "replay_window") return false;
+
+  const replayCutoff = new Date(Date.now() - WEBHOOK_REPLAY_WINDOW_MS);
+  const updated = await db
+    .update(usaSwimmingWebhookDelivery)
+    .set({
+      processedAt: new Date(),
+      event: payload.event,
+      clubId: payload.clubId,
+    })
+    .where(
+      and(
+        eq(usaSwimmingWebhookDelivery.id, key.id),
+        lt(usaSwimmingWebhookDelivery.processedAt, replayCutoff),
+      ),
+    )
+    .returning({ id: usaSwimmingWebhookDelivery.id });
+
+  return updated.length > 0;
 }
 
 export async function handleSwimsWebhook(
@@ -130,12 +283,8 @@ export async function handleSwimsWebhook(
 export async function processSwimsWebhook(
   payload: SwimsWebhookPayload,
 ): Promise<SwimsWebhookProcessResult> {
-  if (isSwimsWebhookStale(payload)) {
-    return { kind: "stale" };
-  }
-
-  const deliveryId = getSwimsWebhookDeliveryId(payload);
-  const claimed = await claimWebhookDelivery(deliveryId, payload);
+  const deliveryKey = getSwimsWebhookDeliveryKey(payload);
+  const claimed = await claimWebhookDelivery(deliveryKey, payload);
   if (!claimed) {
     return { kind: "duplicate" };
   }
@@ -148,7 +297,7 @@ export async function processSwimsWebhook(
     console.warn(
       "SWIMS webhook: no organization linked to clubId",
       payload.clubId,
-      deliveryId,
+      deliveryKey.id,
     );
     return { kind: "unknown_club", clubId: payload.clubId };
   }

@@ -1,5 +1,5 @@
-import type { SwimsWebhookPayload } from "@lane4hq/usa-swimming";
 import {
+  parseSwimsWebhookBody,
   processSwimsWebhook,
   verifySwimsWebhook,
 } from "@lane4hq/usa-swimming/webhooks";
@@ -15,19 +15,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let payload: SwimsWebhookPayload;
+  let raw: unknown;
   try {
-    payload = (await request.json()) as SwimsWebhookPayload;
+    raw = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  if (!payload.clubId?.trim()) {
-    return NextResponse.json({ error: "Missing clubId" }, { status: 400 });
-  }
-  if (!payload.memberId?.trim() || !payload.event) {
+  const payload = parseSwimsWebhookBody(raw);
+  if (!payload) {
     return NextResponse.json(
-      { error: "Missing event or memberId" },
+      { error: "Unrecognized or incomplete webhook payload" },
       { status: 400 },
     );
   }
@@ -37,9 +35,6 @@ export async function POST(request: Request) {
 
     if (result.kind === "duplicate") {
       return NextResponse.json({ received: true, duplicate: true });
-    }
-    if (result.kind === "stale") {
-      return NextResponse.json({ error: "Stale webhook" }, { status: 400 });
     }
     if (result.kind === "unknown_club") {
       return NextResponse.json({

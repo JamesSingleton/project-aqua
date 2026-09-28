@@ -2,13 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SwimsWebhookPayload } from "../src/types";
 import {
   findOrganizationIdsByUsaSwimmingClubId,
-  getSwimsWebhookDeliveryId,
+  getSwimsWebhookDeliveryKey,
+  parseSwimsWebhookBody,
   processSwimsWebhook,
   verifySwimsWebhook,
 } from "../src/webhooks";
 
 const mockSelectWhere = vi.fn();
 const mockInsertReturning = vi.fn();
+const mockUpdateReturning = vi.fn();
 
 vi.mock("@lane4hq/db/client", () => ({
   db: {
@@ -21,6 +23,13 @@ vi.mock("@lane4hq/db/client", () => ({
       values: () => ({
         onConflictDoNothing: () => ({
           returning: () => mockInsertReturning(),
+        }),
+      }),
+    }),
+    update: () => ({
+      set: () => ({
+        where: () => ({
+          returning: () => mockUpdateReturning(),
         }),
       }),
     }),
@@ -56,6 +65,31 @@ describe("verifySwimsWebhook", () => {
   });
 });
 
+describe("parseSwimsWebhookBody", () => {
+  it("parses Swagger SwimsEvent payloads", () => {
+    expect(
+      parseSwimsWebhookBody({
+        eventSequence: 9001,
+        eventTypeId: 3,
+        eventType: "member.renew",
+        clubId: "club-123",
+        modifiedDatetime: "2026-09-28T12:00:00Z",
+        eventData: {
+          memberIds: ["member-456"],
+          vendorRecordId: "rec-1",
+        },
+      }),
+    ).toMatchObject({
+      event: "member.renew",
+      clubId: "club-123",
+      memberId: "member-456",
+      eventSequence: 9001,
+      modifiedDatetime: "2026-09-28T12:00:00Z",
+      recordId: "rec-1",
+    });
+  });
+});
+
 describe("findOrganizationIdsByUsaSwimmingClubId", () => {
   beforeEach(() => {
     mockSelectWhere.mockReset();
@@ -83,31 +117,49 @@ describe("findOrganizationIdsByUsaSwimmingClubId", () => {
   });
 });
 
+describe("getSwimsWebhookDeliveryKey", () => {
+  it("uses eventSequence when documented on the payload", () => {
+    expect(
+      getSwimsWebhookDeliveryKey({
+        ...basePayload,
+        eventSequence: 42,
+      }),
+    ).toEqual({ id: "seq:42", strategy: "sequence" });
+  });
+
+  it("includes modifiedDatetime so repeat renewals are not deduped together", () => {
+    const key2025 = getSwimsWebhookDeliveryKey({
+      ...basePayload,
+      event: "member.renew",
+      modifiedDatetime: "2025-09-01T00:00:00Z",
+    });
+    const key2026 = getSwimsWebhookDeliveryKey({
+      ...basePayload,
+      event: "member.renew",
+      modifiedDatetime: "2026-09-01T00:00:00Z",
+    });
+    expect(key2025.id).not.toEqual(key2026.id);
+    expect(key2025.strategy).toBe("occurrence");
+  });
+});
+
 describe("processSwimsWebhook", () => {
   beforeEach(() => {
     mockSelectWhere.mockReset();
     mockInsertReturning.mockReset();
+    mockUpdateReturning.mockReset();
   });
 
-  it("skips duplicate deliveries when the id was already processed", async () => {
+  it("skips duplicate deliveries when eventSequence was already processed", async () => {
     mockInsertReturning.mockResolvedValueOnce([]);
 
     await expect(
       processSwimsWebhook({
         ...basePayload,
-        deliveryId: "delivery-1",
+        eventSequence: 100,
       }),
     ).resolves.toEqual({ kind: "duplicate" });
 
     expect(mockSelectWhere).not.toHaveBeenCalled();
-  });
-
-  it("uses explicit delivery ids for deduplication keys", () => {
-    expect(
-      getSwimsWebhookDeliveryId({
-        ...basePayload,
-        deliveryId: "vendor-delivery-99",
-      }),
-    ).toBe("vendor-delivery-99");
   });
 });
