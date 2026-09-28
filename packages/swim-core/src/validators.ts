@@ -35,44 +35,47 @@ export const swimmerMedicalSchema = z.object({
   notes: z.string().optional(),
 });
 
-export const rosterRowSchema = z
-  .object({
-    firstName: z.string().min(1),
-    middleName: z.string().optional(),
-    lastName: z.string().min(1),
-    preferredName: z.string().optional(),
-    dateOfBirth: z.string().min(1),
-    gender: z.enum(GENDERS),
-    email: z.string().email().optional().or(z.literal("")),
-    phone: z.string().optional(),
-    practiceGroup: z.string().optional(),
-    trainingGroups: z.array(z.string()).optional(),
-    classYear: z.enum(["FR", "SO", "JR", "SR"]).optional(),
-    usaMemberId: z.string().optional(),
-    governingBodyId: z.string().optional(),
-    contacts: swimmerContactsSchema.optional(),
-    medical: swimmerMedicalSchema.optional(),
-    linkExistingSwimmerId: z.string().optional(),
-    /** Skip coach-scoped name+DOB auto-link when creating a new person on purpose. */
-    forceNewPerson: z.boolean().optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (isMinorSwimmer(data.dateOfBirth) && !data.linkExistingSwimmerId) {
-      if (data.contacts === undefined) return;
-      const parentEmail = data.contacts?.parentEmail;
-      const parentName = data.contacts?.parentName;
-      if (!parentEmail || !parentName) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message:
-            "Parent/guardian name and email are required for minor swimmers",
-          path: ["contacts", "parentEmail"],
-        });
-      }
+export const rosterRowObjectSchema = z.object({
+  firstName: z.string().min(1),
+  middleName: z.string().optional(),
+  lastName: z.string().min(1),
+  preferredName: z.string().optional(),
+  dateOfBirth: z.string().min(1),
+  gender: z.enum(GENDERS),
+  email: z.string().email().optional().or(z.literal("")),
+  phone: z.string().optional(),
+  practiceGroup: z.string().optional(),
+  trainingGroups: z.array(z.string()).optional(),
+  classYear: z.enum(["FR", "SO", "JR", "SR"]).optional(),
+  usaMemberId: z.string().optional(),
+  governingBodyId: z.string().optional(),
+  contacts: swimmerContactsSchema.optional(),
+  medical: swimmerMedicalSchema.optional(),
+  linkExistingSwimmerId: z.string().optional(),
+  /** Skip coach-scoped name+DOB auto-link when creating a new person on purpose. */
+  forceNewPerson: z.boolean().optional(),
+});
+
+/** Team Manager file rows (CL2/HY3/CSV) — same fields as roster rows, no guardian refinement. */
+export const rosterFileImportRowSchema = rosterRowObjectSchema;
+
+export const rosterRowSchema = rosterRowObjectSchema.superRefine((data, ctx) => {
+  if (isMinorSwimmer(data.dateOfBirth) && !data.linkExistingSwimmerId) {
+    const parentEmail = data.contacts?.parentEmail;
+    const parentName = data.contacts?.parentName;
+    if (!parentEmail || !parentName) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Parent/guardian name and email are required for minor swimmers",
+        path: ["contacts", "parentEmail"],
+      });
     }
-  });
+  }
+});
 
 export type RosterRow = z.infer<typeof rosterRowSchema>;
+export type RosterFileImportRow = z.infer<typeof rosterFileImportRowSchema>;
 export type SwimmerContactsInput = z.infer<typeof swimmerContactsSchema>;
 export type SwimmerMedicalInput = z.infer<typeof swimmerMedicalSchema>;
 

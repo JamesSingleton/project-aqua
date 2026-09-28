@@ -8,6 +8,7 @@ import {
   rosterImportRowNumber,
 } from "@lane4hq/swim-formats/roster";
 import { describe, expect, it } from "vitest";
+import { rosterRowSchema } from "../src/validators";
 import {
   collectRosterImportRowErrors,
   formatRosterImportField,
@@ -34,6 +35,19 @@ describe("validateRosterImportRows", () => {
   it("maps empty zod paths to row field", () => {
     expect(formatRosterImportField([])).toBe("row");
     expect(formatRosterImportField(["gender"])).toBe("gender");
+  });
+
+  it("accepts minors without contacts while shared schema rejects them", () => {
+    const minorRow = {
+      firstName: "Sam",
+      lastName: "Swimmer",
+      dateOfBirth: "2015-01-01",
+      gender: "male" as const,
+    };
+    expect(rosterRowSchema.safeParse(minorRow).success).toBe(false);
+    expect(
+      validateRosterImportRows([{ row: 2, data: minorRow }]).valid,
+    ).toHaveLength(1);
   });
 
   it("labels empty names as Unknown swimmer", () => {

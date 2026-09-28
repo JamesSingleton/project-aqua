@@ -1,7 +1,7 @@
 import { parseClassYear } from "./team-types";
 import {
-  type RosterRow,
-  rosterRowSchema,
+  type RosterFileImportRow,
+  rosterFileImportRowSchema,
   type SwimmerContactsInput,
 } from "./validators";
 
@@ -28,7 +28,7 @@ export type RosterImportRawRow = {
 
 export type RosterImportValidatedRow = {
   row: number;
-  data: RosterRow;
+  data: RosterFileImportRow;
 };
 
 export type RosterImportValidationResult = {
@@ -48,7 +48,7 @@ function zodPathToField(path: PropertyKey[]): string {
   return path.map(String).join(".");
 }
 
-function rawToRosterRow(raw: RosterImportRawRow): RosterRow {
+function rawToRosterRow(raw: RosterImportRawRow): RosterFileImportRow {
   const classYear = raw.classYear ? parseClassYear(raw.classYear) : null;
   return {
     firstName: raw.firstName.trim(),
@@ -73,7 +73,7 @@ export function collectRosterImportRowErrors(
   raw: RosterImportRawRow,
 ): RosterImportRowError[] {
   const name = rosterImportRowName(raw);
-  const parsed = rosterRowSchema.safeParse(rawToRosterRow(raw));
+  const parsed = rosterFileImportRowSchema.safeParse(rawToRosterRow(raw));
   if (parsed.success) return [];
 
   return parsed.error.issues.map((issue) => ({
@@ -96,7 +96,7 @@ export function validateRosterImportRows(
       invalid.push(...rowErrors);
       continue;
     }
-    const parsed = rosterRowSchema.parse(rawToRosterRow(entry.data));
+    const parsed = rosterFileImportRowSchema.parse(rawToRosterRow(entry.data));
     valid.push({ row: entry.row, data: parsed });
   }
 
