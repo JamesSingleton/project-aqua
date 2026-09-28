@@ -12,6 +12,29 @@ describe("parseRosterCsv", () => {
     expect(parseRosterCsv("")).toEqual([]);
   });
 
+  it("parses optional contact and name columns", () => {
+    const csv = [
+      "first_name,last_name,middle_name,preferred_name,date_of_birth,gender,parent_name,parent_email",
+      "Ada,Lovelace,Augusta,Addy,2015-01-01,female,Jane Parent,jane@example.com",
+    ].join("\n");
+    const rows = parseRosterCsv(csv);
+    expect(rows[0]?.middleName).toBe("Augusta");
+    expect(rows[0]?.preferredName).toBe("Addy");
+    expect(rows[0]?.contacts?.parentName).toBe("Jane Parent");
+    expect(rows[0]?.contacts?.parentEmail).toBe("jane@example.com");
+  });
+
+  it("parses emergency contact columns", () => {
+    const csv = [
+      "first_name,last_name,date_of_birth,gender,emergency_name,emergency_phone",
+      "Ada,Lovelace,2012-04-15,female,Aunt May,555-0100",
+    ].join("\n");
+    expect(parseRosterCsv(csv)[0]?.contacts).toEqual({
+      emergencyName: "Aunt May",
+      emergencyPhone: "555-0100",
+    });
+  });
+
   it("parses default column mapping with comma delimiter", () => {
     const csv = [
       "first_name,last_name,date_of_birth,gender,practice_group,class_year,usa_member_id",
@@ -30,6 +53,7 @@ describe("parseRosterCsv", () => {
       practiceGroup: "Gold",
       classYear: "FR",
       usaMemberId: "ABC123",
+      sourceLine: 2,
     });
     expect(rows[1]?.gender).toBe("male");
   });
@@ -113,7 +137,7 @@ describe("exportRosterCsv", () => {
     ];
     const csv = exportRosterCsv(rows);
     expect(csv).toContain("first_name,last_name");
-    expect(parseRosterCsv(csv)[0]).toEqual(rows[0]);
+    expect(parseRosterCsv(csv)[0]).toEqual({ ...rows[0], sourceLine: 2 });
   });
 
   it("uses custom delimiter", () => {

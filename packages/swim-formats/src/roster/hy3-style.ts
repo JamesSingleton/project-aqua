@@ -34,14 +34,16 @@ function parseHy3D1Line(
 
 /** Hy-Tek .HY3 roster extraction (Rosters Only & meet entry files). */
 export function parseHy3Roster(content: string): ParsedRosterRow[] {
-  const lines = content.split(/\r?\n/).filter((line) => line.trim());
+  const allLines = content.split(/\r?\n/);
   const swimmers = new Map<string, ParsedRosterRow>();
   const seasonYear = extractSeasonYear(content) ?? new Date().getFullYear();
 
-  for (const line of lines) {
+  for (let i = 0; i < allLines.length; i++) {
+    const line = allLines[i]!;
+    if (!line.trim()) continue;
     if (line.startsWith("D1")) {
       const parsed = parseHy3D1Line(line, seasonYear);
-      if (parsed) mergeSwimmer(swimmers, parsed);
+      if (parsed) mergeSwimmer(swimmers, { ...parsed, sourceLine: i + 1 });
     }
   }
 

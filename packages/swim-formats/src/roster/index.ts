@@ -1,6 +1,10 @@
 export { parseCl2Roster } from "./cl2";
 export { parseHy3Roster } from "./hy3-style";
 export {
+  parsedRosterRowToImportRaw,
+  rosterImportRowNumber,
+} from "./import-rows";
+export {
   detectRosterFileFormat,
   parseRosterFile,
   parseRosterFileFromBytes,

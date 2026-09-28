@@ -23,15 +23,27 @@ describe("rosterRowSchema", () => {
     expect(rosterRowSchema.safeParse(adultBase).success).toBe(true);
   });
 
-  it("requires parent info for minor without link", () => {
+  it("requires parent info for minor when contacts block is present", () => {
     const result = rosterRowSchema.safeParse({
       ...adultBase,
       dateOfBirth: "2015-01-01",
+      contacts: {
+        parentName: "Parent Name",
+      },
     });
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0]?.message).toContain("Parent/guardian");
     }
+  });
+
+  it("allows minor without contacts block (roster file import)", () => {
+    expect(
+      rosterRowSchema.safeParse({
+        ...adultBase,
+        dateOfBirth: "2015-01-01",
+      }).success,
+    ).toBe(true);
   });
 
   it("allows USA ID when linking an existing swimmer", () => {

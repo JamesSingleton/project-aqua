@@ -58,6 +58,7 @@ export const rosterRowSchema = z
   })
   .superRefine((data, ctx) => {
     if (isMinorSwimmer(data.dateOfBirth) && !data.linkExistingSwimmerId) {
+      if (data.contacts === undefined) return;
       const parentEmail = data.contacts?.parentEmail;
       const parentName = data.contacts?.parentName;
       if (!parentEmail || !parentName) {
