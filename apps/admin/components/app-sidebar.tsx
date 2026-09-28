@@ -30,6 +30,7 @@ import { Suspense } from "react";
 import { NavMain } from "@/components/nav-main";
 import { NavQuickActions } from "@/components/nav-quick-actions";
 import { NavUser } from "@/components/nav-user";
+import { useTeamCapabilities } from "@/components/team-capabilities";
 import { type TeamItem, TeamSwitcher } from "@/components/team-switcher";
 
 export function AppSidebar({
@@ -44,15 +45,19 @@ export function AppSidebar({
   teams: TeamItem[];
   user: { name: string; email: string; image?: string | null };
 }) {
+  const { canManageTeam } = useTeamCapabilities();
+
   const settingsItems = [
     { title: "Team", url: `/team/${teamId}/settings` },
     { title: "Members", url: `/team/${teamId}/settings/members` },
-    { title: "Billing", url: `/team/${teamId}/settings/billing` },
+    ...(canManageTeam
+      ? [{ title: "Billing", url: `/team/${teamId}/settings/billing` }]
+      : []),
     { title: "Account", url: `/team/${teamId}/settings/account` },
     ...(requiresSafeSportCompliance(teamType)
       ? [{ title: "SafeSport", url: `/team/${teamId}/settings/safesport` }]
       : []),
-    ...(supportsUsaSwimmingIntegration(teamType)
+    ...(canManageTeam && supportsUsaSwimmingIntegration(teamType)
       ? [
           {
             title: "USA Swimming",

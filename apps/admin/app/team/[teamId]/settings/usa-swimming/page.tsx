@@ -7,6 +7,8 @@ import {
 } from "@lane4hq/swim-core/team-types";
 import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
+import { NotPermittedPanel } from "@/components/not-permitted-panel";
+import { getTeamCapabilitiesForCurrentMember } from "@/lib/team-member-capabilities";
 import { SettingsSection } from "../settings-section";
 import { UsaSwimmingSettings } from "./usa-swimming-settings";
 
@@ -29,6 +31,16 @@ export default async function UsaSwimmingPage({
   params: Promise<{ teamId: string }>;
 }) {
   const { teamId } = await params;
+  const { canManageTeam } = await getTeamCapabilitiesForCurrentMember(teamId);
+  if (!canManageTeam) {
+    return (
+      <NotPermittedPanel
+        title="USA Swimming settings are restricted"
+        description="Only team owners and head coaches can manage USA Swimming integration."
+      />
+    );
+  }
+
   const [org, teamType] = await Promise.all([
     db
       .select()

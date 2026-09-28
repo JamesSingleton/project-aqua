@@ -21,6 +21,36 @@ const DEFAULT_MAPPING: CsvColumnMapping = {
   usaMemberId: "usa_member_id",
 };
 
+function optionalContacts(values: {
+  parentName?: string;
+  parentEmail?: string;
+  parentPhone?: string;
+  emergencyName?: string;
+  emergencyPhone?: string;
+}) {
+  const parentName = values.parentName?.trim();
+  const parentEmail = values.parentEmail?.trim();
+  const parentPhone = values.parentPhone?.trim();
+  const emergencyName = values.emergencyName?.trim();
+  const emergencyPhone = values.emergencyPhone?.trim();
+  if (
+    !parentName &&
+    !parentEmail &&
+    !parentPhone &&
+    !emergencyName &&
+    !emergencyPhone
+  ) {
+    return undefined;
+  }
+  return {
+    parentName: parentName || undefined,
+    parentEmail: parentEmail || undefined,
+    parentPhone: parentPhone || undefined,
+    emergencyName: emergencyName || undefined,
+    emergencyPhone: emergencyPhone || undefined,
+  };
+}
+
 function parseGender(value: string): "male" | "female" {
   const v = value.toLowerCase().trim();
   if (v === "m" || v === "male" || v === "boy") return "male";
@@ -80,14 +110,28 @@ export function parseRosterCsv(
     const classFromGroup = practiceGroup ? parseClassYear(practiceGroup) : null;
     const classYear = explicitClass ?? classFromGroup ?? undefined;
 
+    const middleName = get("middle_name") || undefined;
+    const preferredName = get("preferred_name") || undefined;
+    const contacts = optionalContacts({
+      parentName: get("parent_name"),
+      parentEmail: get("parent_email"),
+      parentPhone: get("parent_phone"),
+      emergencyName: get("emergency_name"),
+      emergencyPhone: get("emergency_phone"),
+    });
+
     rows.push({
       firstName,
       lastName,
+      ...(middleName ? { middleName } : {}),
+      ...(preferredName ? { preferredName } : {}),
       dateOfBirth: get(map.dateOfBirth),
       gender: parseGender(get(map.gender)),
       practiceGroup: classFromGroup ? undefined : practiceGroup,
       classYear: classYear ?? undefined,
       usaMemberId: map.usaMemberId ? get(map.usaMemberId) : undefined,
+      sourceLine: i + 1,
+      ...(contacts ? { contacts } : {}),
     });
   }
 

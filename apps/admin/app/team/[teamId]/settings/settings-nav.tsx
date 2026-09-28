@@ -8,6 +8,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@lane4hq/ui/components/tabs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTeamCapabilities } from "@/components/team-capabilities";
 
 export function SettingsNav({
   teamId,
@@ -16,13 +17,16 @@ export function SettingsNav({
   teamId: string;
   teamType: TeamType;
 }) {
+  const { canManageTeam } = useTeamCapabilities();
   const pathname = usePathname();
   const base = `/team/${teamId}/settings`;
 
   const tabs = [
     { value: "team", label: "Team", href: base },
     { value: "members", label: "Members", href: `${base}/members` },
-    { value: "billing", label: "Billing", href: `${base}/billing` },
+    ...(canManageTeam
+      ? [{ value: "billing", label: "Billing", href: `${base}/billing` }]
+      : []),
     { value: "account", label: "Account", href: `${base}/account` },
     ...(requiresSafeSportCompliance(teamType)
       ? [
@@ -33,7 +37,7 @@ export function SettingsNav({
           },
         ]
       : []),
-    ...(supportsUsaSwimmingIntegration(teamType)
+    ...(canManageTeam && supportsUsaSwimmingIntegration(teamType)
       ? [
           {
             value: "usa-swimming",

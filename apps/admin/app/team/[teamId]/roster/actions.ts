@@ -6,9 +6,9 @@ import {
   remainingSwimmerSlots,
 } from "@lane4hq/billing/features";
 import {
-  canExportRoster,
   requireCoachSafeSportCurrent,
   requireMinorPiiAccess,
+  requireRosterImportExportAccess,
   requireTeamMember,
   requireTeamRole,
   writeAuditLog,
@@ -40,17 +40,23 @@ import {
   sendRosterImportFailed,
 } from "@lane4hq/emails";
 import { isMinorSwimmer } from "@lane4hq/swim-core/age";
-import { parseClassYear } from "@lane4hq/swim-core/team-types";
+import {
+  type RosterImportRowError,
+  type RosterImportValidatedRow,
+  validateRosterImportRows,
+} from "@lane4hq/swim-core/roster-import";
 import { rosterRowSchema } from "@lane4hq/swim-core/validators";
 import { parseRosterCsv } from "@lane4hq/swim-formats/csv";
 import {
   buildRosterSharePack,
   detectRosterFileFormat,
   isRosterSharePack,
+  parsedRosterRowToImportRaw,
   parseRosterFile,
   parseRosterFileFromBytes,
   parseRosterSharePack,
   rosterImportErrorForFile,
+  rosterImportRowNumber,
   rosterSharePackFilename,
   serializeRosterSharePack,
 } from "@lane4hq/swim-formats/roster";
@@ -309,7 +315,7 @@ export async function exportRosterCsvAction(
     headerStore.get("x-real-ip") ??
     undefined;
 
-  await canExportRoster(session?.user?.id, teamId);
+  await requireRosterImportExportAccess(session?.user?.id, teamId);
 
   const hasFilters =
     options &&
@@ -318,7 +324,8 @@ export async function exportRosterCsvAction(
       options.status?.length ||
       options.gender?.length ||
       options.groupId?.length ||
-      options.classYear?.length);
+      options.classYear?.length ||
+      (options.sort?.length ?? 0) > 0);
 
   const roster = hasFilters
     ? await getRosterForExport(teamId, {
@@ -349,6 +356,21 @@ export async function exportRosterCsvAction(
   ];
 
   if (session?.user?.id) {
+    const exportMetadata: Record<string, unknown> = {
+      rowCount: roster.length,
+    };
+    if (hasFilters && options) {
+      exportMetadata.filters = {
+        q: options.q,
+        status: options.status,
+        gender: options.gender,
+        groupId: options.groupId,
+        classYear: options.classYear,
+        sort: options.sort,
+        swimmerIds: options.swimmerIds,
+        seasonId: options.seasonId,
+      };
+    }
     await writeAuditLog({
       organizationId: teamId,
       actorUserId: session.user.id,
@@ -356,6 +378,7 @@ export async function exportRosterCsvAction(
       resourceType: "organization",
       resourceId: teamId,
       ipAddress: ip,
+      metadata: exportMetadata,
     });
   }
 
@@ -373,7 +396,7 @@ export async function exportRosterSharePackAction(
     headerStore.get("x-real-ip") ??
     undefined;
 
-  await canExportRoster(session?.user?.id, teamId);
+  await requireRosterImportExportAccess(session?.user?.id, teamId);
 
   const swimmerIds = [...new Set(options.swimmerIds.filter(Boolean))];
   if (swimmerIds.length === 0) {
@@ -448,7 +471,7 @@ export async function exportRosterSharePackAction(
 
 async function importRosterSharePackRows(teamId: string, content: string) {
   const session = await getSession();
-  await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+  await requireRosterImportExportAccess(session?.user?.id, teamId);
 
   const pack = parseRosterSharePack(content);
   if (pack.sourceOrganizationId === teamId) {
@@ -564,61 +587,187 @@ export async function recordMaappAcknowledgmentAction(
   revalidatePath(`/team/${teamId}/settings/safesport`);
 }
 
-async function importRosterRows(
-  teamId: string,
-  rows: Awaited<ReturnType<typeof parseRosterCsv>>,
-  jobType: string,
-) {
-  const session = await getSession();
-  await requireTeamRole(session?.user?.id, teamId, ["owner", "head_coach"]);
+type ParsedRosterFileRow = Awaited<ReturnType<typeof parseRosterCsv>>[number];
 
-  if (rows.length === 0) {
+function buildRosterImportValidationInput(parsed: ParsedRosterFileRow[]) {
+  return parsed.map((row, index) => ({
+    row: rosterImportRowNumber(row, index + 2),
+    data: parsedRosterRowToImportRaw(row),
+  }));
+}
+
+function parseRosterFileRows(
+  filename: string,
+  text: string,
+  encoding: "utf8" | "base64",
+): ParsedRosterFileRow[] {
+  if (filename.toLowerCase().endsWith(".zip")) {
+    if (encoding !== "base64") {
+      throw new Error("ZIP roster packs must be uploaded as binary files.");
+    }
+    const bytes = Uint8Array.from(Buffer.from(text, "base64"));
+    return parseRosterFileFromBytes(bytes, filename);
+  }
+
+  const importError = rosterImportErrorForFile(filename, text);
+  if (importError) {
+    throw new Error(importError);
+  }
+
+  const format = detectRosterFileFormat(filename, text);
+  if (!format) {
+    throw new Error(
+      "Unsupported file type. Use a Lane4 HQ share pack (.lane4hq.json), CSV, SD3, CL2, HY3, or a roster ZIP.",
+    );
+  }
+
+  return parseRosterFile(text, format);
+}
+
+export type RosterFileImportPreviewResult = {
+  validCount: number;
+  invalidCount: number;
+  totalRows: number;
+  errors: RosterImportRowError[];
+};
+
+export async function previewRosterFileImportAction(
+  teamId: string,
+  filename: string,
+  content: string,
+  encoding: "utf8" | "base64" = "utf8",
+): Promise<RosterFileImportPreviewResult> {
+  const session = await getSession();
+  await requireRosterImportExportAccess(session?.user?.id, teamId);
+
+  if (filename.toLowerCase().endsWith(".zip")) {
+    const parsed = parseRosterFileRows(filename, content, encoding);
+    if (parsed.length === 0) {
+      throw new Error("No swimmers found in file");
+    }
+    const { valid, invalid } = validateRosterImportRows(
+      buildRosterImportValidationInput(parsed),
+    );
+    const invalidRows = new Set(invalid.map((e) => e.row));
+    return {
+      validCount: valid.length,
+      invalidCount: invalidRows.size,
+      totalRows: parsed.length,
+      errors: invalid,
+    };
+  }
+
+  const text =
+    encoding === "base64"
+      ? Buffer.from(content, "base64").toString("utf8")
+      : content;
+
+  if (isRosterSharePack(text)) {
+    throw new Error("Share packs import directly without row preview.");
+  }
+
+  const parsed = parseRosterFileRows(filename, text, encoding);
+  if (parsed.length === 0) {
     throw new Error("No swimmers found in file");
   }
 
-  if (rows.some((r) => isMinorSwimmer(r.dateOfBirth))) {
-    await requireCoachSafeSportCurrent(session?.user?.id, teamId);
+  const { valid, invalid } = validateRosterImportRows(
+    buildRosterImportValidationInput(parsed),
+  );
+
+  const invalidRows = new Set(invalid.map((e) => e.row));
+
+  return {
+    validCount: valid.length,
+    invalidCount: invalidRows.size,
+    totalRows: parsed.length,
+    errors: invalid,
+  };
+}
+
+export type RosterFileImportResult = {
+  imported: number;
+  reactivated: number;
+  linkedExisting: number;
+  skipped: number;
+  invalidRowCount: number;
+  errors: RosterImportRowError[];
+};
+
+async function importValidatedRosterRows(
+  teamId: string,
+  rows: RosterImportValidatedRow[],
+  jobType: string,
+  summary: { invalidRowCount: number; errors: RosterImportRowError[] },
+) {
+  const session = await getSession();
+  await requireRosterImportExportAccess(session?.user?.id, teamId);
+
+  if (rows.length === 0 && summary.invalidRowCount === 0) {
+    throw new Error("No swimmers found in file");
   }
 
   const jobId = await createImportJob(teamId, jobType);
   await updateImportJob(jobId, { status: "processing" });
 
   try {
-    let added = 0;
+    let imported = 0;
     let reactivated = 0;
-    for (const row of rows) {
-      const result = await addSwimmer(
-        teamId,
-        {
-          firstName: row.firstName,
-          lastName: row.lastName,
-          dateOfBirth: row.dateOfBirth,
-          gender: row.gender,
-          practiceGroup: row.practiceGroup,
-          classYear: parseClassYear(row.classYear) ?? undefined,
-          usaMemberId: row.usaMemberId,
-        },
-        { viewerUserId: session?.user?.id },
-      );
-      if ("reactivated" in result && result.reactivated) reactivated++;
-      else added++;
+    let linkedExisting = 0;
+    let skipped = summary.invalidRowCount;
+
+    for (const { data: row } of rows) {
+      try {
+        const result = await addSwimmer(teamId, row, {
+          viewerUserId: session?.user?.id,
+        });
+        if ("reactivated" in result && result.reactivated) {
+          reactivated++;
+        } else if ("linkedExisting" in result && result.linkedExisting) {
+          linkedExisting++;
+        } else {
+          imported++;
+        }
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message === "Swimmer is already on this team"
+        ) {
+          skipped++;
+          continue;
+        }
+        throw error;
+      }
     }
 
     revalidatePath(`/team/${teamId}/roster`);
     await updateImportJob(jobId, {
       status: "complete",
-      resultSummary: JSON.stringify({ added, reactivated }),
+      resultSummary: JSON.stringify({
+        imported,
+        reactivated,
+        linkedExisting,
+        skipped,
+        invalidRowCount: summary.invalidRowCount,
+      }),
     });
 
-    if (session?.user?.email) {
+    if (session?.user?.email && rows.length > 0) {
       await sendRosterImportComplete(session.user.email, {
         teamName: "Your team",
-        added,
+        added: imported + linkedExisting,
         updated: reactivated,
       });
     }
 
-    return { added, reactivated };
+    return {
+      imported,
+      reactivated,
+      linkedExisting,
+      skipped,
+      invalidRowCount: summary.invalidRowCount,
+      errors: summary.errors,
+    };
   } catch (error) {
     await updateImportJob(jobId, {
       status: "failed",
@@ -636,12 +785,41 @@ async function importRosterRows(
   }
 }
 
+async function importRosterRows(
+  teamId: string,
+  parsed: ParsedRosterFileRow[],
+  jobType: string,
+) {
+  const validation = validateRosterImportRows(
+    buildRosterImportValidationInput(parsed),
+  );
+  const invalidRows = new Set(validation.invalid.map((e) => e.row));
+  if (validation.valid.length === 0) {
+    throw new Error(
+      validation.invalid[0]?.message ??
+        "No valid swimmers found in file. Fix errors and try again.",
+    );
+  }
+  return importValidatedRosterRows(teamId, validation.valid, jobType, {
+    invalidRowCount: invalidRows.size,
+    errors: validation.invalid,
+  });
+}
+
 export async function importRosterCsvAction(teamId: string, content: string) {
-  return importRosterRows(teamId, parseRosterCsv(content), "roster_csv");
+  const result = await importRosterRows(
+    teamId,
+    parseRosterCsv(content),
+    "roster_csv",
+  );
+  return {
+    ...result,
+    added: result.imported + result.linkedExisting,
+  };
 }
 
 export type ImportRosterFileResult =
-  | { added: number; reactivated: number }
+  | RosterFileImportResult
   | {
       added: number;
       linked: number;
@@ -676,20 +854,9 @@ export async function importRosterFileAction(
     return importRosterSharePackRows(teamId, text);
   }
 
-  const importError = rosterImportErrorForFile(filename, text);
-  if (importError) {
-    throw new Error(importError);
-  }
-
-  const format = detectRosterFileFormat(filename, text);
-  if (!format) {
-    throw new Error(
-      "Unsupported file type. Use a Lane4 HQ share pack (.lane4hq.json), CSV, SD3, CL2, HY3, or a roster ZIP.",
-    );
-  }
-
-  const rows = parseRosterFile(text, format);
-  return importRosterRows(teamId, rows, `roster_${format}`);
+  const parsed = parseRosterFileRows(filename, text, encoding);
+  const format = detectRosterFileFormat(filename, text) ?? "csv";
+  return importRosterRows(teamId, parsed, `roster_${format}`);
 }
 
 export async function saveRosterViewPreferencesAction(
