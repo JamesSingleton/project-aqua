@@ -318,7 +318,8 @@ export async function exportRosterCsvAction(
       options.status?.length ||
       options.gender?.length ||
       options.groupId?.length ||
-      options.classYear?.length);
+      options.classYear?.length ||
+      (options.sort?.length ?? 0) > 0);
 
   const roster = hasFilters
     ? await getRosterForExport(teamId, {
@@ -349,6 +350,21 @@ export async function exportRosterCsvAction(
   ];
 
   if (session?.user?.id) {
+    const exportMetadata: Record<string, unknown> = {
+      rowCount: roster.length,
+    };
+    if (hasFilters && options) {
+      exportMetadata.filters = {
+        q: options.q,
+        status: options.status,
+        gender: options.gender,
+        groupId: options.groupId,
+        classYear: options.classYear,
+        sort: options.sort,
+        swimmerIds: options.swimmerIds,
+        seasonId: options.seasonId,
+      };
+    }
     await writeAuditLog({
       organizationId: teamId,
       actorUserId: session.user.id,
@@ -356,6 +372,7 @@ export async function exportRosterCsvAction(
       resourceType: "organization",
       resourceId: teamId,
       ipAddress: ip,
+      metadata: exportMetadata,
     });
   }
 
