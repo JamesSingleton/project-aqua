@@ -478,6 +478,7 @@ export async function upsertMeetCommitment(
   notes?: string,
   relayOnly?: boolean,
 ) {
+  const storedStatus = status === "declined" ? "not_going" : status;
   const [existing] = await db
     .select()
     .from(meetCommitments)
@@ -493,7 +494,7 @@ export async function upsertMeetCommitment(
     await db
       .update(meetCommitments)
       .set({
-        status,
+        status: storedStatus,
         notes: notes ?? existing.notes,
         relayOnly: relayOnly ?? existing.relayOnly,
         updatedAt: new Date(),
@@ -507,7 +508,7 @@ export async function upsertMeetCommitment(
     id,
     meetId,
     membershipId,
-    status,
+    status: storedStatus,
     notes: notes ?? null,
     relayOnly: relayOnly ?? false,
   });

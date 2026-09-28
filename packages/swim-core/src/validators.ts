@@ -191,8 +191,12 @@ export const meetCommitmentStatusSchema = z.enum([
 
 export type MeetCommitmentStatus = z.infer<typeof meetCommitmentStatusSchema>;
 
-/** Statuses coaches set to exclude a swimmer from meet entries / export. */
-export const meetAttendanceStatusSchema = z.enum(["not_going", "not_eligible"]);
+/** Statuses stored on meet_commitments (committed = no row). */
+export const meetAttendanceStatusSchema = z.enum([
+  "pending",
+  "not_going",
+  "not_eligible",
+]);
 
 export type MeetAttendanceStatus = z.infer<typeof meetAttendanceStatusSchema>;
 

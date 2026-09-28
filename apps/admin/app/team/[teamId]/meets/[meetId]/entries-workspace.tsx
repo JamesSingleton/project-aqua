@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from "@lane4hq/ui/components/tabs";
 import type { ComponentProps } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { writeUnconfirmedMeetEntriesView } from "../meet-entries-view";
+import { EntryMatrix } from "./entry-matrix";
 import { LineupSuggestPanel } from "./lineup-suggest-panel";
 import { ProgramEntriesBoard } from "./program-entries-board";
 import { RegistrationBoard } from "./registration-board";
@@ -109,6 +110,7 @@ export type MeetEntriesSharedData = {
   relayLegs: MeetEntriesSharedRelayLegRow[];
   relayTeams: MeetEntriesSharedRelayTeamRow[];
   notGoingMembershipIds: string[];
+  pendingMembershipIds: string[];
 };
 
 function isRelayEvent(event: { stroke: string; eventKey: string }) {
@@ -346,7 +348,37 @@ export function EntriesWorkspace({
       </div>
 
       {view === "swimmer" ? (
-        <RegistrationBoard {...registration} associationCaps={caps} />
+        <>
+          <RegistrationBoard {...registration} associationCaps={caps} />
+          <EntryMatrix
+            teamId={shared.teamId}
+            meetId={shared.meetId}
+            events={shared.events}
+            swimmers={shared.roster.map((row) => ({
+              membershipId: row.membershipId,
+              firstName: row.firstName,
+              lastName: row.lastName,
+            }))}
+            entries={shared.entries.map((entry) => ({
+              id: entry.id,
+              meetEventId: entry.meetEventId,
+              membershipId: entry.membershipId,
+              status: entry.status,
+              seedTimeMs: entry.seedTimeMs,
+              exhibition: entry.exhibition,
+            }))}
+            relayLegs={shared.relayLegs.map((leg, index) => ({
+              id: `${leg.meetEventId}:${leg.membershipId}:${leg.legOrder}:${index}`,
+              meetEventId: leg.meetEventId,
+              membershipId: leg.membershipId,
+              relayLetter: leg.relayLetter ?? "A",
+              legOrder: leg.legOrder,
+              stroke: leg.stroke,
+            }))}
+            limits={shared.limits}
+            pendingMembershipIds={shared.pendingMembershipIds}
+          />
+        </>
       ) : (
         <ProgramEntriesBoard {...program} caps={caps} />
       )}

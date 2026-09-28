@@ -158,6 +158,8 @@ describe("buildMeetLineupSnapshot", () => {
     ).toEqual({
       scratched: false,
       notGoing: false,
+      pending: false,
+      meetNotEligible: false,
       ineligible: true,
       missingFromRoster: false,
     });
@@ -358,6 +360,22 @@ describe("explicit meet relay-only commitments", () => {
     expect(snapshot.athletes).toEqual([]);
     expect(hostPackLineup(snapshot).athletes).toEqual([]);
   });
+
+  it("keeps pending relay-only swimmers for review but omits them from the host pack", () => {
+    const snapshot = buildMeetLineupSnapshot(
+      baseInput({
+        entries: [],
+        relayLegs: [],
+        commitments: [
+          { membershipId: "m2", status: "pending", relayOnly: true },
+        ],
+      }),
+    );
+    const m2 = snapshot.athletes.find((row) => row.membershipId === "m2");
+    expect(m2?.relayOnly).toBe(true);
+    expect(m2?.inclusion.pending).toBe(true);
+    expect(hostPackLineup(snapshot).athletes).toEqual([]);
+  });
 });
 
 describe("hostPackLineup", () => {
@@ -450,6 +468,19 @@ describe("hostPackLineup", () => {
     expect(host.relayTeams).toEqual([]);
     expect(host.athletes).toEqual([]);
   });
+
+  it("drops pending swimmers from host packs", () => {
+    const snapshot = buildMeetLineupSnapshot(
+      baseInput({
+        commitments: [{ membershipId: "m1", status: "pending" }],
+      }),
+    );
+    const host = hostPackLineup(snapshot);
+    expect(host.individuals.some((row) => row.membershipId === "m1")).toBe(
+      false,
+    );
+    expect(host.athletes.some((row) => row.membershipId === "m1")).toBe(false);
+  });
 });
 
 describe("isHostPackExcluded", () => {
@@ -458,6 +489,8 @@ describe("isHostPackExcluded", () => {
       isHostPackExcluded({
         scratched: false,
         notGoing: false,
+        pending: false,
+        meetNotEligible: false,
         ineligible: false,
         missingFromRoster: false,
       }),
@@ -466,6 +499,8 @@ describe("isHostPackExcluded", () => {
       isHostPackExcluded({
         scratched: false,
         notGoing: false,
+        pending: false,
+        meetNotEligible: false,
         ineligible: true,
         missingFromRoster: false,
       }),
@@ -474,6 +509,8 @@ describe("isHostPackExcluded", () => {
       isHostPackExcluded({
         scratched: false,
         notGoing: false,
+        pending: false,
+        meetNotEligible: false,
         ineligible: false,
         missingFromRoster: true,
       }),

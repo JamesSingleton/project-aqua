@@ -29,6 +29,7 @@ import {
   formatEventName,
   isSwimmerEligibleForEvent,
 } from "@lane4hq/swim-core/events";
+import { indexMeetCommitments } from "@lane4hq/swim-core/meet-attendance";
 import { getPlanLimits } from "@lane4hq/swim-core/plans";
 import {
   deriveRelayLetter,
@@ -516,20 +517,18 @@ export async function suggestRelayOrderAction(
     throw new Error("Selected event is not a relay");
   }
 
-  const notGoingIds = new Set(
-    commitments
-      .filter((c) => c.status === "not_going")
-      .map((c) => c.membershipId),
-  );
+  const commitmentMaps = indexMeetCommitments(commitments);
   const pool = roster.filter(
     (r) =>
-      !notGoingIds.has(r.membershipId) &&
+      !commitmentMaps.notGoingIds.has(r.membershipId) &&
+      !commitmentMaps.meetNotEligibleIds.has(r.membershipId) &&
       !blocksMeetEntries(r.eligibilityStatus),
   );
 
   if (pool.length < 4) {
     throw new Error(
-      notGoingIds.size > 0
+      commitmentMaps.notGoingIds.size > 0 ||
+        commitmentMaps.meetNotEligibleIds.size > 0
         ? "Need at least 4 eligible swimmers attending this meet for a relay"
         : "Need at least 4 eligible roster swimmers for a relay",
     );

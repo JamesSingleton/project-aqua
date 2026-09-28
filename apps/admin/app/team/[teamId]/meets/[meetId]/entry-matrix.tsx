@@ -218,6 +218,7 @@ export function EntryMatrix({
   entries,
   relayLegs = [],
   limits,
+  pendingMembershipIds = [],
 }: {
   teamId: string;
   meetId: string;
@@ -226,11 +227,17 @@ export function EntryMatrix({
   entries: MatrixEntry[];
   relayLegs?: MatrixRelayLeg[];
   limits?: MeetEntryLimits | null;
+  pendingMembershipIds?: string[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState("");
   const [groupBy, setGroupBy] = useState<GroupBy>("swimmer");
+
+  const pendingIds = useMemo(
+    () => new Set(pendingMembershipIds),
+    [pendingMembershipIds],
+  );
 
   const eventById = useMemo(
     () => new Map(events.map((event) => [event.id, event])),
@@ -307,6 +314,7 @@ export function EntryMatrix({
     if (groupBy === "errors") {
       const qtMiss: MatrixEntry[] = [];
       const overLimit: MatrixEntry[] = [];
+      const pendingCommitment: MatrixEntry[] = [];
       const countInputs = relayLegs.map((leg) => ({
         membershipId: leg.membershipId,
         meetEventId: leg.meetEventId,
@@ -315,6 +323,9 @@ export function EntryMatrix({
       }));
 
       for (const entry of activeEntries) {
+        if (pendingIds.has(entry.membershipId)) {
+          pendingCommitment.push(entry);
+        }
         if (entry.kind === "relay") continue;
         const event = eventById.get(entry.meetEventId);
         const qt = checkQualifyingTime(
@@ -345,6 +356,11 @@ export function EntryMatrix({
       }
 
       return [
+        {
+          key: "pending",
+          label: "Pending commitment (excluded from export)",
+          rows: pendingCommitment,
+        },
         { key: "qt", label: "Slower than QT", rows: qtMiss },
         { key: "limit", label: "Over entry limit", rows: overLimit },
       ]
@@ -385,6 +401,7 @@ export function EntryMatrix({
     swimmerById,
     limits,
     relayLegs,
+    pendingIds,
   ]);
 
   function approveDrafts() {
@@ -426,7 +443,8 @@ export function EntryMatrix({
           <CardTitle>Entries</CardTitle>
           <CardDescription>
             Swimmers with entries and their events. Group by swimmer, event, or
-            validation (QT warnings and entry-limit errors).
+            validation (QT warnings, pending commitment, and entry-limit
+            errors).
           </CardDescription>
         </div>
         <Button
