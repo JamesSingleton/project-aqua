@@ -10,4 +10,5 @@ export * from "./preferences";
 export * from "./safesport";
 export * from "./seasons";
 export * from "./swimmers";
+export * from "./usa-swimming";
 export * from "./workouts";
