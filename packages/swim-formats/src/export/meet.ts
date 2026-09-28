@@ -101,6 +101,9 @@ export function exportSdif(meet: ParsedMeet): string {
     );
   }
 
+  const entrySwimmerKeys = new Set(
+    meet.entries.map((entry) => entry.swimmerName.trim().toLowerCase()),
+  );
   for (const entry of meet.entries) {
     const { firstName, lastName } = splitName(entry.swimmerName);
     lines.push(
@@ -110,6 +113,22 @@ export function exportSdif(meet: ParsedMeet): string {
         firstName,
         usaMemberId: entry.usaMemberId,
         seedTime: entry.seedTime,
+      }),
+    );
+  }
+
+  for (const athlete of meet.athletes ?? []) {
+    if (!athlete.relayOnly) continue;
+    const key = athlete.name.trim().toLowerCase();
+    if (entrySwimmerKeys.has(key)) continue;
+    entrySwimmerKeys.add(key);
+    const { firstName, lastName } = splitName(athlete.name);
+    lines.push(
+      sdifAthleteLine("D0", {
+        eventNumber: 0,
+        lastName,
+        firstName,
+        usaMemberId: athlete.usaMemberId,
       }),
     );
   }
