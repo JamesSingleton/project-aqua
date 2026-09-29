@@ -39,6 +39,8 @@ export type InspectedFiles =
     }
   | { kind: "roster"; filenames: string[]; rows: ParsedRosterRow[] };
 
+export type MeetInspection = Extract<InspectedFiles, { kind: "meet" }>;
+
 const ROSTER_ONLY = /Rosters Only|roster export/i;
 
 export function hasMeetFileExtension(filename: string): boolean {
