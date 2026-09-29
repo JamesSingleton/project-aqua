@@ -1,5 +1,17 @@
 import type { ParsedMeet } from "@lane4hq/swim-formats";
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+} from "@lane4hq/ui/components/alert";
 import { Badge } from "@lane4hq/ui/components/badge";
+import { Button } from "@lane4hq/ui/components/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@lane4hq/ui/components/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -14,22 +26,48 @@ import {
   TabsList,
   TabsTrigger,
 } from "@lane4hq/ui/components/tabs";
-import { useDeferredValue, useMemo, useState } from "react";
-import type { InspectedFiles } from "../lib/meet-file";
+import {
+  ChevronDown,
+  CircleCheck,
+  Download,
+  TriangleAlert,
+} from "lucide-react";
+import { useDeferredValue, useMemo, useState, useTransition } from "react";
+import {
+  EXPORT_FORMAT_LABELS,
+  EXPORT_FORMATS,
+  type ExportFormat,
+  exportMeet,
+} from "../lib/meet-export";
+import { inspectFiles, type MeetInspection } from "../lib/meet-file";
 import {
   eventLabel,
   eventLabelsByNumber,
   formatDateRange,
 } from "../lib/meet-labels";
+import { saveMeetFile } from "../lib/native";
 import { FilterInput, matchesFilter } from "./filter-input";
 import { Stat } from "./stat";
 
-type MeetInspection = Extract<InspectedFiles, { kind: "meet" }>;
-
 const ROW = "[content-visibility:auto] [contain-intrinsic-size:auto_2.5rem]";
 
-export function MeetView({ inspected }: { inspected: MeetInspection }) {
+type ExportState =
+  | { status: "idle" }
+  | { status: "saved"; filename: string; exported: MeetInspection | null }
+  | { status: "error"; message: string };
+
+export function MeetView({
+  inspected,
+  onCompare,
+}: {
+  inspected: MeetInspection;
+  onCompare: (candidate: MeetInspection) => void;
+}) {
   const { meet, summary, sourceFiles } = inspected;
+  const [exportState, setExportState] = useState<ExportState>({
+    status: "idle",
+  });
+  const [isExporting, startExport] = useTransition();
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
   const labels = useMemo(() => eventLabelsByNumber(meet.events), [meet]);
@@ -40,6 +78,27 @@ export function MeetView({ inspected }: { inspected: MeetInspection }) {
       : summary.entries > 0
         ? "entries"
         : "events";
+
+  function handleExport(format: ExportFormat) {
+    startExport(async () => {
+      try {
+        const file = exportMeet(meet, format);
+        const filename = await saveMeetFile(file);
+        if (!filename) return;
+        const reopened = inspectFiles([file]);
+        startExport(() =>
+          setExportState({
+            status: "saved",
+            filename,
+            exported: reopened.kind === "meet" ? reopened : null,
+          }),
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        startExport(() => setExportState({ status: "error", message }));
+      }
+    });
+  }
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 p-6">
@@ -52,6 +111,29 @@ export function MeetView({ inspected }: { inspected: MeetInspection }) {
           {meet.importKind ? (
             <Badge variant="secondary">{meet.importKind}</Badge>
           ) : null}
+          <div className="ml-auto">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button size="sm" variant="outline" disabled={isExporting} />
+                }
+              >
+                <Download />
+                {isExporting ? "Exporting…" : "Export"}
+                <ChevronDown />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {EXPORT_FORMATS.map((format) => (
+                  <DropdownMenuItem
+                    key={format}
+                    onClick={() => handleExport(format)}
+                  >
+                    {EXPORT_FORMAT_LABELS[format]}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         <p className="text-sm text-muted-foreground">
           {[
@@ -70,6 +152,36 @@ export function MeetView({ inspected }: { inspected: MeetInspection }) {
           ))}
         </div>
       </section>
+
+      {exportState.status === "saved" ? (
+        <Alert>
+          <CircleCheck />
+          <AlertDescription>
+            Saved <span className="font-mono">{exportState.filename}</span>.
+          </AlertDescription>
+          {exportState.exported ? (
+            <AlertAction>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  if (exportState.exported) onCompare(exportState.exported);
+                }}
+              >
+                Compare with original
+              </Button>
+            </AlertAction>
+          ) : null}
+        </Alert>
+      ) : null}
+      {exportState.status === "error" ? (
+        <Alert variant="destructive">
+          <TriangleAlert />
+          <AlertDescription>
+            Export failed: {exportState.message}
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         <Stat label="Events" value={summary.events} />

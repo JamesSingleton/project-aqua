@@ -5,8 +5,18 @@ import {
 } from "@lane4hq/ui/components/alert";
 import { Button } from "@lane4hq/ui/components/button";
 import { cn } from "@lane4hq/ui/lib/utils";
-import { FileUp, FolderOpen, TriangleAlert } from "lucide-react";
-import { useEffect, useRef, useState, useTransition } from "react";
+import {
+  FileUp,
+  FolderOpen,
+  GitCompareArrows,
+  TriangleAlert,
+} from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import {
+  type CompareSlot,
+  type CompareSlotName,
+  CompareView,
+} from "./components/compare-view";
 import { MeetView } from "./components/meet-view";
 import { RosterView } from "./components/roster-view";
 import { Welcome } from "./components/welcome";
@@ -14,39 +24,53 @@ import {
   hasMeetFileExtension,
   type InspectedFiles,
   inspectFiles,
-  MEET_FILE_EXTENSIONS,
+  type MeetInspection,
   type SourceFile,
 } from "./lib/meet-file";
 import {
   type DropState,
   isTauri,
   onFileDrop,
-  pickMeetFilePaths,
+  pickSourceFiles,
   readMeetFiles,
 } from "./lib/native";
 
 type ViewState =
   | { status: "empty" }
   | { status: "error"; message: string; filenames: string[] }
-  | { status: "loaded"; inspected: InspectedFiles };
+  | { status: "loaded"; inspected: InspectedFiles }
+  | { status: "compare"; original: CompareSlot; candidate: CompareSlot };
 
-const BROWSER_ACCEPT = MEET_FILE_EXTENSIONS.map((ext) => `.${ext}`).join(",");
+const COMPARE_PICKER_TITLES: Record<CompareSlotName, string> = {
+  original: "Choose the original meet files",
+  candidate: "Choose the Lane4 export",
+};
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
 
 export function App() {
   const [view, setView] = useState<ViewState>({ status: "empty" });
   const [dropState, setDropState] = useState<DropState>("idle");
   const [isPending, startTransition] = useTransition();
-  const browserInput = useRef<HTMLInputElement>(null);
 
   function load(readFiles: () => Promise<SourceFile[]>, filenames: string[]) {
     startTransition(async () => {
       try {
         const files = await readFiles();
+        if (files.length === 0) return;
         const inspected = inspectFiles(files);
         startTransition(() => setView({ status: "loaded", inspected }));
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        startTransition(() => setView({ status: "error", message, filenames }));
+        const message = errorMessage(error);
+        startTransition(() =>
+          setView({
+            status: "error",
+            message,
+            filenames: filenames.length > 0 ? filenames : ["files"],
+          }),
+        );
       }
     });
   }
@@ -57,28 +81,42 @@ export function App() {
     load(() => readMeetFiles(targets), targets);
   }
 
-  async function handleOpen() {
-    if (!isTauri()) {
-      browserInput.current?.click();
-      return;
-    }
-    const paths = await pickMeetFilePaths();
-    if (paths.length > 0) loadPaths(paths);
+  function handleOpen() {
+    load(() => pickSourceFiles(), []);
   }
 
-  function handleBrowserFiles(fileList: FileList | null) {
-    const files = [...(fileList ?? [])];
-    if (files.length === 0) return;
-    load(
-      () =>
-        Promise.all(
-          files.map(async (file) => ({
-            filename: file.name,
-            bytes: new Uint8Array(await file.arrayBuffer()),
-          })),
+  function handleCompare(candidate?: MeetInspection) {
+    const original =
+      view.status === "loaded" && view.inspected.kind === "meet"
+        ? view.inspected
+        : undefined;
+    setView({
+      status: "compare",
+      original: { inspected: original },
+      candidate: { inspected: candidate },
+    });
+  }
+
+  function chooseCompareFiles(slot: CompareSlotName) {
+    startTransition(async () => {
+      let next: CompareSlot;
+      try {
+        const files = await pickSourceFiles(COMPARE_PICKER_TITLES[slot]);
+        if (files.length === 0) return;
+        const inspected = inspectFiles(files);
+        next =
+          inspected.kind === "meet"
+            ? { inspected }
+            : { error: "These files are a roster, not a meet." };
+      } catch (error) {
+        next = { error: errorMessage(error) };
+      }
+      startTransition(() =>
+        setView((current) =>
+          current.status === "compare" ? { ...current, [slot]: next } : current,
         ),
-      files.map((f) => f.name),
-    );
+      );
+    });
   }
 
   useEffect(() => {
@@ -98,21 +136,21 @@ export function App() {
             Meet file inspector
           </span>
         </div>
-        <Button size="sm" onClick={handleOpen} disabled={isPending}>
-          <FolderOpen />
-          {isPending ? "Opening…" : "Open files"}
-        </Button>
-        <input
-          ref={browserInput}
-          type="file"
-          multiple
-          accept={BROWSER_ACCEPT}
-          className="hidden"
-          onChange={(e) => {
-            handleBrowserFiles(e.currentTarget.files);
-            e.currentTarget.value = "";
-          }}
-        />
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => handleCompare()}
+            disabled={isPending || view.status === "compare"}
+          >
+            <GitCompareArrows />
+            Compare
+          </Button>
+          <Button size="sm" onClick={handleOpen} disabled={isPending}>
+            <FolderOpen />
+            {isPending ? "Opening…" : "Open files"}
+          </Button>
+        </div>
       </header>
 
       <main
@@ -132,10 +170,21 @@ export function App() {
           </div>
         ) : null}
         {view.status === "loaded" && view.inspected.kind === "meet" ? (
-          <MeetView inspected={view.inspected} />
+          <MeetView
+            inspected={view.inspected}
+            onCompare={(candidate) => handleCompare(candidate)}
+          />
         ) : null}
         {view.status === "loaded" && view.inspected.kind === "roster" ? (
           <RosterView inspected={view.inspected} />
+        ) : null}
+        {view.status === "compare" ? (
+          <CompareView
+            original={view.original}
+            candidate={view.candidate}
+            disabled={isPending}
+            onChoose={chooseCompareFiles}
+          />
         ) : null}
 
         {dropState === "over" ? (
