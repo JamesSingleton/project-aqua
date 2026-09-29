@@ -1,0 +1,15 @@
+{
+  "extends": "@lane4hq/typescript-config/react-library.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@lane4hq/ui/*": ["../../packages/ui/src/*"]
+    }
+  },
+  "include": ["src", "__tests__", "vite.config.ts", "vitest.config.ts"],
+  "exclude": ["node_modules", "dist", "src-tauri"]
+}

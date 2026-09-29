@@ -8,6 +8,10 @@ Visiting-team coach workspace: roster, meet entries, results, and progression fo
 The visiting team's entered lineup for one meet, including individual entries, grouped relay teams, and going / eligibility / scratch status as data.
 _Avoid_: export payload, entry list, projection
 
+**Entry candidates**:
+The team's swimmers who could be entered in a meet, with their best times for that meet's events. Coaches pick from them when building the lineup. They are not part of the meet lineup snapshot, so host packs and paper reports never carry the whole roster.
+_Avoid_: roster dump, available swimmers list
+
 **Host pack**:
 The Hy-Tek / SDIF files a coach sends to a meet host (HY3, CL2, SDIF). Built by filtering a meet lineup snapshot, not by rebuilding it.
 _Avoid_: event file, EV3, HYV
@@ -17,7 +21,7 @@ The Team Manager–style individual meet entries document a coach reviews, plus 
 _Avoid_: CSV, host pack, timing console
 
 **Program view**:
-Entries grouped by meet event number, individuals and relays together in the order of the meet.
+Entries grouped by meet event number, individuals and relays together in the order of the meet. It reads the meet lineup snapshot, like host packs and paper reports.
 _Avoid_: matrix, by-name board
 
 **Association event cap**:

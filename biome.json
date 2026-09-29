@@ -11,6 +11,8 @@
       "!**/.next",
       "!**/.next-screenshots",
       "!**/.react-email",
+      "!**/src-tauri/target",
+      "!**/src-tauri/gen",
       "!**/*.svg"
     ]
   },
