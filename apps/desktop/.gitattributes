@@ -1,0 +1,6 @@
+# LF everywhere so macOS and Windows checkouts build identically (Rust, JSON, TS).
+* text=auto eol=lf
+
+*.png binary
+*.ico binary
+*.icns binary

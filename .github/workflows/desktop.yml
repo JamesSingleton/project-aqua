@@ -1,0 +1,75 @@
+name: Desktop
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/desktop/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/desktop.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "apps/desktop/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/desktop.yml"
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS universal
+            os: macos-latest
+            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
+            bundle-args: --target universal-apple-darwin
+            artifact-path: apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+          - name: Windows x64
+            os: windows-latest
+            rust-targets: ""
+            bundle-args: ""
+            artifact-path: |
+              apps/desktop/src-tauri/target/release/bundle/msi/*.msi
+              apps/desktop/src-tauri/target/release/bundle/nsis/*.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - uses: pnpm/action-setup@v6
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-targets }}
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri -> target
+      - name: Install dependencies
+        run: pnpm install
+      - name: Type-check, lint, and test (TS)
+        run: pnpm turbo run check:types lint test --filter=@lane4hq/desktop
+      - name: Test (Rust)
+        run: cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml
+      - name: Bundle (unsigned)
+        run: pnpm --filter @lane4hq/desktop bundle ${{ matrix.bundle-args }}
+      - name: Upload installers
+        uses: actions/upload-artifact@v7
+        with:
+          name: lane4-desktop-${{ matrix.os }}
+          path: ${{ matrix.artifact-path }}
+          if-no-files-found: error
+          retention-days: 7

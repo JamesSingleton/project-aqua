@@ -1,13 +1,48 @@
 {
-  "name": "desktop",
-  "version": "1.0.0",
-  "description": "",
-  "main": "main.js",
+  "name": "@lane4hq/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Lane4 Desktop App",
+  "type": "module",
   "scripts": {
-    "start": "electron ."
+    "build": "tsc --noEmit && vite build",
+    "bundle": "tauri build",
+    "clean": "git clean -xdf dist .turbo node_modules",
+    "dev": "tauri dev",
+    "dev:web": "vite",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "check:types": "tsc --noEmit",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest"
   },
-  "author": "",
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
+    "@lane4hq/swim-core": "workspace:*",
+    "@lane4hq/swim-formats": "workspace:*",
+    "@lane4hq/ui": "workspace:*",
+    "@tauri-apps/api": "^2.12.0",
+    "@tauri-apps/plugin-dialog": "^2.8.0",
+    "lucide-react": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
   "devDependencies": {
-    "electron": "^44.4.2"
+    "@lane4hq/typescript-config": "workspace:*",
+    "@tailwindcss/vite": "^4.3.3",
+    "@tauri-apps/cli": "^2.12.0",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "^6.1.1",
+    "@vitest/coverage-v8": "catalog:",
+    "tailwindcss": "^4.3.3",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   }
 }

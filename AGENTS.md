@@ -14,8 +14,10 @@ Do not use other model families (Claude, GPT, GLM, etc.) unless the human explic
 ## Product posture
 
 - **Admin (`apps/admin`)** is a **visiting-team** coach SaaS: roster, entries, results, workouts, calendar for meets your team attends.
-- **Out of scope for now:** host meet merge (other clubs’ entry packs), family/parent portal, dues/messaging, timing console / MMDB.
-- **Future (do not build unless asked):** host entry merge → desktop Meet Manager companion → public marketing roadmap on `apps/web`.
+- **Desktop (`apps/desktop`)** is a local-first Tauri v2 app for **macOS and Windows** ([ADR 0001](docs/adr/0001-tauri-for-desktop.md)). It is Lane4's **meet manager**: today it inspects local meet files; next it runs meets offline and publishes results when a connection is available. It does **not** copy admin screens. Team management stays on the web ([ADR 0002](docs/adr/0002-desktop-is-for-running-meets.md)). See [`docs/specs/desktop-roadmap.md`](docs/specs/desktop-roadmap.md).
+- **Documented, not yet built:** timing console (Colorado Time Systems) / MMDB meet running. See [`docs/specs/desktop-companion-v1.spec.md`](docs/specs/desktop-companion-v1.spec.md) and [ADR 0003](docs/adr/0003-cts-timing-interface-split.md). Agents may refine these specs and ADRs, but must not implement them unless asked.
+- **Out of scope for now:** host meet merge (other clubs’ entry packs), family/parent portal, dues/messaging.
+- **Future (do not build unless asked):** host entry merge → public marketing roadmap on `apps/web`.
 
 ## Swim file formats
 
@@ -30,12 +32,15 @@ Do not use other model families (Claude, GPT, GLM, etc.) unless the human explic
 - Format work is not done until `pnpm --filter @lane4hq/swim-formats test` passes (Vitest + coverage).
 - Prefer golden corpus tests (`__tests__/meet/golden-corpus.test.ts`) and export→re-import round-trips for export changes.
 - Domain helpers (athlete match, entry limits, QT) belong in `@lane4hq/swim-core` with unit tests.
+- Desktop: `pnpm --filter @lane4hq/desktop test` (TS) and `cargo test --manifest-path apps/desktop/src-tauri/Cargo.toml` (Rust). Keep Rust thin (OS, files, and later serial I/O). Domain logic stays in TS packages.
+- Desktop UI must work in both WebKit (macOS) and WebView2 (Windows). Handle file paths only through Tauri/Rust APIs, never by joining strings.
 
 ## Apps & packages
 
 | Area | Package / app |
 |------|----------------|
 | Coach SaaS | `apps/admin` |
+| Desktop (Tauri, macOS + Windows) | `apps/desktop` |
 | Marketing site | `apps/web` |
 | Formats | `packages/swim-formats` |
 | Domain (times, events, match) | `packages/swim-core` |
