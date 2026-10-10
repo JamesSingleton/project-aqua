@@ -5,7 +5,7 @@ import {
   AlertTitle,
 } from "@lane4hq/ui/components/alert";
 import { Button } from "@lane4hq/ui/components/button";
-import { Download } from "lucide-react";
+import { Download, TriangleAlert } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import {
   type AvailableUpdate,
@@ -13,6 +13,7 @@ import {
   errorMessage,
   isTauri,
 } from "../lib/native";
+import { updateCheckFailure } from "../lib/update-check";
 
 /**
  * Offers a newer Lane4 on the meets list only, so an update never restarts
@@ -20,16 +21,36 @@ import {
  */
 export function UpdateBanner() {
   const [update, setUpdate] = useState<AvailableUpdate | null>(null);
+  const [checkError, setCheckError] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [installing, startInstall] = useTransition();
 
   useEffect(() => {
     if (!isTauri()) return;
-    appUpdate.check().then(setUpdate, () => {});
+    appUpdate.check().then(setUpdate, (reason) => {
+      setCheckError(updateCheckFailure(errorMessage(reason)));
+    });
   }, []);
 
-  if (!update || dismissed) return null;
+  if (dismissed) return null;
+
+  if (checkError) {
+    return (
+      <Alert variant="destructive">
+        <TriangleAlert />
+        <AlertTitle>Couldn't check for updates</AlertTitle>
+        <AlertDescription>{checkError}</AlertDescription>
+        <AlertAction>
+          <Button size="sm" variant="ghost" onClick={() => setDismissed(true)}>
+            Dismiss
+          </Button>
+        </AlertAction>
+      </Alert>
+    );
+  }
+
+  if (!update) return null;
 
   function install() {
     setError(null);

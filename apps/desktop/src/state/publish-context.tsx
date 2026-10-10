@@ -99,7 +99,7 @@ export function PublishProvider({ children }: { children: ReactNode }) {
           ? failed.error
           : result.throttled
             ? "Lane4 is pacing this machine's uploads; the rest will publish shortly."
-            : result.offline,
+            : (result.offline ?? result.notices[0] ?? null),
       );
     } catch (error) {
       setLastError(errorMessage(error));

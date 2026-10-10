@@ -37,6 +37,8 @@ describe("browser repository", () => {
     await repo.appendCapture("beta", "{}");
     await repo.appendCapture("beta", "{}");
     expect(storage.map.get("lane4.captures.v1:beta")).toBe("{}\n{}\n");
+    expect(await repo.readJournal("beta")).toBe("{}\n{}\n");
+    await expect(repo.restoreBackup("beta")).rejects.toThrow(/desktop app/);
     await repo.remove("beta");
     await expect(repo.load("beta")).rejects.toThrow(/not found/);
     expect(await repo.list()).toHaveLength(1);

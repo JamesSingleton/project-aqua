@@ -44,7 +44,11 @@ pub struct AvailableUpdate {
     notes: Option<String>,
 }
 
-fn message(error: impl std::fmt::Display) -> String {
+fn check_failure(error: impl std::fmt::Display) -> String {
+    format!("Couldn't check for updates: {error}")
+}
+
+fn install_failure(error: impl std::fmt::Display) -> String {
     format!("Couldn't update Lane4: {error}")
 }
 
@@ -57,22 +61,22 @@ pub async fn app_update_check(
     if !state.enabled {
         return Ok(None);
     }
-    let endpoint = api_url(API_URL, &["v1", "desktop", "update"]).map_err(message)?;
+    let endpoint = api_url(API_URL, &["v1", "desktop", "update"]).map_err(check_failure)?;
     let update = app
         .updater_builder()
         .endpoints(vec![endpoint])
-        .map_err(message)?
+        .map_err(check_failure)?
         .build()
-        .map_err(message)?
+        .map_err(check_failure)?
         .check()
         .await
-        .map_err(message)?;
+        .map_err(check_failure)?;
     let available = update.as_ref().map(|update| AvailableUpdate {
         version: update.version.clone(),
         current_version: update.current_version.clone(),
         notes: update.body.clone().filter(|notes| !notes.trim().is_empty()),
     });
-    *state.found.lock().map_err(message)? = update;
+    *state.found.lock().map_err(check_failure)? = update;
     Ok(available)
 }
 
@@ -86,13 +90,13 @@ pub async fn app_update_install(
     let update = state
         .found
         .lock()
-        .map_err(message)?
+        .map_err(install_failure)?
         .take()
         .ok_or_else(|| "Check for updates first.".to_string())?;
     update
         .download_and_install(|_, _| {}, || {})
         .await
-        .map_err(message)?;
+        .map_err(install_failure)?;
     app.restart();
 }
 
@@ -115,5 +119,14 @@ mod tests {
         assert!(enabled(&config(
             json!({ "updater": { "pubkey": "dW50cnVzdGVk" } })
         )));
+    }
+
+    #[test]
+    fn check_and_install_failures_say_which_step_failed() {
+        assert_eq!(check_failure("dns"), "Couldn't check for updates: dns");
+        assert_eq!(
+            install_failure("signature"),
+            "Couldn't update Lane4: signature"
+        );
     }
 }

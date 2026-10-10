@@ -70,9 +70,60 @@ import { EditEventDialog } from "../components/edit-event-dialog";
 import { AddEventsDialog } from "../components/event-builder";
 import { Section } from "../components/section";
 import { pickMeetFiles } from "../hooks/pick-files";
+import { missingMeetEventsMessage } from "../lib/entry-import";
 import { COURSES, LANES, SCORING } from "../lib/meet-choices";
 import { errorMessage } from "../lib/native";
 import { useMeet } from "../state/meet-context";
+
+function ImportSummary({ summary }: { summary: MergeSummary }) {
+  const missing = missingMeetEventsMessage(summary.skipped);
+  const otherSkipped = summary.skipped.filter(
+    (row) => row.reason !== "Event isn't in this meet",
+  );
+  const onlyMissing =
+    summary.added === 0 &&
+    summary.replaced === 0 &&
+    summary.kept === 0 &&
+    otherSkipped.length === 0 &&
+    missing != null;
+
+  return (
+    <div className="flex flex-col gap-2">
+      {missing ? (
+        <Alert variant="destructive">
+          <TriangleAlert />
+          <AlertTitle>Some entries weren't imported</AlertTitle>
+          <AlertDescription>{missing}</AlertDescription>
+        </Alert>
+      ) : null}
+      {onlyMissing ? null : (
+        <Alert>
+          <CheckCircle2 />
+          <AlertTitle>
+            {summary.team.code}: {summary.added} entries added
+            {summary.replaced ? `, ${summary.replaced} replaced` : ""}
+            {summary.kept ? `, ${summary.kept} kept (already swum)` : ""}
+          </AlertTitle>
+          <AlertDescription>
+            {summary.athletes} swimmers.
+            {otherSkipped.length > 0
+              ? ` ${otherSkipped.length} skipped: ${otherSkipped
+                  .slice(0, 4)
+                  .map(
+                    (s) =>
+                      `${s.name} (event ${s.eventNumber ?? "?"}: ${s.reason})`,
+                  )
+                  .join("; ")}${otherSkipped.length > 4 ? "…" : ""}`
+              : ""}
+            {summary.heatsNeedingReseed.length > 0
+              ? ` ${summary.heatsNeedingReseed.length} seeded event(s) lost swimmers; reseed them on the heat sheet.`
+              : ""}
+          </AlertDescription>
+        </Alert>
+      )}
+    </div>
+  );
+}
 
 export function SetupScreen({ onSeeded }: { onSeeded: () => void }) {
   const {
@@ -296,31 +347,7 @@ export function SetupScreen({ onSeeded }: { onSeeded: () => void }) {
           </Button>
         }
       >
-        {summary ? (
-          <Alert>
-            <CheckCircle2 />
-            <AlertTitle>
-              {summary.team.code}: {summary.added} entries added
-              {summary.replaced ? `, ${summary.replaced} replaced` : ""}
-              {summary.kept ? `, ${summary.kept} kept (already swum)` : ""}
-            </AlertTitle>
-            <AlertDescription>
-              {summary.athletes} swimmers.
-              {summary.skipped.length > 0
-                ? ` ${summary.skipped.length} skipped: ${summary.skipped
-                    .slice(0, 4)
-                    .map(
-                      (s) =>
-                        `${s.name} (event ${s.eventNumber ?? "?"}: ${s.reason})`,
-                    )
-                    .join("; ")}${summary.skipped.length > 4 ? "…" : ""}`
-                : ""}
-              {summary.heatsNeedingReseed.length > 0
-                ? ` ${summary.heatsNeedingReseed.length} seeded event(s) lost swimmers; reseed them on the heat sheet.`
-                : ""}
-            </AlertDescription>
-          </Alert>
-        ) : null}
+        {summary ? <ImportSummary summary={summary} /> : null}
         {meet.teams.length === 0 ? (
           <p className="text-sm text-muted-foreground">No teams yet.</p>
         ) : (

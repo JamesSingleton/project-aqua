@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyPublishOutcomes,
   drainPublishQueue,
+  newerRevisionNotice,
   OfflineError,
   publishCounts,
 } from "../src/lib/publisher";
@@ -60,6 +61,7 @@ describe("publisher", () => {
       NOW.getTime(),
     );
     expect(result.offline).toBeNull();
+    expect(result.notices).toEqual([newerRevisionNotice(1)]);
     expect(seen).toHaveLength(3);
     const next = applyPublishOutcomes(meet, result.outcomes, NOW);
     expect(publishCounts(next)).toEqual({
@@ -112,6 +114,7 @@ describe("publisher", () => {
       outcomes: [],
       offline: "No route to host",
       throttled: false,
+      notices: [],
     });
     expect(calls).toBe(1);
 
@@ -131,6 +134,15 @@ describe("publisher", () => {
       body: "",
     }));
     expect(empty.outcomes[0]).toMatchObject({ error: "HTTP 500" });
+  });
+
+  it("names a newer stored revision in plain language", () => {
+    expect(newerRevisionNotice(1)).toBe(
+      "Lane4 already has a newer revision of this heat, so this copy was not stored.",
+    );
+    expect(newerRevisionNotice(2)).toBe(
+      "Lane4 already has a newer revision of 2 heats, so those copies were not stored.",
+    );
   });
 
   it("uses the wall clock by default", () => {

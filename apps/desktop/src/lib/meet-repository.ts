@@ -9,6 +9,12 @@ export type MeetSummary = {
   updatedAt?: string | null;
   teams: number;
   events: number;
+  /** The JSON file doesn't parse. Shown on the meets list with a way to recover. */
+  corrupt?: boolean;
+  /** A previous save (`.json.bak`) parses as this meet. */
+  hasBackup?: boolean;
+  /** Non-empty lines in the timing journal. */
+  journalLines?: number;
 };
 
 /** Where meets live: the Rust store on desktop, localStorage in `dev:web`. */
@@ -19,6 +25,10 @@ export interface MeetRepository {
   remove(id: string): Promise<void>;
   /** Append one line to the meet's raw timing journal. */
   appendCapture(id: string, line: string): Promise<void>;
+  /** Replace a damaged meet file with its `.json.bak`. Desktop only. */
+  restoreBackup(id: string): Promise<void>;
+  /** The raw timing journal, or "" when this meet has none. */
+  readJournal(id: string): Promise<string>;
 }
 
 export function summarize(meet: Meet): MeetSummary {
@@ -89,6 +99,12 @@ export function createBrowserRepository(
     async appendCapture(id, line) {
       const k = `lane4.captures.v1:${id}`;
       write(k, `${read(k) ?? ""}${line}\n`);
+    },
+    async restoreBackup() {
+      throw new Error("Meet backups are kept by the desktop app.");
+    },
+    async readJournal(id) {
+      return read(`lane4.captures.v1:${id}`) ?? "";
     },
   };
 }

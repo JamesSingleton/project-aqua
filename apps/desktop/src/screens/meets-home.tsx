@@ -55,6 +55,11 @@ import {
   parseMeet,
 } from "../lib/meet-repository";
 import { errorMessage, isTauri, pickBackupPath } from "../lib/native";
+import {
+  damagedMeetMessage,
+  recoverySummary,
+  replayCaptureJournal,
+} from "../lib/recover-meet";
 import { importBackup } from "../lib/tauri-repository";
 
 export function MeetsHome({
@@ -68,6 +73,7 @@ export function MeetsHome({
 }) {
   const [meets, setMeets] = useState<MeetSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -119,6 +125,18 @@ export function MeetsHome({
         const json = await pickBackupInBrowser();
         if (json) await saveAndOpen(parseMeet(json));
       }
+    });
+  }
+
+  function restore(meet: MeetSummary) {
+    run(async () => {
+      await repository.restoreBackup(meet.id);
+      const journal = await repository.readJournal(meet.id);
+      const restored = await repository.load(meet.id);
+      const replay = replayCaptureJournal(restored, journal);
+      if (replay.added > 0) await repository.save(replay.meet);
+      setNotice(recoverySummary(replay));
+      refresh();
     });
   }
 
@@ -198,6 +216,13 @@ export function MeetsHome({
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           ) : null}
+          {notice ? (
+            <Alert>
+              <ArchiveRestore />
+              <AlertTitle>Meet restored</AlertTitle>
+              <AlertDescription>{notice}</AlertDescription>
+            </Alert>
+          ) : null}
 
           <section className="flex flex-col divide-y rounded-xl border">
             {meets == null ? (
@@ -213,30 +238,52 @@ export function MeetsHome({
             ) : (
               meets.map((m) => (
                 <div key={m.id} className="flex items-center gap-3 px-4 py-3">
-                  <button
-                    type="button"
-                    className="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-left outline-none focus-visible:underline"
-                    onClick={() =>
-                      run(async () => onOpen(await repository.load(m.id)))
-                    }
-                  >
-                    <span className="truncate text-sm font-medium">
-                      {m.name}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {[
-                        formatDateRange(
-                          m.startDate ?? undefined,
-                          m.endDate ?? undefined,
-                        ),
-                        `${m.events} events`,
-                        `${m.teams} teams`,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </span>
-                  </button>
-                  {m.course ? (
+                  {m.corrupt ? (
+                    <div className="flex min-w-0 flex-1 flex-col items-start gap-1 text-left">
+                      <span className="truncate text-sm font-medium">
+                        {m.name}
+                      </span>
+                      <span className="text-xs text-destructive">
+                        {damagedMeetMessage(m)}
+                      </span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-left outline-none focus-visible:underline"
+                      onClick={() =>
+                        run(async () => onOpen(await repository.load(m.id)))
+                      }
+                    >
+                      <span className="truncate text-sm font-medium">
+                        {m.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {[
+                          formatDateRange(
+                            m.startDate ?? undefined,
+                            m.endDate ?? undefined,
+                          ),
+                          `${m.events} events`,
+                          `${m.teams} teams`,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                    </button>
+                  )}
+                  {m.corrupt && m.hasBackup ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={isPending}
+                      onClick={() => restore(m)}
+                    >
+                      <ArchiveRestore />
+                      Restore backup
+                    </Button>
+                  ) : null}
+                  {m.course && !m.corrupt ? (
                     <Badge variant="outline">{m.course}</Badge>
                   ) : null}
                   <Button

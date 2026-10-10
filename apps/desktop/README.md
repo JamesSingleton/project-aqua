@@ -26,7 +26,7 @@ Choose **Simulated CTS console** in the Run meet connection bar. It speaks the s
 
 The app data directory (`~/Library/Application Support/com.lane4hq.desktop/meets` on macOS, `%APPDATA%\com.lane4hq.desktop\meets` on Windows) holds:
 
-- `<id>.json` for the meet, plus `<id>.json.bak`;
+- `<id>.json` for the meet, plus `<id>.json.bak` (the previous save; deleting a meet moves both into `trash/`);
 - `<id>.captures.jsonl`, the raw timing journal;
 - a `trash/` folder for deleted meets.
 
@@ -45,6 +45,7 @@ cargo --version
 
 ### macOS
 
+- macOS 12.3 or newer. PDF printing uses WebAssembly (`wasm-unsafe-eval`), which WebKit supports from Safari 16.
 - Xcode Command Line Tools: `xcode-select --install` (confirm with `xcode-select -p`).
 - For universal (Apple Silicon + Intel) release builds: `rustup target add aarch64-apple-darwin x86_64-apple-darwin`.
 

@@ -23,6 +23,8 @@ pub enum StoreError {
     NotFound,
     #[error("That file isn't a Lane4 meet backup.")]
     NotAMeet,
+    #[error("This meet file is already readable.")]
+    NotDamaged,
     #[error("{0}")]
     Io(String),
 }
@@ -59,10 +61,17 @@ pub fn meets_dir(app: &AppHandle) -> Result<PathBuf, StoreError> {
     Ok(dir)
 }
 
+/// Replace `path` with `contents`, keeping the previous file as `.json.bak`.
+pub fn write_atomic(path: &Path, contents: &[u8]) -> std::io::Result<()> {
+    write_atomic_with_backup(path, contents, true)
+}
+
 /// Replace `path` with `contents` so a crash leaves either the old or the new
 /// file. Each write gets its own temp file, so concurrent writes to the same
-/// path can't rename each other's temp file away.
-pub fn write_atomic(path: &Path, contents: &[u8]) -> std::io::Result<()> {
+/// path can't rename each other's temp file away. `backup` copies the current
+/// file to `.json.bak` first; restoring a meet passes `false` so the good
+/// backup isn't replaced by the damaged file.
+pub fn write_atomic_with_backup(path: &Path, contents: &[u8], backup: bool) -> std::io::Result<()> {
     static NEXT: AtomicU64 = AtomicU64::new(0);
     let n = NEXT.fetch_add(1, Ordering::Relaxed);
     let tmp = path.with_extension(format!("{}.{n}.tmp", std::process::id()));
@@ -71,7 +80,7 @@ pub fn write_atomic(path: &Path, contents: &[u8]) -> std::io::Result<()> {
         file.write_all(contents)?;
         file.sync_all()?;
     }
-    if path.exists() {
+    if backup && path.exists() {
         fs::copy(path, path.with_extension("json.bak"))?;
     }
     fs::rename(&tmp, path)?;
@@ -104,6 +113,13 @@ pub struct MeetSummary {
     updated_at: Option<String>,
     teams: usize,
     events: usize,
+    /// The JSON file doesn't parse as this meet. `name` comes from the backup
+    /// when there is one.
+    corrupt: bool,
+    /// A `.json.bak` next to the file parses as this same meet.
+    has_backup: bool,
+    /// Non-empty lines in the timing journal.
+    journal_lines: usize,
 }
 
 fn summarize(bytes: &[u8]) -> Option<MeetSummary> {
@@ -120,18 +136,76 @@ fn summarize(bytes: &[u8]) -> Option<MeetSummary> {
         updated_at: h.updated_at,
         teams: h.teams.len(),
         events: h.events.len(),
+        corrupt: false,
+        has_backup: false,
+        journal_lines: 0,
     })
+}
+
+fn journal_line_count(dir: &Path, id: &str) -> usize {
+    let Ok(text) = fs::read_to_string(dir.join(format!("{id}.captures.jsonl"))) else {
+        return 0;
+    };
+    text.lines().filter(|line| !line.trim().is_empty()).count()
+}
+
+/// A backup is usable when it parses as this meet id.
+fn backup_summary(dir: &Path, id: &str) -> Option<MeetSummary> {
+    let bytes = fs::read(dir.join(format!("{id}.json.bak"))).ok()?;
+    let summary = summarize(&bytes)?;
+    if summary.id != id {
+        return None;
+    }
+    Some(summary)
+}
+
+fn corrupt_summary(dir: &Path, id: &str) -> MeetSummary {
+    let journal_lines = journal_line_count(dir, id);
+    if let Some(mut summary) = backup_summary(dir, id) {
+        summary.corrupt = true;
+        summary.has_backup = true;
+        summary.journal_lines = journal_lines;
+        return summary;
+    }
+    MeetSummary {
+        id: id.to_string(),
+        name: "Damaged meet".into(),
+        start_date: None,
+        end_date: None,
+        course: None,
+        updated_at: None,
+        teams: 0,
+        events: 0,
+        corrupt: true,
+        has_backup: false,
+        journal_lines,
+    }
 }
 
 fn list_in(dir: &Path) -> Result<Vec<MeetSummary>, StoreError> {
     let mut out = Vec::new();
     for entry in fs::read_dir(dir)? {
         let path = entry?.path();
+        if !path.is_file() {
+            continue;
+        }
         if path.extension().and_then(|e| e.to_str()) != Some("json") {
             continue;
         }
-        if let Some(summary) = fs::read(&path).ok().and_then(|b| summarize(&b)) {
-            out.push(summary);
+        let Some(stem) = path.file_stem().and_then(|s| s.to_str()) else {
+            continue;
+        };
+        if !valid_id(stem) {
+            continue;
+        }
+        let bytes = fs::read(&path).unwrap_or_default();
+        match summarize(&bytes).filter(|summary| summary.id == stem) {
+            Some(mut summary) => {
+                summary.has_backup = backup_summary(dir, stem).is_some();
+                summary.journal_lines = journal_line_count(dir, stem);
+                out.push(summary);
+            }
+            None => out.push(corrupt_summary(dir, stem)),
         }
     }
     out.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
@@ -143,11 +217,59 @@ pub async fn store_list_meets(app: AppHandle) -> Result<Vec<MeetSummary>, StoreE
     list_in(&meets_dir(&app)?)
 }
 
+/// The meet JSON as stored. A damaged file is returned as-is; the backup is
+/// only used by `store_restore_backup`, so a bad write stays visible.
+fn load_in(dir: &Path, id: &str) -> Result<String, StoreError> {
+    check_id(id)?;
+    let bytes = fs::read(dir.join(format!("{id}.json")))?;
+    String::from_utf8(bytes).map_err(|_| StoreError::NotAMeet)
+}
+
 #[tauri::command]
 pub async fn store_load_meet(app: AppHandle, id: String) -> Result<String, StoreError> {
-    check_id(&id)?;
-    let bytes = fs::read(meets_dir(&app)?.join(format!("{id}.json")))?;
-    String::from_utf8(bytes).map_err(|_| StoreError::NotAMeet)
+    load_in(&meets_dir(&app)?, &id)
+}
+
+fn parsed_as(path: &Path, id: &str) -> bool {
+    fs::read(path)
+        .ok()
+        .and_then(|bytes| summarize(&bytes))
+        .is_some_and(|summary| summary.id == id)
+}
+
+/// Copy `<id>.json.bak` over the damaged meet. Refuses when the current file
+/// already parses, and does not replace the backup with that damaged file.
+fn restore_in(dir: &Path, id: &str) -> Result<(), StoreError> {
+    check_id(id)?;
+    let json_path = dir.join(format!("{id}.json"));
+    if parsed_as(&json_path, id) {
+        return Err(StoreError::NotDamaged);
+    }
+    let bak = dir.join(format!("{id}.json.bak"));
+    let bytes = fs::read(&bak).map_err(|_| StoreError::NotAMeet)?;
+    if !summarize(&bytes).is_some_and(|summary| summary.id == id) {
+        return Err(StoreError::NotAMeet);
+    }
+    write_atomic_with_backup(&json_path, &bytes, false).map_err(|e| StoreError::Io(e.to_string()))
+}
+
+#[tauri::command]
+pub async fn store_restore_backup(app: AppHandle, id: String) -> Result<(), StoreError> {
+    restore_in(&meets_dir(&app)?, &id)
+}
+
+fn read_journal_in(dir: &Path, id: &str) -> Result<String, StoreError> {
+    check_id(id)?;
+    match fs::read_to_string(dir.join(format!("{id}.captures.jsonl"))) {
+        Ok(text) => Ok(text),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(String::new()),
+        Err(e) => Err(e.into()),
+    }
+}
+
+#[tauri::command]
+pub async fn store_read_journal(app: AppHandle, id: String) -> Result<String, StoreError> {
+    read_journal_in(&meets_dir(&app)?, &id)
 }
 
 fn save_in(dir: &Path, id: &str, json: &str) -> Result<(), StoreError> {
@@ -160,25 +282,33 @@ fn save_in(dir: &Path, id: &str, json: &str) -> Result<(), StoreError> {
         .map_err(|e| StoreError::Io(e.to_string()))
 }
 
-#[tauri::command]
-pub async fn store_save_meet(app: AppHandle, id: String, json: String) -> Result<(), StoreError> {
-    save_in(&meets_dir(&app)?, &id, &json)
-}
-
-/// Deleting moves the meet (and its journal) into `meets/trash`; nothing is erased.
-#[tauri::command]
-pub async fn store_delete_meet(app: AppHandle, id: String) -> Result<(), StoreError> {
-    check_id(&id)?;
-    let dir = meets_dir(&app)?;
+/// Deleting moves the meet, its backup, and its journal into `meets/trash`.
+fn delete_in(dir: &Path, id: &str) -> Result<(), StoreError> {
+    check_id(id)?;
     let trash = dir.join("trash");
     fs::create_dir_all(&trash)?;
-    for name in [format!("{id}.json"), format!("{id}.captures.jsonl")] {
+    for name in [
+        format!("{id}.json"),
+        format!("{id}.json.bak"),
+        format!("{id}.captures.jsonl"),
+    ] {
         let from = dir.join(&name);
         if from.exists() {
             fs::rename(&from, trash.join(&name))?;
         }
     }
     Ok(())
+}
+
+#[tauri::command]
+pub async fn store_save_meet(app: AppHandle, id: String, json: String) -> Result<(), StoreError> {
+    save_in(&meets_dir(&app)?, &id, &json)
+}
+
+/// Deleting moves the meet, its backup, and its journal into `meets/trash`.
+#[tauri::command]
+pub async fn store_delete_meet(app: AppHandle, id: String) -> Result<(), StoreError> {
+    delete_in(&meets_dir(&app)?, &id)
 }
 
 fn append_in(dir: &Path, id: &str, line: &str) -> Result<(), StoreError> {
@@ -259,6 +389,8 @@ mod tests {
         assert_eq!(list[0].name, "Invite 2");
         assert_eq!(list[0].teams, 1);
         assert_eq!(list[0].events, 2);
+        assert!(!list[0].corrupt);
+        assert!(list[0].has_backup);
     }
 
     fn no_temp_files(dir: &Path) -> bool {
@@ -297,7 +429,72 @@ mod tests {
             Err(StoreError::BadId)
         ));
         fs::write(dir.join("junk.json"), "{}").unwrap();
-        assert!(list_in(&dir).unwrap().is_empty());
+        let list = list_in(&dir).unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].id, "junk");
+        assert!(list[0].corrupt);
+        assert!(!list[0].has_backup);
+        assert_eq!(list[0].name, "Damaged meet");
+    }
+
+    #[test]
+    fn lists_a_damaged_meet_and_restores_its_backup_without_replacing_it() {
+        let dir = temp_dir("recover");
+        save_in(&dir, "m-1", MEET).unwrap();
+        let good = MEET.replace("Invite", "Invite saved");
+        save_in(&dir, "m-1", &good).unwrap();
+        let bak = fs::read(dir.join("m-1.json.bak")).unwrap();
+        fs::write(dir.join("m-1.json"), "{not json").unwrap();
+        append_in(&dir, "m-1", "{\"race\":1}").unwrap();
+        append_in(&dir, "m-1", "   ").unwrap();
+
+        let loaded = load_in(&dir, "m-1").unwrap();
+        assert_eq!(loaded, "{not json");
+
+        let list = list_in(&dir).unwrap();
+        assert_eq!(list.len(), 1);
+        assert!(list[0].corrupt);
+        assert!(list[0].has_backup);
+        assert_eq!(list[0].name, "Invite");
+        assert_eq!(list[0].journal_lines, 1);
+
+        restore_in(&dir, "m-1").unwrap();
+        assert_eq!(fs::read(dir.join("m-1.json.bak")).unwrap(), bak);
+        assert_eq!(
+            load_in(&dir, "m-1").unwrap(),
+            String::from_utf8(bak).unwrap()
+        );
+        assert!(matches!(
+            restore_in(&dir, "m-1"),
+            Err(StoreError::NotDamaged)
+        ));
+        let listed = list_in(&dir).unwrap();
+        assert!(!listed[0].corrupt);
+        assert_eq!(read_journal_in(&dir, "m-1").unwrap().lines().count(), 2);
+        assert_eq!(read_journal_in(&dir, "missing").unwrap(), "");
+    }
+
+    #[test]
+    fn delete_moves_the_backup_into_trash() {
+        let dir = temp_dir("delete");
+        save_in(&dir, "m-1", MEET).unwrap();
+        save_in(&dir, "m-1", &MEET.replace("Invite", "Invite 2")).unwrap();
+        append_in(&dir, "m-1", "{}").unwrap();
+        delete_in(&dir, "m-1").unwrap();
+        assert!(!dir.join("m-1.json").exists());
+        assert!(!dir.join("m-1.json.bak").exists());
+        assert!(!dir.join("m-1.captures.jsonl").exists());
+        assert!(dir.join("trash/m-1.json").exists());
+        assert!(dir.join("trash/m-1.json.bak").exists());
+        assert!(dir.join("trash/m-1.captures.jsonl").exists());
+    }
+
+    #[test]
+    fn restore_refuses_a_backup_for_a_different_meet() {
+        let dir = temp_dir("wrong-bak");
+        fs::write(dir.join("m-1.json"), "garbage").unwrap();
+        fs::write(dir.join("m-1.json.bak"), MEET.replace("m-1", "other")).unwrap();
+        assert!(matches!(restore_in(&dir, "m-1"), Err(StoreError::NotAMeet)));
     }
 
     #[test]

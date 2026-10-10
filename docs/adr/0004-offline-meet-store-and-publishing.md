@@ -13,7 +13,8 @@
 2. **Storage is plain files in the app data directory, owned by Rust** (`src-tauri/src/store.rs`):
    - `meets/<id>.json`, written atomically: temp file, fsync, rename. The previous version is kept as `<id>.json.bak`.
    - `meets/<id>.captures.jsonl`, an append-only journal with one line per race pulled from the timer, holding the raw DATA bytes. Timing survives even if the meet document is lost or corrupted.
-   - Deleting a meet moves its files into `meets/trash/`. Nothing is erased.
+   - Deleting a meet moves its JSON, its `.json.bak`, and its journal into `meets/trash/`. Nothing is erased.
+   - A meet file that doesn't parse stays in the list, marked damaged. The operator can restore the previous save. Races in the journal are replayed onto that restored document. The journal is raw timer data, so it cannot rebuild a meet that has no usable backup.
    - Saves are serialized and coalesced in the webview (`createSaveQueue`), so the newest document always wins and writes never overlap.
 
    SQLite was the first plan ([companion spec](../specs/desktop-companion-v1.spec.md)). A meet is small: a large invitational is a few MB of JSON. Whole-document atomic writes are simpler than a schema and migrations, can be backed up and diffed, and move between machines as a `.lane4meet` file. Revisit this if meets outgrow it.
@@ -22,7 +23,7 @@
    1. probes the Lane4 API (`/health`);
    2. POSTs each due heat as a `lane4.heat-results/v1` publication to `/v1/teams/{team}/hosted-meets/{meetId}/heats` ([ADR 0005](0005-lane4-api-service.md)).
 
-   The `Idempotency-Key` is `<meetId>:<event><P|F>:<heat>:r<revision>` (`P` and `F` mark prelims and finals), so a retried POST can't double-count, and a corrected heat publishes as a new revision. `2xx` and `409` (a newer revision is already stored) count as published. Other responses back off exponentially, from 5 s up to 5 min. A network failure stops the pass and leaves everything queued.
+   The `Idempotency-Key` is `<meetId>:<event><P|F>:<heat>:r<revision>` (`P` and `F` mark prelims and finals), so a retried POST can't double-count, and a corrected heat publishes as a new revision. `2xx` and `409` (a newer revision is already stored; the same revision is `200`) count as published, so the queue stops retrying a heat it cannot replace. A `409` is also shown to the operator in plain language. Other responses back off exponentially, from 5 s up to 5 min. A network failure stops the pass and leaves everything queued.
    - The API URL and hosting team live in app config. The URL must be `https://`, except `http://localhost` for development.
    - The operator signs in by device code. The session token lives in the OS keychain (macOS Keychain, Windows Credential Manager, via the `keyring` crate) and never goes back to the webview. Sign-in and POSTs are made from Rust (`reqwest` with rustls), so no CSP or CORS exception is needed.
    - The payload contract is `HeatPublication` in `packages/meet-engine/src/publish.ts`, mirrored by the API's zod schema.

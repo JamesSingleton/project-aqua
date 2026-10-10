@@ -172,6 +172,11 @@ export type PublishSettings = {
   enabled: boolean;
   /** Null when signed out. */
   account: LaneAccount | null;
+  /**
+   * Set when the OS keychain couldn't be read. The account panel offers
+   * "Sign in again" instead of looking simply signed out.
+   */
+  keychainError: string | null;
 };
 
 /** `GET /v1/me` from the Lane4 API. */
