@@ -1,23 +1,22 @@
 import { Separator } from "@lane4hq/ui/components/separator";
-import type { Metadata } from "next";
 import Link from "next/link";
 import { MarketingCta } from "@/components/marketing-cta";
 import { ProductShot } from "@/components/product-shot";
 import { PageIntro } from "@/components/section";
+import { pageMetadata } from "@/lib/metadata";
 import { audienceLinks, coachEasier, productLinks } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "Product",
-  description:
-    "Roster, entries, results, workouts, calendar, progression, and analytics for club and high school swim coaches.",
-};
+export const metadata = pageMetadata(
+  "Product",
+  "Roster, entries, results, workouts, calendar, progression, and analytics for club and high school swim coaches.",
+);
 
 export default function ProductPage() {
   return (
     <>
       <PageIntro
         title="Your team. Your entries. Someone else still runs the meet."
-        description="Club and high school without signing out. Meet files stay with the head coach."
+        description="Club invitationals and high school duals, on the same login. Meet files stay with the head coach."
       />
       <section className="mx-auto w-full max-w-6xl px-4 pb-16 md:px-6">
         <h2 className="font-display max-w-xl text-3xl font-semibold tracking-tight md:text-4xl">

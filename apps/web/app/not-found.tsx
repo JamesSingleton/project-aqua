@@ -15,8 +15,8 @@ export default function NotFound() {
         <EmptyHeader>
           <EmptyTitle>That page is not on the heat sheet.</EmptyTitle>
           <EmptyDescription>
-            The URL does not match a public marketing page. Head home or open
-            the product overview.
+            This address is not a page on the site. Go home, or open the product
+            overview.
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
