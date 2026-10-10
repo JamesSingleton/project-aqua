@@ -57,7 +57,7 @@
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "drizzle-kit": "catalog:",
-    "tsx": "^4.23.13",
+    "tsx": "^4.23.15",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"

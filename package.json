@@ -38,12 +38,12 @@
     "email:dev": "turbo email:dev"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.14",
-    "@neon/config": "^1.7.2",
+    "@biomejs/biome": "^2.5.15",
     "@lane4hq/typescript-config": "workspace:*",
+    "@neon/config": "^1.8.6",
     "@types/node": "catalog:",
     "dotenv-cli": "^11.0.0",
-    "turbo": "^2.11.0",
+    "turbo": "^2.11.7",
     "typescript": "catalog:"
   }
 }
