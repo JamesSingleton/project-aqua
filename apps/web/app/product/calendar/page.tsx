@@ -9,8 +9,8 @@ export const metadata = pageMetadata(
 export default function CalendarProductPage() {
   return (
     <FeaturePage
-      title="Practices and meets on one calendar."
-      description="Practices, duals, invitationals, and attendance live on the team calendar. Subscribe with an ICS feed, or connect Google Calendar or Outlook."
+      title="Keep practices, duals, and invitationals on one team calendar."
+      description="Attendance lives on that calendar too. Subscribe with an ICS feed, or connect Google Calendar or Outlook."
       shot="calendar"
     >
       <FeatureBlock title="Schedule">

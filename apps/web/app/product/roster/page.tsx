@@ -3,14 +3,14 @@ import { pageMetadata } from "@/lib/metadata";
 
 export const metadata = pageMetadata(
   "Roster",
-  "Add swimmers, import CL2, HY3, SD3, or CSV, assign training groups, and keep club and high school fields on the season.",
+  "Import CL2, HY3, SD3, or CSV, roll returning swimmers into the new season, and keep club and high school fields apart.",
 );
 
 export default function RosterProductPage() {
   return (
     <FeaturePage
-      title="A roster that survives the season change."
-      description="Club and high school stay separate, on the same login. Start a new season and bring returning swimmers forward without retyping birthdays."
+      title="Roll returning swimmers into next season without retyping birthdays."
+      description="Club and high school stay separate, on the same login. Start a new season and bring the roster forward."
       shot="roster"
     >
       <FeatureBlock title="What you record">
@@ -29,13 +29,12 @@ export default function RosterProductPage() {
           on the preview. Export CSV when staff need a snapshot.
         </p>
       </FeatureBlock>
-      <FeatureBlock title="SWIMS and SafeSport, for club teams">
+      <FeatureBlock title="Club and high school fields">
         <p>
-          A USA Swimming club can sync roster registration with SWIMS on the
-          free plan. SafeSport checks gate minor contact and medical fields.
-          When training or a minor&apos;s acknowledgment is missing, the
-          dashboard says so. High school teams do not use either. Lane4 HQ is
-          not certified or approved by USA Swimming.
+          A club roster can store a USA Swimming ID on the membership. SafeSport
+          training gates minor contact and medical fields. When training or a
+          minor&apos;s acknowledgment is missing, the dashboard says so. A high
+          school roster uses class year on the season.
         </p>
       </FeatureBlock>
     </FeaturePage>

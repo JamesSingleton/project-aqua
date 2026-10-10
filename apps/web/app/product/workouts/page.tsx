@@ -3,14 +3,14 @@ import { pageMetadata } from "@/lib/metadata";
 
 export const metadata = pageMetadata(
   "Workouts",
-  "Write practice sets, keep them on the team calendar, and open a saved workout from the team list.",
+  "Write the practice on the same calendar as the meet, and open a saved set from the team list.",
 );
 
 export default function WorkoutsProductPage() {
   return (
     <FeaturePage
-      title="Practice lives next to the meet calendar."
-      description="Write workouts for the team you have open. A club set does not land on the high school calendar."
+      title="Write the set on the same calendar as the meet."
+      description="Workouts belong to the team you have open. A club set stays on the club calendar."
       shot="workouts"
     >
       <FeatureBlock title="Write the set">

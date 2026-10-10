@@ -23,7 +23,7 @@ import { plans } from "@/lib/site";
 
 export const metadata = pageMetadata(
   "Pricing",
-  "Free includes unlimited swimmers, meet import, seed times, and progression for club and high school. Pro adds coach seats, lineup suggestions, and a roster-wide cut list.",
+  "Free covers unlimited swimmers, meet files, seed times, and progression for one coach. Pro adds seats, lineup suggestions, and a roster-wide cut list.",
 );
 
 const comparison = [
@@ -48,10 +48,10 @@ const comparison = [
   },
   { feature: "Progression", free: "Yes", pro: "Yes", enterprise: "Yes" },
   {
-    feature: "SWIMS roster sync",
-    free: "Club teams",
-    pro: "Club teams",
-    enterprise: "Club teams",
+    feature: "Time standard on one meet's results",
+    free: "Yes",
+    pro: "Yes",
+    enterprise: "Yes",
   },
   {
     feature: "High school event limits",
@@ -89,8 +89,8 @@ export default function PricingPage() {
   return (
     <>
       <PageIntro
-        title="Pay when the staff grows, not when you enter a meet."
-        description="Free covers a season for one coach: unlimited swimmers, meet files, seed times, and progression, for a club or a high school. Pro adds seats, lineup suggestions, and a roster-wide cut list. Billing is per team."
+        title="One coach can take a full season of meets on Free."
+        description="Unlimited swimmers, meet files, seed times from best times, and progression, for a club or a high school. Pro adds coach seats, lineup suggestions for open individual spots, and a roster-wide cut list. Billing is per team."
       />
       <section className="mx-auto grid w-full max-w-6xl items-stretch gap-4 px-4 pb-16 md:grid-cols-3 md:px-6">
         {plans.map((plan) => (
@@ -149,8 +149,8 @@ export default function PricingPage() {
       </section>
       <Separator className="mx-auto max-w-6xl" />
       <MarketingCta
-        title="Start on Free. Add coaches when the staff shares the desk."
-        body="Create the team, import a meet, and add seats from team settings when you need them. The same plans cover a club and a high school."
+        title="Start on Free with the meet you are entering now."
+        body="Import the event file and export the lineup before you add coach seats. The same plans cover a club and a high school."
       />
     </>
   );

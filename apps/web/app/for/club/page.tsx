@@ -3,35 +3,35 @@ import { pageMetadata } from "@/lib/metadata";
 
 export const metadata = pageMetadata(
   "For club teams",
-  "Invitational meet weeks for USA Swimming club coaches: roster ID, SWIMS sync, SafeSport checks, and cuts such as JO or sectionals. Lane4 HQ is not USA Swimming certified.",
+  "Club invitational weeks for USA Swimming coaches: seeds from best times, the file the host asked for, and cuts such as JO or sectionals that you enter.",
 );
 
 export default function ClubPage() {
   return (
     <FeaturePage
-      title="For the club invitational."
-      description="The same meet week as the high school, with the club fields: a USA Swimming ID, SWIMS sync, and SafeSport checks. SWIMS sync is on the free plan."
+      title="Club meet week starts from each swimmer's best time."
+      description="Import the invitational, fill seeds from best times, and export the file the host asked for. Sunday's results come back next to previous best and a cut you entered, such as JO or sectionals."
     >
-      <FeatureBlock title="Membership">
+      <FeatureBlock title="The invitational">
         <p>
-          Store the USA Swimming ID on the swimmer so the roster has the
-          identifier SWIMS uses. Sync pulls registration for the club you
-          connect. Lane4 HQ is not certified or approved by USA Swimming.
+          The seed is the best time already on the roster, so last season&apos;s
+          printout stays in the drawer. You can still override a seed before you
+          export HY3, CL2, or SDIF. After the meet, turn on a standard you
+          entered and see who went under.
         </p>
       </FeatureBlock>
-      <FeatureBlock title="SafeSport">
+      <FeatureBlock title="The roster">
         <p>
-          Minor contact and medical fields stay behind a current SafeSport
-          check. When training or a minor&apos;s acknowledgment is missing, the
+          Store the USA Swimming ID on the swimmer so the number you already use
+          sits with the name. SafeSport training gates minor contact and medical
+          fields. When training or a minor&apos;s acknowledgment is missing, the
           dashboard says so.
         </p>
       </FeatureBlock>
-      <FeatureBlock title="The meet">
+      <FeatureBlock title="Beside the high school">
         <p>
-          Import the invitational event file, enter the club lineup, export the
-          HY3 or CL2 the host asked for, and import results. After the meet,
-          compare a cut you entered, such as JO or sectionals. If you also coach
-          a high school, that team keeps its own roster, entries, and times.
+          If you also coach a high school, switch teams without signing out.
+          That team keeps its own roster, class year, entries, and times.
         </p>
       </FeatureBlock>
     </FeaturePage>

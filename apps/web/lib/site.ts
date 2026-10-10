@@ -15,12 +15,12 @@ export const GITHUB_ISSUES_URL = `${GITHUB_URL}/issues`;
 export const SITE_NAME = "Lane4 HQ";
 
 export const SITE_TAGLINE =
-  "Roster, entries, and results for club and high school coaches.";
+  "Seed times, meet entries, and Sunday's results for club and high school coaches.";
 
-export const SITE_TITLE = `${SITE_NAME} · swim team software for coaches`;
+export const SITE_TITLE = `${SITE_NAME} · seed times, entries, and results for coaches`;
 
 export const SITE_DESCRIPTION =
-  "Roster, meet entries, and results for club and high school swim coaches. Seed times from best times, HY3, CL2, and SDIF export, and the cuts you enter. We don't run the meet.";
+  "Stop retyping seed times the night entries are due. Lane4 fills them from best times and puts Sunday's results next to previous best, for club and high school.";
 
 export const PRIMARY_CTA = "Create your free team";
 
@@ -29,41 +29,42 @@ export const productLinks = [
     href: "/product/roster",
     title: "Roster",
     description:
-      "Swimmers, training groups, and the season fields for a club or a high school.",
+      "Bring returning swimmers into the new season without retyping birthdays.",
     shot: "roster" as const,
   },
   {
     href: "/product/meets",
     title: "Meets and entries",
     description:
-      "Who is going, the file the host asked for, then results next to previous best.",
+      "Seeds from best times, the file the host asked for, then Sunday next to previous best.",
     shot: "entries" as const,
   },
   {
     href: "/product/workouts",
     title: "Workouts",
     description:
-      "Write the set. Practice stays on the same calendar as the meets.",
+      "Write the set on the same calendar as the dual or the invitational.",
     shot: "workouts" as const,
   },
   {
     href: "/product/calendar",
     title: "Calendar",
     description:
-      "Practices, duals, invitationals, attendance, and a calendar feed.",
+      "Practices, meets, attendance, and the entry deadline when the file had one.",
     shot: "calendar" as const,
   },
   {
     href: "/product/progression",
     title: "Progression",
-    description: "Best times and season charts, kept with this team.",
+    description:
+      "Best times and season charts stay with the team you have open.",
     shot: "progression" as const,
   },
   {
     href: "/product/analytics",
     title: "Analytics",
     description:
-      "Yardage, attendance, and top times. Pro adds a roster-wide cut list.",
+      "Yardage, attendance, and top times. Pro adds who is already under a cut.",
     shot: "analytics" as const,
   },
 ] as const;
@@ -73,7 +74,7 @@ export const audienceLinks = [
     href: "/for/club",
     title: "Club teams",
     description:
-      "Invitational meet weeks, a USA Swimming ID on the roster, and cuts such as JO or sectionals.",
+      "Invitational meet weeks, a USA Swimming ID on the roster, and cuts such as JO or sectionals that you enter.",
   },
   {
     href: "/for/high-school",
@@ -117,18 +118,28 @@ export const formats = [
 export const weekLoad = [
   {
     waste: "Seed times",
-    from: "Re-typing them from a printout, last season, or memory.",
-    to: "The swimmer's best time fills the seed. You can still change it.",
+    from: "Retyping them from a printout, last season's Team Manager, or a spreadsheet.",
+    to: "The swimmer's best time fills the seed. You can still change it before you export.",
   },
   {
-    waste: "Who is going",
-    from: "The host's events in one place, the lineup in another.",
-    to: "One meet. Read it in event order, or by swimmer when you check entry limits.",
+    waste: "Who is entered",
+    from: "A whiteboard, a group text, and the host's event file that do not agree.",
+    to: "One meet. Read it in the order it is swum, or by swimmer when you check who has too many events.",
   },
   {
-    waste: "After the meet",
-    from: "Results in a file, best times in a spreadsheet, cuts in your head.",
-    to: "Import the results. The new time sits next to previous best, and next to a cut you entered.",
+    waste: "The lineup",
+    from: "Building individuals and relays the night before entries are due.",
+    to: "Individuals and relays sit on the meet. On Pro, leftover individual spots can fill from eligible best times. Relays stay as you staffed them.",
+  },
+  {
+    waste: "Sunday's results",
+    from: "Pasting the file into Excel so you can see who dropped time.",
+    to: "Import the results. The new time sits next to previous best. Faster swims update best times.",
+  },
+  {
+    waste: "The cut",
+    from: "Keeping JO, sectionals, or the high school standard in your head.",
+    to: "Turn on a time standard you entered and see who went under on that meet. Pro lists the whole roster against it.",
   },
 ] as const;
 
@@ -153,22 +164,22 @@ export const meetWeek = [
 
 export const coachEasier = [
   {
-    title: "Sunday results next to previous best",
-    body: "Import the file. Previous best sits on the row. Compare a cut you entered without leaving the meet.",
+    title: "Sunday's results sit next to previous best",
+    body: "Import the file. Previous best is on the row. Compare a cut you entered without leaving the meet.",
     href: "/product/meets",
   },
   {
-    title: "Cuts you already know by name",
+    title: "See who is already under a cut you entered",
     body: "Enter JO, sectionals, or a high school standard. Pro lists who is already at or under it, by event.",
     href: "/product/analytics",
   },
   {
-    title: "Who was on deck last week",
-    body: "Attendance and yardage come from practices you already ran, before you name a relay.",
+    title: "Check who was at practice before you name a relay",
+    body: "Attendance and yardage come from the practices you already ran.",
     href: "/product/analytics",
   },
   {
-    title: "Times that stay with this team",
+    title: "Club times and high school times stay on separate teams",
     body: "A swimmer on both your club and your high school does not rewrite one team's times with the other's.",
     href: "/product/progression",
   },
@@ -178,32 +189,32 @@ export const faqs = [
   {
     question: "Do you host meets or merge other teams' entries?",
     answer:
-      "No. You manage your roster, your entries, and your results for meets your team attends, whether that is a club invitational or a high school dual. If you are putting the meet on, you still use Meet Manager, SwimTopia, SwimCloud, or TeamUnify to receive files and run the pool. We don't merge other teams' entries or replace a timing console.",
+      "No. You manage the roster, entries, and results for meets your team attends, whether that is a club invitational or a high school dual. The host receives files and runs the pool in Meet Manager, SwimTopia, SwimCloud, or TeamUnify. Lane4 HQ does not merge other teams' entries or replace a timing console.",
   },
   {
     question: "Will the host be able to open the file?",
     answer:
-      "You export the interchange those programs already use: HY3 or CL2 for Meet Manager, SDIF when the host asked for it. We don't operate their import. A host can still reject a file under their own rules.",
+      "You export the interchange those programs already use: HY3 or CL2 for Meet Manager, SDIF when the host asked for it. Lane4 HQ does not operate their import. A host can still reject a file under their own rules.",
   },
   {
     question: "What is free, and what is Pro?",
     answer:
-      "Free includes one coach seat, unlimited swimmers, unlimited meets, meet import and export, seed times from best times, progression, SWIMS roster sync for club teams, and high school class year and association event limits. Practice drafts and relay-order suggestions share one pool: 5 a month on Free. Pro adds more coach seats, lineup suggestions for open individual spots, a roster-wide cut list, and 20 drafts a month, with overage allowed after that.",
+      "Free includes one coach seat, unlimited swimmers, unlimited meets, meet import and export, seed times from best times, progression, and high school class year and association event limits. Practice drafts and relay-order suggestions share one pool: 5 a month on Free. Pro adds more coach seats, lineup suggestions for open individual spots, a roster-wide cut list, and 20 drafts a month, with overage allowed after that.",
   },
   {
     question: "Can one login cover a club team and a high school team?",
     answer:
-      "Yes. Switch teams without signing out. Roster, meets, and times stay with each team. High school uses class year, JV and Varsity, and association event limits. Club uses a USA Swimming ID, SWIMS roster sync, and SafeSport checks. Lane4 HQ is not certified or approved by USA Swimming.",
+      "Yes. Switch teams without signing out. Roster, meets, and times stay with each team. High school uses class year, JV and Varsity, and association event limits. A club roster can store a USA Swimming ID, and SafeSport training gates minor contact and medical fields. Lane4 HQ is not certified or approved by USA Swimming.",
   },
   {
     question: "Is there a parent portal or dues?",
     answer:
-      "No. No family accounts, messaging, or dues. This is for the coach.",
+      "No. No family accounts, messaging, or dues. This is the coach's workspace.",
   },
   {
     question: "Do I still need Team Manager?",
     answer:
-      "If you are putting the meet on, you still use Meet Manager or whatever runs the pool. For your own roster, entries, paper, and times — club or high school — that work can live here.",
+      "The host still uses Meet Manager, SwimTopia, SwimCloud, or TeamUnify to receive the file. Your roster, lineup, printed entries, and times can live here, for a club or a high school, so seeds and best times stay out of a second spreadsheet.",
   },
 ] as const;
 
@@ -213,7 +224,7 @@ export const plans = [
     name: "Free",
     seats: "1 coach seat",
     summary:
-      "Seed times, entries, and progression for one coach. Club or high school.",
+      "Seeds, the lineup, and progression for one coach. Club or high school.",
     cta: PRIMARY_CTA,
     href: SIGN_UP_URL,
     featured: true,
@@ -222,7 +233,6 @@ export const plans = [
       "Meet import and HY3, CL2, and SDIF export",
       "Seed times from best times",
       "Progression by course",
-      "SWIMS roster sync for club teams",
       "High school class year and association event limits",
       "5 practice drafts or relay suggestions / month",
     ],
@@ -231,7 +241,8 @@ export const plans = [
     id: "pro",
     name: "Pro",
     seats: "Up to 5 coach seats",
-    summary: "Extra coaches, a suggested lineup, and a roster-wide cut list.",
+    summary:
+      "Extra coaches, leftover individual spots filled from best times, and a roster-wide cut list.",
     cta: "Start Pro from the app",
     href: SIGN_UP_URL,
     featured: false,

@@ -9,8 +9,8 @@ export const metadata = pageMetadata(
 export default function ProgressionProductPage() {
   return (
     <FeaturePage
-      title="Times that stay with the right team."
-      description="Best times and season charts belong to the program you have open. An athlete who also swims for your other team does not rewrite this one."
+      title="Keep best times with the club or the high school you have open."
+      description="Season charts belong to that team. An athlete who also swims for your other program keeps a separate set of times there."
       shot="progression"
     >
       <FeatureBlock title="Best times">

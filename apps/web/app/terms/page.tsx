@@ -22,9 +22,9 @@ export default function TermsPage() {
         <p>
           You own the data you enter. You grant us a license to host and process
           it so the product can run. Entry files you export are your submissions
-          to whoever is putting the meet on. We are not the meet director and do
-          not accept entries on their behalf. Lane4 HQ is not certified or
-          approved by USA Swimming, and a SWIMS sync does not make an entry
+          to whoever is putting the meet on. We do not accept entries on a
+          host&apos;s behalf. Lane4 HQ is not certified or approved by USA
+          Swimming, and storing a USA Swimming ID does not make an entry
           official with USA Swimming.
         </p>
         <p>

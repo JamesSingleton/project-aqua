@@ -4,14 +4,14 @@ import { pageMetadata } from "@/lib/metadata";
 
 export const metadata = pageMetadata(
   "Analytics",
-  "Training yardage, attendance, and team top times from practices and results you already have. The roster-wide cut list is on Pro.",
+  "Yardage, attendance, and team top times from practices and results you already have. The roster-wide cut list is on Pro.",
 );
 
 export default function AnalyticsProductPage() {
   return (
     <FeaturePage
-      title="Who dropped. Who is under the cut. Who was on deck."
-      description="Attendance, yardage, and top times from the practices and meets you already ran. The roster-wide cut list is on Pro."
+      title="See who dropped time, who is under a cut, and who has been at practice."
+      description="Yardage, attendance, and top times come from the practices and meets you already ran. The roster-wide cut list is on Pro."
       shot="analytics"
     >
       <ProductShot shot="cutTracker" />

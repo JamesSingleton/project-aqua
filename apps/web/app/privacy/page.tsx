@@ -23,8 +23,8 @@ export default function PrivacyPage() {
           Club teams may store USA Swimming IDs. Where SafeSport applies,
           training records gate access to minor contact and medical fields.
           Those fields are not shown to coaches who have not completed the
-          required check. Connecting SWIMS does not mean Lane4 HQ is certified
-          or approved by USA Swimming.
+          required check. Storing a USA Swimming ID does not mean Lane4 HQ is
+          certified or approved by USA Swimming.
         </p>
         <p>
           Processors include our database, object storage, email, calendar sync,

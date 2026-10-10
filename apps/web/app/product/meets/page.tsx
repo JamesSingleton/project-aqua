@@ -4,13 +4,13 @@ import { pageMetadata } from "@/lib/metadata";
 
 export const metadata = pageMetadata(
   "Meets and entries",
-  "Import the event file, mark who is going, export HY3, CL2, or SDIF, print entries and a split sheet, and bring results back next to previous best and a cut you entered.",
+  "Fill seeds from best times, export HY3, CL2, or SDIF, and bring Sunday's results back next to previous best and a cut you entered.",
 );
 
 export default function MeetsProductPage() {
   return (
     <FeaturePage
-      title="Build the lineup once."
+      title="Fill seeds from best times, then export the file the host asked for."
       description="Individuals, relays, going or scratch. The file you send is that lineup, for a club invitational or a high school dual."
       shot="meets"
     >

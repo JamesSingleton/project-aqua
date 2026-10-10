@@ -12,7 +12,7 @@ export const productShots = {
   meets: {
     file: "meets.png",
     alt: "Meets hub showing Fall Kickoff and Harbor Invitational with entry progress for Harbor City Aquatics.",
-    caption: "Each meet is this team's lineup.",
+    caption: "Entry progress for the meets on this team.",
   },
   entries: {
     file: "entries.png",

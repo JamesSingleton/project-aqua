@@ -8,19 +8,19 @@ import { audienceLinks, coachEasier, productLinks } from "@/lib/site";
 
 export const metadata = pageMetadata(
   "Product",
-  "Roster, entries, results, workouts, calendar, progression, and analytics for club and high school swim coaches.",
+  "Seed times from best times, the lineup you export, and Sunday's results next to previous best, for club and high school swim coaches.",
 );
 
 export default function ProductPage() {
   return (
     <>
       <PageIntro
-        title="Your team. Your entries. Someone else still runs the meet."
-        description="Club invitationals and high school duals, on the same login. Meet files stay with the head coach."
+        title="Keep the host's event file, the lineup, and Sunday's results in one place."
+        description="Seeds come from best times. The lineup is the file you export. Results come back next to previous best. The same week for a club invitational and a high school dual."
       />
       <section className="mx-auto w-full max-w-6xl px-4 pb-16 md:px-6">
         <h2 className="font-display max-w-xl text-3xl font-semibold tracking-tight md:text-4xl">
-          What gets easier on meet week.
+          These four jobs leave the spreadsheet.
         </h2>
         <ul className="mt-10 grid gap-8 sm:grid-cols-2">
           {coachEasier.map((item) => (

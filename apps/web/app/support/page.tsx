@@ -18,7 +18,7 @@ export default function SupportPage() {
   return (
     <>
       <PageIntro
-        title="If a meet file will not open, tell us."
+        title="If a meet file will not import, send it here."
         description="Questions about entries, billing, and imports that failed belong here. Feature ideas and bugs can also go on GitHub."
       />
       <Section className="grid gap-10 pt-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]">

@@ -3,20 +3,20 @@ import { pageMetadata } from "@/lib/metadata";
 
 export const metadata = pageMetadata(
   "For high school teams",
-  "Duals and invitationals for high school coaches: class year, JV and Varsity, and association event limits, without a USA Swimming ID.",
+  "High school duals and invitationals: class year, JV and Varsity, and association event limits, with seeds filled from best times.",
 );
 
 export default function HighSchoolPage() {
   return (
     <FeaturePage
-      title="For the dual and the invitational."
-      description="Class year, JV and Varsity, and your association's event limits. The same login as the club team if you coach both."
+      title="Enter the dual with class year and your association's limits already on the lineup."
+      description="Duals and invitationals use the same entry board. Freshman through senior, JV and Varsity from the host file, and your association's scoring caps are checked before you export."
     >
       <FeatureBlock title="Roster">
         <p>
-          Freshman through senior lives on the season. A USA Swimming ID is not
-          required to add a swimmer, and the high school roster does not wait on
-          SWIMS.
+          Freshman through senior lives on the season. You can add a swimmer
+          without a USA Swimming ID. Seeds still fill from that team&apos;s best
+          times.
         </p>
       </FeatureBlock>
       <FeatureBlock title="Meets">

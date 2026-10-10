@@ -19,17 +19,17 @@ export default function FormatsPage() {
   return (
     <>
       <PageIntro
-        title="The host already knows how to open these files."
-        description="You build the lineup once. Export the file Meet Manager, SwimTopia, SwimCloud, or TeamUnify already uses."
+        title="Export the file Meet Manager already knows how to open."
+        description="You build the lineup once. HY3, CL2, and SDIF are the interchange Meet Manager, SwimTopia, SwimCloud, and TeamUnify already use."
       />
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-12 px-4 pb-16 md:px-6">
         <Alert>
-          <AlertTitle>We do not run the meet</AlertTitle>
+          <AlertTitle>The host still opens the file</AlertTitle>
           <AlertDescription>
-            If you are putting the invitational or the dual on, you still use
-            Meet Manager, SwimTopia, SwimCloud, or TeamUnify to receive files
-            and run the pool. Lane4 HQ does not merge other teams&apos; entries
-            or replace a timing console.
+            These files are your team&apos;s entries. The host receives them in
+            Meet Manager, SwimTopia, SwimCloud, or TeamUnify. Lane4 HQ does not
+            merge other teams&apos; entries or replace a timing console. A host
+            can still reject a file under their own rules.
           </AlertDescription>
         </Alert>
         <ul className="grid gap-x-12 gap-y-8 sm:grid-cols-2">
