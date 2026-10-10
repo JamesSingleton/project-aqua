@@ -18,6 +18,8 @@ export const tauriRepository: MeetRepository = {
   remove: (id) => invoke<void>("store_delete_meet", { id }),
   appendCapture: (id, line) =>
     invoke<void>("store_append_capture", { id, line }),
+  restoreBackup: (id) => invoke<void>("store_restore_backup", { id }),
+  readJournal: (id) => invoke<string>("store_read_journal", { id }),
 };
 
 export function importBackup(path: string): Promise<string> {

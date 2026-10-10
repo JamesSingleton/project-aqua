@@ -42,4 +42,4 @@ An API inside the admin Next.js app ties every client to admin's deploys, runtim
 - Desktop publishing, meet download, and future mobile apps share one versioned contract, and clients can generate code from the OpenAPI document.
 - There are two server deploys (Vercel for admin, Railway for the API) sharing one database and auth secret. Both need the same `BETTER_AUTH_*` and `DATABASE_URL`.
 - `HeatPublication` is defined twice: the TypeScript type in `@lane4hq/meet-engine/publish` and the zod schema in `apps/api`. A contract test builds a publication with the engine and parses it with the schema.
-- Still missing: rate limits on `/v1` beyond Better Auth's own, an audit log of publications, and a public results page that reads `/v1/hosted-meets/{meetId}/results`.
+- Rate limits on `/v1` (Upstash, per IP and then per user, with a looser budget for publishing) and the publication audit log are in place. Still missing: a public results page that reads `GET /v1/hosted-meets/{meetId}/results`.

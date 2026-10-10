@@ -74,6 +74,6 @@ Admin itself has two problems that matter whether or not desktop exists:
   2. Visiting clubs and parents see its published results.
   3. Some of those clubs adopt admin.
 
-## Open questions
+## Resolved
 
-- How meet running works offline: the local source of truth, checking a meet out onto the deck machine, publishing when a connection is available, and conflicts. It also decides whether SQLite is enough or a sync engine is needed. This gets its own ADR before meet running is built.
+- How meet running works offline is [ADR 0004](0004-offline-meet-store-and-publishing.md). The deck machine stores each meet as an atomic JSON file plus an append-only timing journal, and a publish queue sends verified heats when a connection is available. SQLite and a sync engine are not used.

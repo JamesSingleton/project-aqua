@@ -18,6 +18,8 @@
     "allow-store-delete-meet",
     "allow-store-append-capture",
     "allow-store-import-backup",
+    "allow-store-restore-backup",
+    "allow-store-read-journal",
     "allow-timing-list-ports",
     "allow-timing-open",
     "allow-timing-close",

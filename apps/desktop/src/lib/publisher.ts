@@ -17,7 +17,20 @@ export type DrainResult = {
   offline: string | null;
   /** Draining stopped at a 429; the rest of the queue waits for the next pass. */
   throttled: boolean;
+  /**
+   * Plain-language notes for the operator. A 409 still counts as published
+   * (the heat is done) and is explained here.
+   */
+  notices: string[];
 };
+
+/** What to tell the operator when the API already stored a newer revision. */
+export function newerRevisionNotice(count: number): string {
+  if (count === 1) {
+    return "Lane4 already has a newer revision of this heat, so this copy was not stored.";
+  }
+  return `Lane4 already has a newer revision of ${count} heats, so those copies were not stored.`;
+}
 
 export type PostFn = (
   idempotencyKey: string,
@@ -48,6 +61,17 @@ export async function drainPublishQueue(
   now = Date.now(),
 ): Promise<DrainResult> {
   const outcomes: PublishOutcome[] = [];
+  let newerRevisions = 0;
+  const finish = (partial: {
+    offline: string | null;
+    throttled: boolean;
+  }): DrainResult => ({
+    outcomes,
+    offline: partial.offline,
+    throttled: partial.throttled,
+    notices: newerRevisions > 0 ? [newerRevisionNotice(newerRevisions)] : [],
+  });
+
   for (const item of publishQueue(meet)) {
     if (!due(meet, item.key, now)) continue;
     const publication = buildHeatPublication(meet, item.eventId, item.heat);
@@ -59,7 +83,7 @@ export async function drainPublishQueue(
       );
     } catch (error) {
       if (error instanceof OfflineError)
-        return { outcomes, offline: error.message, throttled: false };
+        return finish({ offline: error.message, throttled: false });
       outcomes.push({
         key: item.key,
         ok: false,
@@ -68,26 +92,33 @@ export async function drainPublishQueue(
       continue;
     }
     if (response.status === 429)
-      return { outcomes, offline: null, throttled: true };
-    // 409: the service already has this exact revision.
-    if (
-      (response.status >= 200 && response.status < 300) ||
-      response.status === 409
-    ) {
+      return finish({ offline: null, throttled: true });
+    if (response.status >= 200 && response.status < 300) {
       outcomes.push({
         key: item.key,
         revision: publication.revision,
         ok: true,
       });
-    } else {
+      continue;
+    }
+    // 409: a newer revision is already stored (the same revision is 200).
+    // Stop retrying — another attempt would lose again — and tell the operator.
+    if (response.status === 409) {
+      newerRevisions += 1;
       outcomes.push({
         key: item.key,
-        ok: false,
-        error: `HTTP ${response.status}${response.body ? `: ${response.body.slice(0, 200)}` : ""}`,
+        revision: publication.revision,
+        ok: true,
       });
+      continue;
     }
+    outcomes.push({
+      key: item.key,
+      ok: false,
+      error: `HTTP ${response.status}${response.body ? `: ${response.body.slice(0, 200)}` : ""}`,
+    });
   }
-  return { outcomes, offline: null, throttled: false };
+  return finish({ offline: null, throttled: false });
 }
 
 export function applyPublishOutcomes(

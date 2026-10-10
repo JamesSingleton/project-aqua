@@ -73,12 +73,18 @@ function initials(name: string, email: string) {
 /** Signed out: one clear way in, and a way to make an account. */
 function SignedOut({ outcome }: { outcome: SignInFlow | null }) {
   const {
-    state: { error: accountError },
+    state: { error: accountError, settings },
     actions,
   } = useAccount();
   const { error, pending, run } = useAction();
+  const keychainError = settings?.keychainError;
   return (
     <div className="flex flex-col gap-3">
+      {keychainError ? (
+        <p role="alert" className="text-sm text-destructive">
+          {keychainError}
+        </p>
+      ) : null}
       {outcome && outcome.status !== "waiting" ? (
         <p className="rounded-md bg-muted px-3 py-2 text-sm">
           {outcome.status === "denied"
@@ -94,9 +100,11 @@ function SignedOut({ outcome }: { outcome: SignInFlow | null }) {
         {pending ? <Spinner /> : <LogIn />}
         {pending
           ? "Opening your browser…"
-          : outcome
-            ? "Try again"
-            : "Sign in with your browser"}
+          : keychainError
+            ? "Sign in again"
+            : outcome
+              ? "Try again"
+              : "Sign in with your browser"}
       </Button>
       <InlineError>{error ?? accountError}</InlineError>
       <p className="text-center text-sm text-muted-foreground">
@@ -240,7 +248,11 @@ export function AccountRow() {
   return <Row label="Account">{body}</Row>;
 }
 
-function dialogCopy(signedIn: boolean, signIn: SignInFlow | null) {
+function dialogCopy(
+  signedIn: boolean,
+  signIn: SignInFlow | null,
+  keychainError: string | null,
+) {
   if (signedIn)
     return {
       title: "Lane4 account",
@@ -250,6 +262,11 @@ function dialogCopy(signedIn: boolean, signIn: SignInFlow | null) {
     return {
       title: "Sign in to Lane4",
       description: "Your browser opened Lane4.",
+    };
+  if (keychainError)
+    return {
+      title: "Sign in again",
+      description: keychainError,
     };
   return {
     title: "Sign in to Lane4",
@@ -268,7 +285,8 @@ export function AccountButton() {
 
   const user = settings?.account;
   const waiting = signIn?.status === "waiting";
-  const copy = dialogCopy(Boolean(user), signIn);
+  const keychainError = settings?.keychainError ?? null;
+  const copy = dialogCopy(Boolean(user), signIn, keychainError);
   return (
     <>
       <Button
@@ -282,7 +300,9 @@ export function AccountButton() {
             ? user.name || user.email
             : waiting
               ? "Finish signing in"
-              : "Sign in"}
+              : keychainError
+                ? "Sign in again"
+                : "Sign in"}
         </span>
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>

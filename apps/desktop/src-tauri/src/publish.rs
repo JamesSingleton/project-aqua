@@ -113,6 +113,42 @@ pub struct PublishSettingsView {
     enabled: bool,
     /// Set only while a token is in the keychain.
     account: Option<Account>,
+    /// Set when the keychain itself failed, so the account panel can offer
+    /// "Sign in again" instead of looking simply signed out.
+    keychain_error: Option<String>,
+}
+
+pub const KEYCHAIN_SIGN_IN_AGAIN: &str =
+    "Lane4 couldn't read the saved sign-in from this computer's keychain. Sign in again.";
+
+/// What the account panel shows. A keychain error is not the same as being
+/// signed out: the token may still be there, and the operator needs a way back in.
+fn settings_view(
+    settings: &PublishSettings,
+    token: Result<Option<String>, PublishError>,
+) -> PublishSettingsView {
+    if !same_server(settings) {
+        return PublishSettingsView {
+            team_id: String::new(),
+            team_name: String::new(),
+            enabled: settings.enabled,
+            account: None,
+            keychain_error: None,
+        };
+    }
+    let (account, keychain_error) = match token {
+        Ok(Some(_)) => (settings.account.clone(), None),
+        Ok(None) => (None, None),
+        Err(PublishError::Keychain(_)) => (None, Some(KEYCHAIN_SIGN_IN_AGAIN.to_string())),
+        Err(_) => (None, None),
+    };
+    PublishSettingsView {
+        team_id: settings.team_id.clone(),
+        team_name: settings.team_name.clone(),
+        enabled: settings.enabled,
+        account,
+        keychain_error,
+    }
 }
 
 #[derive(Serialize)]
@@ -334,21 +370,13 @@ async fn fetch_me(app: &AppHandle, settings: &mut PublishSettings) -> Result<Val
 #[tauri::command]
 pub async fn publish_get_settings(app: AppHandle) -> Result<PublishSettingsView, PublishError> {
     let settings = load_settings(&app)?;
-    if !same_server(&settings) {
-        return Ok(PublishSettingsView {
-            team_id: String::new(),
-            team_name: String::new(),
-            enabled: settings.enabled,
-            account: None,
-        });
-    }
-    let signed_in = read_token().unwrap_or(None).is_some();
-    Ok(PublishSettingsView {
-        team_id: settings.team_id,
-        team_name: settings.team_name,
-        enabled: settings.enabled,
-        account: if signed_in { settings.account } else { None },
-    })
+    // Don't touch the keychain for a token issued by a different server.
+    let token = if same_server(&settings) {
+        read_token()
+    } else {
+        Ok(None)
+    };
+    Ok(settings_view(&settings, token))
 }
 
 /// Save the host team and the auto-publish switch.
@@ -689,6 +717,55 @@ mod tests {
         );
         let offline = serde_json::to_value(PublishError::Offline("dns".into())).unwrap();
         assert_eq!(offline["kind"], "offline");
+    }
+
+    #[test]
+    fn keychain_failure_asks_the_operator_to_sign_in_again() {
+        let settings = PublishSettings {
+            api_url: API_URL.into(),
+            team_id: "team-1".into(),
+            team_name: "Dolphins".into(),
+            enabled: true,
+            account: Some(Account {
+                name: "Coach".into(),
+                email: "coach@example.com".into(),
+            }),
+        };
+        let failed = settings_view(
+            &settings,
+            Err(PublishError::Keychain("user interaction required".into())),
+        );
+        assert!(failed.account.is_none());
+        assert_eq!(
+            failed.keychain_error.as_deref(),
+            Some(KEYCHAIN_SIGN_IN_AGAIN)
+        );
+        assert_eq!(failed.team_name, "Dolphins");
+
+        let signed_out = settings_view(&settings, Ok(None));
+        assert!(signed_out.account.is_none());
+        assert!(signed_out.keychain_error.is_none());
+
+        let signed_in = settings_view(&settings, Ok(Some("token".into())));
+        assert_eq!(signed_in.account.unwrap().email, "coach@example.com");
+        assert!(signed_in.keychain_error.is_none());
+
+        let other_error = settings_view(&settings, Err(PublishError::NotSignedIn));
+        assert!(other_error.account.is_none());
+        assert!(other_error.keychain_error.is_none());
+        assert_eq!(other_error.team_id, "team-1");
+
+        let other_server = PublishSettings {
+            api_url: "https://staging.lane4hq.com".into(),
+            ..settings
+        };
+        let ignored = settings_view(
+            &other_server,
+            Err(PublishError::Keychain("should not be read".into())),
+        );
+        assert!(ignored.account.is_none());
+        assert!(ignored.keychain_error.is_none());
+        assert!(ignored.team_id.is_empty());
     }
 
     #[test]
